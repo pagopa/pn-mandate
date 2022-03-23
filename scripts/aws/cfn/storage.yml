@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Some storage with input and output
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Nome dell'ambiente destinazione
+
+  # Unused but required by CD pipeline
+  MicroserviceNumber:
+    Type: Number
+    Description: An unique number that identify the microservice inside the ECS cluster.
+
+  # Unused but required by CD pipeline
+  TemplateBucketBaseUrl:
+    Type: String
+    Description: URL da cui caricare i frammenti di template di infrastruttura
+
+Resources:
+
+  ConfidentialObjectsDynamoTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-mandate'
+      AttributeDefinitions:
+        - AttributeName: "pk"
+          AttributeType: "S"
+        - AttributeName: "sk"
+          AttributeType: "S"
+        - AttributeName: "s_delegate"
+          AttributeType: "S"
+        - AttributeName: "i_state"
+          AttributeType: "N"
+      KeySchema:
+        - AttributeName: "pk"
+          KeyType: "HASH"
+        - AttributeName: "sk"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5" 
+      GlobalSecondaryIndexes:
+        -
+          IndexName: "delegate-state-gsi"
+          KeySchema:
+            -
+              AttributeName: "s_delegate"
+              KeyType: "HASH"
+            - 
+              AttributeName: "i_state"
+              KeyType: "RANGE"
+          Projection:
+            ProjectionType: "ALL"
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+     
+
+Outputs:
+  ConfidentialObjectsDynamoTableName:
+    Description: Name of dynamodb table containing fake confidentials informations
+    Value: !Ref ConfidentialObjectsDynamoTable
+
+  ConfidentialObjectsDynamoTableArn:
+    Description: ARN of dynamodb table containing fake confidentials informations
+    Value: !Sub '${ConfidentialObjectsDynamoTable.Arn}'

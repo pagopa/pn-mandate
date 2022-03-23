@@ -101,6 +101,8 @@ public class MandateService implements MandateServiceApiDelegate {
             }
         }
         
+        log.info("returning mandates by delegate count: " + mm.size());
+        
         return Mono.just(ResponseEntity.ok().body(
             Flux.fromIterable(mm)
         ));
@@ -115,6 +117,8 @@ public class MandateService implements MandateServiceApiDelegate {
                 mm.add(mandateDto);
             }
         }
+
+        log.info("returning mandates by delegator count: " + mm.size());
         
         return Mono.just(ResponseEntity.ok().body(
             Flux.fromIterable(mm)
@@ -126,6 +130,8 @@ public class MandateService implements MandateServiceApiDelegate {
         if (mockdb.containsKey(mandateId))
         {
           mockdb.remove(mandateId);
+          
+          log.info("rejected mandate " + mandateId);
         }
         return  Mono.just(ResponseEntity.status(HttpStatus.NO_CONTENT).body(null));
     }
@@ -135,6 +141,7 @@ public class MandateService implements MandateServiceApiDelegate {
         if (mockdb.containsKey(mandateId))
         {
           mockdb.remove(mandateId);
+          log.info("revoked mandate " + mandateId);
         }
         return  Mono.just(ResponseEntity.status(HttpStatus.NO_CONTENT).body(null));
     }

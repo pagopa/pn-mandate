@@ -7,9 +7,9 @@ Parameters:
     Description: 'Usually pn can be pnXYZ where XYZ are the feature number, useful to create
       experimental environments without crash official development environment'
 
-   ApiDnsName:
-     Type: String
-     Description: 'The DNS name used for B2B rest API.'
+   #ApiDnsName:
+   #  Type: String
+   #  Description: 'The DNS name used for B2B rest API.'
 
    WebApiDnsName:
      Type: String
@@ -103,21 +103,6 @@ Resources:
               - dynamodb:UpdateItem
             Resource:
               - !Ref ConfidentialObjectsDynamoTableArn
-
-
-  # Expose PN-Mandate microservice public API with API-GW for B2B usage
-  MandateMicroservicePublicAPI:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service.yaml"
-      Parameters:
-        MicroServiceUniqueName: !Sub '${ProjectName}-mandate'
-        IntendedUsage: B2B
-        DnsName: !Ref ApiDnsName
-        ProjectName: !Ref ProjectName
-        ServiceApiPath: 'mandate-private'
-        NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
-        ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
 
   # Expose PN-Mandate microservice public API with API-GW for WEB usage
   MandateMicroservicePublicWebAPI:

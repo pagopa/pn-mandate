@@ -7,9 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import it.pagopa.pn.mandate.rest.mandate.v1.api.MandateServiceApi;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service; 
 import org.springframework.web.server.ServerWebExchange;
 
@@ -26,7 +23,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
-public class MandateService implements MandateServiceApi {
+public class MandateService  {
    
     private static Map<String, MandateDto> mockdb = new HashMap<>();
 
@@ -34,8 +31,7 @@ public class MandateService implements MandateServiceApi {
     }
     
     
-    @Override
-    public Mono<ResponseEntity<Object>> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
+    public Mono<Object> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
             ServerWebExchange exchange) {
         return acceptRequestDto
         .zipWhen(m -> {
@@ -49,7 +45,7 @@ public class MandateService implements MandateServiceApi {
                 }
                 log.info("accepting mandate " + m);
     
-                return Mono.just(ResponseEntity.status(HttpStatus.NO_CONTENT).body(null));
+                return Mono.empty();
             }catch(Exception ex)
             {
                 throw Exceptions.propagate(ex);
@@ -60,13 +56,23 @@ public class MandateService implements MandateServiceApi {
                 
     }
 
-    @Override
-    public Mono<ResponseEntity<MandateCountsDto>> countMandatesByDelegate(String status, ServerWebExchange exchange) {
-        return MandateServiceApi.super.countMandatesByDelegate(status, exchange);
+    public Mono<MandateCountsDto> countMandatesByDelegate(String status, ServerWebExchange exchange) {
+        List<MandateDto> mm = new ArrayList<>();
+        for (MandateDto mandateDto : mockdb.values()) {
+            if (mandateDto.getDelegate() != null)
+            {
+                if (status == null || mandateDto.getStatus().getValue().equals(status))
+                    mm.add(mandateDto);
+            }
+        }
+
+        MandateCountsDto res = new MandateCountsDto();
+        res.setValue(mm.size());
+        return Mono.just(res);
     }
 
-    @Override
-    public Mono<ResponseEntity<MandateDto>> createMandate(Mono<MandateDto> mandateDto, ServerWebExchange exchange) {
+    
+    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, ServerWebExchange exchange) {
         return mandateDto
         .zipWhen(m -> {
             m.setMandateId(UUID.randomUUID().toString());  
@@ -84,14 +90,14 @@ public class MandateService implements MandateServiceApi {
             mockdb.put(m1.getMandateId(), m1);       
             log.info("creating mandate " + m1.toString());
 
-            return Mono.just(ResponseEntity.status(HttpStatus.CREATED).body(m));
+            return Mono.just(m);
         },
         (m, r) -> r);
         
     }
 
-    @Override
-    public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegate1(String status, ServerWebExchange exchange) {
+    
+    public Flux<MandateDto> listMandatesByDelegate1(String status, ServerWebExchange exchange) {
         List<MandateDto> mm = new ArrayList<>();
         for (MandateDto mandateDto : mockdb.values()) {
             if (mandateDto.getDelegator() != null)
@@ -103,13 +109,11 @@ public class MandateService implements MandateServiceApi {
         
         log.info("returning mandates by delegate count: " + mm.size());
         
-        return Mono.just(ResponseEntity.ok().body(
-            Flux.fromIterable(mm)
-        ));
+        return Flux.fromIterable(mm);
     }
 
-    @Override
-    public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegator1(ServerWebExchange exchange) {
+    
+    public Flux<MandateDto> listMandatesByDelegator1(ServerWebExchange exchange) {
         List<MandateDto> mm = new ArrayList<>();
         for (MandateDto mandateDto : mockdb.values()) {
             if (mandateDto.getDelegate() != null)
@@ -120,30 +124,28 @@ public class MandateService implements MandateServiceApi {
 
         log.info("returning mandates by delegator count: " + mm.size());
         
-        return Mono.just(ResponseEntity.ok().body(
-            Flux.fromIterable(mm)
-        ));
+        return Flux.fromIterable(mm);
     }
 
-    @Override
-    public Mono<ResponseEntity<Object>> rejectMandate(String mandateId, ServerWebExchange exchange) {
+   
+    public Mono<Object> rejectMandate(String mandateId, ServerWebExchange exchange) {
         if (mockdb.containsKey(mandateId))
         {
           mockdb.remove(mandateId);
           
           log.info("rejected mandate " + mandateId);
         }
-        return  Mono.just(ResponseEntity.status(HttpStatus.NO_CONTENT).body(null));
+        return  Mono.empty();
     }
 
-    @Override
-    public Mono<ResponseEntity<Object>> revokeMandate(String mandateId, ServerWebExchange exchange) {
+    
+    public Mono<Object> revokeMandate(String mandateId, ServerWebExchange exchange) {
         if (mockdb.containsKey(mandateId))
         {
           mockdb.remove(mandateId);
           log.info("revoked mandate " + mandateId);
         }
-        return  Mono.just(ResponseEntity.status(HttpStatus.NO_CONTENT).body(null));
+        return  Mono.empty();
     }
 
      

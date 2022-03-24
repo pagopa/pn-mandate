@@ -1,0 +1,153 @@
+openapi: 3.0.1
+info:
+  title: Informazioni IPA di interesse per PN
+  version: v1
+  description: |
+      # Questo è un wrapper con caching temporaneo sulle  API di SelfCare
+  license:
+    name: PagoPA PN license
+    url: http://pippo.pappo.it
+servers:
+  - url: https://servizio-anonimizzazione
+    description: finto
+tags:
+  - name: InfoPA
+    description: Informazioni sulle PA aderenti a PN
+paths:
+  '/ext-registry/pa/v1/activated-on-pn':
+    get:
+      operationId: listOnboardedPa
+      summary: List PA that use PN
+      description: Use with API to implement PA choose in domicile and mandate creation pages.
+      tags:
+        - InfoPA
+      parameters:
+        - name: paNameFilter
+          description: Se valorizzato indica
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PaNameFilter'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaSummariesList'
+        '400':
+          description: Invalid input
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'pn-errors.yaml#/components/schemas/Problem'
+        '500':
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'pn-errors.yaml#/components/schemas/Problem'
+  '/ext-registry/pa/v1/activated-on-pn/{id}':
+    get:
+      operationId: getOnePa
+      summary: Retrieve detailed information about one PA
+      description: Used by the Notification detail page
+      tags:
+        - InfoPA
+      parameters:
+        - name: id
+          description: The identifier of one PA
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/SelfCarePaId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaInfo'
+        '400':
+          description: Invalid input
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'pn-errors.yaml#/components/schemas/Problem'
+        '500':
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'pn-errors.yaml#/components/schemas/Problem'  
+components:
+  schemas:
+    PaNameFilter:
+      title: Admitted character for PA denomination field
+      type: string
+      minLength: 3
+      pattern: "[A-Za-z0-9 _]*"
+    PaSummariesList:
+      title: Brief list of PAs
+      description: Contains a list of PA with minimal information
+      type: array
+      items:
+        type: object
+        required:
+          - id
+          - name
+        properties:
+          id:
+            $ref: '#/components/schemas/SelfCarePaId'
+          name:
+            type: string
+    PaInfo:
+      title: PA Info by IPA
+      description: Denomination, fiscal code, pec, email, tel, www site, ...
+      type: object
+      required:
+        - id
+        - name
+        - taxId
+        - generalContacts
+      properties:
+        id:
+          $ref: '#/components/schemas/SelfCarePaId'
+        name:
+          type: string
+          minLength: 1
+        taxId:
+          description: codice fiscale
+          type: string
+          minLength: 1
+        generalContacts:
+          description: General PA contact information
+          $ref: '#/components/schemas/PaContacts'
+    PaContacts:
+      title: Contact Information
+      description: pec, email, tel, www site, ...
+      type: object
+      properties:
+        pec:
+          type: string
+          format: email
+          minLength: 1
+        email:
+          type: string
+          format: email
+          minLength: 1
+        tel:
+          type: string
+          pattern: '^\\+?([0-9]|-)*'
+          minLength: 1
+          maxLength: 20
+        web:
+          type: string
+          format: uri
+          pattern: 'http.*'
+          minLength: 1
+    SelfCarePaId:
+      title: The PA id used by self care
+      description: An unique ID that identify a Public Administration
+      type: string
+      minLength: 1

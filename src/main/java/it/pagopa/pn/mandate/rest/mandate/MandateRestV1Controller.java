@@ -45,7 +45,9 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
 
     @Override
     public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegate1(String status, ServerWebExchange exchange) {
-        return  mandateService.listMandatesByDelegate1(status, exchange)
+        String internaluserId = exchange.getRequest().getHeaders().getFirst(headerName)
+
+        return  mandateService.listMandatesByDelegate(status, exchange)
             .collectList()     
             .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));     
     }

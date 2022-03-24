@@ -10,6 +10,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service; 
 import org.springframework.web.server.ServerWebExchange;
 
+import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
+import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
+import it.pagopa.pn.mandate.middleware.db.MandateDao;
+import it.pagopa.pn.mandate.middleware.db.UserDao;
+import it.pagopa.pn.mandate.middleware.microservice.PnInfoPaClient;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
@@ -25,9 +30,19 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class MandateService  {
    
-    private static Map<String, MandateDto> mockdb = new HashMap<>();
+    private MandateDao mandateDao;
+    private UserDao userDao;
+    private MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper;
+    private UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper;
+    private PnInfoPaClient pnInfoPaClient;
 
-    public MandateService() {       
+    public MandateService(MandateDao mandateDao, UserDao userDao, MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper,
+        UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper, PnInfoPaClient pnInfoPaClient) {
+        this.mandateDao = mandateDao;
+        this.userDao =userDao;
+        this.mandateEntityMandateDtoMapper = mandateEntityMandateDtoMapper;
+        this.userEntityMandateCountsDtoMapper = userEntityMandateCountsDtoMapper;
+        this.pnInfoPaClient = pnInfoPaClient;
     }
     
     
@@ -97,19 +112,22 @@ public class MandateService  {
     }
 
     
-    public Flux<MandateDto> listMandatesByDelegate1(String status, ServerWebExchange exchange) {
-        List<MandateDto> mm = new ArrayList<>();
-        for (MandateDto mandateDto : mockdb.values()) {
-            if (mandateDto.getDelegator() != null)
-            {
-                if (status == null || mandateDto.getStatus().getValue().equals(status))
-                    mm.add(mandateDto);
-            }
-        }
-        
-        log.info("returning mandates by delegate count: " + mm.size());
-        
-        return Flux.fromIterable(mm);
+    public Flux<MandateDto> listMandatesByDelegate(String status, String internaluserId) {
+       return 
+            mandateDao.listMandatesByDelegate(internaluserId)
+                .flatMap(ent -> mandateEntityMandateDtoMapper.toDto(Mono.just(ent)))
+                .flatMap(ent -> {
+                    if (!ent.getVisibilityIds().isEmpty())
+                        return pnInfoPaClient
+                            .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
+                            .flatMap(pa -> {
+                                ent.getVisibilityIds().get(0).setName(pa.getName());
+                                return Mono.just(ent);
+                                });   
+                    else
+                        return Mono.just(ent);
+                })         
+            ;
     }
 
     

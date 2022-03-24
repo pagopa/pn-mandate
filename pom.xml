@@ -9,12 +9,13 @@
         <relativePath/>
 	</parent>
 	<groupId>it.pagopa.pn</groupId>
-	<artifactId>mandate</artifactId>
+	<artifactId>pn-mandate</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>mandate</name>
 	<description>Mandate microservice</description>
 	<properties>
 		<java.version>11</java.version>
+    <jacoco.min.line.cover.ratio>0.01</jacoco.min.line.cover.ratio>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -117,28 +118,26 @@
 						<configuration>
 							<inputSpec>${project.basedir}/docs/pn-mandate/pn-mandate-v1.yaml</inputSpec>
 							<generatorName>spring</generatorName>
-                			<library>spring-boot</library>
+              <library>spring-boot</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
 							<generateApiTests>false</generateApiTests>
-                            <generateModelTests>false</generateModelTests>
+              <generateModelTests>false</generateModelTests>
+              <modelNameSuffix></modelNameSuffix>
 							<configOptions>
-								<sourceFolder>/</sourceFolder> 
-                                <swaggerAnnotations>false</swaggerAnnotations>
-								<openApiNullable>false</openApiNullable>
-								<reactive>true</reactive>
-
-								<delegatePattern>true</delegatePattern>
-                                <interfaceOnly>false</interfaceOnly>
-                                <annotationLibrary>none</annotationLibrary>
-                                <documentationProvider>source</documentationProvider>
-                                <skipDefaultInterface>false</skipDefaultInterface>
-                                <useTags>true</useTags>
-							</configOptions>
-							<basePackage>${project.groupId}.${project.artifactId}.rest.mandate.v1</basePackage>
-							<modelPackage>${project.groupId}.${project.artifactId}.rest.mandate.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.${project.artifactId}.rest.mandate.v1.api</apiPackage>
-							<configPackage>${project.groupId}.${project.artifactId}.rest.mandate.v1.config</configPackage>							
-							<modelNameSuffix></modelNameSuffix>
+								<dateLibrary>java11</dateLibrary>
+                <delegatePattern>true</delegatePattern>
+                <interfaceOnly>true</interfaceOnly>
+                <annotationLibrary>none</annotationLibrary>
+                <documentationProvider>source</documentationProvider>
+                <openApiNullable>false</openApiNullable>
+                <reactive>true</reactive>
+                <skipDefaultInterface>false</skipDefaultInterface>
+                <useTags>true</useTags>
+                <basePackage>${project.groupId}.mandate.rest.mandate.v1</basePackage>
+                <modelPackage>${project.groupId}.mandate.rest.mandate.v1.dto</modelPackage>
+                <apiPackage>${project.groupId}.mandate.rest.mandate.v1.api</apiPackage>
+                <configPackage>${project.groupId}.mandate.rest.mandate.v1.config</configPackage>
+							</configOptions>				
 						</configuration>
 					</execution>
 				</executions>

@@ -1,16 +1,16 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
+import it.pagopa.pn.mandate.rest.mandate.v1.api.MandatePrivateServiceApi;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 
-import it.pagopa.pn.mandate.rest.mandate.v1.api.MandatePrivateServiceApiDelegate;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.rest.mock.InternalMandateDtoGenerator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public class MandatePrivateService implements MandatePrivateServiceApiDelegate {
+public class MandatePrivateService implements MandatePrivateServiceApi {
 
     
     public MandatePrivateService() {

@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import it.pagopa.pn.mandate.rest.mandate.v1.api.MandateServiceApi;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service; 
 import org.springframework.web.server.ServerWebExchange;
 
-import it.pagopa.pn.mandate.rest.mandate.v1.api.MandateServiceApiDelegate;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
@@ -26,7 +26,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
-public class MandateService implements MandateServiceApiDelegate {
+public class MandateService implements MandateServiceApi {
    
     private static Map<String, MandateDto> mockdb = new HashMap<>();
 
@@ -62,7 +62,7 @@ public class MandateService implements MandateServiceApiDelegate {
 
     @Override
     public Mono<ResponseEntity<MandateCountsDto>> countMandatesByDelegate(String status, ServerWebExchange exchange) {
-        return MandateServiceApiDelegate.super.countMandatesByDelegate(status, exchange);
+        return MandateServiceApi.super.countMandatesByDelegate(status, exchange);
     }
 
     @Override

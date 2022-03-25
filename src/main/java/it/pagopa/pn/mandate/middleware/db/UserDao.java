@@ -16,18 +16,17 @@ import software.amazon.awssdk.enhanced.dynamodb.model.GetItemEnhancedRequest;
 @Repository
 public class UserDao extends BaseDao {
 
-    //private DynamoDbEnhancedAsyncClient dynamoDbEnhancedClient; 
     DynamoDbAsyncTable<UserEntity> userTable;
+    public static final String DELEGATE_PREFIX = "USERDELEGATE-";
    
 
     public UserDao(DynamoDbEnhancedAsyncClient dynamoDbAsyncClient,
                               @Value("${aws.dynamodb.table}") String table) {
-        //this.dynamoDbEnhancedClient = dynamoDbAsyncClient;
         this.userTable = dynamoDbAsyncClient.table(table, TableSchema.fromBean(UserEntity.class));        
     }
 
-    public Mono<UserEntity> countMandates(String internaluserid, Optional<String> status) {
-
+    public Mono<UserEntity> countMandates(String internaluserid) {
+        // per ora l'unico stato supportato per il count è il pending, il filtro sullo stato viene quindi omesso volutamente.
         GetItemEnhancedRequest giRequest = GetItemEnhancedRequest.builder()
                 .key(getKeyBuild(internaluserid, "TOTALS"))        
                 .build();
@@ -35,10 +34,9 @@ public class UserDao extends BaseDao {
         CompletableFuture<UserEntity> user = userTable.getItem(giRequest)
                 .whenComplete((cus, ex) -> {
                         
-                if (null == cus) {
-                        throw new IllegalArgumentException("Invalid customerId");
-                 //cus = new User();
-                }
+                    if (null == cus) {
+                            throw new IllegalArgumentException("Invalid customerId");                    
+                    }
                 });
         return Mono.fromFuture(user);
     }

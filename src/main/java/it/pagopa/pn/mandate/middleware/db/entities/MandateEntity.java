@@ -29,5 +29,9 @@ public class MandateEntity {
 
     @Getter(onMethod=@__({@DynamoDbAttribute("s_validationcode")}))  private String validationcode;
     @Getter(onMethod=@__({@DynamoDbAttribute("a_visibilityids")}))  private Set<String> visibilityIds;
+
+
+    // per lo storico e per la struttura dati di appoggio
+    @Getter(onMethod=@__({@DynamoDbAttribute("i_ttl")}))  private Long ttl;
     
 }

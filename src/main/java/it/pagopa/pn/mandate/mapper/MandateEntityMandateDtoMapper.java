@@ -11,7 +11,6 @@ import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -45,7 +44,7 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
             target.setMandateId(entity.getSk().replace(MandateDao.MANDATE_PREFIX, ""));
             target.setDatefrom(entity.getValidfrom());
             target.setDateto(entity.getValidto());
-            target.setStatus(StatusEnum.fromValue(DelegationState.fromValue(entity.getState()).getValueConst()));
+            target.setStatus(StatusEnumMapper.fromValue(entity.getState()));
             target.setVerificationCode(entity.getValidationcode());
             target.setVisibilityIds(getOrgidsDtos(entity.getVisibilityIds()));
            

@@ -5,7 +5,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import org.springframework.stereotype.Service; 
 import org.springframework.web.server.ServerWebExchange;
@@ -20,6 +22,7 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum; 
 import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
+import it.pagopa.pn.mandate.rest.utils.UnsupportedFilterException;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.Exceptions;
@@ -47,9 +50,10 @@ public class MandateService  {
     
     
     public Mono<Object> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
-            ServerWebExchange exchange) {
+            String internaluserId) {
         return acceptRequestDto
-        .zipWhen(m -> {
+        .map(m -> {
+                mandateDao.
             try{
                 if (mockdb.containsKey(mandateId))
                 {
@@ -71,23 +75,19 @@ public class MandateService  {
                 
     }
 
-    public Mono<MandateCountsDto> countMandatesByDelegate(String status, ServerWebExchange exchange) {
-        List<MandateDto> mm = new ArrayList<>();
-        for (MandateDto mandateDto : mockdb.values()) {
-            if (mandateDto.getDelegate() != null)
-            {
-                if (status == null || mandateDto.getStatus().getValue().equals(status))
-                    mm.add(mandateDto);
-            }
-        }
-
-        MandateCountsDto res = new MandateCountsDto();
-        res.setValue(mm.size());
-        return Mono.just(res);
+    public Mono<MandateCountsDto> countMandatesByDelegate(String status, String internaluserId) {
+       // per ora l'unico stato supportato è il pending, quindi il filtro non viene passato al count
+       // Inoltre, ritorno un errore se status != pending
+       if (status == null || !status.equals(StatusEnum.PENDING.getValue()))
+        throw new UnsupportedFilterException();
+       return userDao.countMandates(internaluserId)                
+                .flatMap(entity -> {
+                    return userEntityMandateCountsDtoMapper.toDto(Mono.just(entity));
+                });
     }
 
     
-    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, ServerWebExchange exchange) {
+    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, String internaluserId) {
         return mandateDto
         .zipWhen(m -> {
             m.setMandateId(UUID.randomUUID().toString());  
@@ -113,8 +113,8 @@ public class MandateService  {
 
     
     public Flux<MandateDto> listMandatesByDelegate(String status, String internaluserId) {
-       return 
-            mandateDao.listMandatesByDelegate(internaluserId)
+        Optional<String> optstatus = Optional.ofNullable(status).filter(Predicate.not(String::isEmpty));
+        return mandateDao.listMandatesByDelegate(internaluserId, optstatus)
                 .flatMap(ent -> mandateEntityMandateDtoMapper.toDto(Mono.just(ent)))
                 .flatMap(ent -> {
                     if (!ent.getVisibilityIds().isEmpty())
@@ -131,39 +131,32 @@ public class MandateService  {
     }
 
     
-    public Flux<MandateDto> listMandatesByDelegator1(ServerWebExchange exchange) {
-        List<MandateDto> mm = new ArrayList<>();
-        for (MandateDto mandateDto : mockdb.values()) {
-            if (mandateDto.getDelegate() != null)
-            {
-                mm.add(mandateDto);
-            }
-        }
-
-        log.info("returning mandates by delegator count: " + mm.size());
-        
-        return Flux.fromIterable(mm);
+    public Flux<MandateDto> listMandatesByDelegator(String internaluserId) {
+        Optional<String> optstatus = Optional.ofNullable(null);
+        return mandateDao.listMandatesByDelegator(internaluserId, optstatus)
+            .flatMap(ent -> mandateEntityMandateDtoMapper.toDto(Mono.just(ent)))
+            .flatMap(ent -> {
+                if (!ent.getVisibilityIds().isEmpty())
+                    return pnInfoPaClient
+                        .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
+                        .flatMap(pa -> {
+                            ent.getVisibilityIds().get(0).setName(pa.getName());
+                            return Mono.just(ent);
+                            });   
+                else
+                    return Mono.just(ent);
+            })         
+        ;
     }
 
    
-    public Mono<Object> rejectMandate(String mandateId, ServerWebExchange exchange) {
-        if (mockdb.containsKey(mandateId))
-        {
-          mockdb.remove(mandateId);
-          
-          log.info("rejected mandate " + mandateId);
-        }
-        return  Mono.empty();
+    public Mono<Object> rejectMandate(String mandateId, String internaluserId) {
+        return mandateDao.rejectMandate(internaluserId, mandateId);
     }
 
     
-    public Mono<Object> revokeMandate(String mandateId, ServerWebExchange exchange) {
-        if (mockdb.containsKey(mandateId))
-        {
-          mockdb.remove(mandateId);
-          log.info("revoked mandate " + mandateId);
-        }
-        return  Mono.empty();
+    public Mono<Object> revokeMandate(String mandateId, String internaluserId) {
+        return mandateDao.revokeMandate(internaluserId, mandateId);
     }
 
      

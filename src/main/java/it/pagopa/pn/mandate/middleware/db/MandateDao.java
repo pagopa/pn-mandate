@@ -13,6 +13,8 @@ import org.springframework.stereotype.Repository;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
+import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
+import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -48,7 +50,6 @@ public class MandateDao extends BaseDao {
     }
 
     public Flux<MandateEntity> listMandatesByDelegate(String internaluserid, Optional<String> status) {
-        Expression exp = null;
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
@@ -70,7 +71,7 @@ public class MandateDao extends BaseDao {
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
                 expressionValues.put(":validto", att);
-        Expression.builder()                
+        Expression exp = Expression.builder()                        
         .expression("d_validto > :validto")
                 .expressionValues(expressionValues)
                 .build();    
@@ -96,7 +97,6 @@ public class MandateDao extends BaseDao {
     }
 
     public Flux<MandateEntity> listMandatesByDelegator(String internaluserid, Optional<String> status) {
-        Expression exp = null;
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
@@ -123,7 +123,7 @@ public class MandateDao extends BaseDao {
                 expressionValues.put(":validto", att);
                 expressionValues.put(":status", attstat);
 
-        Expression.builder()                
+        Expression exp = Expression.builder()                
         .expression(status.isPresent()?"d_validto > :validto && i_status = :status":
                 "d_validto > :validto && i_status <= :status")
                 .expressionValues(expressionValues)
@@ -154,7 +154,85 @@ public class MandateDao extends BaseDao {
         //   che mi permetterà di spostare il record principale nello storico. Il TTL NON viene messo nel record principale perchè se qualcosa va storto almeno
         //   il record principale rimane (scaduto) e non viene perso.
         // - update dell'entity aggiornata in DB
-        return Mono.empty();
+        // devo sempre mettere un filtro di salvaguardia per quanto riguarda la scadenza della delega.
+        // infatti se una delega è scaduta, potrebbe rimanere a sistema per qualche ora/giorno prima di essere svecchiata
+        // e quindi va sempre previsto un filtro sulla data di scadenza
+        AttributeValue attmandateid = AttributeValue.builder()
+                .s(MANDATE_PREFIX + mandateId)
+                .build();
+
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
+                expressionValues.put(":mandateid", attmandateid);
+        Expression exp = Expression.builder()                       
+                .expression("sk = :mandateid")
+                .expressionValues(expressionValues)
+                .build();    
+         
+        
+        // il filtro cambia in base al fatto se ho chiesto uno stato specifico (uso =)
+        //   o se invece non chiedo lo stato (e quindi mi interessano pendenti e attive, uso <=)
+        QueryEnhancedRequest qeRequest = QueryEnhancedRequest
+                .builder()
+                .queryConditional(QueryConditional.keyEqualTo(getKeyBuild(internaluserid)))
+                .filterExpression(exp)                
+                .scanIndexForward(true)                
+                .build();
+
+        
+  /*      
+        GetItemEnhancedRequest getitemRequest = GetItemEnhancedRequest.builder()
+                .key(getKeyBuild(internaluserid, MANDATE_PREFIX + mandateId))
+                .build();
+*/
+
+        return Flux.from(mandateTable.index(GSI_INDEX_DELEGATE_STATE).query(qeRequest)
+                .flatMapIterable(mlist -> {
+                        return mlist.items();                        
+                }))
+                .take(1, true)
+                .next()
+                .flatMap(mandate -> {                        
+                        // aggiorno lo stato
+                        mandate.setAccepted(DateUtils.formatTime(LocalDateTime.now()));
+                        mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE));
+                        return mandate;
+                })
+                .map(mandate_accepted -> {
+                        MandateEntity support = new MandateEntity();
+                        support.setDelegator(mandate_accepted.get ) 
+                        mandate_accepted.setTtl(LocalDateTime.now().plusYears(10).atZone(ZoneId.systemDefault()).toEpochSecond());
+                        return Mono.fromCompletionStage(mandateTable.putItem(mandate_accepted));
+                });
+                        /*
+        Mono.fromCompletionStage(mandateTable.getItem(getitemRequest))
+                .map(mandate -> {
+                        // aggiorno lo stato
+                        mandate.setRevoked(DateUtils.formatTime(LocalDateTime.now()));
+                        mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REVOKED));
+                        return mandate;
+                })
+                .map(mandate_rovoked -> {
+                        //salvo nello storico
+                        mandate_rovoked.setTtl(LocalDateTime.now().plusYears(10).atZone(ZoneId.systemDefault()).toEpochSecond());
+                        return Mono.fromCompletionStage(mandateHistoryTable.putItem(mandate_rovoked));
+                })
+                .map(mandate_revoked -> {
+                        // elimino il record principale
+                        DeleteItemEnhancedRequest delRequest = DeleteItemEnhancedRequest.builder()
+                                .key(getKeyBuild(internaluserid, MANDATE_PREFIX + mandateId))
+                                .build();
+
+                        return Mono.fromCompletionStage(mandateTable.deleteItem(delRequest));
+                })
+                .map(mandate_deleted -> {
+                        // elimino l'eventuale record di supporto (se non c'è non mi interessa)
+                        DeleteItemEnhancedRequest delRequest = DeleteItemEnhancedRequest.builder()
+                                .key(getKeyBuild(internaluserid, MANDATE_TRIGGERHELPER_PREFIX + mandateId))                                
+                                .build();
+
+                        return Mono.fromCompletionStage(mandateTable.deleteItem(delRequest));
+                });     */           
+
     }
 
     public Mono<Object> rejectMandate(String internaluserid, String mandateId)
@@ -232,6 +310,5 @@ public class MandateDao extends BaseDao {
 
         return Mono.fromCompletionStage(mandateTable.updateItem(requestConsumer));
     }
-    
 
 }

@@ -53,26 +53,15 @@ public class MandateService  {
             String internaluserId) {
         return acceptRequestDto
         .map(m -> {
-                mandateDao.
             try{
-                if (mockdb.containsKey(mandateId))
-                {
-                    if (m.getVerificationCode() == null || !m.getVerificationCode().equals(mockdb.get(mandateId).getVerificationCode()))
-                        throw new InvalidVerificationCodeException();
-                        
-                    mockdb.get(mandateId).setStatus(StatusEnum.ACTIVE);
-                }
-                log.info("accepting mandate " + m);
-    
-                return Mono.empty();
+                if (log.isInfoEnabled())
+                    log.info("accepting mandate " + m);
+                return mandateDao.acceptMandate(internaluserId, mandateId, m.getVerificationCode());                
             }catch(Exception ex)
             {
                 throw Exceptions.propagate(ex);
             }            
-        },
-        (m, r) -> r)
-        ;              
-                
+        });     
     }
 
     public Mono<MandateCountsDto> countMandatesByDelegate(String status, String internaluserId) {

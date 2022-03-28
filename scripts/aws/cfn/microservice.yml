@@ -43,13 +43,13 @@ Parameters:
     Type: String
     Description: 'Load balancer listener where HTTP endpoints is going to be registered'
 
-   ApplicationLoadBalancerDomain:
-     Type: String
-     Description: 'Base URL of the load balancer where the service is going to be reachable'
+  ApplicationLoadBalancerDomain:
+    Type: String
+    Description: 'Base URL of the load balancer where the service is going to be reachable'
 
-   NetworkLoadBalancerLink:
-     Type: String
-     Description: 'network load balancer link for API-GW'
+  NetworkLoadBalancerLink:
+    Type: String
+    Description: 'network load balancer link for API-GW'
 
   ConfidentialObjectsDynamoTableName:
     Type: String

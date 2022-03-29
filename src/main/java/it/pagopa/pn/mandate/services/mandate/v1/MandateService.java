@@ -1,16 +1,9 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Predicate;
 
 import org.springframework.stereotype.Service; 
-import org.springframework.web.server.ServerWebExchange;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
@@ -21,9 +14,7 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum; 
-import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
 import it.pagopa.pn.mandate.rest.utils.UnsupportedFilterException;
-import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
@@ -78,26 +69,15 @@ public class MandateService  {
     
     public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, String internaluserId) {
         return mandateDto
-        .zipWhen(m -> {
-            m.setMandateId(UUID.randomUUID().toString());  
-            m.setDatefrom(DateUtils.formatDate(LocalDate.now().minusDays(120)));         
-            mockdb.put(m.getMandateId(), m);        
-            log.info("creating mandate " + m.toString());
-            
-            MandateDto m1 = new MandateDto();        
-            m1.setMandateId(UUID.randomUUID().toString());  
-            m1.setDatefrom(DateUtils.formatDate(LocalDate.now().minusDays(120)));         
-            m1.setDateto(m.getDateto());
-            m1.setStatus(m.getStatus());
-            m1.setDelegator(m.getDelegate());
-            m1.setVisibilityIds(m.getVisibilityIds());        
-            mockdb.put(m1.getMandateId(), m1);       
-            log.info("creating mandate " + m1.toString());
-
-            return Mono.just(m);
+        .map(dto -> mandateEntityMandateDtoMapper.toEntity(Mono.just(dto)))
+        .map(entity -> {
+            return entity;
+        })
+        .zipWhen(mandate -> {
+            return mandate.map(m -> mandateDao.createMandate(m));            
         },
-        (m, r) -> r);
-        
+        (m, r) -> r)
+        .flatMap(r -> mandateEntityMandateDtoMapper.toDto(r));        
     }
 
     

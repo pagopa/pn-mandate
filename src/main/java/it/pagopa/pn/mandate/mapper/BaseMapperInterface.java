@@ -1,7 +1,5 @@
 package it.pagopa.pn.mandate.mapper;
 
-import java.util.List;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

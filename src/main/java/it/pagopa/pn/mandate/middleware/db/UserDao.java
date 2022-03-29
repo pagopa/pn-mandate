@@ -1,6 +1,5 @@
 package it.pagopa.pn.mandate.middleware.db;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Value;

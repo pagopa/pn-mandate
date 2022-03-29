@@ -11,7 +11,7 @@
 	<groupId>it.pagopa.pn</groupId>
 	<artifactId>pn-mandate</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>mandate</name>
+	<name>pn-mandate</name>
 	<description>Mandate microservice</description>
 	<properties>
 		<java.version>11</java.version>

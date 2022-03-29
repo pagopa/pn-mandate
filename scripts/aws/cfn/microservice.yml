@@ -15,6 +15,10 @@ Parameters:
     Type: String
     Description: 'The DNS name used for WEB rest API.'
   
+  CorsAllowedDomains:
+    Type: String
+    Description: 'Comma separated list of domains allowed to make cross origin request'
+
   ContainerImageUri:
     Type: String
     Description: 'Exact container image URI with full repository and image digest'
@@ -72,7 +76,8 @@ Resources:
         MemoryAmount: 2GB
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGIONCODE=${AWS::Region}'
-        ContainerEnvEntry2: !Sub 'PN_MANDATE_DYNAMODB_TABLENAME=${ConfidentialObjectsDynamoTableName}'
+        ContainerEnvEntry2: !Sub 'CORS_ALLOWED_DOMAINS=${CorsAllowedDomains}'
+        ContainerEnvEntry3: !Sub 'PN_MANDATE_DYNAMODB_TABLENAME=${ConfidentialObjectsDynamoTableName}'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds

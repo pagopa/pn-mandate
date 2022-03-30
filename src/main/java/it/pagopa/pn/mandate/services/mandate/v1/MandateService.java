@@ -71,7 +71,10 @@ public class MandateService  {
         return mandateDto
         .map(dto -> mandateEntityMandateDtoMapper.toEntity(Mono.just(dto)))
         .map(entity -> {
-            return entity;
+            return entity.map(ent -> {
+                ent.setDelegator(internaluserId);
+                return ent;
+            });
         })
         .zipWhen(mandate -> {
             return mandate.map(m -> mandateDao.createMandate(m));            
@@ -82,20 +85,15 @@ public class MandateService  {
 
     
     public Flux<MandateDto> listMandatesByDelegate(String status, String internaluserId) {
+        // il metodo si occupa di tornare la lista delle deleghe per delegato.
+        // Devo quindi:
+        // - recuperare la lista delle entity da db
+        // - risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
+        // - risolvere internalId del delegante (il delegato sono io, e non serve popolarlo) nel relativo microservizio
+
         Optional<String> optstatus = Optional.ofNullable(status).filter(Predicate.not(String::isEmpty));
         return mandateDao.listMandatesByDelegate(internaluserId, optstatus)
-                .flatMap(ent -> mandateEntityMandateDtoMapper.toDto(Mono.just(ent)))
-                .flatMap(ent -> {
-                    if (!ent.getVisibilityIds().isEmpty())
-                        return pnInfoPaClient
-                            .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
-                            .flatMap(pa -> {
-                                ent.getVisibilityIds().get(0).setName(pa.getName());
-                                return Mono.just(ent);
-                                });   
-                    else
-                        return Mono.just(ent);
-                })         
+                .flatMap(ent -> mandateEntityMandateDtoMapper.toDto(Mono.just(ent)))                                    
             ;
     }
 

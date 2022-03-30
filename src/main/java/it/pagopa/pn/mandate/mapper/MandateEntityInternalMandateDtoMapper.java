@@ -37,7 +37,7 @@ public class MandateEntityInternalMandateDtoMapper implements BaseMapperInterfac
     public Mono<InternalMandateDto> toDto(Mono<MandateEntity> source) {
         return source.flatMap(entity -> {
             final InternalMandateDto target = new InternalMandateDto();
-            target.setMandateId(entity.getSk().replace(MandateDao.MANDATE_PREFIX, ""));
+            target.setMandateId(entity.getId());
             target.setDatefrom(entity.getValidfrom());
             target.setDateto(entity.getValidto());
             target.setVisibilityIds(new ArrayList<String>(entity.getVisibilityIds()));

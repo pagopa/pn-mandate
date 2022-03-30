@@ -35,8 +35,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @Repository
 public class MandateDao extends BaseDao {
 
-    public static final String MANDATE_PREFIX = "MANDATE-";
-    public static final String MANDATE_TRIGGERHELPER_PREFIX = "MANDATETRIGGERHELPER-";
+    private static final String MANDATE_PREFIX = "MANDATE-";
+    private static final String MANDATE_TRIGGERHELPER_PREFIX = "MANDATETRIGGERHELPER-";
     //public static final String DELEGATOR_PREFIX = "USERDELEGATOR-";
 
     private static final String GSI_INDEX_DELEGATE_STATE = "delegate-state-gsi";
@@ -98,7 +98,8 @@ public class MandateDao extends BaseDao {
         return Flux.from(mandateTable.index(GSI_INDEX_DELEGATE_STATE).query(qeRequest)
                 .flatMapIterable(m -> {
                         return m.items();
-                }));   
+                }))
+                .flatMap(item -> Mono.just(normalizeAfterReadFromDb(item)));   
     }
 
     public Flux<MandateEntity> listMandatesByDelegator(String internaluserid, Optional<String> status) {
@@ -142,7 +143,8 @@ public class MandateDao extends BaseDao {
                 .scanIndexForward(true)
                 .build();
 
-        return Flux.from(mandateTable.query(qeRequest).items());
+        return Flux.from(mandateTable.query(qeRequest).items())
+                .flatMap(item -> Mono.just(normalizeAfterReadFromDb(item)));
     }
 
     public Mono<Object> acceptMandate(String internaluserid, String mandateId, String verificationCode)
@@ -181,8 +183,8 @@ public class MandateDao extends BaseDao {
                         if (mandate_accepted.getValidto() != null && !mandate_accepted.getValidto().equals(""))
                         {
                                 MandateEntity support = new MandateEntity();
-                                support.setPk(mandate_accepted.getPk());
-                                support.setSk(MANDATE_TRIGGERHELPER_PREFIX + mandate_accepted.getSk().replace(MANDATE_PREFIX, ""));
+                                support.setDelegator(mandate_accepted.getDelegator());
+                                support.setId(MANDATE_TRIGGERHELPER_PREFIX + mandate_accepted.getId().replace(MANDATE_PREFIX, ""));
                                 long ttlexpiretimestamp = DateUtils.parseDate(mandate_accepted.getValidto()).toEpochSecond(LocalTime.MIDNIGHT, ZoneOffset.UTC);
                                 support.setTtl(ttlexpiretimestamp);
                                 return Mono.fromFuture(mandateTable.putItem(support));
@@ -295,11 +297,11 @@ public class MandateDao extends BaseDao {
  
     public Mono<MandateEntity> createMandate(MandateEntity mandate){
         PutItemEnhancedRequest<MandateEntity> putRequest = PutItemEnhancedRequest.builder(MandateEntity.class)
-                .item(mandate)
+                .item(normalizeBeforeWriteInDb(mandate))
                 .build();
 
         return Mono.fromFuture(mandateTable.putItem(putRequest))
-                .then(Mono.just(mandate));
+                .then(Mono.just(normalizeAfterReadFromDb(mandate)));
     }
 
     //#endregion
@@ -355,5 +357,21 @@ public class MandateDao extends BaseDao {
                 .next();
     }
 
+    private MandateEntity normalizeBeforeWriteInDb(MandateEntity ent)
+    {
+        if (ent.getId() != null && !ent.getId().startsWith(MANDATE_PREFIX))
+                ent.setId(MANDATE_PREFIX + ent.getId());
+        
+        return ent;
+    }
+
+    
+    private MandateEntity normalizeAfterReadFromDb(MandateEntity ent)
+    {
+        if (ent.getId() != null && ent.getId().startsWith(MANDATE_PREFIX))
+                ent.setId(ent.getId().replace(MANDATE_PREFIX, ""));
+        
+        return ent;
+    }
     //#endregion
 }

@@ -13,8 +13,8 @@ import java.util.Set;
 @Data
 public class MandateEntity {
    
-    @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute("pk")})) private String pk;
-    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute("sk")}))  private String sk;
+    @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute("pk")})) private String delegator;
+    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute("sk")}))  private String id;
 
     @Getter(onMethod=@__({@DynamoDbAttribute("s_delegate")}))  private String delegate;
     @Getter(onMethod=@__({@DynamoDbAttribute("i_state")}))  private int state;

@@ -66,6 +66,7 @@ public class MandateService  {
             }
         }
 
+        log.info("returning mandates count: " + mm.size() + " status:" + status);
         MandateCountsDto res = new MandateCountsDto();
         res.setValue(mm.size());
         return Mono.just(res);
@@ -76,7 +77,8 @@ public class MandateService  {
         return mandateDto
         .zipWhen(m -> {
             m.setMandateId(UUID.randomUUID().toString());  
-            m.setDatefrom(DateUtils.formatDate(LocalDate.now().minusDays(120)));         
+            m.setDatefrom(DateUtils.formatDate(LocalDate.now().minusDays(120))); 
+            m.setStatus(StatusEnum.PENDING);
             mockdb.put(m.getMandateId(), m);        
             log.info("creating mandate " + m.toString());
             
@@ -86,9 +88,16 @@ public class MandateService  {
             m1.setDateto(m.getDateto());
             m1.setStatus(m.getStatus());
             m1.setDelegator(m.getDelegate());
+            m1.setVerificationCode(null);            
             m1.setVisibilityIds(m.getVisibilityIds());        
             mockdb.put(m1.getMandateId(), m1);       
             log.info("creating mandate " + m1.toString());
+
+            if (m.getDelegate().getFirstName().equals("RESET"))
+            {
+                log.info("RESETTING MOCK MAP!!!");
+                mockdb.clear();
+            }
 
             return Mono.just(m);
         },

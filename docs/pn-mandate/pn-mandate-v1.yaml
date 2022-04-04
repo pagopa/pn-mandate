@@ -330,6 +330,8 @@ components:
     UserDto:
       type: object
       properties:
+        displayName:
+          type: string
         firstName:
           type: string
         lastName:

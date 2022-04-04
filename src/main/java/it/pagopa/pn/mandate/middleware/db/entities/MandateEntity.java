@@ -19,6 +19,9 @@ public class MandateEntity {
     @Getter(onMethod=@__({@DynamoDbAttribute("s_delegate")}))  private String delegate;
     @Getter(onMethod=@__({@DynamoDbAttribute("i_state")}))  private int state;
 
+    @Getter(onMethod=@__({@DynamoDbAttribute("b_delegatorisperson")}))  private Boolean delegatorisperson;
+    @Getter(onMethod=@__({@DynamoDbAttribute("b_delegateisperson")}))  private Boolean delegateisperson;
+
     @Getter(onMethod=@__({@DynamoDbAttribute("d_validfrom")}))  private String validfrom;
     @Getter(onMethod=@__({@DynamoDbAttribute("d_validto")}))  private String validto;
 

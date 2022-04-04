@@ -165,6 +165,31 @@
 						 	<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
 					</execution>
+					<execution>
+						<id>generate-client-datavault</id>
+						<goals>
+							<goal>generate</goal> 
+						</goals>
+						<phase>process-resources</phase>
+						<configuration>
+							<inputSpec>${project.basedir}/docs/pn-data-vault/pn-datavault-api-v1.yaml</inputSpec>
+							<generatorName>java</generatorName>
+                			<library>webclient</library>
+							<generateApiDocumentation>false</generateApiDocumentation>
+							<generateApiTests>false</generateApiTests>
+							<generateModelTests>false</generateModelTests>
+							<generateSupportingFiles>true</generateSupportingFiles>
+							<configOptions>
+                                <swaggerAnnotations>false</swaggerAnnotations>
+								<openApiNullable>false</openApiNullable>
+							</configOptions>
+							<basePackage>${project.groupId}.mandate.microservice.client.datavault.v1</basePackage>
+							<modelPackage>${project.groupId}.mandate.microservice.client.datavault.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.microservice.client.datavault.v1.api</apiPackage>
+							<configPackage>${project.groupId}.mandate.microservice.client.datavault.v1.config</configPackage>
+						 	<modelNameSuffix>Dto</modelNameSuffix>
+						</configuration>
+					</execution>					
 				</executions>
 			</plugin>			 		 
 		</plugins>

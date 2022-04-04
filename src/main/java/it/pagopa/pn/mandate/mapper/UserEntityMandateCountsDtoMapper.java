@@ -4,7 +4,6 @@ import org.springframework.stereotype.Component;
 
 import it.pagopa.pn.mandate.middleware.db.entities.UserEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -18,28 +17,28 @@ public class UserEntityMandateCountsDtoMapper implements BaseMapperInterface<Man
     public static UserEntityMandateCountsDtoMapper Builder() { return new UserEntityMandateCountsDtoMapper(); }        
 
     @Override
-    public Mono<UserEntity> toEntity(Mono<MandateCountsDto> dto) {
+    public Mono<UserEntity> toMonoEntity(Mono<MandateCountsDto> dto) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Mono<MandateCountsDto> toDto(Mono<UserEntity> entity) {
+    public Mono<MandateCountsDto> toMonoDto(Mono<UserEntity> entity) {
         return entity.flatMap(ent -> {
-            final MandateCountsDto mDto = new MandateCountsDto();
-            mDto.setValue(ent == null?0:ent.getPendingcount());
-            return Mono.just(mDto);
+            return Mono.just(toDto(ent));
         });
     }
 
 
     @Override
-    public Flux<UserEntity> toEntityList(Flux<MandateCountsDto> dtos) {
+    public UserEntity toEntity(MandateCountsDto source) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public Flux<MandateCountsDto> toDtoList(Flux<UserEntity> entities) {
-        throw new UnsupportedOperationException();
-    } 
+    public MandateCountsDto toDto(UserEntity ent) {
+        final MandateCountsDto mDto = new MandateCountsDto();
+        mDto.setValue(ent == null?0:ent.getPendingcount());
+        return mDto;
+    }
 }

@@ -3,7 +3,7 @@ package it.pagopa.pn.mandate.middleware.microservice;
 
 import java.net.ConnectException;
 import java.time.Duration;
-import java.util.UUID;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
  
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +14,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.TimeoutException;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.ApiClient;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.api.MandatesApi;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.api.RecipientsApi;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.AddressAndDenominationDtoDto;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.RecipientTypeDto;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.AddressAndDenominationDtoDto.KindEnum;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient; 
 import reactor.util.retry.Retry;
@@ -21,32 +30,94 @@ import reactor.util.retry.Retry;
 @Component
 public class PnDataVaultClient {
     
-    //private final InfoPaApi infoPaApi;
+    private final RecipientsApi recipientsApi;
+    private final MandatesApi mandatesApi;
 
     public PnDataVaultClient(@Value("${pn.mandate.client.datavault.basepath}") String basepath ) {
         
         HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
             .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(1000, TimeUnit.MILLISECONDS)));        
-/*
+
         WebClient webClient = ApiClient.buildWebClientBuilder()        
             .clientConnector(new ReactorClientHttpConnector(httpClient))
             .build();
         ApiClient newApiClient = new ApiClient(webClient);        
-        newApiClient.setBasePath(basepath); */
-        //this.infoPaApi = new InfoPaApi(newApiClient);
+        newApiClient.setBasePath(basepath); 
+        this.recipientsApi = new RecipientsApi(newApiClient);
+
+        httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
+        .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(1000, TimeUnit.MILLISECONDS)));        
+
+        webClient = ApiClient.buildWebClientBuilder()        
+            .clientConnector(new ReactorClientHttpConnector(httpClient))
+            .build();
+        newApiClient = new ApiClient(webClient);        
+        newApiClient.setBasePath(basepath); 
+        this.mandatesApi = new MandatesApi(newApiClient);
     }
 
-    public Mono<FakeKeyValue[]> getExternalInfos(String internaluserId) {
-        FakeKeyValue[] data =new FakeKeyValue[3];
-        data[0] = new FakeKeyValue("name","fabrizio");
-        data[1] = new FakeKeyValue("surname","frizzi");
-        data[2] = new FakeKeyValue("email","fabriziofrizzi@gmail.com");
+    public Flux<BaseRecipientDtoDto> getRecipientDenominationByInternalId(List<String> internalIds)
+    {
+        return recipientsApi.getRecipientDenominationByInternalId(internalIds)
+            .retryWhen(
+                    Retry.backoff(2, Duration.ofMillis(25))
+                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
+                );                             
+            
+    }
 
-        return Mono.just(data);
-    } 
+    /**
+     * Genera (o recupera) un internaluserId in base al CF/PIVA
+     * @param isPerson
+     * @param fiscalCode
+     * @return
+     */
+    public Mono<String> ensureRecipientByExternalId(boolean isPerson, String fiscalCode)
+    {
+        return recipientsApi.ensureRecipientByExternalId(isPerson?RecipientTypeDto.PF:RecipientTypeDto.PG, fiscalCode)
+            .retryWhen(
+                    Retry.backoff(2, Duration.ofMillis(25))
+                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
+                );                             
+            
+    }
 
-    public Mono<String> getInternaluserId(FakeKeyValue[] externalInfos) {
-        return Mono.just(UUID.randomUUID().toString());
-    } 
- 
+    /**
+     * Salva per una certa delega, le info riguardanti il DELEGATO
+     * @param internaluserId
+     * @param mandateId
+     * @param name
+     * @param surname
+     * @param email
+     * @param businessName
+     * @return
+     */
+    public Mono<Void> updateMandateById(String internaluserId, String mandateId, String name, String surname, String email, String businessName)
+    {
+        AddressAndDenominationDtoDto addressdto = new AddressAndDenominationDtoDto();
+        addressdto.setKind(KindEnum.EMAIL);
+        addressdto.setDestName(name);
+        addressdto.setDestSurname(surname);
+        addressdto.setValue(email);
+        addressdto.setDestBusinessName(businessName);
+        return mandatesApi.updateMandateById(mandateId, addressdto)
+            .retryWhen(
+                    Retry.backoff(2, Duration.ofMillis(25))
+                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
+                );
+    }
+
+    /**
+     * Ritorna le info sui DELEGATI in base agli id delle deleghe passati
+     * @param mandateIds
+     * @return
+     */
+    public Flux<MandateDtoDto> getMandatesByIds(List<String> mandateIds)
+    {                
+        return mandatesApi.getMandatesByIds(mandateIds)
+            .retryWhen(
+                    Retry.backoff(2, Duration.ofMillis(25))
+                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
+                );
+    }
 }

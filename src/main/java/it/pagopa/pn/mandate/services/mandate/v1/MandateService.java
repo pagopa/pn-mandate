@@ -88,7 +88,7 @@ public class MandateService  {
             m1.setDateto(m.getDateto());
             m1.setStatus(m.getStatus());
             m1.setDelegator(m.getDelegate());
-            m1.setVerificationCode(null);            
+            m1.setVerificationCode(m.getVerificationCode());            
             m1.setVisibilityIds(m.getVisibilityIds());        
             mockdb.put(m1.getMandateId(), m1);       
             log.info("creating mandate " + m1.toString());

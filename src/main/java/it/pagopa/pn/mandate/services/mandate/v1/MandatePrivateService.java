@@ -30,7 +30,7 @@ public class MandatePrivateService {
         if (log.isInfoEnabled())
                     log.info("listing mandates by delegate for " + internaluserId);
         return mandateDao.listMandatesByDelegate(internaluserId, Optional.of(StatusEnum.ACTIVE.getValue()))
-                .flatMap(ent -> mandateEntityInternalMandateDtoMapper.toDto(Mono.just(ent)));
+                .flatMap(ent -> mandateEntityInternalMandateDtoMapper.toMonoDto(Mono.just(ent)));
     }
 
     public Flux<InternalMandateDto> listMandatesByDelegator(String internaluserId) {
@@ -38,7 +38,7 @@ public class MandatePrivateService {
         if (log.isInfoEnabled())
                     log.info("listing mandates by delegator for " + internaluserId);
         return mandateDao.listMandatesByDelegator(internaluserId, Optional.of(StatusEnum.ACTIVE.getValue()))
-                .flatMap(ent -> mandateEntityInternalMandateDtoMapper.toDto(Mono.just(ent)));
+                .flatMap(ent -> mandateEntityInternalMandateDtoMapper.toMonoDto(Mono.just(ent)));
     }
     
 }

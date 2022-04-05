@@ -24,12 +24,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.enhanced.dynamodb.model.DeleteItemEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.GetItemEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @Repository
@@ -54,7 +49,7 @@ public class MandateDao extends BaseDao {
 
     //#region public methods
 
-    public Flux<MandateEntity> listMandatesByDelegate(String internaluserid, Optional<String> status) {
+    public Flux<MandateEntity> listMandatesByDelegate(String internaluserid, Integer status) {
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
@@ -62,9 +57,9 @@ public class MandateDao extends BaseDao {
         // listMandatesByDelegate si affida all'indice GSI delegate-state, che filtra per utente delegato E stato.
         
         int i_status = StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE);
-        if (status.isPresent())
+        if (status != null)
         {
-                i_status = StatusEnumMapper.intValfromValueConst(status.get());               
+                i_status = status;
         }        
 
         // devo sempre mettere un filtro di salvaguardia per quanto riguarda la scadenza della delega.
@@ -87,7 +82,7 @@ public class MandateDao extends BaseDao {
         QueryEnhancedRequest qeRequest = QueryEnhancedRequest
                 .builder()
                 .queryConditional(
-                        status.isPresent()?QueryConditional.keyEqualTo(getKeyBuild(internaluserid, i_status+"")):
+                        status!=null?QueryConditional.keyEqualTo(getKeyBuild(internaluserid, i_status+"")):
                                         QueryConditional.sortLessThanOrEqualTo(getKeyBuild(internaluserid, i_status+"")))
                 .filterExpression(exp)                
                 .scanIndexForward(true)                
@@ -96,13 +91,11 @@ public class MandateDao extends BaseDao {
         // viene volutamente ignorata la paginazione, che per ora non serve.
         // si suppone infatti che la lista delle deleghe non sia troppo lunga e quindi non vada a sforare il limite di 1MB di paginazione
         return Flux.from(mandateTable.index(GSI_INDEX_DELEGATE_STATE).query(qeRequest)
-                .flatMapIterable(m -> {
-                        return m.items();
-                }))
-                .flatMap(item -> Mono.just(normalizeAfterReadFromDb(item)));   
+                .flatMapIterable(Page::items))
+                .flatMap(item -> Mono.just(normalizeAfterReadFromDb(item)));
     }
 
-    public Flux<MandateEntity> listMandatesByDelegator(String internaluserid, Optional<String> status) {
+    public Flux<MandateEntity> listMandatesByDelegator(String internaluserid, Integer status) {
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
@@ -110,28 +103,21 @@ public class MandateDao extends BaseDao {
         // listMandatesByDelegator si affida all'ordinamento principale, che filtra per utente e delega. Lo stato va previsto a parte nell'expressionfilter
         
         int i_status = StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE);
-        if (status.isPresent())
+        if (status != null)
         {
-                i_status = StatusEnumMapper.intValfromValueConst(status.get());               
+                i_status = status;
         }        
 
         // devo sempre mettere un filtro di salvaguardia per quanto riguarda la scadenza della delega.
         // infatti se una delega è scaduta, potrebbe rimanere a sistema per qualche ora/giorno prima di essere svecchiata
         // e quindi va sempre previsto un filtro sulla data di scadenza
-        AttributeValue att = AttributeValue.builder()
-                .s(DateUtils.formatDate(LocalDate.now()))
-                .build();
-        AttributeValue attstat = AttributeValue.builder()
-                .n(i_status + "")
-                .build();
-
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-                expressionValues.put(":validto", att);
-                expressionValues.put(":status", attstat);
+        expressionValues.put(":validto", AttributeValue.builder().s(DateUtils.formatDate(LocalDate.now())).build());
+        expressionValues.put(":status", AttributeValue.builder().s(i_status + "").build());
 
         Expression exp = Expression.builder()                
-        .expression(status.isPresent()?"d_validto > :validto && i_status = :status":
-                "d_validto > :validto && i_status <= :status")
+        .expression(status != null?"(d_validto > :validto) AND (i_status = :status)":
+                "(d_validto > :validto) AND (i_status <= :status)")
                 .expressionValues(expressionValues)
                 .build();    
        
@@ -139,7 +125,7 @@ public class MandateDao extends BaseDao {
         QueryEnhancedRequest qeRequest = QueryEnhancedRequest
                 .builder()
                 .queryConditional(QueryConditional.sortBeginsWith(getKeyBuild(internaluserid, MANDATE_PREFIX)))
-                .filterExpression(exp)      
+                .filterExpression(exp)
                 .scanIndexForward(true)
                 .build();
 
@@ -298,6 +284,7 @@ public class MandateDao extends BaseDao {
     public Mono<MandateEntity> createMandate(MandateEntity mandate){
         PutItemEnhancedRequest<MandateEntity> putRequest = PutItemEnhancedRequest.builder(MandateEntity.class)
                 .item(normalizeBeforeWriteInDb(mandate))
+                //.conditionExpression()
                 .build();
 
         return Mono.fromFuture(mandateTable.putItem(putRequest))
@@ -350,9 +337,7 @@ public class MandateDao extends BaseDao {
                 .build();
 
         return Flux.from(mandateTable.index(GSI_INDEX_DELEGATE_STATE).query(qeRequest)
-                .flatMapIterable(mlist -> {
-                        return mlist.items();                        
-                }))
+                .flatMapIterable(Page::items))
                 .take(1, true)
                 .next();
     }

@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import java.util.Optional;
 
+import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import org.springframework.stereotype.Service;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityInternalMandateDtoMapper;
@@ -17,8 +18,8 @@ import reactor.core.publisher.Mono;
 public class MandatePrivateService {
 
     
-    private MandateDao mandateDao;
-    private MandateEntityInternalMandateDtoMapper mandateEntityInternalMandateDtoMapper;
+    private final MandateDao mandateDao;
+    private final MandateEntityInternalMandateDtoMapper mandateEntityInternalMandateDtoMapper;
     
     public MandatePrivateService(MandateDao mandateDao, MandateEntityInternalMandateDtoMapper mandateEntityInternalMandateDtoMapper) {
         this.mandateDao = mandateDao;
@@ -29,16 +30,16 @@ public class MandatePrivateService {
         // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE
         if (log.isInfoEnabled())
                     log.info("listing mandates by delegate for " + internaluserId);
-        return mandateDao.listMandatesByDelegate(internaluserId, Optional.of(StatusEnum.ACTIVE.getValue()))
-                .flatMap(ent -> mandateEntityInternalMandateDtoMapper.toMonoDto(Mono.just(ent)));
+        return mandateDao.listMandatesByDelegate(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
+                .map(mandateEntityInternalMandateDtoMapper::toDto);
     }
 
     public Flux<InternalMandateDto> listMandatesByDelegator(String internaluserId) {
         // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE
         if (log.isInfoEnabled())
                     log.info("listing mandates by delegator for " + internaluserId);
-        return mandateDao.listMandatesByDelegator(internaluserId, Optional.of(StatusEnum.ACTIVE.getValue()))
-                .flatMap(ent -> mandateEntityInternalMandateDtoMapper.toMonoDto(Mono.just(ent)));
+        return mandateDao.listMandatesByDelegator(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
+                .map(mandateEntityInternalMandateDtoMapper::toDto);
     }
     
 }

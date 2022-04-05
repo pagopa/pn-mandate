@@ -19,8 +19,10 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
 
     // Header utente pn-pagopa-user-id
     private static final String HEADER_INTERNAL_USER_ID = "pn-pagopa-user-id";
-    // Header tipologia di utente pn-pagopa-cx-type PF/PG (per ora non usato dalla logica)
-    //private static final String HEADER_CX_TYPE = "pn-pagopa-cx-type";
+    // Header tipologia di utente pn-pagopa-cx-type PF/PG
+    private static final String HEADER_CX_TYPE = "pn-pagopa-cx-type";
+    private static final String HEADER_CX_TYPE_VALUE_PF = "PF";
+    private static final String HEADER_CX_TYPE_VALUE_PG = "PG";
     MandateService mandateService;    
     
 
@@ -46,8 +48,10 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
 
     @Override
     public Mono<ResponseEntity<MandateDto>> createMandate(Mono<MandateDto> mandateDto, ServerWebExchange exchange) {     
-        String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
-        return  mandateService.createMandate(mandateDto, internaluserId)
+        String requesterInternaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
+        String requesterUserType = getUserTypeFromHeaders(exchange.getRequest());
+        return  mandateService
+            .createMandate(mandateDto, requesterInternaluserId, (requesterUserType==null || requesterUserType.equals(HEADER_CX_TYPE_VALUE_PF)))
             .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m));
          
     }
@@ -89,8 +93,8 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
         return  req.getHeaders().getFirst(HEADER_INTERNAL_USER_ID);
     }
 
-    /*private static String getUserTypeFromHeaders(ServerHttpRequest req)
+    private static String getUserTypeFromHeaders(ServerHttpRequest req)
     {
         return  req.getHeaders().getFirst(HEADER_CX_TYPE);
-    }*/
+    }
 }

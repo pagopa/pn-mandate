@@ -17,19 +17,6 @@ public class UserEntityMandateCountsDtoMapper implements BaseMapperInterface<Man
     public static UserEntityMandateCountsDtoMapper Builder() { return new UserEntityMandateCountsDtoMapper(); }        
 
     @Override
-    public Mono<UserEntity> toMonoEntity(Mono<MandateCountsDto> dto) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Mono<MandateCountsDto> toMonoDto(Mono<UserEntity> entity) {
-        return entity.flatMap(ent -> {
-            return Mono.just(toDto(ent));
-        });
-    }
-
-
-    @Override
     public UserEntity toEntity(MandateCountsDto source) {
         throw new UnsupportedOperationException();
     }

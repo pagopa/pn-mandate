@@ -21,7 +21,7 @@ Resources:
   ConfidentialObjectsDynamoTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${ProjectName}-mandate'
+      TableName: !Sub '${ProjectName}-Mandate'
       AttributeDefinitions:
         - AttributeName: "pk"
           AttributeType: "S"

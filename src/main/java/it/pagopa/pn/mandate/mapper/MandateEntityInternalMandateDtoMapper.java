@@ -16,18 +16,6 @@ public class MandateEntityInternalMandateDtoMapper implements BaseMapperInterfac
     }     
 
     @Override
-    public Mono<MandateEntity> toMonoEntity(Mono<InternalMandateDto> source) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Mono<InternalMandateDto> toMonoDto(Mono<MandateEntity> source) {
-        return source.flatMap(entity -> {           
-            return Mono.just(toDto(entity));
-        });
-    }
-
-    @Override
     public MandateEntity toEntity(InternalMandateDto source) {
         throw new UnsupportedOperationException();
     }
@@ -38,7 +26,7 @@ public class MandateEntityInternalMandateDtoMapper implements BaseMapperInterfac
         target.setMandateId(entity.getId());
         target.setDatefrom(entity.getValidfrom());
         target.setDateto(entity.getValidto());
-        target.setVisibilityIds(new ArrayList<String>(entity.getVisibilityIds()));
+        target.setVisibilityIds(new ArrayList<>(entity.getVisibilityIds()));
         return target;
     } 
  

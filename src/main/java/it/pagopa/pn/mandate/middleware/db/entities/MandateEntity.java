@@ -2,28 +2,36 @@ package it.pagopa.pn.mandate.middleware.db.entities;
 
 import lombok.Data;
 import lombok.Getter;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
 import java.util.Set;
+
+import static it.pagopa.pn.mandate.middleware.db.BaseDao.GSI_INDEX_DELEGATE_STATE;
 
 @DynamoDbBean
 @Data
 public class MandateEntity {
-   
-    @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute("pk")})) private String delegator;
-    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute("sk")}))  private String id;
 
-    @Getter(onMethod=@__({@DynamoDbAttribute("s_delegate")}))  private String delegate;
-    @Getter(onMethod=@__({@DynamoDbAttribute("i_state")}))  private int state;
+    public static final String COL_PK = "pk";
+    public static final String COL_SK = "sk";
+    public static final String COL_S_DELEGATE = "s_delegate";
+    public static final String COL_I_STATE = "i_state";
+    public static final String COL_B_DELEGATORISPERSON = "b_delegatorisperson";
+    public static final String COL_B_DELEGATEISPERSON = "b_delegateisperson";
+    public static final String COL_D_VALIDFROM = "d_validfrom";
+    public static final String COL_D_VALIDTO = "d_validto";
+    @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute(COL_PK)})) private String delegator;
+    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_SK)}))  private String id;
 
-    @Getter(onMethod=@__({@DynamoDbAttribute("b_delegatorisperson")}))  private Boolean delegatorisperson;
-    @Getter(onMethod=@__({@DynamoDbAttribute("b_delegateisperson")}))  private Boolean delegateisperson;
 
-    @Getter(onMethod=@__({@DynamoDbAttribute("d_validfrom")}))  private String validfrom;
-    @Getter(onMethod=@__({@DynamoDbAttribute("d_validto")}))  private String validto;
+    @Getter(onMethod=@__({@DynamoDbSecondaryPartitionKey(indexNames = { GSI_INDEX_DELEGATE_STATE}), @DynamoDbAttribute(COL_S_DELEGATE)}))  private String delegate;
+    @Getter(onMethod=@__({@DynamoDbSecondarySortKey(indexNames = { GSI_INDEX_DELEGATE_STATE }), @DynamoDbAttribute(COL_I_STATE)}))  private int state;
+
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_B_DELEGATORISPERSON)}))  private Boolean delegatorisperson;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_B_DELEGATEISPERSON)}))  private Boolean delegateisperson;
+
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_D_VALIDFROM)}))  private String validfrom;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_D_VALIDTO)}))  private String validto;
 
     @Getter(onMethod=@__({@DynamoDbAttribute("t_created")}))  private String created;
     @Getter(onMethod=@__({@DynamoDbAttribute("t_accepted")}))  private String accepted;

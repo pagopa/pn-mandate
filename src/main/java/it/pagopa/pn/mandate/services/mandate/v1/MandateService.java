@@ -1,10 +1,8 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.function.Predicate;
 
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
@@ -60,8 +58,8 @@ public class MandateService  {
         .map(m -> {
             try{
                 if (log.isInfoEnabled())
-                    log.info("accepting mandate " + m);
-                return mandateDao.acceptMandate(internaluserId, mandateId, m.getVerificationCode());                
+                    log.info("accepting mandateobj:{} vercode:{}",  mandateId, m);
+                return mandateDao.acceptMandate(internaluserId, mandateId, m.getVerificationCode());
             }catch(Exception ex)
             {
                 throw Exceptions.propagate(ex);
@@ -92,7 +90,7 @@ public class MandateService  {
                     entity.setDelegator(requesterInternaluserId);
                     entity.setDelegatorisperson(requesterUserTypeIsPF);
                     entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
-                    entity.setValidfrom(DateUtils.formatDate(LocalDate.now().minusDays(120)));
+                    entity.setValidfrom(DateUtils.formatDate(ZonedDateTime.now().minusDays(120)));
                     if (log.isInfoEnabled())
                             log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}", entity.getId(), requesterInternaluserId, requesterUserTypeIsPF, entity.getValidfrom());
                     return entity;
@@ -123,13 +121,18 @@ public class MandateService  {
                 })                 
                 .collectList()                                                        // (3)
                 .zipWhen(entities -> {
+                        if (!entities.isEmpty())
+                        {
                             // genero la lista degli id deleganti
                             List<String> internaluserIds = new ArrayList<>();
                             entities.forEach(ent -> internaluserIds.add(ent.getDelegator()));
 
                             // ritorno la lista
                             return this.pnDatavaultClient.getRecipientDenominationByInternalId(internaluserIds)
-                                .collectMap(BaseRecipientDtoDto::getInternalId, BaseRecipientDtoDto::getDenomination);
+                                    .collectMap(BaseRecipientDtoDto::getInternalId, BaseRecipientDtoDto::getDenomination);
+                        }
+                        else
+                            return Mono.just(new HashMap<String, String>());
                     },
                     (entities, userinfosdtos) -> {
                         List<MandateDto> dtos = new ArrayList<>();

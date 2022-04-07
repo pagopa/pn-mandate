@@ -36,7 +36,7 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
                 
         String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
         return  mandateService.acceptMandate(mandateId, acceptRequestDto, internaluserId)
-            .map(m -> ResponseEntity.status(HttpStatus.CREATED).body(m));    
+            .map(m -> ResponseEntity.status(HttpStatus.NO_CONTENT).body(m));
     }
 
     @Override

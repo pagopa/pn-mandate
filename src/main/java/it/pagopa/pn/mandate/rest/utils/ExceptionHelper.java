@@ -12,8 +12,18 @@ public class ExceptionHelper {
         Fault res = new Fault();
         res.setType(path);
         res.setStatus(statusError.value());
-        res.setTitle(ex.getMessage());
-        res.setDetail(ex.getMessage());
+        if (ex instanceof PnException)
+        {
+            res.setTitle(ex.getMessage());
+            res.setDetail(((PnException)ex).getDescription());
+        }
+        else
+        {
+            // nascondo all'utente l'errore
+            res.title("Errore generico");
+            res.detail("Qualcosa è andato storto, ritenta più tardi");
+        }
+
         return res;
     }
 }

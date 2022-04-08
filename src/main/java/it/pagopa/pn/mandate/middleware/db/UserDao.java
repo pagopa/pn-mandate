@@ -63,7 +63,8 @@ public class UserDao extends BaseDao {
 
 
     public Mono<Object> updateUserPendingCount(String delegate_internaluserid){
-        log.info("Updating user pending count uid:{}", delegate_internaluserid);
+        if (log.isInfoEnabled())
+            log.info("Updating user pending count uid:{}", delegate_internaluserid);
         // qui l'internaluserid è quello del DELEGATO, devo passare quindi per l'indice sul delegato,
         // e fare il count delle deleghe in pending.
         Map<String, AttributeValue> expressionValues = new HashMap<>();
@@ -77,7 +78,6 @@ public class UserDao extends BaseDao {
                 .indexName(GSI_INDEX_DELEGATE_STATE)
                 .keyConditionExpression(MandateEntity.COL_S_DELEGATE + " = :delegate AND " + MandateEntity.COL_I_STATE + " = :state")
                 .expressionAttributeValues(expressionValues)
-                //.queryConditional(QueryConditional.keyEqualTo(getKeyBuild(delegator_internaluserid, StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING))))
                 .build();
 
         return Mono.just(dynamoDbAsyncClient.query(qeRequest).thenApply(x -> {
@@ -90,7 +90,8 @@ public class UserDao extends BaseDao {
                     .item(user)
                     .build();
             return userTable.putItem(puReq).thenApply(r -> {
-                log.info("Updated user pending count uid:{} pendingcount:{}", delegate_internaluserid, x.count());
+                if (log.isInfoEnabled())
+                    log.info("Updated user pending count uid:{} pendingcount:{}", delegate_internaluserid, x.count());
                 return user;
             });
         }));

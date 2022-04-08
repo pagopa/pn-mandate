@@ -111,8 +111,13 @@ public class MandateService  {
         // (4) risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
 
         Integer iStatus = null;
-        if (status != null && !status.equals(""))
-            iStatus = StatusEnumMapper.intValfromValueConst(status);
+        try {
+            if (status != null && !status.equals(""))
+                iStatus = StatusEnumMapper.intValfromValueConst(status);
+        } catch (Exception e) {
+            log.error("invalid state in filter");
+            throw new UnsupportedFilterException();
+        }
 
         return mandateDao.listMandatesByDelegate(internaluserId, iStatus)
                 .map(ent -> {         

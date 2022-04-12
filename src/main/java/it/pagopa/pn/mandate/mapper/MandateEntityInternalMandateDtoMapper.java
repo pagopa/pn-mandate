@@ -23,7 +23,7 @@ public class MandateEntityInternalMandateDtoMapper implements BaseMapperInterfac
     @Override
     public InternalMandateDto toDto(MandateEntity entity) {
         final InternalMandateDto target = new InternalMandateDto();
-        target.setMandateId(entity.getId());
+        target.setMandateId(entity.getMandateId());
         target.setDatefrom(entity.getValidfrom());
         target.setDateto(entity.getValidto());
         target.setVisibilityIds(new ArrayList<>(entity.getVisibilityIds()));

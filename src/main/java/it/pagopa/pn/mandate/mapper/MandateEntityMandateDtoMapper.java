@@ -25,7 +25,7 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
     @Override
     public MandateEntity toEntity(MandateDto dto) {
         final MandateEntity target = new MandateEntity();
-        target.setId(dto.getMandateId());
+        target.setMandateId(dto.getMandateId());
         target.setValidfrom(dto.getDatefrom());
         target.setValidto(dto.getDateto());
         if (dto.getStatus() != null)
@@ -43,7 +43,7 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
     @Override
     public MandateDto toDto(MandateEntity entity) {
         final MandateDto target = new MandateDto();
-        target.setMandateId(entity.getId());
+        target.setMandateId(entity.getMandateId());
         target.setDatefrom(entity.getValidfrom());
         target.setDateto(entity.getValidto());
         target.setStatus(StatusEnumMapper.fromValue(entity.getState()));

@@ -2,15 +2,22 @@ package it.pagopa.pn.mandate.middleware.db.entities;
 
 import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
 import java.util.Set;
 
 import static it.pagopa.pn.mandate.middleware.db.BaseDao.GSI_INDEX_DELEGATE_STATE;
 
+/**
+ * Entity Delega
+ */
 @DynamoDbBean
 @Data
+@NoArgsConstructor
 public class MandateEntity {
+
+    public static final String MANDATE_PREFIX = "MANDATE#";
 
     public static final String COL_PK = "pk";
     public static final String COL_SK = "sk";
@@ -20,8 +27,22 @@ public class MandateEntity {
     public static final String COL_B_DELEGATEISPERSON = "b_delegateisperson";
     public static final String COL_D_VALIDFROM = "d_validfrom";
     public static final String COL_D_VALIDTO = "d_validto";
+
+    public MandateEntity(String delegator, String mandateid)
+    {
+        this.setDelegator(delegator);
+        this.setMandateId(mandateid);
+    }
+
+    public String getMandateId(){
+        return this.sk.replace(MANDATE_PREFIX, "");
+    }
+    public void setMandateId(String id){
+        this.sk = MANDATE_PREFIX + id;
+    }
+
     @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute(COL_PK)})) private String delegator;
-    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_SK)}))  private String id;
+    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_SK)}))  private String sk;
 
 
     @Getter(onMethod=@__({@DynamoDbSecondaryPartitionKey(indexNames = { GSI_INDEX_DELEGATE_STATE}), @DynamoDbAttribute(COL_S_DELEGATE)}))  private String delegate;

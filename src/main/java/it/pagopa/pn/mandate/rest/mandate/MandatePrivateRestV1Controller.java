@@ -30,13 +30,4 @@ public class MandatePrivateRestV1Controller  implements MandatePrivateServiceApi
             .collectList()     
             .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));     
     }
-
-    @Override
-    public Mono<ResponseEntity<Flux<InternalMandateDto>>> listMandatesByDelegator(String internaluserId,
-            ServerWebExchange exchange) {
-        return  mandateService.listMandatesByDelegator(internaluserId)
-            .collectList()     
-            .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));     
-    }
-    
 }

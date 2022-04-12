@@ -1,25 +1,20 @@
 package it.pagopa.pn.mandate.middleware.db;
 
-import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
+import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
-import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-import it.pagopa.pn.mandate.middleware.db.entities.UserEntity;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -27,9 +22,9 @@ import software.amazon.awssdk.services.dynamodb.model.Select;
 
 @Repository
 @Slf4j
-public class UserDao extends BaseDao {
+public class DelegateDao extends BaseDao {
 
-    DynamoDbAsyncTable<UserEntity> userTable;
+    DynamoDbAsyncTable<DelegateEntity> userTable;
     DynamoDbAsyncClient dynamoDbAsyncClient;
     String table ;
 
@@ -37,34 +32,18 @@ public class UserDao extends BaseDao {
     public static final String TOTALS = "TOTALS";
    
 
-    public UserDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
-                   DynamoDbAsyncClient dynamoDbAsyncClient,
-                              @Value("${aws.dynamodb.table}") String table) {
-        this.userTable = dynamoDbEnhancedAsyncClient.table(table, TableSchema.fromBean(UserEntity.class));
+    public DelegateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
+                       DynamoDbAsyncClient dynamoDbAsyncClient,
+                       @Value("${aws.dynamodb.table}") String table) {
+        this.userTable = dynamoDbEnhancedAsyncClient.table(table, TableSchema.fromBean(DelegateEntity.class));
         this.dynamoDbAsyncClient = dynamoDbAsyncClient;
         this.table = table;
     }
 
-    public Mono<UserEntity> countMandates(String internaluserid) {
-        // per ora l'unico stato supportato per il count è il pending, il filtro sullo stato viene quindi omesso volutamente.
-        GetItemEnhancedRequest giRequest = GetItemEnhancedRequest.builder()
-                .key(getKeyBuild(internaluserid, TOTALS))
-                .build();
-        
-        CompletableFuture<UserEntity> user = userTable.getItem(giRequest)
-                .whenComplete((cus, ex) -> {
-                        
-                    if (null == cus) {
-                            throw new IllegalArgumentException("Invalid user");
-                    }
-                });
-        return Mono.fromFuture(user);
-    }
-
-
-    public Mono<Object> updateUserPendingCount(String delegate_internaluserid){
+    public Mono<DelegateEntity> countMandates(String delegate_internaluserid) {
         if (log.isInfoEnabled())
-            log.info("Updating user pending count uid:{}", delegate_internaluserid);
+            log.info("Get user pending count uid:{}", delegate_internaluserid);
+
         // qui l'internaluserid è quello del DELEGATO, devo passare quindi per l'indice sul delegato,
         // e fare il count delle deleghe in pending.
         Map<String, AttributeValue> expressionValues = new HashMap<>();
@@ -80,21 +59,12 @@ public class UserDao extends BaseDao {
                 .expressionAttributeValues(expressionValues)
                 .build();
 
-        return Mono.just(dynamoDbAsyncClient.query(qeRequest).thenApply(x -> {
-            UserEntity user =new UserEntity();
-            user.setPk(delegate_internaluserid);
-            user.setSk(TOTALS);
-            user.setPendingcount(x.count());
-
-            PutItemEnhancedRequest<UserEntity> puReq = PutItemEnhancedRequest.builder(UserEntity.class)
-                    .item(user)
-                    .build();
-            return userTable.putItem(puReq).thenApply(r -> {
-                if (log.isInfoEnabled())
-                    log.info("Updated user pending count uid:{} pendingcount:{}", delegate_internaluserid, x.count());
+        return Mono.fromFuture(dynamoDbAsyncClient.query(qeRequest).thenApply(x -> {
+                DelegateEntity user =new DelegateEntity();
+                user.setPk(delegate_internaluserid);
+                user.setSk(TOTALS);
+                user.setPendingcount(x.count());
                 return user;
-            });
         }));
-
     }
 }

@@ -1,13 +1,12 @@
 package it.pagopa.pn.mandate.mapper;
 
+import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import org.springframework.stereotype.Component;
 
-import it.pagopa.pn.mandate.middleware.db.entities.UserEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
-import reactor.core.publisher.Mono;
 
 @Component
-public class UserEntityMandateCountsDtoMapper implements BaseMapperInterface<MandateCountsDto, UserEntity> {
+public class UserEntityMandateCountsDtoMapper implements BaseMapperInterface<MandateCountsDto, DelegateEntity> {
  
     private UserEntityMandateCountsDtoMapper(){
         super();
@@ -17,13 +16,13 @@ public class UserEntityMandateCountsDtoMapper implements BaseMapperInterface<Man
     public static UserEntityMandateCountsDtoMapper Builder() { return new UserEntityMandateCountsDtoMapper(); }        
 
     @Override
-    public UserEntity toEntity(MandateCountsDto source) {
+    public DelegateEntity toEntity(MandateCountsDto source) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public MandateCountsDto toDto(UserEntity ent) {
+    public MandateCountsDto toDto(DelegateEntity ent) {
         final MandateCountsDto mDto = new MandateCountsDto();
         mDto.setValue(ent == null?0:ent.getPendingcount());
         return mDto;

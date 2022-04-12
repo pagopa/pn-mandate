@@ -7,9 +7,12 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
+/**
+ * Entity Delegato
+ */
 @DynamoDbBean
 @Data
-public class UserEntity {
+public class DelegateEntity {
    
     @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute("pk")})) private String pk;
     @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute("sk")})) private String sk;

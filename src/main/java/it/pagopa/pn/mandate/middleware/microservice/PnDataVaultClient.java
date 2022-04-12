@@ -27,6 +27,9 @@ import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient; 
 import reactor.util.retry.Retry;
 
+/**
+ * Classe wrapper di pn-data-vault, con gestione del backoff
+ */
 @Component
 public class PnDataVaultClient {
     
@@ -56,6 +59,12 @@ public class PnDataVaultClient {
         this.mandatesApi = new MandatesApi(newApiClient);
     }
 
+    /**
+     * Ritorna una lista di nominativi in base alla lista di iuid passati
+     *
+     * @param internalIds lista di iuid
+     * @return lista di nominativi
+     */
     public Flux<BaseRecipientDtoDto> getRecipientDenominationByInternalId(List<String> internalIds)
     {
         return recipientsApi.getRecipientDenominationByInternalId(internalIds)
@@ -68,9 +77,9 @@ public class PnDataVaultClient {
 
     /**
      * Genera (o recupera) un internaluserId in base al CF/PIVA
-     * @param isPerson
-     * @param fiscalCode
-     * @return
+     * @param isPerson true per PF, false per PG
+     * @param fiscalCode CF o PIVA
+     * @return iuid
      */
     public Mono<String> ensureRecipientByExternalId(boolean isPerson, String fiscalCode)
     {
@@ -78,21 +87,21 @@ public class PnDataVaultClient {
             .retryWhen(
                     Retry.backoff(2, Duration.ofMillis(25))
                             .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );                             
+                );
             
     }
 
     /**
      * Salva per una certa delega, le info riguardanti il DELEGATO
-     * @param internaluserId
-     * @param mandateId
-     * @param name
-     * @param surname
-     * @param email
-     * @param businessName
-     * @return
+     *
+     * @param mandateId id della delega
+     * @param name nome
+     * @param surname cognome
+     * @param email email
+     * @param businessName ragione sociale
+     * @return void
      */
-    public Mono<Void> updateMandateById(String internaluserId, String mandateId, String name, String surname, String email, String businessName)
+    public Mono<String> updateMandateById(String mandateId, String name, String surname, String email, String businessName)
     {
         AddressAndDenominationDtoDto addressdto = new AddressAndDenominationDtoDto();
         addressdto.setKind(KindEnum.EMAIL);
@@ -104,13 +113,15 @@ public class PnDataVaultClient {
             .retryWhen(
                     Retry.backoff(2, Duration.ofMillis(25))
                             .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );
+                )
+                .then(Mono.just("OK"));
+
     }
 
     /**
      * Ritorna le info sui DELEGATI in base agli id delle deleghe passati
-     * @param mandateIds
-     * @return
+     * @param mandateIds lista di id deleghe
+     * @return lista userinfo deleghe
      */
     public Flux<MandateDtoDto> getMandatesByIds(List<String> mandateIds)
     {                

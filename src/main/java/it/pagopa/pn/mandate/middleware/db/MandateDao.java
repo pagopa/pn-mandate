@@ -85,7 +85,7 @@ public class MandateDao extends BaseDao {
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now())).build());
 
         Expression exp = Expression.builder()
-        .expression(MandateEntity.COL_D_VALIDTO + " > :now")
+        .expression(MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")")
                 .expressionValues(expressionValues)
                 .build();    
          
@@ -123,10 +123,10 @@ public class MandateDao extends BaseDao {
             log.info("quering list-by-delegator uid:{} status:{}", delegator_internaluserid, status);
 
         int i_state = StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE);
-        String filterexp = "(" + MandateEntity.COL_D_VALIDTO + " > :now) AND (" + MandateEntity.COL_I_STATE + " <= :status)";
+        String filterexp = "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) AND (" + MandateEntity.COL_I_STATE + " <= :status)";
         if (status != null)
         {
-            filterexp = "(" + MandateEntity.COL_D_VALIDTO + " > :now) AND (" + MandateEntity.COL_I_STATE + " = :status)";   // si noti = status
+            filterexp = "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) AND (" + MandateEntity.COL_I_STATE + " = :status)";   // si noti = status
             i_state = status;
         }
 
@@ -168,7 +168,7 @@ public class MandateDao extends BaseDao {
      * @param verificationCode codice di verifica della relativo all'accettazione
      * @return void
      */
-    public Mono<Void> acceptMandate(String delegate_internaluserid, String mandateId, String verificationCode)
+    public Mono<Object> acceptMandate(String delegate_internaluserid, String mandateId, String verificationCode)
     {
         log.info("accepting mandate for delegate uid:{} mandateid:{}", delegate_internaluserid, mandateId);
         return Mono.fromFuture(() -> retrieveMandateForDelegate(delegate_internaluserid, mandateId)
@@ -230,7 +230,7 @@ public class MandateDao extends BaseDao {
                 .thenApply(x -> {
                     log.info("accepted mandate for delegate uid:{} mandateid:{} DONE", delegate_internaluserid, mandateId);
                     return "DONE";
-                })).then();
+                }));
 
     }
 
@@ -245,7 +245,7 @@ public class MandateDao extends BaseDao {
      * @param mandateId id della delega
      * @return void
      */
-    public Mono<Void> rejectMandate(final String delegate_internaluserid, final String mandateId)
+    public Mono<Object> rejectMandate(final String delegate_internaluserid, final String mandateId)
     {
         // qui l'internaluserid è quello del DELEGATO, e quindi NON posso usare direttamente l'informazione per accedere al record.
         // devo passare quindi per l'indice sul delegato, recuperarmi la riga, aggiornare il contenuto e salvarla.
@@ -295,7 +295,7 @@ public class MandateDao extends BaseDao {
                 .thenApply(x -> {
                     log.info("rejecting mandate for delegate uid:{} mandateid:{} DONE", delegate_internaluserid, mandateId);
                     return "DONE";
-                })).then();
+                }));
     }
 
     /**
@@ -310,11 +310,14 @@ public class MandateDao extends BaseDao {
      * @param mandateId id della delega
      * @return void
      */
-    public Mono<Void> revokeMandate(String delegator_internaluserid, String mandateId)
+    public Mono<Object> revokeMandate(String delegator_internaluserid, String mandateId)
     {
         log.info("revoking mandate for delegate uid:{} mandateid:{}", delegator_internaluserid, mandateId);
         return Mono.fromFuture(() -> retrieveMandateForDelegator(delegator_internaluserid, mandateId)
                 .thenCompose(mandate -> {
+                            if (mandate == null)
+                                throw new MandateNotFoundException();
+
                             log.info("mandate for delegate retrieved mandateobj:{}", mandate);
                             // aggiorno lo stato
                             mandate.setRevoked(DateUtils.formatTime(ZonedDateTime.now()));
@@ -337,7 +340,7 @@ public class MandateDao extends BaseDao {
                                 return mandate;
                             });
                         })
-                ).then();
+                );
     }
 
 
@@ -353,11 +356,14 @@ public class MandateDao extends BaseDao {
      * @param mandateId id della delega
      * @return void
      */
-    public Mono<Void> expireMandate(String delegator_internaluserid, String mandateId)
+    public Mono<Object> expireMandate(String delegator_internaluserid, String mandateId)
     {
         log.info("expired mandate for delegate uid:{} mandateid:{}", delegator_internaluserid, mandateId);
         return Mono.fromFuture(() -> retrieveMandateForDelegator(delegator_internaluserid, mandateId)
                 .thenCompose(mandate -> {
+                            if (mandate == null)
+                                throw new MandateNotFoundException();
+
                             log.info("mandate for delegate retrieved mandateobj:{}", mandate);
                             // aggiorno lo stato
                             mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
@@ -379,7 +385,7 @@ public class MandateDao extends BaseDao {
                                 return mandate;
                             });
                         })
-                ).then();
+                );
     }
 
     /**
@@ -395,8 +401,8 @@ public class MandateDao extends BaseDao {
             log.info("creating mandate mandateobj:{}", mandate);
 
 
-        return Mono.fromFuture(
-                countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate())
+        return Mono.fromFuture(() ->
+                        countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate())
                 .thenCompose(total -> {
                     if (total == 0)
                     {
@@ -507,7 +513,7 @@ public class MandateDao extends BaseDao {
                 .builder()
                 .select(Select.COUNT)
                 .tableName(table)
-                .filterExpression("(" + MandateEntity.COL_D_VALIDTO + " > :now) AND (" + MandateEntity.COL_I_STATE + " <= :status) AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)")
+                .filterExpression("(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) AND (" + MandateEntity.COL_I_STATE + " <= :status) AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)")
                 .keyConditionExpression(MandateEntity.COL_PK + " = :delegator AND begins_with(" + MandateEntity.COL_SK + ", :mandateprefix)")
                 .expressionAttributeValues(expressionValues)
                 .build();

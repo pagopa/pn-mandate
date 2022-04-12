@@ -65,10 +65,6 @@ Resources:
           AttributeType: "S"
         - AttributeName: "sk"
           AttributeType: "S"
-        - AttributeName: "s_delegate"
-          AttributeType: "S"
-        - AttributeName: "i_state"
-          AttributeType: "N"
       KeySchema:
         - AttributeName: "pk"
           KeyType: "HASH"
@@ -77,21 +73,7 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
-      GlobalSecondaryIndexes:
-        -
-          IndexName: "delegate-state-gsi"
-          KeySchema:
-            -
-              AttributeName: "s_delegate"
-              KeyType: "HASH"
-            -
-              AttributeName: "i_state"
-              KeyType: "RANGE"
-          Projection:
-            ProjectionType: "ALL"
-          ProvisionedThroughput:
-            ReadCapacityUnits: 5
-            WriteCapacityUnits: 5
+
 Outputs:
   MandatesDynamoTableName:
     Description: Name of dynamodb table containing mandates

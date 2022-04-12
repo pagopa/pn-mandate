@@ -15,6 +15,7 @@ public class ExceptionHelper {
         {
             res.setTitle(ex.getMessage());
             res.setDetail(((PnException)ex).getDescription());
+            res.setStatus(((PnException) ex).getStatus());
         }
         else
         {

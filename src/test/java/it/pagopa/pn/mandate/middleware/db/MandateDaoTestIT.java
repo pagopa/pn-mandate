@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.fail;
         "aws.endpoint-url=http://localhost:4566"
 })
 @SpringBootTest
-class MandateDaoTest {
+public class MandateDaoTestIT {
 
     @Autowired
     private MandateDao mandateDao;

@@ -26,7 +26,12 @@ public class MandateEntityInternalMandateDtoMapper implements BaseMapperInterfac
         target.setMandateId(entity.getMandateId());
         target.setDatefrom(entity.getValidfrom());
         target.setDateto(entity.getValidto());
-        target.setVisibilityIds(new ArrayList<>(entity.getVisibilityIds()));
+        target.setDelegate(entity.getDelegate());
+        target.setDelegator(entity.getDelegator());
+        if (entity.getVisibilityIds() != null)
+            target.setVisibilityIds(new ArrayList<>(entity.getVisibilityIds()));
+        else
+            target.setVisibilityIds(new ArrayList<>());
         return target;
     } 
  

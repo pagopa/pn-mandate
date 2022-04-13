@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
         "aws.endpoint-url=http://localhost:4566"
 })
 @SpringBootTest
-class DelegateDaoTest {
+class DelegateDaoTestIT {
 
     @Autowired
     private MandateDao mandateDao;
@@ -49,7 +49,7 @@ class DelegateDaoTest {
     @Test
     void countMandatesPendingOnly() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(false);
+        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(false);
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
@@ -80,8 +80,8 @@ class DelegateDaoTest {
     @Test
     void countMandatesPendingAndActive() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(false);
-        MandateEntity mandateToInsert1 = MandateDaoTest.newMandate(false);
+        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(false);
+        MandateEntity mandateToInsert1 = MandateDaoTestIT.newMandate(false);
         mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
         mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
         mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
@@ -118,7 +118,7 @@ class DelegateDaoTest {
     @Test
     void countMandatesActiveOnly() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(false);
+        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(false);
         mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
 
         try {

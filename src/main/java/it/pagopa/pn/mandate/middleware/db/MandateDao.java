@@ -173,9 +173,6 @@ public class MandateDao extends BaseDao {
         log.info("accepting mandate for delegate uid:{} mandateid:{}", delegate_internaluserid, mandateId);
         return Mono.fromFuture(() -> retrieveMandateForDelegate(delegate_internaluserid, mandateId)
                 .subscribe(mandate -> {
-                        if (mandate == null)
-                                throw new MandateNotFoundException();
-        
                         if (!mandate.getValidationcode().equals(verificationCode))
                                 throw new InvalidVerificationCodeException();
                         
@@ -255,8 +252,6 @@ public class MandateDao extends BaseDao {
         return Mono.fromFuture(() -> retrieveMandateForDelegate(delegate_internaluserid, mandateId)
                 .subscribe(mandate -> {
                     log.info("mandate for delegate retrieved mandateobj:{}", mandate);
-                    if (mandate == null)    // probabilmente non è mai null se arrivo qui. Se non c'è, non passa proprio di qui
-                        throw new MandateNotFoundException();
 
                     if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                             || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.REJECTED))

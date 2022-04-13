@@ -84,7 +84,8 @@ Resources:
         ContainerEnvEntry3: !Sub 'AWS_DYNAMODB_TABLE=${MandatesDynamoTableName}'
         ContainerEnvEntry4: !Sub 'AWS_DYNAMODB_TABLE_HISTORY=${MandatesDynamoTableHistoryName}'
         ContainerEnvEntry5: !Sub 'AWS_DYNAMODB_TABLE_HISTORY=${MandatesDynamoTableHistoryName}'
-        ContainerEnvEntry6: !Sub 'PN_DELIVERY_DELIVERYPUSHBASEURL=http://${ApplicationLoadBalancerDomain}:8080/delivery-push'
+        ContainerEnvEntry6: !Sub 'PN_MANDATE_CLIENT_DATAVAULT_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
+        ContainerEnvEntry7: !Sub 'PN_MANDATE_CLIENT_INFOPA_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds

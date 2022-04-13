@@ -27,6 +27,7 @@ public class MandateEntity {
     public static final String COL_B_DELEGATEISPERSON = "b_delegateisperson";
     public static final String COL_D_VALIDFROM = "d_validfrom";
     public static final String COL_D_VALIDTO = "d_validto";
+    public static final String COL_S_MANDATEID = "s_mandateid";
 
     public MandateEntity(String delegator, String mandateid)
     {
@@ -34,6 +35,7 @@ public class MandateEntity {
         this.setMandateId(mandateid);
     }
 
+    @DynamoDbAttribute(COL_S_MANDATEID)
     public String getMandateId(){
         return this.sk.replace(MANDATE_PREFIX, "");
     }

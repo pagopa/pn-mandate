@@ -1,5 +1,5 @@
 {
   "Parameters" : {
-
+    "CorsAllowedDomains" : "http://localhost:8090,https://portale-pf-main.fe.dev.pn.pagopa.it/"
   }
 }

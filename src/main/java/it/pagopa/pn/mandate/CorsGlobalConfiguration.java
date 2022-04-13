@@ -22,6 +22,7 @@ public class CorsGlobalConfiguration implements WebFluxConfigurer {
 
         if (log.isInfoEnabled())
             log.info("allowed domains:" + String.join(", ", corsAllowedDomains));
+
         corsRegistry.addMapping("/**")
                 .allowedOrigins( corsAllowedDomains.toArray( new String[0] ) )
                 .allowedMethods("GET", "HEAD", "OPTIONS", "POST", "PUT", "DELETE", "PATCH")

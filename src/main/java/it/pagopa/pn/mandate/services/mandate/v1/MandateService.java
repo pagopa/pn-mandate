@@ -129,7 +129,7 @@ public class MandateService  {
                         })
                         .flatMap(mandateDao::createMandate)
                         .flatMap(ent -> pnDatavaultClient.updateMandateById(uuid, dto.getDelegate().getFirstName(),
-                                dto.getDelegate().getLastName(), dto.getDelegate().getEmail(), dto.getDelegate().getCompanyName())
+                                dto.getDelegate().getLastName(), null, dto.getDelegate().getCompanyName())
                                   .then(Mono.just(ent)))
                 ,(ddto, entity) -> entity)
             .map(r -> {
@@ -151,7 +151,6 @@ public class MandateService  {
                             UserDto user = dto.getDelegate();
                             AddressAndDenominationDtoDto info = userinfosdtos.get(dto.getMandateId());
                             user.setCompanyName(info.getDestBusinessName());
-                            user.setEmail(info.getValue());
                             user.setFirstName(info.getDestName());
                             user.setLastName(info.getDestSurname());
                             if (user.getPerson())
@@ -178,7 +177,6 @@ public class MandateService  {
         // valida delegato
         if (mandateDto.getDelegate() == null
                 || (mandateDto.getDelegate().getFiscalCode() == null)
-                || (mandateDto.getDelegate().getEmail() == null)
                 || (mandateDto.getDelegate().getPerson() == null)
                 || (mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null)
                 || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
@@ -307,7 +305,6 @@ public class MandateService  {
                             UserDto user = dto.getDelegate();
                             AddressAndDenominationDtoDto info = userinfosdtos.get(dto.getMandateId());
                             user.setCompanyName(info.getDestBusinessName());
-                            user.setEmail(info.getValue());
                             user.setFirstName(info.getDestName());
                             user.setLastName(info.getDestSurname());
                             if (user.getPerson())

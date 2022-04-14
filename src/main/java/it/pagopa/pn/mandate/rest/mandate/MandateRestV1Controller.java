@@ -31,12 +31,12 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
     }
 
     @Override
-    public Mono<ResponseEntity<Object>> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
+    public Mono<ResponseEntity<Void>> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
             ServerWebExchange exchange) {
                 
         String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
         return  mandateService.acceptMandate(mandateId, acceptRequestDto, internaluserId)
-            .map(m -> ResponseEntity.status(HttpStatus.NO_CONTENT).body(m));
+            .map(m -> ResponseEntity.noContent().build());
     }
 
     @Override
@@ -74,17 +74,17 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
     }
 
     @Override
-    public Mono<ResponseEntity<Object>> rejectMandate(String mandateId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Void>> rejectMandate(String mandateId, ServerWebExchange exchange) {
         String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
         return  mandateService.rejectMandate(mandateId, internaluserId)
-        .map(m -> ResponseEntity.status(HttpStatus.NO_CONTENT).body(null));     
+        .map(m -> ResponseEntity.noContent().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Object>> revokeMandate(String mandateId, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Void>> revokeMandate(String mandateId, ServerWebExchange exchange) {
         String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
         return  mandateService.revokeMandate(mandateId, internaluserId)
-        .map(m -> ResponseEntity.status(HttpStatus.NO_CONTENT).body(null));     
+        .map(m -> ResponseEntity.noContent().build());
     }
     
 

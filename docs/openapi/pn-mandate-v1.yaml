@@ -102,10 +102,6 @@ paths:
       responses:
         '204':
           description: No Content
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServerResponse'
         '400':
           description: Bad Request
           content:
@@ -127,10 +123,6 @@ paths:
       responses:
         '204':
           description: No Content
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServerResponse'
         '400':
           description: Bad Request
           content:
@@ -152,10 +144,6 @@ paths:
       responses:
         '204':
           description: No Content
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServerResponse'
         '400':
           description: Bad Request
           content:
@@ -294,8 +282,6 @@ components:
         companyName:
           type: string
         fiscalCode:
-          type: string
-        email:
           type: string
         person:
           type: boolean

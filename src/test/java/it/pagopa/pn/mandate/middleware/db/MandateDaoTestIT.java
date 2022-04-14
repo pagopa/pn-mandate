@@ -6,6 +6,7 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
 import it.pagopa.pn.mandate.rest.utils.MandateAlreadyExistsException;
+import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -547,6 +548,20 @@ public class MandateDaoTestIT {
     }
 
     @Test
+    void revokeMandateNotFound() {
+        //Given
+        // nothing
+
+        //When
+        try {
+            mandateDao.revokeMandate("fake", "fake").block(Duration.ofMillis(3000));
+            fail("no MandateNotFoundException thrown");
+        } catch (MandateNotFoundException e) {
+            //expected
+        }
+    }
+
+    @Test
     void expireMandate() {
         //Given
         MandateEntity mandateToInsert = newMandate(false);
@@ -579,6 +594,21 @@ public class MandateDaoTestIT {
             } catch (Exception e) {
                 System.out.println("Nothing to remove");
             }
+        }
+    }
+
+
+    @Test
+    void expireMandateNotFound() {
+        //Given
+        // nothing
+
+        //When
+        try {
+            mandateDao.expireMandate("fake", "fake").block(Duration.ofMillis(3000));
+            fail("no MandateNotFoundException thrown");
+        } catch (MandateNotFoundException e) {
+            //expected
         }
     }
 }

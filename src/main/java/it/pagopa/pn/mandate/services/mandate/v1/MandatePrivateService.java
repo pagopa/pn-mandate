@@ -33,13 +33,4 @@ public class MandatePrivateService {
         return mandateDao.listMandatesByDelegate(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
                 .map(mandateEntityInternalMandateDtoMapper::toDto);
     }
-
-    public Flux<InternalMandateDto> listMandatesByDelegator(String internaluserId) {
-        // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE
-        if (log.isInfoEnabled())
-                    log.info("listing private mandates by delegator for " + internaluserId);
-        return mandateDao.listMandatesByDelegator(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
-                .map(mandateEntityInternalMandateDtoMapper::toDto);
-    }
-    
 }

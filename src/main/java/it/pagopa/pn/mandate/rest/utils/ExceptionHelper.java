@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 public class ExceptionHelper {
     
     
-    public static Problem handleException(Throwable ex, HttpStatus statusError, String path){
+    public static Problem handleException(Throwable ex, HttpStatus statusError){
         // gestione exception e generazione fault
         Problem res = new Problem();
         res.setStatus(statusError.value());

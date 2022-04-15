@@ -16,7 +16,7 @@ public class DynamoDBConfig {
     @Bean
     public DynamoDbAsyncClient dynamoDbAsyncClient(
             @Value("${aws.region-code}") String awsRegion,
-            @Value("${aws.endpoint-url}") String dynamoDBEndpoint) {
+            @Value("${aws.endpoint-url:#{null}}") String dynamoDBEndpoint) {
         return DynamoDbAsyncClient.builder()
                 .region(Region.of(awsRegion))
                 .endpointOverride(URI.create(dynamoDBEndpoint))
@@ -27,7 +27,7 @@ public class DynamoDBConfig {
     @Bean
     public DynamoDbEnhancedAsyncClient getDynamoDbEnhancedAsyncClient(
         @Value("${aws.region-code}") String awsRegion,
-        @Value("${aws.endpoint-url}") String dynamoDBEndpoint) {
+        @Value("${aws.endpoint-url:#{null}}") String dynamoDBEndpoint) {
         return DynamoDbEnhancedAsyncClient.builder()
                 .dynamoDbClient(dynamoDbAsyncClient(awsRegion, dynamoDBEndpoint))
                 .build();

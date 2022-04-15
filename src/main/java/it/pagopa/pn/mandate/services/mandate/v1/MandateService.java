@@ -184,6 +184,14 @@ public class MandateService  {
         // codice verifica (5 caratteri)
         if (mandateDto.getVerificationCode() == null || !mandateDto.getVerificationCode().matches("\\d\\d\\d\\d\\d"))
             throw new InvalidInputException();
+
+        if (mandateDto.getDelegate().getPerson()
+            && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}[0-9]{2}[A-Za-z]{1}[0-9]{2}[A-Za-z]{1}[0-9]{3}[A-Za-z]{1}"))
+            throw new InvalidInputException();
+        if (!mandateDto.getDelegate().getPerson()
+                && !mandateDto.getDelegate().getFiscalCode().matches("[0-9]{11}"))
+            throw new InvalidInputException();
+
         return mandateDto;
     }
 

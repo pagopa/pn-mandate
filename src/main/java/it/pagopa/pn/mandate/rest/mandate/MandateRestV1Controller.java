@@ -18,9 +18,9 @@ import reactor.core.publisher.Mono;
 public class MandateRestV1Controller  implements MandateServiceApi   {
 
     // Header utente pn-pagopa-user-id
-    private static final String HEADER_INTERNAL_USER_ID = "pn-pagopa-user-id";
+    private static final String HEADER_INTERNAL_USER_ID = "x-pagopa-pn-uid";
     // Header tipologia di utente pn-pagopa-cx-type PF/PG
-    private static final String HEADER_CX_TYPE = "pn-pagopa-cx-type";
+    private static final String HEADER_CX_TYPE = "x-pagopa-pn-cx-type";
     private static final String HEADER_CX_TYPE_VALUE_PF = "PF";
     private static final String HEADER_CX_TYPE_VALUE_PG = "PG";
     MandateService mandateService;    

@@ -25,6 +25,8 @@ import java.util.List;
 @Import({MandateEntityMandateDtoMapper.class, UserEntityMandateCountsDtoMapper.class})
 class MandateRestV1ControllerTest {
 
+    public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-cx-type";
+    public static final String PN_PAGOPA_CX_TYPE = "x-pagopa-pn-cx-type";
     @Autowired
     WebTestClient webTestClient;
 
@@ -53,8 +55,8 @@ class MandateRestV1ControllerTest {
         webTestClient.get()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header("pn-pagopa-user-id", "internaluserid1234")
-                .header("pn-pagopa-cx-type", "PF")
+                .header(PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk();
     }
@@ -73,8 +75,8 @@ class MandateRestV1ControllerTest {
         webTestClient.patch()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header("pn-pagopa-user-id", "internaluserid1234")
-                .header("pn-pagopa-cx-type", "PF")
+                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header( PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk();
     }
@@ -95,8 +97,8 @@ class MandateRestV1ControllerTest {
         webTestClient.post()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header("pn-pagopa-user-id", "internaluserid1234")
-                .header("pn-pagopa-cx-type", "PF")
+                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header( PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody();
@@ -118,8 +120,8 @@ class MandateRestV1ControllerTest {
         webTestClient.get()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header("pn-pagopa-user-id", "internaluserid1234")
-                .header("pn-pagopa-cx-type", "PF")
+                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header( PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk().expectBodyList(MandateDto.class);
     }
@@ -140,8 +142,8 @@ class MandateRestV1ControllerTest {
         webTestClient.get()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header("pn-pagopa-user-id", "internaluserid1234")
-                .header("pn-pagopa-cx-type", "PF")
+                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header( PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk().expectBodyList(MandateDto.class);
     }
@@ -160,8 +162,8 @@ class MandateRestV1ControllerTest {
         webTestClient.patch()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header("pn-pagopa-user-id", "internaluserid1234")
-                .header("pn-pagopa-cx-type", "PF")
+                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header( PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk();
     }
@@ -180,8 +182,8 @@ class MandateRestV1ControllerTest {
         webTestClient.patch()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header("pn-pagopa-user-id", "internaluserid1234")
-                .header("pn-pagopa-cx-type", "PF")
+                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header( PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk();
     }

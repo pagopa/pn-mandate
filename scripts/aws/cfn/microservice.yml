@@ -55,13 +55,17 @@ Parameters:
     Type: String
     Description: 'network load balancer link for API-GW'
 
-  ConfidentialObjectsDynamoTableName:
+  MandatesDynamoTableName:
     Type: String
-    Description: 'Name of dynamodb table containing fake confidentials informations'
+    Description: 'Name of dynamodb table containing mandates'
 
-  ConfidentialObjectsDynamoTableArn:
+  MandatesDynamoTableHistoryName:
     Type: String
-    Description: 'ARN of dynamodb table containing fake confidentials informations'
+    Description: 'Name of dynamodb table containing mandates history'
+
+  MandatesDynamoTableArn:
+    Type: String
+    Description: 'ARN of dynamodb table containing mandates'
 
 Resources:
 
@@ -77,7 +81,10 @@ Resources:
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGIONCODE=${AWS::Region}'
         ContainerEnvEntry2: !Sub 'CORS_ALLOWED_DOMAINS=${CorsAllowedDomains}'
-        ContainerEnvEntry3: !Sub 'PN_MANDATE_DYNAMODB_TABLENAME=${ConfidentialObjectsDynamoTableName}'
+        ContainerEnvEntry3: !Sub 'AWS_DYNAMODB_TABLE=${MandatesDynamoTableName}'
+        ContainerEnvEntry4: !Sub 'AWS_DYNAMODB_TABLE_HISTORY=${MandatesDynamoTableHistoryName}'
+        ContainerEnvEntry5: !Sub 'PN_MANDATE_CLIENT_DATAVAULT_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
+        ContainerEnvEntry6: !Sub 'PN_MANDATE_CLIENT_INFOPA_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -107,7 +114,7 @@ Resources:
               - dynamodb:TransactWriteItems
               - dynamodb:UpdateItem
             Resource:
-              - !Ref ConfidentialObjectsDynamoTableArn
+              - !Ref MandatesDynamoTableArn
 
   # Expose PN-Mandate microservice public API with API-GW for WEB usage
   MandateMicroservicePublicWebAPI:

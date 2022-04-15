@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.rest.mandate;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -16,7 +17,13 @@ import reactor.core.publisher.Mono;
 @RestController
 public class MandateRestV1Controller  implements MandateServiceApi   {
 
-    MandateService mandateService;
+    // Header utente pn-pagopa-user-id
+    private static final String HEADER_INTERNAL_USER_ID = "pn-pagopa-user-id";
+    // Header tipologia di utente pn-pagopa-cx-type PF/PG
+    private static final String HEADER_CX_TYPE = "pn-pagopa-cx-type";
+    private static final String HEADER_CX_TYPE_VALUE_PF = "PF";
+    private static final String HEADER_CX_TYPE_VALUE_PG = "PG";
+    MandateService mandateService;    
     
 
     public MandateRestV1Controller(MandateService mandateService) {
@@ -24,49 +31,70 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
     }
 
     @Override
-    public Mono<ResponseEntity<Object>> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
+    public Mono<ResponseEntity<Void>> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
             ServerWebExchange exchange) {
-        return  mandateService.acceptMandate(mandateId, acceptRequestDto, exchange)
-            .map(m -> ResponseEntity.status(HttpStatus.CREATED).body(m));    
+                
+        String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
+        return  mandateService.acceptMandate(mandateId, acceptRequestDto, internaluserId)
+            .map(m -> ResponseEntity.noContent().build());
     }
 
     @Override
     public Mono<ResponseEntity<MandateCountsDto>> countMandatesByDelegate(String status, ServerWebExchange exchange) {
-        return  mandateService.countMandatesByDelegate(status, exchange)
+        String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
+        return  mandateService.countMandatesByDelegate(status, internaluserId)
             .map(m -> ResponseEntity.status(HttpStatus.OK).body(m));    
     }
 
     @Override
     public Mono<ResponseEntity<MandateDto>> createMandate(Mono<MandateDto> mandateDto, ServerWebExchange exchange) {     
-        return  mandateService.createMandate(mandateDto, exchange)
+        String requesterInternaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
+        String requesterUserType = getUserTypeFromHeaders(exchange.getRequest());
+        return  mandateService
+            .createMandate(mandateDto, requesterInternaluserId, (requesterUserType==null || requesterUserType.equals(HEADER_CX_TYPE_VALUE_PF)))
             .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m));
          
     }
 
     @Override
     public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegate1(String status, ServerWebExchange exchange) {
-        return  mandateService.listMandatesByDelegate1(status, exchange)
+        String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
+
+        return  mandateService.listMandatesByDelegate(status, internaluserId)
             .collectList()     
             .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));     
     }
 
     @Override
     public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegator1(ServerWebExchange exchange) {
-        return  mandateService.listMandatesByDelegator1(exchange)
+        String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
+        return  mandateService.listMandatesByDelegator(internaluserId)
             .collectList()     
             .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));     
     }
 
     @Override
-    public Mono<ResponseEntity<Object>> rejectMandate(String mandateId, ServerWebExchange exchange) {
-        return  mandateService.rejectMandate(mandateId, exchange)
-        .map(m -> ResponseEntity.status(HttpStatus.NO_CONTENT).body(null));     
+    public Mono<ResponseEntity<Void>> rejectMandate(String mandateId, ServerWebExchange exchange) {
+        String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
+        return  mandateService.rejectMandate(mandateId, internaluserId)
+        .map(m -> ResponseEntity.noContent().build());
     }
 
     @Override
-    public Mono<ResponseEntity<Object>> revokeMandate(String mandateId, ServerWebExchange exchange) {
-        return  mandateService.revokeMandate(mandateId, exchange)
-        .map(m -> ResponseEntity.status(HttpStatus.NO_CONTENT).body(null));     
+    public Mono<ResponseEntity<Void>> revokeMandate(String mandateId, ServerWebExchange exchange) {
+        String internaluserId = getInternaluserIdFromHeaders(exchange.getRequest());
+        return  mandateService.revokeMandate(mandateId, internaluserId)
+        .map(m -> ResponseEntity.noContent().build());
     }
     
+
+    private static String getInternaluserIdFromHeaders(ServerHttpRequest req)
+    {
+        return  req.getHeaders().getFirst(HEADER_INTERNAL_USER_ID);
+    }
+
+    private static String getUserTypeFromHeaders(ServerHttpRequest req)
+    {
+        return  req.getHeaders().getFirst(HEADER_CX_TYPE);
+    }
 }

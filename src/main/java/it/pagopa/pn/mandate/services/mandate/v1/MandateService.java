@@ -1,21 +1,31 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.time.ZonedDateTime;
+import java.util.*;
 
-import org.springframework.stereotype.Service; 
-import org.springframework.web.server.ServerWebExchange;
+import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.AddressAndDenominationDtoDto;
+import it.pagopa.pn.mandate.middleware.db.DelegateDao;
+import it.pagopa.pn.mandate.rest.utils.InvalidInputException;
+import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
+import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
+import it.pagopa.pn.mandate.utils.DateUtils;
+import org.springframework.stereotype.Service;
 
+import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
+import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.middleware.db.MandateDao;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
+import it.pagopa.pn.mandate.middleware.microservice.PnDataVaultClient;
+import it.pagopa.pn.mandate.middleware.microservice.PnInfoPaClient;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum; 
-import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
-import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.rest.utils.UnsupportedFilterException;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
@@ -25,137 +35,349 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class MandateService  {
    
-    private static Map<String, MandateDto> mockdb = new HashMap<>();
+    private final MandateDao mandateDao;
+    private final DelegateDao userDao;
+    private final MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper;
+    private final UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper;
+    private final PnInfoPaClient pnInfoPaClient;
+    private final PnDataVaultClient pnDatavaultClient;
 
-    public MandateService() {       
+    public MandateService(MandateDao mandateDao, DelegateDao userDao, MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper,
+                          UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper, PnInfoPaClient pnInfoPaClient, PnDataVaultClient pnDatavaultClient) {
+        this.mandateDao = mandateDao;
+        this.userDao =userDao;
+        this.mandateEntityMandateDtoMapper = mandateEntityMandateDtoMapper;
+        this.userEntityMandateCountsDtoMapper = userEntityMandateCountsDtoMapper;
+        this.pnInfoPaClient = pnInfoPaClient;
+        this.pnDatavaultClient= pnDatavaultClient;
     }
-    
-    
+
+    /**
+     * Accetta una delega
+     *
+     * @param mandateId id della delega
+     * @param acceptRequestDto dto accettazione delega
+     * @param internaluserId iuid del delegato
+     * @return void
+     */
     public Mono<Object> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
-            ServerWebExchange exchange) {
+            String internaluserId) {
         return acceptRequestDto
-        .zipWhen(m -> {
+        .map(m -> {
+            if (m == null || m.getVerificationCode() == null)
+                throw new InvalidVerificationCodeException();
+
+            if (mandateId == null)
+                throw  new MandateNotFoundException();
+
+            return m;
+        })
+        .map(m -> {
             try{
-                if (mockdb.containsKey(mandateId))
-                {
-                    if (m.getVerificationCode() == null || !m.getVerificationCode().equals(mockdb.get(mandateId).getVerificationCode()))
-                        throw new InvalidVerificationCodeException();
-                        
-                    mockdb.get(mandateId).setStatus(StatusEnum.ACTIVE);
-                }
-                log.info("accepting mandate " + m);
-    
-                return Mono.empty();
+                if (log.isInfoEnabled())
+                    log.info("accepting mandateobj:{} vercode:{}",  mandateId, m);
+                return mandateDao.acceptMandate(internaluserId, mandateId, m.getVerificationCode());
             }catch(Exception ex)
             {
                 throw Exceptions.propagate(ex);
             }            
-        },
-        (m, r) -> r)
-        ;              
-                
+        });
     }
 
-    public Mono<MandateCountsDto> countMandatesByDelegate(String status, ServerWebExchange exchange) {
-        List<MandateDto> mm = new ArrayList<>();
-        for (MandateDto mandateDto : mockdb.values()) {
-            if (mandateDto.getDelegate() != null)
-            {
-                if (status == null || mandateDto.getStatus().getValue().equals(status))
-                    mm.add(mandateDto);
-            }
-        }
-
-        log.info("returning mandates count: " + mm.size() + " status:" + status);
-        MandateCountsDto res = new MandateCountsDto();
-        res.setValue(mm.size());
-        return Mono.just(res);
+    /**
+     * Ritorna il numero di deleghe nello stato passato per il delegato
+     *
+     * @param status stato per il filtro
+     * @param internaluserId iuid del delegato
+     * @return Totale deleghe nello stato richiesto
+     */
+    public Mono<MandateCountsDto> countMandatesByDelegate(String status, String internaluserId) {
+       // per ora l'unico stato supportato è il pending, quindi il filtro non viene passato al count
+       // Inoltre, ritorno un errore se status != pending
+       if (status == null || !status.equals(StatusEnum.PENDING.getValue()))
+        throw new UnsupportedFilterException();
+       return userDao.countMandates(internaluserId)                
+                .map(userEntityMandateCountsDtoMapper::toDto);
     }
 
-    
-    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, ServerWebExchange exchange) {
+    /**
+     * Crea la delega
+     *
+     * @param mandateDto oggetto delega
+     * @param requesterInternaluserId iuid del delegante
+     * @param requesterUserTypeIsPF tipologia del delegante (PF/PG)
+     * @return delega creata
+     */
+    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, final String requesterInternaluserId, final boolean requesterUserTypeIsPF) {
+        final String uuid = UUID.randomUUID().toString();
         return mandateDto
-        .zipWhen(m -> {
-            m.setMandateId(UUID.randomUUID().toString());  
-            m.setDatefrom(DateUtils.formatDate(LocalDate.now().minusDays(120))); 
-            m.setStatus(StatusEnum.PENDING);
-            mockdb.put(m.getMandateId(), m);        
-            log.info("creating mandate " + m.toString());
+                .map(this::validate)
+                .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegate().getPerson(), dto.getDelegate().getFiscalCode())
+                        .map(delegateInternaluserId -> {
+                            MandateEntity entity = mandateEntityMandateDtoMapper.toEntity(dto);
+                            entity.setDelegate(delegateInternaluserId);
+                            entity.setMandateId(uuid);
+                            entity.setDelegator(requesterInternaluserId);
+                            entity.setDelegatorisperson(requesterUserTypeIsPF);
+                            entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
+                            entity.setValidfrom(DateUtils.formatDate(ZonedDateTime.now().minusDays(120)));
+                            if (log.isInfoEnabled())
+                                log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}",
+                                        entity.getMandateId(), requesterInternaluserId, requesterUserTypeIsPF, entity.getValidfrom());
+
+                            return  entity;
+                        })
+                        .flatMap(mandateDao::createMandate)
+                        .flatMap(ent -> pnDatavaultClient.updateMandateById(uuid, dto.getDelegate().getFirstName(),
+                                dto.getDelegate().getLastName(), null, dto.getDelegate().getCompanyName())
+                                  .then(Mono.just(ent)))
+                ,(ddto, entity) -> entity)
+            .map(r -> {
+                r.setDelegator(null);
+                return mandateEntityMandateDtoMapper.toDto(r);
+            })
+            .zipWhen(dto -> {
+                            // genero la lista degli id delega
+                            List<String> mandateIds = new ArrayList<>();
+                            mandateIds.add(dto.getMandateId());
+
+                            // ritorno la lista
+                            return this.pnDatavaultClient.getMandatesByIds(mandateIds)
+                                    .collectMap(MandateDtoDto::getMandateId, MandateDtoDto::getInfo);
+                    },
+                    (dto, userinfosdtos) -> {
+                        if (userinfosdtos.containsKey(dto.getMandateId()))
+                        {
+                            UserDto user = dto.getDelegate();
+                            AddressAndDenominationDtoDto info = userinfosdtos.get(dto.getMandateId());
+                            user.setCompanyName(info.getDestBusinessName());
+                            user.setFirstName(info.getDestName());
+                            user.setLastName(info.getDestSurname());
+                            if (user.getPerson())
+                                user.setDisplayName(info.getDestName() + " " + info.getDestSurname());
+                            else
+                                user.setDisplayName(info.getDestBusinessName());
+                        }
+                        return dto;
+                    })
+                .flatMap(ent -> {
+                    if (!ent.getVisibilityIds().isEmpty())
+                        return pnInfoPaClient
+                                .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
+                                .flatMap(pa -> {
+                                    ent.getVisibilityIds().get(0).setName(pa.getName());
+                                    return Mono.just(ent);
+                                });
+                    else
+                        return Mono.just(ent);
+                });
+    }
+
+    private MandateDto validate(MandateDto mandateDto) {
+        // valida delegato
+        if (mandateDto.getDelegate() == null
+                || (mandateDto.getDelegate().getFiscalCode() == null)
+                || (mandateDto.getDelegate().getPerson() == null)
+                || (mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null)
+                || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
+            throw new InvalidInputException();
+        // codice verifica (5 caratteri)
+        if (mandateDto.getVerificationCode() == null || !mandateDto.getVerificationCode().matches("\\d\\d\\d\\d\\d"))
+            throw new InvalidInputException();
+
+        if (mandateDto.getDelegate().getPerson()
+            && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}[0-9]{2}[A-Za-z]{1}[0-9]{2}[A-Za-z]{1}[0-9]{3}[A-Za-z]{1}"))
+            throw new InvalidInputException();
+        if (!mandateDto.getDelegate().getPerson()
+                && !mandateDto.getDelegate().getFiscalCode().matches("[0-9]{11}"))
+            throw new InvalidInputException();
+
+        return mandateDto;
+    }
+
+    /**
+     *  il metodo si occupa di tornare la lista delle deleghe per delegato.
+     *  Gli step sono:
+     *  (1) recuperare la lista delle entity da db
+     *  (2) pulisco le info provenienti da db dalle informazioni che non devo tornare (in questo caso, il validationcode)
+     *  (3) risolvere internalId del delegante (il delegato sono io, e non serve popolarlo) nel relativo microservizio
+     *  (4) risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
+     *
+     *
+     * @param status stato per il filtro
+     * @param internaluserId iuid del delegato
+     * @return deleghe
+     */
+    public Flux<MandateDto> listMandatesByDelegate(String status, String internaluserId) {
+        Integer iStatus = null;
+        try {
+            if (status != null && !status.equals(""))
+                iStatus = StatusEnumMapper.intValfromValueConst(status);
+        } catch (Exception e) {
+            log.error("invalid state in filter");
+            throw new UnsupportedFilterException();
+        }
+
+        return mandateDao.listMandatesByDelegate(internaluserId, iStatus)   // (1)
+                .map(ent -> {         
+                    ent.setValidationcode(null);   // (2)
+                    return ent;        
+                })                 
+                .collectList()                                                        // (3)
+                .zipWhen(entities -> {
+                        if (!entities.isEmpty())
+                        {
+                            // genero la lista degli id deleganti
+                            List<String> internaluserIds = new ArrayList<>();
+                            entities.forEach(ent -> internaluserIds.add(ent.getDelegator()));
+
+                            // ritorno la lista
+                            return this.pnDatavaultClient.getRecipientDenominationByInternalId(internaluserIds)
+                                    .collectMap(BaseRecipientDtoDto::getInternalId, BaseRecipientDtoDto::getDenomination);
+                        }
+                        else
+                            return Mono.just(new HashMap<String, String>());
+                    },
+                    (entities, userinfosdtos) -> {
+                        List<MandateDto> dtos = new ArrayList<>();
+
+                        for(MandateEntity ent : entities)
+                        {
+                            MandateDto dto = mandateEntityMandateDtoMapper.toDto(ent);
+                            if (userinfosdtos.containsKey(ent.getDelegator()))
+                            {
+                                UserDto user = dto.getDelegator();
+                                String denomination = userinfosdtos.get(ent.getDelegator());
+                                if (user.getPerson())
+                                    user.setDisplayName(denomination);
+                                else
+                                    user.setDisplayName(denomination);
+                            }
+
+                            dtos.add(dto);
+                        }
+                        return dtos;
+                    })
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(ent -> {                                           // (4)
+                    if (!ent.getVisibilityIds().isEmpty())
+                        return pnInfoPaClient
+                            .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
+                            .flatMap(pa -> {
+                                ent.getVisibilityIds().get(0).setName(pa.getName());
+                                return Mono.just(ent);
+                                });   
+                    else
+                        return Mono.just(ent);
+                })   ;
+
             
-            MandateDto m1 = new MandateDto();        
-            m1.setMandateId(UUID.randomUUID().toString());  
-            m1.setDatefrom(DateUtils.formatDate(LocalDate.now().minusDays(120)));         
-            m1.setDateto(m.getDateto());
-            m1.setStatus(m.getStatus());
-            m1.setDelegator(m.getDelegate());
-            m1.setVerificationCode(m.getVerificationCode());            
-            m1.setVisibilityIds(m.getVisibilityIds());        
-            mockdb.put(m1.getMandateId(), m1);       
-            log.info("creating mandate " + m1.toString());
-
-            if (m.getDelegate().getFirstName().equals("RESET"))
-            {
-                log.info("RESETTING MOCK MAP!!!");
-                mockdb.clear();
-            }
-
-            return Mono.just(m);
-        },
-        (m, r) -> r);
-        
     }
 
-    
-    public Flux<MandateDto> listMandatesByDelegate1(String status, ServerWebExchange exchange) {
-        List<MandateDto> mm = new ArrayList<>();
-        for (MandateDto mandateDto : mockdb.values()) {
-            if (mandateDto.getDelegator() != null)
-            {
-                if (status == null || mandateDto.getStatus().getValue().equals(status))
-                    mm.add(mandateDto);
-            }
-        }
-        
-        log.info("returning mandates by delegate count: " + mm.size());
-        
-        return Flux.fromIterable(mm);
+    /**
+     *  il metodo si occupa di tornare la lista delle deleghe per delegato.
+     *  Gli step sono:
+     *  (1) recuperare la lista delle entity da db
+     *  (2) converto entity in dto
+     *  (3) recupero le info dei DELEGATI, eseguendo una richiesta con la lista degli id delle deleghe
+     *  (4) risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
+     *
+     * @param internaluserId iuid del delegante
+     * @return deleghe
+     */
+    public Flux<MandateDto> listMandatesByDelegator(String internaluserId) {
+
+        return mandateDao.listMandatesByDelegator(internaluserId, null)    // (1)
+            .map(mandateEntityMandateDtoMapper::toDto)  // (2)
+            .collectList()                                                        // (3)
+            .zipWhen(dtos -> {
+                        if (!dtos.isEmpty())
+                        {
+                            // genero la lista degli id delega
+                            List<String> mandateIds = new ArrayList<>();
+                            dtos.forEach(dto -> mandateIds.add(dto.getMandateId()));
+
+                            // ritorno la lista
+                            return this.pnDatavaultClient.getMandatesByIds(mandateIds)
+                                    .collectMap(MandateDtoDto::getMandateId, MandateDtoDto::getInfo);
+                        }
+                        else
+                            return Mono.just(new HashMap<String, AddressAndDenominationDtoDto>());
+                },
+                (dtos, userinfosdtos) -> {
+
+                    for(MandateDto dto : dtos)
+                    {
+                        if (userinfosdtos.containsKey(dto.getMandateId()))
+                        {
+                            UserDto user = dto.getDelegate();
+                            AddressAndDenominationDtoDto info = userinfosdtos.get(dto.getMandateId());
+                            user.setCompanyName(info.getDestBusinessName());
+                            user.setFirstName(info.getDestName());
+                            user.setLastName(info.getDestSurname());
+                            if (user.getPerson())
+                                user.setDisplayName(info.getDestName() + " " + info.getDestSurname());
+                            else
+                                user.setDisplayName(info.getDestBusinessName());
+                        }
+                    }
+                    return dtos;
+                })
+            .flatMapMany(Flux::fromIterable)
+            .flatMap(ent -> {                                           // (4)
+                if (!ent.getVisibilityIds().isEmpty())
+                    return pnInfoPaClient
+                        .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
+                        .flatMap(pa -> {
+                            ent.getVisibilityIds().get(0).setName(pa.getName());
+                            return Mono.just(ent);
+                            });   
+                else
+                    return Mono.just(ent);
+            })         
+        ;
     }
 
-    
-    public Flux<MandateDto> listMandatesByDelegator1(ServerWebExchange exchange) {
-        List<MandateDto> mm = new ArrayList<>();
-        for (MandateDto mandateDto : mockdb.values()) {
-            if (mandateDto.getDelegate() != null)
-            {
-                mm.add(mandateDto);
-            }
-        }
+    /**
+     * Rifiuta una delega
+     *
+     * @param mandateId id della delega
+     * @param internaluserId iuid del delegato
+     * @return void
+     */
+    public Mono<Object> rejectMandate(String mandateId, String internaluserId) {
+        if (mandateId == null)
+            throw  new MandateNotFoundException();
 
-        log.info("returning mandates by delegator count: " + mm.size());
-        
-        return Flux.fromIterable(mm);
+        return mandateDao.rejectMandate(internaluserId, mandateId);
     }
 
-   
-    public Mono<Object> rejectMandate(String mandateId, ServerWebExchange exchange) {
-        if (mockdb.containsKey(mandateId))
-        {
-          mockdb.remove(mandateId);
-          
-          log.info("rejected mandate " + mandateId);
-        }
-        return  Mono.empty();
+    /**
+     * Revoca una delega
+     *
+     * @param mandateId id della delega
+     * @param internaluserId iuid del delegante
+     * @return void
+     */
+    public Mono<Object> revokeMandate(String mandateId, String internaluserId) {
+        if (mandateId == null)
+            throw  new MandateNotFoundException();
+
+        return mandateDao.revokeMandate(internaluserId, mandateId);
     }
 
-    
-    public Mono<Object> revokeMandate(String mandateId, ServerWebExchange exchange) {
-        if (mockdb.containsKey(mandateId))
-        {
-          mockdb.remove(mandateId);
-          log.info("revoked mandate " + mandateId);
-        }
-        return  Mono.empty();
-    }
+    /**
+     * Questo metodo non è pensato per essere usato dal FE, ma dalla callback proveniente da dynamostream
+     * Si occupa di spostare la delega nello storico e toglierla dalla tabella principale
+     *
+     * @param mandateId id della delega
+     * @param internaluserId iuid del delegante
+     * @return void
+     */
+    public Mono<Object> expireMandate(String mandateId, String internaluserId) {
+        if (mandateId == null)
+            throw  new MandateNotFoundException();
 
-     
+        return mandateDao.expireMandate(internaluserId, mandateId);
+    }
 }

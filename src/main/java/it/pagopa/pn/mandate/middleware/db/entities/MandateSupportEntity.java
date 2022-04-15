@@ -1,0 +1,47 @@
+package it.pagopa.pn.mandate.middleware.db.entities;
+
+import it.pagopa.pn.mandate.utils.DateUtils;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
+
+import java.util.Set;
+
+import static it.pagopa.pn.mandate.middleware.db.BaseDao.GSI_INDEX_DELEGATE_STATE;
+
+/**
+ * Entity di supporto alla delega
+ */
+@DynamoDbBean
+@Data
+@NoArgsConstructor
+public class MandateSupportEntity {
+
+    public static final String MANDATE_TRIGGERHELPER_PREFIX = "MANDATETRIGGERHELPER#";
+
+
+    public static final String COL_PK = "pk";
+    public static final String COL_SK = "sk";
+
+    public MandateSupportEntity(MandateEntity source)
+    {
+        this.setDelegator(source.getDelegator());
+        this.setMandateId(source.getMandateId());
+        if (source.getValidto() != null)
+            this.setTtl(DateUtils.parseDate(source.getValidto()).toEpochSecond());
+    }
+
+
+    public String getMandateId(){
+        return this.sk.replace(MANDATE_TRIGGERHELPER_PREFIX, "");
+    }
+    public void setMandateId(String id){
+        this.sk = MANDATE_TRIGGERHELPER_PREFIX + id;
+    }
+
+    @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute(COL_PK)})) private String delegator;
+    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_SK)}))  private String sk;
+    @Getter(onMethod=@__({@DynamoDbAttribute("i_ttl")}))  private Long ttl;
+    
+}

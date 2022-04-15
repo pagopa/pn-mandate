@@ -1,19 +1,29 @@
 package it.pagopa.pn.mandate.rest.utils;
 
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.Problem;
 import org.springframework.http.HttpStatus;
-
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.Fault;
 
 public class ExceptionHelper {
     
     
-    public static Fault handleException(Throwable ex, HttpStatus statusError, String path){
-        //TODO gestione exception e generazione fault
-        Fault res = new Fault();
-        res.setType(path);
+    public static Problem handleException(Throwable ex, HttpStatus statusError){
+        // gestione exception e generazione fault
+        Problem res = new Problem();
         res.setStatus(statusError.value());
-        res.setTitle(ex.getMessage());
-        res.setDetail(ex.getMessage());
+        //res.setTraceId();
+        if (ex instanceof PnException)
+        {
+            res.setTitle(ex.getMessage());
+            res.setDetail(((PnException)ex).getDescription());
+            res.setStatus(((PnException) ex).getStatus());
+        }
+        else
+        {
+            // nascondo all'utente l'errore
+            res.title("Errore generico");
+            res.detail("Qualcosa è andato storto, ritenta più tardi");
+        }
+
         return res;
     }
 }

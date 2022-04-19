@@ -12,9 +12,6 @@ public class UserEntityMandateCountsDtoMapper implements BaseMapperInterface<Man
         super();
     }
 
-
-    public static UserEntityMandateCountsDtoMapper Builder() { return new UserEntityMandateCountsDtoMapper(); }        
-
     @Override
     public DelegateEntity toEntity(MandateCountsDto source) {
         throw new UnsupportedOperationException();

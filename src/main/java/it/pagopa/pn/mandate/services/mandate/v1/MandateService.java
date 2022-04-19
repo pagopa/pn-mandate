@@ -248,10 +248,7 @@ public class MandateService  {
                             {
                                 UserDto user = dto.getDelegator();
                                 String denomination = userinfosdtos.get(ent.getDelegator());
-                                if (user.getPerson())
-                                    user.setDisplayName(denomination);
-                                else
-                                    user.setDisplayName(denomination);
+                                user.setDisplayName(denomination);
                             }
 
                             dtos.add(dto);

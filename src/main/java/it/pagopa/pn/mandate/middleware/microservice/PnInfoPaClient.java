@@ -22,7 +22,7 @@ import reactor.util.retry.Retry;
 
 @Component
 public class PnInfoPaClient {
-    
+
     private final InfoPaApi infoPaApi;
 
     public PnInfoPaClient(@Value("${pn.mandate.client.infopa.basepath}") String basepath ) {

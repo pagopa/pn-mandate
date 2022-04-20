@@ -20,7 +20,10 @@ import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
-import software.amazon.awssdk.services.dynamodb.model.*;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.Select;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -263,28 +266,9 @@ public class MandateDao extends BaseDao {
                         mandate.setRejected(DateUtils.formatTime(ZonedDateTime.now()));
                         mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REJECTED));
                     }
-                    mandate.setTtl(ZonedDateTime.now().plusYears(10).toEpochSecond());
-
-
-                    MandateSupportEntity mandateSupport = new MandateSupportEntity(mandate);
-
 
                     try {
-
-                        TransactWriteItemsEnhancedRequest transaction = TransactWriteItemsEnhancedRequest.builder()
-                                .addPutItem(mandateHistoryTable, TransactPutItemEnhancedRequest.builder(MandateEntity.class).item(mandate).build())
-                                .addDeleteItem(mandateTable, TransactDeleteItemEnhancedRequest.builder().key(getKeyBuild(mandate.getDelegator(), mandate.getSk())).build())
-                                .addDeleteItem(mandateSupportTable, TransactDeleteItemEnhancedRequest.builder().key(getKeyBuild(mandateSupport.getDelegator(), mandateSupport.getSk())).build())
-                                .build();
-
-                        dynamoDbEnhancedAsyncClient.transactWriteItems(transaction).thenApply(x -> {
-                            if (log.isInfoEnabled())
-                                log.info("mandate saved in history and deleted from main table mandateobj:{}", mandate);
-
-                            auditLog(mandate, "REJECTED");
-                            return mandate;
-                        }).completeOnTimeout(mandate, 10000, TimeUnit.MILLISECONDS).get();
-
+                        saveHistoryAndDeleteFromMain(mandate, StatusEnum.REJECTED).completeOnTimeout(mandate, 10000, TimeUnit.MILLISECONDS).get();
                     } catch (InterruptedException e) {
                         log.error("Cannot complete accept", e);
                         Thread.currentThread().interrupt();
@@ -320,30 +304,10 @@ public class MandateDao extends BaseDao {
                                 throw new MandateNotFoundException();
 
                             log.info("mandate for delegate retrieved mandateobj:{}", mandate);
-                            // aggiorno lo stato
-                            mandate.setRevoked(DateUtils.formatTime(ZonedDateTime.now()));
-                            mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REVOKED));
-                            mandate.setTtl(LocalDateTime.now().plusYears(10).atZone(ZoneId.systemDefault()).toEpochSecond());
-
-                            MandateSupportEntity mandateSupport = new MandateSupportEntity(mandate);
-
-                            TransactWriteItemsEnhancedRequest transaction = TransactWriteItemsEnhancedRequest.builder()
-                                    .addPutItem(mandateHistoryTable, TransactPutItemEnhancedRequest.builder(MandateEntity.class).item(mandate).build())
-                                    .addDeleteItem(mandateTable, TransactDeleteItemEnhancedRequest.builder().key(getKeyBuild(mandate.getDelegator(), mandate.getSk())).build())
-                                    .addDeleteItem(mandateSupportTable, TransactDeleteItemEnhancedRequest.builder().key(getKeyBuild(mandateSupport.getDelegator(), mandateSupport.getSk())).build())
-                                    .build();
-
-                            return dynamoDbEnhancedAsyncClient.transactWriteItems(transaction).thenApply(x -> {
-                                if (log.isInfoEnabled())
-                                    log.info("mandate saved in history and deleted from main table mandateobj:{}", mandate);
-
-                                auditLog(mandate, "REVOKED");
-                                return mandate;
-                            });
+                            return saveHistoryAndDeleteFromMain(mandate, StatusEnum.REVOKED);
                         })
                 );
     }
-
 
     /**
      *  Il metodo si occupa di:
@@ -366,25 +330,7 @@ public class MandateDao extends BaseDao {
                                 throw new MandateNotFoundException();
 
                             log.info("mandate for delegate retrieved mandateobj:{}", mandate);
-                            // aggiorno lo stato
-                            mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
-                            mandate.setTtl(LocalDateTime.now().plusYears(10).atZone(ZoneId.systemDefault()).toEpochSecond());
-
-                            MandateSupportEntity mandateSupport = new MandateSupportEntity(mandate);
-
-                            TransactWriteItemsEnhancedRequest transaction = TransactWriteItemsEnhancedRequest.builder()
-                                    .addPutItem(mandateHistoryTable, TransactPutItemEnhancedRequest.builder(MandateEntity.class).item(mandate).build())
-                                    .addDeleteItem(mandateTable, TransactDeleteItemEnhancedRequest.builder().key(getKeyBuild(mandate.getDelegator(), mandate.getSk())).build())
-                                    .addDeleteItem(mandateSupportTable, TransactDeleteItemEnhancedRequest.builder().key(getKeyBuild(mandateSupport.getDelegator(), mandateSupport.getSk())).build())
-                                    .build();
-
-                            return dynamoDbEnhancedAsyncClient.transactWriteItems(transaction).thenApply(x -> {
-                                if (log.isInfoEnabled())
-                                    log.info("mandate saved in history and deleted from main table mandateobj:{}", mandate);
-
-                                auditLog(mandate, "EXPIRED");
-                                return mandate;
-                            });
+                            return saveHistoryAndDeleteFromMain(mandate, StatusEnum.EXPIRED);
                         })
                 );
     }
@@ -533,6 +479,31 @@ public class MandateDao extends BaseDao {
         if (log.isInfoEnabled())
             log.info("AUDITLOG: mandate {} delegator uid:{} delegate uid:{} mandateobj:{}", event, mandate.getDelegator(), mandate.getDelegate(), mandate);
 
+    }
+
+
+    private CompletableFuture<MandateEntity> saveHistoryAndDeleteFromMain(MandateEntity mandate, StatusEnum newstatus)
+    {
+        // aggiorno lo stato
+        mandate.setRevoked(DateUtils.formatTime(ZonedDateTime.now()));
+        mandate.setState(StatusEnumMapper.intValfromStatus(newstatus));
+        mandate.setTtl(LocalDateTime.now().plusYears(10).atZone(ZoneId.systemDefault()).toEpochSecond());
+
+        MandateSupportEntity mandateSupport = new MandateSupportEntity(mandate);
+
+        TransactWriteItemsEnhancedRequest transaction = TransactWriteItemsEnhancedRequest.builder()
+                .addPutItem(mandateHistoryTable, TransactPutItemEnhancedRequest.builder(MandateEntity.class).item(mandate).build())
+                .addDeleteItem(mandateTable, TransactDeleteItemEnhancedRequest.builder().key(getKeyBuild(mandate.getDelegator(), mandate.getSk())).build())
+                .addDeleteItem(mandateSupportTable, TransactDeleteItemEnhancedRequest.builder().key(getKeyBuild(mandateSupport.getDelegator(), mandateSupport.getSk())).build())
+                .build();
+
+        return dynamoDbEnhancedAsyncClient.transactWriteItems(transaction).thenApply(x -> {
+            if (log.isInfoEnabled())
+                log.info("mandate saved in history and deleted from main table mandateobj:{}", mandate);
+
+            auditLog(mandate, newstatus.getValue());
+            return mandate;
+        });
     }
     //#endregion
 }

@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.NoSuchElementException;
+
 import static org.junit.jupiter.api.Assertions.fail;
 
 class StatusEnumMapperTest {
@@ -56,6 +58,59 @@ class StatusEnumMapperTest {
 
         //Then
         Assertions.assertEquals( MandateDto.StatusEnum.ACTIVE, result);
+    }
+
+    @Test
+    void fromValueRejected() {
+        //Given
+        int state = 30;
+
+        //When
+        MandateDto.StatusEnum result = StatusEnumMapper.fromValue(state);
+
+        //Then
+        Assertions.assertEquals( MandateDto.StatusEnum.REJECTED, result);
+    }
+
+    @Test
+    void fromValueRevoked() {
+        //Given
+        int state = 40;
+
+        //When
+        MandateDto.StatusEnum result = StatusEnumMapper.fromValue(state);
+
+        //Then
+        Assertions.assertEquals( MandateDto.StatusEnum.REVOKED, result);
+    }
+
+    @Test
+    void fromValueExpired() {
+        //Given
+        int state = 50;
+
+        //When
+        MandateDto.StatusEnum result = StatusEnumMapper.fromValue(state);
+
+        //Then
+        Assertions.assertEquals( MandateDto.StatusEnum.EXPIRED, result);
+    }
+
+
+    @Test
+    void fromValueInexistente() {
+        //Given
+        int state = 0;
+
+        //When
+        try {
+            StatusEnumMapper.fromValue(state);
+            fail("no NoSuchElementException thrown");
+        } catch (NoSuchElementException e) {
+            // expected
+        }
+
+        //Then
     }
 
     @Test

@@ -1,18 +1,16 @@
 package it.pagopa.pn.mandate.mapper;
 
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.springframework.stereotype.Component;
-
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
-import reactor.core.publisher.Mono;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Component
 public class MandateEntityMandateDtoMapper implements BaseMapperInterface<MandateDto, MandateEntity> {
@@ -60,7 +58,7 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
 
 
     private List<OrganizationIdDto> getOrgidsDtos(Set<String> ids){
-        if (ids == null || ids.size() == 0)
+        if (ids == null || ids.isEmpty())
             return new ArrayList<>();
         
         List<OrganizationIdDto> r = new ArrayList<>();
@@ -75,7 +73,7 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
     }
 
     private Set<String> getOrgidsEntities(List<OrganizationIdDto> ids){
-        if (ids == null || ids.size() == 0)
+        if (ids == null || ids.isEmpty())
             return null;
         
         Set<String> r = new HashSet<>();

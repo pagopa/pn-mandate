@@ -40,14 +40,14 @@ public class DelegateDao extends BaseDao {
         this.table = table;
     }
 
-    public Mono<DelegateEntity> countMandates(String delegate_internaluserid) {
+    public Mono<DelegateEntity> countMandates(String delegateInternaluserid) {
         if (log.isInfoEnabled())
-            log.info("Get user pending count uid:{}", delegate_internaluserid);
+            log.info("Get user pending count uid:{}", delegateInternaluserid);
 
         // qui l'internaluserid è quello del DELEGATO, devo passare quindi per l'indice sul delegato,
         // e fare il count delle deleghe in pending.
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":delegate", AttributeValue.builder().s(delegate_internaluserid).build());
+        expressionValues.put(":delegate", AttributeValue.builder().s(delegateInternaluserid).build());
         expressionValues.put(":state", AttributeValue.builder().n(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING) + "").build());  //anche se numero, va convertito in stringa, a dynamo piace così
 
         QueryRequest qeRequest = QueryRequest
@@ -61,7 +61,7 @@ public class DelegateDao extends BaseDao {
 
         return Mono.fromFuture(dynamoDbAsyncClient.query(qeRequest).thenApply(x -> {
                 DelegateEntity user =new DelegateEntity();
-                user.setPk(delegate_internaluserid);
+                user.setPk(delegateInternaluserid);
                 user.setSk(TOTALS);
                 user.setPendingcount(x.count());
                 return user;

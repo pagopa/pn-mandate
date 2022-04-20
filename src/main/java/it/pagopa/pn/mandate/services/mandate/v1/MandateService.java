@@ -147,17 +147,8 @@ public class MandateService  {
                     },
                     (dto, userinfosdtos) -> {
                         if (userinfosdtos.containsKey(dto.getMandateId()))
-                        {
-                            UserDto user = dto.getDelegate();
-                            AddressAndDenominationDtoDto info = userinfosdtos.get(dto.getMandateId());
-                            user.setCompanyName(info.getDestBusinessName());
-                            user.setFirstName(info.getDestName());
-                            user.setLastName(info.getDestSurname());
-                            if (user.getPerson())
-                                user.setDisplayName(info.getDestName() + " " + info.getDestSurname());
-                            else
-                                user.setDisplayName(info.getDestBusinessName());
-                        }
+                            updateUserDto(dto.getDelegate(), userinfosdtos.get(dto.getMandateId()));
+
                         return dto;
                     })
                 .flatMap(ent -> {
@@ -248,10 +239,7 @@ public class MandateService  {
                             {
                                 UserDto user = dto.getDelegator();
                                 String denomination = userinfosdtos.get(ent.getDelegator());
-                                if (user.getPerson())
-                                    user.setDisplayName(denomination);
-                                else
-                                    user.setDisplayName(denomination);
+                                user.setDisplayName(denomination);
                             }
 
                             dtos.add(dto);
@@ -309,17 +297,7 @@ public class MandateService  {
                     for(MandateDto dto : dtos)
                     {
                         if (userinfosdtos.containsKey(dto.getMandateId()))
-                        {
-                            UserDto user = dto.getDelegate();
-                            AddressAndDenominationDtoDto info = userinfosdtos.get(dto.getMandateId());
-                            user.setCompanyName(info.getDestBusinessName());
-                            user.setFirstName(info.getDestName());
-                            user.setLastName(info.getDestSurname());
-                            if (user.getPerson())
-                                user.setDisplayName(info.getDestName() + " " + info.getDestSurname());
-                            else
-                                user.setDisplayName(info.getDestBusinessName());
-                        }
+                            updateUserDto(dto.getDelegate(), userinfosdtos.get(dto.getMandateId()));
                     }
                     return dtos;
                 })
@@ -379,5 +357,16 @@ public class MandateService  {
             throw  new MandateNotFoundException();
 
         return mandateDao.expireMandate(internaluserId, mandateId);
+    }
+
+    private void updateUserDto(UserDto user, AddressAndDenominationDtoDto info)
+    {
+        user.setCompanyName(info.getDestBusinessName());
+        user.setFirstName(info.getDestName());
+        user.setLastName(info.getDestSurname());
+        if (user.getPerson())
+            user.setDisplayName(info.getDestName() + " " + info.getDestSurname());
+        else
+            user.setDisplayName(info.getDestBusinessName());
     }
 }

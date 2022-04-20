@@ -4,10 +4,16 @@ import it.pagopa.pn.mandate.middleware.db.MandateDaoTestIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -50,6 +56,90 @@ class MandateEntityMandateDtoMapperTest {
     }
 
     @Test
+    void toEntityNoStatus() {
+        //Given
+        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(true);
+        MandateDto dto = mapper.toDto(mandateToInsert);
+        dto.setStatus(null);
+
+        //When
+        MandateEntity result = mapper.toEntity(dto);
+
+        //Then
+        try {
+            Assertions.assertNotNull( result);
+            Assertions.assertEquals(0 , result.getState());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+
+    @Test
+    void toEntityNoDelegate() {
+        //Given
+        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(true);
+        MandateDto dto = mapper.toDto(mandateToInsert);
+        dto.setDelegate(null);
+
+        //When
+        MandateEntity result = mapper.toEntity(dto);
+
+        //Then
+        try {
+            Assertions.assertNotNull( result);
+            Assertions.assertNull(result.getDelegate());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+
+    @Test
+    void toEntityNoDelegator() {
+        //Given
+        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(true);
+        MandateDto dto = mapper.toDto(mandateToInsert);
+        dto.setDelegator(null);
+
+        //When
+        MandateEntity result = mapper.toEntity(dto);
+
+        //Then
+        try {
+            Assertions.assertNotNull( result);
+            Assertions.assertNull(result.getDelegator());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+
+    @Test
+    void toEntityWithList() {
+        //Given
+        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(true);
+        MandateDto dto = mapper.toDto(mandateToInsert);
+        List<OrganizationIdDto> list = new ArrayList<>();
+        OrganizationIdDto organizationIdDto = new OrganizationIdDto();
+        organizationIdDto.setName("prova");
+        organizationIdDto.setUniqueIdentifier("123");
+        list.add(organizationIdDto);
+        dto.setVisibilityIds(list);
+
+        //When
+        MandateEntity result = mapper.toEntity(dto);
+
+        //Then
+        try {
+            Assertions.assertNotNull( result);
+            Assertions.assertEquals(dto.getVisibilityIds().size(), result.getVisibilityIds().size());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
     void toDto() {
         //Given
         MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(true);
@@ -82,4 +172,26 @@ class MandateEntityMandateDtoMapperTest {
             fail(e);
         }
     }
+
+
+    @Test
+    void toDtoWithList() {
+        //Given
+        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(true);
+        Set<String> ids = new HashSet<>();
+        ids.add("123");
+        mandateToInsert.setVisibilityIds(ids);
+
+        //When
+        MandateDto result = mapper.toDto(mandateToInsert);
+
+        //Then
+        try {
+            Assertions.assertNotNull( result);
+            Assertions.assertEquals(mandateToInsert.getVisibilityIds().size(),  result.getVisibilityIds().size());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
 }

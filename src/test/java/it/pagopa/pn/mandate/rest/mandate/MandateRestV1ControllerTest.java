@@ -69,7 +69,7 @@ class MandateRestV1ControllerTest {
 
         //When
         Mockito.when( mandateService.acceptMandate( Mockito.any(), Mockito.any() , Mockito.any()))
-                .thenReturn(Mono.empty());
+                .thenReturn(Mono.just(""));
 
         //Then
         webTestClient.patch()
@@ -78,7 +78,7 @@ class MandateRestV1ControllerTest {
                 .header( PN_PAGOPA_USER_ID, "internaluserid1234")
                 .header( PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
-                .expectStatus().isOk();
+                .expectStatus().isNoContent();
     }
 
 
@@ -156,7 +156,7 @@ class MandateRestV1ControllerTest {
 
         //When
         Mockito.when( mandateService.rejectMandate( Mockito.any(), Mockito.any()))
-                .thenReturn(Mono.empty());
+                .thenReturn(Mono.just(""));
 
         //Then
         webTestClient.patch()
@@ -165,7 +165,7 @@ class MandateRestV1ControllerTest {
                 .header( PN_PAGOPA_USER_ID, "internaluserid1234")
                 .header( PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
-                .expectStatus().isOk();
+                .expectStatus().isNoContent();
     }
 
     @Test
@@ -176,7 +176,7 @@ class MandateRestV1ControllerTest {
 
         //When
         Mockito.when( mandateService.revokeMandate( Mockito.any(), Mockito.any()))
-                .thenReturn(Mono.empty());
+                .thenReturn(Mono.just(""));
 
         //Then
         webTestClient.patch()
@@ -185,6 +185,6 @@ class MandateRestV1ControllerTest {
                 .header( PN_PAGOPA_USER_ID, "internaluserid1234")
                 .header( PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
-                .expectStatus().isOk();
+                .expectStatus().isNoContent();
     }
 }

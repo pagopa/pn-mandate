@@ -68,7 +68,7 @@ Parameters:
     Description: 'ARN of dynamodb table containing mandates'
 
   MandatesDynamoTableHistoryArn:
-  Type: String
+    Type: String
     Description: 'ARN of dynamodb table containing mandates history'
 
 Resources:

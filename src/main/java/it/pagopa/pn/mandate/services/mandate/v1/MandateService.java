@@ -4,7 +4,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.AddressAndDenominationDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.rest.utils.InvalidInputException;
 import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
@@ -14,12 +14,12 @@ import org.springframework.stereotype.Service;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.middleware.microservice.PnDataVaultClient;
-import it.pagopa.pn.mandate.middleware.microservice.PnInfoPaClient;
+import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
+import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
@@ -129,7 +129,7 @@ public class MandateService  {
                         })
                         .flatMap(mandateDao::createMandate)
                         .flatMap(ent -> pnDatavaultClient.updateMandateById(uuid, dto.getDelegate().getFirstName(),
-                                dto.getDelegate().getLastName(), null, dto.getDelegate().getCompanyName())
+                                dto.getDelegate().getLastName(), dto.getDelegate().getCompanyName())
                                   .then(Mono.just(ent)))
                 ,(ddto, entity) -> entity)
             .map(r -> {
@@ -290,7 +290,7 @@ public class MandateService  {
                                     .collectMap(MandateDtoDto::getMandateId, MandateDtoDto::getInfo);
                         }
                         else
-                            return Mono.just(new HashMap<String, AddressAndDenominationDtoDto>());
+                            return Mono.just(new HashMap<String, DenominationDtoDto>());
                 },
                 (dtos, userinfosdtos) -> {
 
@@ -359,7 +359,7 @@ public class MandateService  {
         return mandateDao.expireMandate(internaluserId, mandateId);
     }
 
-    private void updateUserDto(UserDto user, AddressAndDenominationDtoDto info)
+    private void updateUserDto(UserDto user, DenominationDtoDto info)
     {
         user.setCompanyName(info.getDestBusinessName());
         user.setFirstName(info.getDestName());

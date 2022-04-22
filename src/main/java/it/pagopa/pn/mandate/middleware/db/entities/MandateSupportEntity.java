@@ -23,6 +23,7 @@ public class MandateSupportEntity {
 
     public static final String COL_PK = "pk";
     public static final String COL_SK = "sk";
+    public static final String COL_I_TTL = "i_ttl";
 
     public MandateSupportEntity(MandateEntity source)
     {
@@ -42,6 +43,6 @@ public class MandateSupportEntity {
 
     @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute(COL_PK)})) private String delegator;
     @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_SK)}))  private String sk;
-    @Getter(onMethod=@__({@DynamoDbAttribute("i_ttl")}))  private Long ttl;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_TTL)}))  private Long ttl;
     
 }

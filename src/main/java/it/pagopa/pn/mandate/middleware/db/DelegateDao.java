@@ -28,9 +28,6 @@ public class DelegateDao extends BaseDao {
     DynamoDbAsyncClient dynamoDbAsyncClient;
     String table ;
 
-    public static final String DELEGATE_PREFIX = "USERDELEGATE-";
-    public static final String TOTALS = "TOTALS";
-   
 
     public DelegateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                        DynamoDbAsyncClient dynamoDbAsyncClient,
@@ -61,8 +58,6 @@ public class DelegateDao extends BaseDao {
 
         return Mono.fromFuture(dynamoDbAsyncClient.query(qeRequest).thenApply(x -> {
                 DelegateEntity user =new DelegateEntity();
-                user.setPk(delegateInternaluserid);
-                user.setSk(TOTALS);
                 user.setPendingcount(x.count());
                 return user;
         }));

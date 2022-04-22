@@ -28,6 +28,13 @@ public class MandateEntity {
     public static final String COL_D_VALIDFROM = "d_validfrom";
     public static final String COL_D_VALIDTO = "d_validto";
     public static final String COL_S_MANDATEID = "s_mandateid";
+    public static final String COL_T_CREATED = "t_created";
+    public static final String COL_T_ACCEPTED = "t_accepted";
+    public static final String COL_T_REJECTED = "t_rejected";
+    public static final String COL_T_REVOKED = "t_revoked";
+    public static final String COL_S_VALIDATIONCODE = "s_validationcode";
+    public static final String COL_A_VISIBILITYIDS = "a_visibilityids";
+    public static final String COL_I_TTL = "i_ttl";
 
     public MandateEntity(String delegator, String mandateid)
     {
@@ -56,16 +63,16 @@ public class MandateEntity {
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_D_VALIDFROM)}))  private String validfrom;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_D_VALIDTO)}))  private String validto;
 
-    @Getter(onMethod=@__({@DynamoDbAttribute("t_created")}))  private String created;
-    @Getter(onMethod=@__({@DynamoDbAttribute("t_accepted")}))  private String accepted;
-    @Getter(onMethod=@__({@DynamoDbAttribute("t_rejected")}))  private String rejected;
-    @Getter(onMethod=@__({@DynamoDbAttribute("t_revoked")}))  private String revoked;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_CREATED)}))  private String created;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_ACCEPTED)}))  private String accepted;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_REJECTED)}))  private String rejected;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_REVOKED)}))  private String revoked;
 
-    @Getter(onMethod=@__({@DynamoDbAttribute("s_validationcode")}))  private String validationcode;
-    @Getter(onMethod=@__({@DynamoDbAttribute("a_visibilityids")}))  private Set<String> visibilityIds;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_S_VALIDATIONCODE)}))  private String validationcode;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_A_VISIBILITYIDS)}))  private Set<String> visibilityIds;
 
 
     // per lo storico e per la struttura dati di appoggio
-    @Getter(onMethod=@__({@DynamoDbAttribute("i_ttl")}))  private Long ttl;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_TTL)}))  private Long ttl;
     
 }

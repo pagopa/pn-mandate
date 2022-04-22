@@ -1,20 +1,21 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
-import it.pagopa.pn.mandate.mapper.MandateEntityInternalMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
-import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.AddressAndDenominationDtoDto;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.MandateDtoDto;
-import it.pagopa.pn.mandate.microservice.client.infopa.v1.dto.PaInfoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoTestIT;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.middleware.microservice.PnDataVaultClient;
-import it.pagopa.pn.mandate.middleware.microservice.PnInfoPaClient;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
+import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
+import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
 import it.pagopa.pn.mandate.rest.utils.InvalidInputException;
 import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
 import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
@@ -32,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -127,8 +127,6 @@ class MandateServiceTest {
     void countMandatesByDelegate() {
         //Given
         DelegateEntity delegateEntity = new DelegateEntity();
-        delegateEntity.setSk("");
-        delegateEntity.setPk("");
         delegateEntity.setPendingcount(5);
         MandateCountsDto dto = new MandateCountsDto();
         dto.setValue(delegateEntity.getPendingcount());
@@ -175,7 +173,7 @@ class MandateServiceTest {
         List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
         MandateDtoDto mandateDtoDto = new MandateDtoDto();
         mandateDtoDto.mandateId(entity.getMandateId());
-        mandateDtoDto.setInfo(new AddressAndDenominationDtoDto());
+        mandateDtoDto.setInfo(new DenominationDtoDto());
         mandateDtoDto.getInfo().setDestName("mario");
         mandateDtoDto.getInfo().setDestSurname("rossi");
         resgetmandatesbyid.add(mandateDtoDto);
@@ -183,7 +181,7 @@ class MandateServiceTest {
 
         when(mandateDao.createMandate (Mockito.any())).thenReturn(Mono.just(entity));
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
-        when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
+        when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(),  Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
         when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
         when(mapper.toEntity(Mockito.any())).thenReturn(entity);

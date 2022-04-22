@@ -1,9 +1,8 @@
-package it.pagopa.pn.mandate.middleware.microservice;
+package it.pagopa.pn.mandate.middleware.msclient;
 
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.AddressAndDenominationDtoDto;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.MandateDtoDto;
-import it.pagopa.pn.mandate.microservice.client.infopa.v1.dto.PaInfoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,7 @@ import static org.mockserver.model.HttpResponse.response;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "pn.mandate.client.datavault.basepath=http://localhost:9998"
+        "pn.mandate.client_datavault_basepath=http://localhost:9998"
 })
 class PnDataVaultClientTest {
 
@@ -121,7 +120,7 @@ class PnDataVaultClientTest {
                         .withStatusCode(200));
 
         //When
-        String result = pnDataVaultClient.updateMandateById(mandateid, name, surname, null, ragionesociale).block(Duration.ofMillis(3000));
+        String result = pnDataVaultClient.updateMandateById(mandateid, name, surname, ragionesociale).block(Duration.ofMillis(3000));
 
         //Then
         assertNotNull(result);
@@ -148,10 +147,10 @@ class PnDataVaultClientTest {
                         .withBody("{" +
                                 "\"" + MandateDtoDto.JSON_PROPERTY_MANDATE_ID + "\": " + "\"" + mandateid + "\"," +
                                 "\"" + MandateDtoDto.JSON_PROPERTY_INFO + "\": " +
-                                "{" + "\"" + AddressAndDenominationDtoDto.JSON_PROPERTY_DEST_NAME + "\": " + "\"" + name + "\"," +
-                                        "\"" + AddressAndDenominationDtoDto.JSON_PROPERTY_DEST_SURNAME + "\": " + "\"" + surname + "\"," +
-                                        "\"" + AddressAndDenominationDtoDto.JSON_PROPERTY_DEST_BUSINESS_NAME + "\": " + "\"" + ragionesociale + "\"," +
-                                        "\"" + AddressAndDenominationDtoDto.JSON_PROPERTY_KIND + "\": " + "\"" + AddressAndDenominationDtoDto.KindEnum.EMAIL.getValue() + "\"" +"}" +
+                                "{" + "\"" + DenominationDtoDto.JSON_PROPERTY_DEST_NAME + "\": " + "\"" + name + "\"," +
+                                        "\"" + DenominationDtoDto.JSON_PROPERTY_DEST_SURNAME + "\": " + "\"" + surname + "\"," +
+                                        "\"" + DenominationDtoDto.JSON_PROPERTY_DEST_BUSINESS_NAME + "\": " + "\"" + ragionesociale + "\""
+                                +"}" +
                                 "}")
                         .withContentType(MediaType.APPLICATION_JSON)
                         .withStatusCode(200));

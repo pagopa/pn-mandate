@@ -11,6 +11,8 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
  *     tra una delega "viva" ed una storicizzata.
  */
 public class StatusEnumMapper {
+
+    private StatusEnumMapper(){}
     
     public static int intValfromStatus(StatusEnum s)
     {

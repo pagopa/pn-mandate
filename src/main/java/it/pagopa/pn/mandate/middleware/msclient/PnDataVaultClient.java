@@ -1,31 +1,30 @@
-package it.pagopa.pn.mandate.middleware.microservice;
+package it.pagopa.pn.mandate.middleware.msclient;
 
-
-import java.net.ConnectException;
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
- 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.TimeoutException;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.ApiClient;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.api.MandatesApi;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.api.RecipientsApi;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.AddressAndDenominationDtoDto;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.MandateDtoDto;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.RecipientTypeDto;
-import it.pagopa.pn.mandate.microservice.client.datavault.v1.dto.AddressAndDenominationDtoDto.KindEnum;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.ApiClient;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.MandatesApi;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.RecipientsApi;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.RecipientTypeDto;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClient; 
+import reactor.netty.http.client.HttpClient;
 import reactor.util.retry.Retry;
+
+import javax.annotation.PostConstruct;
+import java.net.ConnectException;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Classe wrapper di pn-data-vault, con gestione del backoff
@@ -33,29 +32,34 @@ import reactor.util.retry.Retry;
 @Component
 public class PnDataVaultClient {
     
-    private final RecipientsApi recipientsApi;
-    private final MandatesApi mandatesApi;
+    private RecipientsApi recipientsApi;
+    private MandatesApi mandatesApi;
+    private final PnMandateConfig pnMandateConfig;
 
-    public PnDataVaultClient(@Value("${pn.mandate.client.datavault.basepath}") String basepath ) {
-        
+    public PnDataVaultClient(PnMandateConfig pnMandateConfig) {
+        this.pnMandateConfig = pnMandateConfig;
+    }
+
+    @PostConstruct
+    public void init(){
         HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
-            .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(1000, TimeUnit.MILLISECONDS)));        
+                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(1000, TimeUnit.MILLISECONDS)));
 
-        WebClient webClient = ApiClient.buildWebClientBuilder()        
-            .clientConnector(new ReactorClientHttpConnector(httpClient))
-            .build();
-        ApiClient newApiClient = new ApiClient(webClient);        
-        newApiClient.setBasePath(basepath); 
+        WebClient webClient = ApiClient.buildWebClientBuilder()
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .build();
+        ApiClient newApiClient = new ApiClient(webClient);
+        newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
         this.recipientsApi = new RecipientsApi(newApiClient);
 
         httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
-        .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(1000, TimeUnit.MILLISECONDS)));        
+                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(1000, TimeUnit.MILLISECONDS)));
 
-        webClient = ApiClient.buildWebClientBuilder()        
-            .clientConnector(new ReactorClientHttpConnector(httpClient))
-            .build();
-        newApiClient = new ApiClient(webClient);        
-        newApiClient.setBasePath(basepath); 
+        webClient = ApiClient.buildWebClientBuilder()
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .build();
+        newApiClient = new ApiClient(webClient);
+        newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
         this.mandatesApi = new MandatesApi(newApiClient);
     }
 
@@ -97,17 +101,14 @@ public class PnDataVaultClient {
      * @param mandateId id della delega
      * @param name nome
      * @param surname cognome
-     * @param email email
      * @param businessName ragione sociale
      * @return void
      */
-    public Mono<String> updateMandateById(String mandateId, String name, String surname, String email, String businessName)
+    public Mono<String> updateMandateById(String mandateId, String name, String surname, String businessName)
     {
-        AddressAndDenominationDtoDto addressdto = new AddressAndDenominationDtoDto();
-        addressdto.setKind(KindEnum.EMAIL);
+        DenominationDtoDto addressdto = new DenominationDtoDto();
         addressdto.setDestName(name);
         addressdto.setDestSurname(surname);
-        addressdto.setValue(email);
         addressdto.setDestBusinessName(businessName);
         return mandatesApi.updateMandateById(mandateId, addressdto)
             .retryWhen(

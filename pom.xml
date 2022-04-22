@@ -150,8 +150,8 @@
                                 <swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
-							<modelPackage>${project.groupId}.mandate.microservice.client.infopa.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.microservice.client.infopa.v1.api</apiPackage>
+							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.infopa.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.infopa.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
 					</execution>
@@ -173,8 +173,8 @@
                                 <swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
-							<modelPackage>${project.groupId}.mandate.microservice.client.datavault.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.microservice.client.datavault.v1.api</apiPackage>
+							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.datavault.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.datavault.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
 					</execution>					

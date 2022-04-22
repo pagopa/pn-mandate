@@ -13,8 +13,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @DynamoDbBean
 @Data
 public class DelegateEntity {
-   
-    @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute("pk")})) private String pk;
-    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute("sk")})) private String sk;
-    @Getter(onMethod=@__({@DynamoDbAttribute("i_pendingcount")})) private int pendingcount;
+
+    public static final String COL_I_PENDINGCOUNT = "i_pendingcount";
+
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_PENDINGCOUNT)})) private int pendingcount;
 }

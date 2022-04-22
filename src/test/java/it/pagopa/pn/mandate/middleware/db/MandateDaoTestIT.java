@@ -547,17 +547,43 @@ public class MandateDaoTestIT {
         }
     }
 
+
     @Test
-    void revokeMandateNotFound() {
+    void revokeMandateTwice() {
         //Given
-        // nothing
+        MandateEntity mandateToInsert = newMandate(false);
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(Duration.ofMillis(3000));
+
 
         //When
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(Duration.ofMillis(3000));
+
+
+        //Then
         try {
-            mandateDao.revokeMandate("fake", "fake").block(Duration.ofMillis(3000));
-            fail("no MandateNotFoundException thrown");
-        } catch (MandateNotFoundException e) {
-            //expected
+            MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            MandateEntity elementHistoryFromDb = testDao.getHistory(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+
+            Assertions.assertNull( elementFromDb);
+            Assertions.assertNotNull( elementHistoryFromDb);
+            Assertions.assertEquals( StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.REVOKED), elementHistoryFromDb.getState());
+            Assertions.assertNotNull(elementHistoryFromDb.getRevoked());
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.deleteHistory(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
         }
     }
 

@@ -1,6 +1,6 @@
-package it.pagopa.pn.mandate.middleware.microservice;
+package it.pagopa.pn.mandate.middleware.msclient;
 
-import it.pagopa.pn.mandate.microservice.client.infopa.v1.dto.PaInfoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ import static org.mockserver.model.HttpResponse.response;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-    "pn.mandate.client.infopa.basepath=http://localhost:9999"
+    "pn.mandate.client_infopa_basepath=http://localhost:9999"
 })
 class PnInfoPaClientTest {
 

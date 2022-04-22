@@ -30,8 +30,6 @@ class UserEntityMandateCountsDtoMapperTest {
         //Given
         DelegateEntity delegateToInsert = new DelegateEntity();
         delegateToInsert.setPendingcount(5);
-        delegateToInsert.setPk("123");
-        delegateToInsert.setSk("abc");
 
 
         //When

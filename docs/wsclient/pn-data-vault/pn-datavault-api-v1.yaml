@@ -3,12 +3,12 @@ info:
   title: Anonimizzazione dati in Piattaforma Notifiche
   version: v1
   description: |
-      # Elenco entità logiche che contengono informazioni confidenziali
-        - Identificativi dei destinatari; possono essere persone fisiche o persone giuridiche
-        - Domicili e recapiti inseriti dai destinatari
-        - Informazioni di contatto inserite nelle deleghe
-        - Informazioni di contatto inserite nelle notifiche
-      
+    # Elenco entità logiche che contengono informazioni confidenziali
+      - Identificativi dei destinatari; possono essere persone fisiche o persone giuridiche
+      - Domicili e recapiti inseriti dai destinatari
+      - Informazioni di contatto inserite nelle deleghe
+      - Informazioni di contatto inserite nelle notifiche
+
   license:
     name: PagoPA PN license
     url: http://pippo.pappo.it
@@ -35,10 +35,10 @@ paths:
       operationId: ensureRecipientByExternalId
       summary: Genera un id opaco
       description: >-
-        Se _recipientType_ vale _PF_ richiede l'id opaco allo _UserRegistry_ connesso allo
+        Se _recipientType_ vale _PF_ richiede l'id opaco al _Personal Data Vault_ connesso allo
         _SpidHub_ del portale dedicato ai cittadini. <br/>
-        Se _recipientType_ vale _PG_ richiede l'id opaco a un istanza di _UserRegistry_ dedicata
-        alle persone giuridiche.
+        Se _recipientType_ vale _PG_ richiede l'id opaco a un istanza di _Personal Data Vault_ 
+        dedicata alle persone giuridiche.
       tags:
         - Recipients
       parameters:
@@ -53,7 +53,7 @@ paths:
           in: path
           required: true
           schema:
-            $ref: '#/components/schemas/TaxId'    
+            $ref: '#/components/schemas/TaxId'
       responses:
         '200':
           description: OK
@@ -67,8 +67,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'pn-errors.yaml#/components/schemas/Problem'
-  
-  
+
+
   ###############################################################################################
   ###                                 LETTURA DATI DESTINATARI                                ###
   ###############################################################################################
@@ -78,7 +78,9 @@ paths:
       operationId: getRecipientDenominationByInternalId
       summary: Deanonimizzazione destinatari
       description: >-
-        __UTILIZZARE CON MOLTA PARSIMONIA__
+        Servizio che dato un elenco di id anonimizzati permette di ottenere la denominazione
+        (nome e cognome o ragione sociale) e il tipo (PF o PG) del dei destinatari a i quali 
+        si riferiscono tali id anonimi.
       tags:
         - Recipients
       parameters:
@@ -105,7 +107,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'pn-errors.yaml#/components/schemas/Problem'
-  
+
 
 
   ###############################################################################################
@@ -141,7 +143,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'pn-errors.yaml#/components/schemas/Problem'
-  
+
   '/datavault-private/v1/recipients/internal/{internalId}/addresses/{addressId}':
     parameters:
       - name: internalId
@@ -189,7 +191,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'pn-errors.yaml#/components/schemas/Problem'
-  
+
 
   ###############################################################################################
   ###                           GESTIONE DATI CONFIDENZIALI DELEGHE                           ###
@@ -247,7 +249,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddressAndDenominationDto'
+              $ref: '#/components/schemas/DenominationDto'
       responses:
         '204':
           description: OK
@@ -271,15 +273,37 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'pn-errors.yaml#/components/schemas/Problem'
-  
-  
+
+
 
 
   ###############################################################################################
-  ###                          GESTIONE DATI CONFIDENZIALI NPOTIFICHE                         ###
+  ###                          GESTIONE DATI CONFIDENZIALI NOTIFICHE                          ###
   ###############################################################################################
 
-  
+  '/datavault-private/v1/notifications/{iun}':
+    parameters:
+      - name: iun
+        description: Identificativo Unico Notifica
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Iun'
+    delete:
+      operationId: deleteNotificationByIun
+      summary: Elimina informazioni confidenziali relative a una notifica.
+      tags:
+        - Notifications
+      responses:
+        '204':
+          description: OK
+        '400':
+          description: Invalid input
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'pn-errors.yaml#/components/schemas/Problem'
+
   '/datavault-private/v1/notifications/{iun}/addresses':
     parameters:
       - name: iun
@@ -309,7 +333,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: 'pn-errors.yaml#/components/schemas/Problem'    
+                $ref: 'pn-errors.yaml#/components/schemas/Problem'
     put:
       operationId: updateNotificationAddressesByIun
       summary: Inserisci o aggiorna elenco domicili specificati in fase di invio di una notifica.
@@ -329,12 +353,82 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'pn-errors.yaml#/components/schemas/Problem'
-    
-    delete:
-      operationId: deleteNotificationAddressesByIun
-      summary: Elimina elenco domicili specificati in fase di invio di una notifica.
+
+  '/datavault-private/v1/notifications/{iun}/timeline':
+    parameters:
+      - name: iun
+        description: Identificativo Unico Notifica
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Iun'
+    get:
+      operationId: getNotificationTimelineByIun
+      summary: leggi intera timeline di una notifica
+      description: >-
+        Leggi le informazioni confidenziali relative all'intera timeline di una notifica
       tags:
         - Notifications
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConfidentialTimelineElementDto'
+        '400':
+          description: Invalid input
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'pn-errors.yaml#/components/schemas/Problem'
+
+  '/datavault-private/v1/notifications/{iun}/timeline/{timelineElementId}':
+    parameters:
+      - name: iun
+        description: Identificativo Unico Notifica
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Iun'
+      - name: timelineElementId
+        description: Identificativo dell'elemento di timeline
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getNotificationTimelineByIunAndTimelineElementId
+      summary: leggi un elemento di timeline
+      description: >-
+        Leggi informazioni confidenziali relative a un elemento di timeline
+      tags:
+        - Notifications
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfidentialTimelineElementDto'
+        '400':
+          description: Invalid input
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'pn-errors.yaml#/components/schemas/Problem'
+    put:
+      operationId: updateNotificationTimelineByIunAndTimelineElementId
+      summary: Inserisci o aggiorna elenco domicili specificati in fase di invio di una notifica.
+      tags:
+        - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfidentialTimelineElementDto'
       responses:
         '204':
           description: OK
@@ -345,14 +439,12 @@ paths:
               schema:
                 $ref: 'pn-errors.yaml#/components/schemas/Problem'
 
-
-
 components:
   schemas:
 
-  ###############################################################################################
-  ###                                     DTO DESTINATARI                                     ###
-  ###############################################################################################
+    ###############################################################################################
+    ###                                     DTO DESTINATARI                                     ###
+    ###############################################################################################
     RecipientType:
       title: 'Tipo del destinatario: PF / PG'
       description: >-
@@ -363,13 +455,13 @@ components:
       enum:
         - PF
         - PG
-    
+
     TaxId:
       title: Codice Fiscale
       description: Codice Fiscale del destinatario, del delagao o dlegante
       type: string
       example: CGNNMO01T10A944Q
-    
+
     InternalId:
       title: Identificativo anonimizzato
       description: Identificativo Opaco di una persona Fisica o Giuridica
@@ -378,7 +470,7 @@ components:
       minLength: 1
       maxLength: 100
       example: 123e4567-e89b-12d3-a456-426655440000
-    
+
     BaseRecipientDto:
       title: Decodicfica Identificativo Anonimo
       description: >-
@@ -387,22 +479,26 @@ components:
       properties:
         internalId:
           $ref: '#/components/schemas/InternalId'
+        taxId:
+          $ref: '#/components/schemas/TaxId'
+        recipientType:
+          $ref: '#/components/schemas/RecipientType'
         denomination:
           description: Nome + cognome __oppure__ ragione sociale
           type: string
           example: PagoP.A. S.p.A.
 
-  
-  ###############################################################################################
-  ###                                      DTO INDIRIZZI                                      ###
-  ###############################################################################################
-  
+
+    ###############################################################################################
+    ###                                      DTO INDIRIZZI                                      ###
+    ###############################################################################################
+
     AddressId:
       title: Identificativo del recapito o domicilio digitale
       type: string
       pattern: '[A-Za-z0-9-_:]*'
       example: DD_c_f205_1
-    
+
     RecipientAddressesDto:
       title: Request for new object creation
       type: object
@@ -424,31 +520,22 @@ components:
     AddressDto:
       type: object
       required:
-        - kind
         - value
       properties:
-        kind:
-          type: string
-          enum:
-            - email
-            - pec
-            - iomsg
-            - iopec
-            - sms
         value:
           type: string
-    
-  
-  ###############################################################################################
-  ###                                       DTO DELEGHE                                       ###
-  ###############################################################################################
-    
+
+
+    ###############################################################################################
+    ###                                       DTO DELEGHE                                       ###
+    ###############################################################################################
+
     MandateId:
       title: Identificativo della delega
       type: string
       pattern: '[A-Za-z0-9-_:]*'
       example: 423e4567-e89b-12d3-a456-426655449632
-    
+
     MandateDto:
       type: object
       required:
@@ -458,46 +545,42 @@ components:
         mandateId:
           $ref: '#/components/schemas/MandateId'
         info:
-          $ref: '#/components/schemas/AddressAndDenominationDto'
-    
-    AddressAndDenominationDto:
-      allOf:
-        - $ref: '#/components/schemas/AddressDto'
-        - type: object
-          properties:            
-            destName: 
-              type: string
-              example: Nome
-            destSurname: 
-              type: string
-              example: Cognome
-            destBusinessName: 
-              type: string
-              example: Ragione sociale
+          $ref: '#/components/schemas/DenominationDto'
+
+    DenominationDto:
+      type: object
+      properties:
+        destName:
+          type: string
+          example: Nome
+        destSurname:
+          type: string
+          example: Cognome
+        destBusinessName:
+          type: string
+          example: Ragione sociale
       example:
-        kind: email
-        value: io@unemail.server.it
         destName: Nome
         destSurname: Cognome
         destBusinessName: Ragione sociale
 
-  
 
 
-  ###############################################################################################
-  ###                                      DTO NOTIFICHE                                      ###
-  ###############################################################################################
-  
+
+    ###############################################################################################
+    ###                                      DTO NOTIFICHE                                      ###
+    ###############################################################################################
+
     Iun:
       type: string
       pattern: '[A-Z0-9-]*'
       example: 'ABCD-XYWK-ASDF-LKJH-202209-1-X'
-    
+
     NotificationAddressesDto:
       type: array
-      items: 
+      items:
         $ref: '#/components/schemas/NotificationRecipientAddressesDto'
-    
+
     NotificationRecipientAddressesDto:
       type: object
       required:
@@ -510,7 +593,7 @@ components:
           $ref: '#/components/schemas/AddressDto'
         physicalAddress:
           $ref: '#/components/schemas/AnalogDomicile'
-    
+
     AnalogDomicile:
       title: dettagli di un domicilio analogico; ovvero un indirizzo fisico
       type: object
@@ -518,7 +601,7 @@ components:
         at:
           type: string
           example: 'presso famiglia Rossi'
-        address: 
+        address:
           type: string
           example: 'Via senza Nome 15'
         addressDetails:
@@ -532,12 +615,19 @@ components:
           example: 'Bologna'
         province:
           type: string
-          minLength: 2
-          maxLength: 2
           example: 'BO'
         state:
           type: string
-          minLength: 2
-          maxLength: 2
-          example: 'it'     
+          example: 'it'
 
+
+
+    ConfidentialTimelineElementDto:
+      type: object
+      properties:
+        timelineElementId:
+          type: string
+        digitalAddress:
+          $ref: '#/components/schemas/AddressDto'
+        physicalAddress:
+          $ref: '#/components/schemas/AnalogDomicile'

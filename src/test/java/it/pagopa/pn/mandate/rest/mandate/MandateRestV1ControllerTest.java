@@ -3,7 +3,6 @@ package it.pagopa.pn.mandate.rest.mandate;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoTestIT;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
@@ -25,7 +24,7 @@ import java.util.List;
 @Import({MandateEntityMandateDtoMapper.class, UserEntityMandateCountsDtoMapper.class})
 class MandateRestV1ControllerTest {
 
-    public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-cx-type";
+    public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-cx-id";
     public static final String PN_PAGOPA_CX_TYPE = "x-pagopa-pn-cx-type";
     @Autowired
     WebTestClient webTestClient;

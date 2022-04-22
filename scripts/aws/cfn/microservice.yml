@@ -67,6 +67,10 @@ Parameters:
     Type: String
     Description: 'ARN of dynamodb table containing mandates'
 
+  MandatesDynamoTableHistoryArn:
+  Type: String
+    Description: 'ARN of dynamodb table containing mandates history'
+
 Resources:
 
   # PN-Mandate microservice
@@ -115,6 +119,8 @@ Resources:
               - dynamodb:UpdateItem
             Resource:
               - !Ref MandatesDynamoTableArn
+              - !Ref MandatesDynamoTableArn/*
+              - !Ref MandatesDynamoTableHistoryArn
 
   # Expose PN-Mandate microservice public API with API-GW for WEB usage
   MandateMicroservicePublicWebAPI:

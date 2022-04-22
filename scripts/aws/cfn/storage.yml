@@ -86,3 +86,7 @@ Outputs:
   MandatesDynamoTableArn:
     Description: ARN of dynamodb table containing mandates
     Value: !Sub '${MandatesDynamoTable.Arn}'
+
+  MandatesDynamoTableHistoryArn:
+    Description: ARN of dynamodb table containing mandates history
+    Value: !Sub '${MandatesDynamoTableHistory.Arn}'

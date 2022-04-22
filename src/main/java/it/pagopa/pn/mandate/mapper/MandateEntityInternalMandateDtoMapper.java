@@ -1,12 +1,11 @@
 package it.pagopa.pn.mandate.mapper;
 
 
-import java.util.ArrayList;
-import org.springframework.stereotype.Component;
-
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
-import reactor.core.publisher.Mono;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
 
 @Component
 public class MandateEntityInternalMandateDtoMapper implements BaseMapperInterface<InternalMandateDto, MandateEntity> {

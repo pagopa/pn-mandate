@@ -4,7 +4,8 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.Problem;
 import org.springframework.http.HttpStatus;
 
 public class ExceptionHelper {
-    
+
+    private ExceptionHelper(){}
     
     public static Problem handleException(Throwable ex, HttpStatus statusError){
         // gestione exception e generazione fault

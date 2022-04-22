@@ -118,9 +118,9 @@ Resources:
               - dynamodb:TransactWriteItems
               - dynamodb:UpdateItem
             Resource:
-              - !Ref MandatesDynamoTableArn
-              - !Ref MandatesDynamoTableArn/*
-              - !Ref MandatesDynamoTableHistoryArn
+              - !Sub "${MandatesDynamoTableArn}"
+              - !Sub "${MandatesDynamoTableArn}/*"
+              - !Sub "${MandatesDynamoTableHistoryArn}"
 
   # Expose PN-Mandate microservice public API with API-GW for WEB usage
   MandateMicroservicePublicWebAPI:

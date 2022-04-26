@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
+import it.pagopa.pn.mandate.middleware.db.config.AwsConfigs;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
@@ -9,7 +10,6 @@ import it.pagopa.pn.mandate.rest.utils.MandateAlreadyExistsException;
 import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -47,12 +47,11 @@ public class MandateDao extends BaseDao {
 
     public MandateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                        DynamoDbAsyncClient dynamoDbAsyncClient,
-                       @Value("${aws.dynamodb.table}") String table,
-                       @Value("${aws.dynamodb.table_history}") String tableHistory) {
-        this.mandateTable = dynamoDbEnhancedAsyncClient.table(table, TableSchema.fromBean(MandateEntity.class));
-        this.mandateSupportTable = dynamoDbEnhancedAsyncClient.table(table, TableSchema.fromBean(MandateSupportEntity.class));
-        this.mandateHistoryTable = dynamoDbEnhancedAsyncClient.table(tableHistory, TableSchema.fromBean(MandateEntity.class));
-        this.table = table;
+                       AwsConfigs awsConfigs) {
+        this.mandateTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTable(), TableSchema.fromBean(MandateEntity.class));
+        this.mandateSupportTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTable(), TableSchema.fromBean(MandateSupportEntity.class));
+        this.mandateHistoryTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTableHistory(), TableSchema.fromBean(MandateEntity.class));
+        this.table = awsConfigs.getDynamodbTable();
         this.dynamoDbAsyncClient = dynamoDbAsyncClient;
         this.dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient;
     }

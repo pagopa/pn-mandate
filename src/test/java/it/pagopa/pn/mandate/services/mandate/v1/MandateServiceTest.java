@@ -71,8 +71,10 @@ class MandateServiceTest {
         when(mandateDao.acceptMandate (Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
 
         //When
-        Object result = mandateService.acceptMandate(mandateEntity.getMandateId(),
-                Mono.just(acceptRequestDto), mandateEntity.getDelegate()).block(Duration.ofMillis(3000));
+        assertDoesNotThrow(() -> {
+            Object result = mandateService.acceptMandate(mandateEntity.getMandateId(),
+                            Mono.just(acceptRequestDto), mandateEntity.getDelegate()).block(Duration.ofMillis(3000));
+                });
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -405,9 +407,10 @@ class MandateServiceTest {
         MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
 
         when(mandateDao.rejectMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
+        when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.just("OK"));
 
         //When
-        Object result = mandateService.rejectMandate(mandateEntity.getMandateId(), mandateEntity.getDelegate()).block(Duration.ofMillis(3000));
+        assertDoesNotThrow(() -> {mandateService.rejectMandate(mandateEntity.getMandateId(), mandateEntity.getDelegate()).block(Duration.ofMillis(3000));});
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -419,6 +422,7 @@ class MandateServiceTest {
         MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
 
         when(mandateDao.rejectMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
+        when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.just("OK"));
 
         //When
         try {
@@ -438,9 +442,10 @@ class MandateServiceTest {
         MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
 
         when(mandateDao.revokeMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
+        when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.just("OK"));
 
         //When
-        Object result = mandateService.revokeMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator()).block(Duration.ofMillis(3000));
+        assertDoesNotThrow(() -> {mandateService.revokeMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator()).block(Duration.ofMillis(3000));});
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -452,6 +457,7 @@ class MandateServiceTest {
         MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
 
         when(mandateDao.revokeMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
+        when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.just("OK"));
 
         //When
         try {
@@ -471,9 +477,10 @@ class MandateServiceTest {
         MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
 
         when(mandateDao.expireMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
+        when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.just("OK"));
 
         //When
-        Object result = mandateService.expireMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator()).block(Duration.ofMillis(3000));
+        assertDoesNotThrow(() -> {mandateService.expireMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator()).block(Duration.ofMillis(3000));});
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -485,6 +492,7 @@ class MandateServiceTest {
         MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
 
         when(mandateDao.expireMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
+        when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.just("OK"));
 
         //When
         try {

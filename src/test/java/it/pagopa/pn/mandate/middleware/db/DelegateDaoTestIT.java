@@ -41,8 +41,8 @@ class DelegateDaoTestIT {
     TestDao testDao;
 
     @BeforeEach
-    void setup( @Value("${aws.dynamodb.table}") String table,
-                @Value("${aws.dynamodb.table_history}") String tableHistory) {
+    void setup( @Value("${aws.dynamodb_table}") String table,
+                @Value("${aws.dynamodb_table_history}") String tableHistory) {
         testDao = new TestDao( dynamoDbEnhancedAsyncClient, table, tableHistory);
     }
 

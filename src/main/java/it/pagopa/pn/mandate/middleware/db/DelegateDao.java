@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
+import it.pagopa.pn.mandate.middleware.db.config.AwsConfigs;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
@@ -31,10 +32,10 @@ public class DelegateDao extends BaseDao {
 
     public DelegateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                        DynamoDbAsyncClient dynamoDbAsyncClient,
-                       @Value("${aws.dynamodb.table}") String table) {
-        this.userTable = dynamoDbEnhancedAsyncClient.table(table, TableSchema.fromBean(DelegateEntity.class));
+                       AwsConfigs awsConfigs) {
+        this.userTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTable(), TableSchema.fromBean(DelegateEntity.class));
         this.dynamoDbAsyncClient = dynamoDbAsyncClient;
-        this.table = table;
+        this.table = awsConfigs.getDynamodbTable();
     }
 
     public Mono<DelegateEntity> countMandates(String delegateInternaluserid) {

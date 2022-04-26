@@ -19,4 +19,7 @@ public class AwsConfigs {
 
     private String accessKeyId;
     private String secretAccessKey;
+
+    private String dynamodbTable;
+    private String dynamodbTableHistory;
 }

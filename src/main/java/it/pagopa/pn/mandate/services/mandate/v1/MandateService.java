@@ -327,7 +327,9 @@ public class MandateService  {
         if (mandateId == null)
             throw  new MandateNotFoundException();
 
-        return mandateDao.rejectMandate(internaluserId, mandateId);
+        return mandateDao.rejectMandate(internaluserId, mandateId)
+                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)
+                        ,(r, d) -> d);
     }
 
     /**
@@ -341,7 +343,9 @@ public class MandateService  {
         if (mandateId == null)
             throw  new MandateNotFoundException();
 
-        return mandateDao.revokeMandate(internaluserId, mandateId);
+        return mandateDao.revokeMandate(internaluserId, mandateId)
+                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)
+                ,(r, d) -> d);
     }
 
     /**
@@ -356,7 +360,9 @@ public class MandateService  {
         if (mandateId == null)
             throw  new MandateNotFoundException();
 
-        return mandateDao.expireMandate(internaluserId, mandateId);
+        return mandateDao.expireMandate(internaluserId, mandateId)
+                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)
+                        ,(r, d) -> d);
     }
 
     private void updateUserDto(UserDto user, DenominationDtoDto info)

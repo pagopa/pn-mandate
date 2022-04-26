@@ -128,6 +128,28 @@ class PnDataVaultClientTest {
     }
 
     @Test
+    void deleteMandateById() {
+        //Given
+        String mandateid = "f271e4bf-0d69-4ed6-a39f-4ef2f01f2fd1";
+
+
+        new MockServerClient("localhost", 9998)
+                .when(request()
+                        .withMethod("DELETE")
+                        .withPath("/datavault-private/v1/mandates/{mandateId}".replace("{mandateId}",mandateid)))
+                .respond(response()
+                        .withContentType(MediaType.APPLICATION_JSON)
+                        .withStatusCode(200));
+
+        //When
+        Object result = pnDataVaultClient.deleteMandateById(mandateid).block(Duration.ofMillis(3000));
+
+        //Then
+        assertNotNull(result);
+        assertEquals("OK", result);
+    }
+
+    @Test
     void getMandatesByIds() {
         //Given
         String mandateid = "f271e4bf-0d69-4ed6-a39f-4ef2f01f2fd1";

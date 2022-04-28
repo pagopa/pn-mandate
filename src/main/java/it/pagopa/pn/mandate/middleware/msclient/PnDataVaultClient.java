@@ -42,8 +42,8 @@ public class PnDataVaultClient {
 
     @PostConstruct
     public void init(){
-        HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
-                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(1000, TimeUnit.MILLISECONDS)));
+        HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(10000, TimeUnit.MILLISECONDS)));
 
         WebClient webClient = ApiClient.buildWebClientBuilder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
@@ -52,8 +52,8 @@ public class PnDataVaultClient {
         newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
         this.recipientsApi = new RecipientsApi(newApiClient);
 
-        httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
-                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(1000, TimeUnit.MILLISECONDS)));
+        httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(10000, TimeUnit.MILLISECONDS)));
 
         webClient = ApiClient.buildWebClientBuilder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))

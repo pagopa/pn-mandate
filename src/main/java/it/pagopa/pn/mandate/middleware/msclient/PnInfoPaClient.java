@@ -32,8 +32,8 @@ public class PnInfoPaClient {
 
     @PostConstruct
     public void init(){
-        HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
-                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(1000, TimeUnit.MILLISECONDS)));
+        HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(10000, TimeUnit.MILLISECONDS)));
 
         WebClient webClient = ApiClient.buildWebClientBuilder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))

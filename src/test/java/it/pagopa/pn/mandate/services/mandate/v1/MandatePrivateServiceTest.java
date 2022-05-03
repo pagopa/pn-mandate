@@ -49,11 +49,28 @@ class MandatePrivateServiceTest {
         MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
         List<MandateEntity> list = new ArrayList<>();
         list.add(mandateEntity);
-        when(mandateDao.listMandatesByDelegate (Mockito.same(mandateEntity.getDelegate()), Mockito.any())).thenReturn(Flux.fromIterable(list));
+        when(mandateDao.listMandatesByDelegate (Mockito.same(mandateEntity.getDelegate()), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(list));
         when(mapper.toDto(Mockito.same(mandateEntity))).thenReturn(new InternalMandateDto());
 
         //When
-        List<InternalMandateDto> result = mandatePrivateService.listMandatesByDelegate(mandateEntity.getDelegate()).collectList().block(Duration.ofMillis(3000));
+        List<InternalMandateDto> result = mandatePrivateService.listMandatesByDelegate(mandateEntity.getDelegate(), null).collectList().block(Duration.ofMillis(3000));
+
+        //Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void listMandatesByDelegator() {
+        //Given
+        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        List<MandateEntity> list = new ArrayList<>();
+        list.add(mandateEntity);
+        when(mandateDao.listMandatesByDelegator (Mockito.same(mandateEntity.getDelegate()), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(list));
+        when(mapper.toDto(Mockito.same(mandateEntity))).thenReturn(new InternalMandateDto());
+
+        //When
+        List<InternalMandateDto> result = mandatePrivateService.listMandatesByDelegator(mandateEntity.getDelegate(), null).collectList().block(Duration.ofMillis(3000));
 
         //Then
         assertNotNull(result);

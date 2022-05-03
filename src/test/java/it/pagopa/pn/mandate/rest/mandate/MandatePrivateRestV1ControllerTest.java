@@ -44,7 +44,52 @@ class MandatePrivateRestV1ControllerTest {
         );
 
         //When
-        Mockito.when( mandatePrivateService.listMandatesByDelegate( Mockito.anyString() ))
+        Mockito.when( mandatePrivateService.listMandatesByDelegate( Mockito.anyString(), Mockito.any() ))
+                .thenReturn(Flux.fromIterable(mandateDtoList ));
+
+        //Then
+        webTestClient.get()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                //.header("pn-pagopa-user-id")
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+    @Test
+    void listMandatesByDelegateWithMandateId() {
+        //Given
+        String url = "/mandate-private/api/v1/mandates-by-internaldelegate/{internaluserId}?mandateId={mandateId}"
+                .replace("{internaluserId}", "internauserid1234")
+                .replace("{mandateId}", "mandateId12345");
+        List<InternalMandateDto> mandateDtoList = Collections.singletonList(
+                mapper.toDto(MandateDaoTestIT.newMandate(true))
+        );
+
+        //When
+        Mockito.when( mandatePrivateService.listMandatesByDelegate( Mockito.anyString(), Mockito.any() ))
+                .thenReturn(Flux.fromIterable(mandateDtoList ));
+
+        //Then
+        webTestClient.get()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                //.header("pn-pagopa-user-id")
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+    @Test
+    void listMandatesByDelegator() {
+        //Given
+        String url = "/mandate-private/api/v1/mandates-by-internaldelegator/{internaluserId}"
+                .replace("{internaluserId}", "internauserid1234");
+        List<InternalMandateDto> mandateDtoList = Collections.singletonList(
+                mapper.toDto(MandateDaoTestIT.newMandate(true))
+        );
+
+        //When
+        Mockito.when( mandatePrivateService.listMandatesByDelegator( Mockito.anyString(), Mockito.any() ))
                 .thenReturn(Flux.fromIterable(mandateDtoList ));
 
         //Then
@@ -57,5 +102,27 @@ class MandatePrivateRestV1ControllerTest {
     }
 
 
+    @Test
+    void listMandatesByDelegatorWithMandateId() {
+        //Given
+        String url = "/mandate-private/api/v1/mandates-by-internaldelegator/{internaluserId}?mandateId={mandateId}"
+                .replace("{internaluserId}", "internauserid1234")
+                .replace("{mandateId}", "mandateId12345");
+        List<InternalMandateDto> mandateDtoList = Collections.singletonList(
+                mapper.toDto(MandateDaoTestIT.newMandate(true))
+        );
+
+        //When
+        Mockito.when( mandatePrivateService.listMandatesByDelegator( Mockito.anyString(), Mockito.any() ))
+                .thenReturn(Flux.fromIterable(mandateDtoList ));
+
+        //Then
+        webTestClient.get()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                //.header("pn-pagopa-user-id")
+                .exchange()
+                .expectStatus().isOk();
+    }
 
 }

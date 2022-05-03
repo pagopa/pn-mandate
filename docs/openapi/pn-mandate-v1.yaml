@@ -11,12 +11,16 @@ paths:
     get:
       tags:
         - mandate-private-service
-      description: Return only active mandates for delegate
+      description: Return only active mandates for delegate, optionally filtered by single mandateId
       operationId: listMandatesByDelegate
       parameters:
         - name: internaluserId
           in: path
           required: true
+          schema:
+            type: string
+        - name: mandateId
+          in: query
           schema:
             type: string
       responses:
@@ -34,6 +38,37 @@ paths:
             application/json:
               schema:
                  $ref: 'pn-errors.yaml#/components/schemas/Problem'
+  /mandate-private/api/v1/mandates-by-internaldelegator/{internaluserId}:
+    get:
+      tags:
+        - mandate-private-service
+      description: Return only active mandates for delegator, optionally filtered by single mandateId
+      operationId: listMandatesByDelegator
+      parameters:
+        - name: internaluserId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: mandateId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InternalMandateDto'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: 'pn-errors.yaml#/components/schemas/Problem'
   /mandate/api/v1/count-by-delegate:
     get:
       tags:

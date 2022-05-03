@@ -65,7 +65,7 @@ public class MandateDao extends BaseDao {
      * @param status stato da usare nel filtro (OPZIONALE)
      * @return lista delle deleghe
      */
-    public Flux<MandateEntity> listMandatesByDelegate(String delegateInternaluserid, Integer status) {
+    public Flux<MandateEntity> listMandatesByDelegate(String delegateInternaluserid, Integer status, String mandateId) {
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
@@ -85,11 +85,20 @@ public class MandateDao extends BaseDao {
         // e quindi va sempre previsto un filtro sulla data di scadenza
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now())).build());
+        String expression = MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")";
+
+        if (mandateId != null)
+        {
+            expressionValues.put(":mandateId", AttributeValue.builder().s(mandateId).build());
+            expression += " AND " + MandateEntity.COL_S_MANDATEID + " = :mandateId";
+        }
+
+
 
         Expression exp = Expression.builder()
-        .expression(MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")")
-                .expressionValues(expressionValues)
-                .build();    
+            .expression(expression)
+            .expressionValues(expressionValues)
+            .build();
          
         
         // il filtro cambia in base al fatto se ho chiesto uno stato specifico (uso =)
@@ -115,7 +124,7 @@ public class MandateDao extends BaseDao {
      * @param status stato da usare nel filtr (OPZIONALE)
      * @return lista delle deleghe
      */
-    public Flux<MandateEntity> listMandatesByDelegator(String delegatorInternaluserid, Integer status) {
+    public Flux<MandateEntity> listMandatesByDelegator(String delegatorInternaluserid, Integer status, String mandateId) {
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
@@ -138,6 +147,11 @@ public class MandateDao extends BaseDao {
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now())).build());
         expressionValues.put(":status", AttributeValue.builder().n(iState + "").build());
+        if (mandateId != null)
+        {
+            expressionValues.put(":mandateId", AttributeValue.builder().s(mandateId).build());
+            filterexp += " AND " + MandateEntity.COL_S_MANDATEID + " = :mandateId";
+        }
 
         Expression exp = Expression.builder()                
         .expression(filterexp)

@@ -338,7 +338,7 @@ class MandateServiceTest {
         List<MandateEntity> listFromDb = new ArrayList<>();
         listFromDb.add(entity);
 
-        when(mandateDao.listMandatesByDelegate (Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
+        when(mandateDao.listMandatesByDelegate (Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
         when(pnDatavaultClient.getRecipientDenominationByInternalId(Mockito.any())).thenReturn(Flux.empty());
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.empty());
         when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
@@ -385,7 +385,7 @@ class MandateServiceTest {
         List<MandateEntity> listFromDb = new ArrayList<>();
         listFromDb.add(entity);
 
-        when(mandateDao.listMandatesByDelegator (Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
+        when(mandateDao.listMandatesByDelegator (Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
         when(pnDatavaultClient.getRecipientDenominationByInternalId(Mockito.any())).thenReturn(Flux.empty());
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.empty());
         when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));

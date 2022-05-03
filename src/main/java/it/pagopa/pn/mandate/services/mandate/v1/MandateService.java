@@ -209,7 +209,7 @@ public class MandateService  {
             throw new UnsupportedFilterException();
         }
 
-        return mandateDao.listMandatesByDelegate(internaluserId, iStatus)   // (1)
+        return mandateDao.listMandatesByDelegate(internaluserId, iStatus, null)   // (1)
                 .map(ent -> {         
                     ent.setValidationcode(null);   // (2)
                     return ent;        
@@ -275,7 +275,7 @@ public class MandateService  {
      */
     public Flux<MandateDto> listMandatesByDelegator(String internaluserId) {
 
-        return mandateDao.listMandatesByDelegator(internaluserId, null)    // (1)
+        return mandateDao.listMandatesByDelegator(internaluserId, null, null)    // (1)
             .map(mandateEntityMandateDtoMapper::toDto)  // (2)
             .collectList()                                                        // (3)
             .zipWhen(dtos -> {

@@ -26,11 +26,19 @@ public class MandatePrivateService {
         this.mandateEntityInternalMandateDtoMapper = mandateEntityInternalMandateDtoMapper;
     }
 
-    public Flux<InternalMandateDto> listMandatesByDelegate(String internaluserId) {
+    public Flux<InternalMandateDto> listMandatesByDelegate(String internaluserId, String mandateId) {
         // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE
         if (log.isInfoEnabled())
                     log.info("listing private mandates by delegate for " + internaluserId);
-        return mandateDao.listMandatesByDelegate(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
+        return mandateDao.listMandatesByDelegate(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE), mandateId)
+                .map(mandateEntityInternalMandateDtoMapper::toDto);
+    }
+
+    public Flux<InternalMandateDto> listMandatesByDelegator(String internaluserId, String mandateId) {
+        // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE
+        if (log.isInfoEnabled())
+            log.info("listing private mandates by delegate for " + internaluserId);
+        return mandateDao.listMandatesByDelegator(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE), mandateId)
                 .map(mandateEntityInternalMandateDtoMapper::toDto);
     }
 }

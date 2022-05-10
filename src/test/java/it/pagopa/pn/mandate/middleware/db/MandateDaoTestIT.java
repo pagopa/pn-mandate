@@ -86,7 +86,7 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert1.getSk());
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }

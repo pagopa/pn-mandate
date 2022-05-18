@@ -155,7 +155,7 @@ class MandateRestV1ControllerTest {
 
         //When
         Mockito.when( mandateService.rejectMandate( Mockito.any(), Mockito.any()))
-                .thenReturn(Mono.just(""));
+                .thenReturn(Mono.empty());
 
         //Then
         webTestClient.patch()

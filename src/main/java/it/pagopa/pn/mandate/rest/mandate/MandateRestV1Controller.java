@@ -27,7 +27,7 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
                                                     ServerWebExchange exchange) {
 
         return  mandateService.acceptMandate(mandateId, acceptRequestDto, xPagopaPnCxId)
-            .map(m -> ResponseEntity.noContent().build());
+            .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
     @Override
@@ -66,7 +66,7 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
     public Mono<ResponseEntity<Void>> rejectMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String mandateId, ServerWebExchange exchange) {
 
         return  mandateService.rejectMandate(mandateId, xPagopaPnCxId)
-        .map(m -> ResponseEntity.noContent().build());
+            .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
     @Override

@@ -18,8 +18,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
@@ -142,11 +141,9 @@ class PnDataVaultClientTest {
                         .withStatusCode(200));
 
         //When
-        Object result = pnDataVaultClient.deleteMandateById(mandateid).block(Duration.ofMillis(3000));
+        assertDoesNotThrow(() -> pnDataVaultClient.deleteMandateById(mandateid).block(Duration.ofMillis(3000)));
 
         //Then
-        assertNotNull(result);
-        assertEquals("OK", result);
     }
 
     @Test

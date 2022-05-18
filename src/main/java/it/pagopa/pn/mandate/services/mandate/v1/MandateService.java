@@ -72,7 +72,7 @@ public class MandateService  {
 
             return m;
         })
-        .map(m -> {
+        .flatMap(m -> {
             try{
                 if (log.isInfoEnabled())
                     log.info("accepting mandateobj:{} vercode:{}",  mandateId, m);
@@ -323,13 +323,12 @@ public class MandateService  {
      * @param internaluserId iuid del delegato
      * @return void
      */
-    public Mono<Object> rejectMandate(String mandateId, String internaluserId) {
+    public Mono<Void> rejectMandate(String mandateId, String internaluserId) {
         if (mandateId == null)
             throw  new MandateNotFoundException();
 
         return mandateDao.rejectMandate(internaluserId, mandateId)
-                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)
-                        ,(r, d) -> d);
+                .then(this.pnDatavaultClient.deleteMandateById(mandateId));
     }
 
     /**

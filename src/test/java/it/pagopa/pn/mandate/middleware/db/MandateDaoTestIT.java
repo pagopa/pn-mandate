@@ -4,6 +4,7 @@ import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.rest.utils.InternalErrorException;
 import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
 import it.pagopa.pn.mandate.rest.utils.MandateAlreadyExistsException;
 import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
@@ -16,11 +17,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 
 import java.time.Duration;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
@@ -33,6 +36,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 @SpringBootTest
 public class MandateDaoTestIT {
 
+    private final Duration d = Duration.ofMillis(3000);
+    
     @Autowired
     private MandateDao mandateDao;
 
@@ -59,7 +64,7 @@ public class MandateDaoTestIT {
         }
 
         //When
-        mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+        mandateDao.createMandate(mandateToInsert).block(d);
 
         //Then
         try {
@@ -93,9 +98,9 @@ public class MandateDaoTestIT {
         }
 
         //When
-        mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+        mandateDao.createMandate(mandateToInsert).block(d);
         try {
-            mandateDao.createMandate(mandateToInsert1).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert1).block(d);
             fail("no MandateAlreadyExistsException thrown");
         } catch (MandateAlreadyExistsException e) {
             // expected
@@ -161,19 +166,19 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
             testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
-            mandateDao.createMandate(mandateToInsert1).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert1).block(d);
             testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
-            mandateDao.createMandate(mandateToInsert2).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert2).block(d);
             testDao.delete(mandateToInsert3.getDelegator(), mandateToInsert3.getSk());
-            mandateDao.createMandate(mandateToInsert3).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert3).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, null).collectList().block(Duration.ofMillis(3000));
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, null).collectList().block(d);
 
         //Then
         try {
@@ -215,19 +220,19 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
             testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
-            mandateDao.createMandate(mandateToInsert1).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert1).block(d);
             testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
-            mandateDao.createMandate(mandateToInsert2).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert2).block(d);
             testDao.delete(mandateToInsert3.getDelegator(), mandateToInsert3.getSk());
-            mandateDao.createMandate(mandateToInsert3).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert3).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, mandateToInsert1.getMandateId()).collectList().block(Duration.ofMillis(3000));
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, mandateToInsert1.getMandateId()).collectList().block(d);
 
         //Then
         try {
@@ -266,19 +271,19 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
             testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
-            mandateDao.createMandate(mandateToInsert1).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert1).block(d);
             testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
-            mandateDao.createMandate(mandateToInsert2).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert2).block(d);
             testDao.delete(mandateToInsert3.getDelegator(), mandateToInsert3.getSk());
-            mandateDao.createMandate(mandateToInsert3).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert3).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null).collectList().block(Duration.ofMillis(3000));
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null).collectList().block(d);
 
         //Then
         try {
@@ -320,19 +325,19 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
             testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
-            mandateDao.createMandate(mandateToInsert1).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert1).block(d);
             testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
-            mandateDao.createMandate(mandateToInsert2).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert2).block(d);
             testDao.delete(mandateToInsert3.getDelegator(), mandateToInsert3.getSk());
-            mandateDao.createMandate(mandateToInsert3).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert3).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), null, null).collectList().block(Duration.ofMillis(3000));
+        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), null, null).collectList().block(d);
 
         //Then
         try {
@@ -374,19 +379,19 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
             testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
-            mandateDao.createMandate(mandateToInsert1).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert1).block(d);
             testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
-            mandateDao.createMandate(mandateToInsert2).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert2).block(d);
             testDao.delete(mandateToInsert3.getDelegator(), mandateToInsert3.getSk());
-            mandateDao.createMandate(mandateToInsert3).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert3).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), null, mandateToInsert1.getMandateId()).collectList().block(Duration.ofMillis(3000));
+        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), null, mandateToInsert1.getMandateId()).collectList().block(d);
 
         //Then
         try {
@@ -425,19 +430,19 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
             testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
-            mandateDao.createMandate(mandateToInsert1).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert1).block(d);
             testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
-            mandateDao.createMandate(mandateToInsert2).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert2).block(d);
             testDao.delete(mandateToInsert3.getDelegator(), mandateToInsert3.getSk());
-            mandateDao.createMandate(mandateToInsert3).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert3).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null).collectList().block(Duration.ofMillis(3000));
+        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null).collectList().block(d);
 
         //Then
         try {
@@ -468,13 +473,13 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode()).block(Duration.ofMillis(3000));
+        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode()).block(d);
 
         //Then
         try {
@@ -494,34 +499,30 @@ public class MandateDaoTestIT {
         }
     }
 
+
     @Test
-    void acceptMandateInvalidCode() {
+    void acceptMandateAlreadyAccepted() {
         //Given
         MandateEntity mandateToInsert = newMandate(false);
-        String wrongcode = "99999";
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
+            mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode()).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        try {
-            mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), wrongcode).block(Duration.ofMillis(3000));
-            fail("no invalid code exception");
-        } catch (InvalidVerificationCodeException e) {
-           // expected
-        }
+        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode()).block(d);
 
         //Then
         try {
             MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
 
             Assertions.assertNotNull(elementFromDb);
-            Assertions.assertEquals( StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING), elementFromDb.getState());
-            Assertions.assertNull(elementFromDb.getAccepted());
+            Assertions.assertEquals( StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), elementFromDb.getState());
+            Assertions.assertNotNull(elementFromDb.getAccepted());
         } catch (Exception e) {
             throw new RuntimeException();
         } finally {
@@ -535,6 +536,87 @@ public class MandateDaoTestIT {
 
 
     @Test
+    void acceptMandateWrongState() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.EXPIRED));
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        Mono<Void> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode());
+        assertThrows(InternalErrorException.class, () -> mono.block(d));
+
+
+        //Then
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+    }
+
+    @Test
+    void acceptMandateInvalidCode() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        String wrongcode = "99999";
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        Mono<Void> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), wrongcode);
+        assertThrows(InvalidVerificationCodeException.class, () -> mono.block(d));
+
+
+        //Then
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+    }
+
+
+    @Test
+    void acceptMandateNotFoud() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        String wrongdelegate = mandateToInsert.getDelegate() + "_wrong";
+        String code = mandateToInsert.getValidationcode();
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        Mono<Void> mono = mandateDao.acceptMandate(wrongdelegate, mandateToInsert.getMandateId(), code);
+        assertThrows(MandateNotFoundException.class, () -> mono.block(d));
+
+
+        //Then
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+    }
+
+
+    @Test
     void acceptMandateExpiration() {
         //Given
         MandateEntity mandateToInsert = newMandate(true);
@@ -543,13 +625,13 @@ public class MandateDaoTestIT {
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
             testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode()).block(Duration.ofMillis(3000));
+        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode()).block(d);
 
         //Then
         try {
@@ -582,13 +664,13 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        mandateDao.rejectMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId()).block(Duration.ofMillis(3000));
+        mandateDao.rejectMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId()).block(d);
 
 
         //Then
@@ -612,6 +694,34 @@ public class MandateDaoTestIT {
         }
     }
 
+
+    @Test
+    void rejectMandateNotFound() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        String wrongdelegate = mandateToInsert.getDelegate() + "_WRONG";
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        Mono<Void> mono =  mandateDao.rejectMandate(wrongdelegate, mandateToInsert.getMandateId());
+        assertThrows(MandateNotFoundException.class, () -> mono.block(d));
+
+
+        //Then
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            testDao.deleteHistory(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+    }
+
     @Test
     void revokeMandate() {
         //Given
@@ -619,13 +729,13 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(Duration.ofMillis(3000));
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(d);
 
 
         //Then
@@ -657,15 +767,15 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
-        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(Duration.ofMillis(3000));
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(d);
 
 
         //When
-        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(Duration.ofMillis(3000));
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(d);
 
 
         //Then
@@ -696,13 +806,13 @@ public class MandateDaoTestIT {
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsert).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        mandateDao.expireMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(Duration.ofMillis(3000));
+        mandateDao.expireMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(d);
 
 
         //Then
@@ -733,7 +843,7 @@ public class MandateDaoTestIT {
 
         //When
         try {
-            mandateDao.expireMandate("fake", "fake").block(Duration.ofMillis(3000));
+            mandateDao.expireMandate("fake", "fake").block(d);
             fail("no MandateNotFoundException thrown");
         } catch (MandateNotFoundException e) {
             //expected

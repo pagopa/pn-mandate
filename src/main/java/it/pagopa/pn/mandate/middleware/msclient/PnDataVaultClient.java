@@ -125,14 +125,13 @@ public class PnDataVaultClient {
      * @param mandateId id della delega
      * @return void
      */
-    public Mono<Object> deleteMandateById(String mandateId)
+    public Mono<Void> deleteMandateById(String mandateId)
     {
         return mandatesApi.deleteMandateById(mandateId)
                 .retryWhen(
                         Retry.backoff(2, Duration.ofMillis(25))
                                 .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                )
-                .then(Mono.just("OK"));
+                );
     }
 
     /**

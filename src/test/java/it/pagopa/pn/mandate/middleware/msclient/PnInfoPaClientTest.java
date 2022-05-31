@@ -51,7 +51,7 @@ class PnInfoPaClientTest {
         new MockServerClient("localhost", 9999)
         .when(request()
                     .withMethod("GET")
-                    .withPath("/ext-registry/pa/v1/activated-on-pn/{id}".replace("{id}", id)))
+                    .withPath("/ext-registry-private/pa/v1/activated-on-pn/{id}".replace("{id}", id)))
             .respond(response()
                     .withBody("{" +
                             "\"" + PaInfoDto.JSON_PROPERTY_ID + "\": " + "\"" + id + "\"," +

@@ -1,6 +1,8 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
+import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
@@ -120,7 +122,7 @@ public class MandateService  {
                             entity.setDelegator(requesterInternaluserId);
                             entity.setDelegatorisperson(requesterUserTypeIsPF);
                             entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
-                            entity.setValidfrom(DateUtils.formatDate(ZonedDateTime.now().minusDays(120)));
+                            entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
                             if (log.isInfoEnabled())
                                 log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}",
                                         entity.getMandateId(), requesterInternaluserId, requesterUserTypeIsPF, entity.getValidfrom());

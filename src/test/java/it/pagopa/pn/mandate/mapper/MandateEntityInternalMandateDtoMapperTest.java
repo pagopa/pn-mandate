@@ -45,8 +45,8 @@ class MandateEntityInternalMandateDtoMapperTest {
             Assertions.assertNotNull(result.getDelegate());
 
             Assertions.assertEquals(mandateToInsert.getMandateId(),  result.getMandateId());
-            Assertions.assertEquals(mandateToInsert.getValidfrom(),  result.getDatefrom());
-            Assertions.assertEquals(mandateToInsert.getValidto(),  result.getDateto());
+            Assertions.assertEquals(mandateToInsert.getValidfrom().toString(),  result.getDatefrom());
+            Assertions.assertEquals(mandateToInsert.getValidto().toString(),  result.getDateto());
             Assertions.assertEquals(mandateToInsert.getDelegator(),  result.getDelegator());
             Assertions.assertEquals(mandateToInsert.getDelegate(),  result.getDelegate());
             Assertions.assertEquals(mandateToInsert.getVisibilityIds()==null?0:mandateToInsert.getVisibilityIds().size(),  result.getVisibilityIds().size());

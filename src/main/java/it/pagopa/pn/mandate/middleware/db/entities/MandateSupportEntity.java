@@ -30,7 +30,7 @@ public class MandateSupportEntity {
         this.setDelegator(source.getDelegator());
         this.setMandateId(source.getMandateId());
         if (source.getValidto() != null)
-            this.setTtl(DateUtils.parseDate(source.getValidto()).toEpochSecond());
+            this.setTtl(source.getValidto().getEpochSecond());
     }
 
 

@@ -5,6 +5,7 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
+import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,12 +37,10 @@ class MandateEntityMandateDtoMapperTest {
         try {
             Assertions.assertNotNull( result);
             Assertions.assertNotNull(result.getMandateId());
-            Assertions.assertNotNull(result.getValidfrom());
             Assertions.assertNotNull(result.getValidto());
             Assertions.assertNotNull(result.getValidationcode());
 
             Assertions.assertEquals(mandateToInsert.getMandateId(),  result.getMandateId());
-            Assertions.assertEquals(mandateToInsert.getValidfrom(),  result.getValidfrom());
             Assertions.assertEquals(mandateToInsert.getValidto(),  result.getValidto());
             Assertions.assertEquals(mandateToInsert.getValidationcode(),  result.getValidationcode());
             // implicano la risoluzione da datavault, non ha senso testarli
@@ -160,8 +159,8 @@ class MandateEntityMandateDtoMapperTest {
 
 
             Assertions.assertEquals(mandateToInsert.getMandateId(),  result.getMandateId());
-            Assertions.assertEquals(mandateToInsert.getValidfrom(),  result.getDatefrom());
-            Assertions.assertEquals(mandateToInsert.getValidto(),  result.getDateto());
+            Assertions.assertEquals(DateUtils.formatDate(mandateToInsert.getValidfrom()),  result.getDatefrom());
+            Assertions.assertEquals(DateUtils.formatDate(mandateToInsert.getValidto()),  result.getDateto());
             Assertions.assertEquals(mandateToInsert.getState(), StatusEnumMapper.intValfromStatus(result.getStatus()));
             Assertions.assertEquals(mandateToInsert.getValidationcode(),  result.getVerificationCode());
             Assertions.assertEquals(mandateToInsert.getDelegateisperson(),  result.getDelegate().getPerson());

@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
+import java.time.Instant;
 import java.util.Set;
 
 import static it.pagopa.pn.mandate.middleware.db.BaseDao.GSI_INDEX_DELEGATE_STATE;
@@ -60,13 +61,13 @@ public class MandateEntity {
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_B_DELEGATORISPERSON)}))  private Boolean delegatorisperson;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_B_DELEGATEISPERSON)}))  private Boolean delegateisperson;
 
-    @Getter(onMethod=@__({@DynamoDbAttribute(COL_D_VALIDFROM)}))  private String validfrom;
-    @Getter(onMethod=@__({@DynamoDbAttribute(COL_D_VALIDTO)}))  private String validto;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_D_VALIDFROM)}))  private Instant validfrom;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_D_VALIDTO)}))  private Instant validto;
 
-    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_CREATED)}))  private String created;
-    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_ACCEPTED)}))  private String accepted;
-    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_REJECTED)}))  private String rejected;
-    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_REVOKED)}))  private String revoked;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_CREATED)}))  private Instant created;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_ACCEPTED)}))  private Instant accepted;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_REJECTED)}))  private Instant rejected;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_T_REVOKED)}))  private Instant revoked;
 
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_S_VALIDATIONCODE)}))  private String validationcode;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_A_VISIBILITYIDS)}))  private Set<String> visibilityIds;

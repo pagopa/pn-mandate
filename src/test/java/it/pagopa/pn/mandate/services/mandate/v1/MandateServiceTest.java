@@ -19,6 +19,7 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
 import it.pagopa.pn.mandate.rest.utils.InvalidInputException;
 import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
 import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
+import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -192,7 +193,7 @@ class MandateServiceTest {
         MandateEntity entity = MandateDaoTestIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
-        mandateDto.setDateto(entity.getValidto());
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(entity.getValidationcode());
         mandateDto.setVisibilityIds(new ArrayList<>());
         mandateDto.setDelegate(new UserDto());
@@ -203,9 +204,9 @@ class MandateServiceTest {
 
         final MandateDto mandateDtoRes = new MandateDto();
         mandateDtoRes.setMandateId(entity.getMandateId());
-        mandateDtoRes.setDatefrom(entity.getValidfrom());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
         mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
-        mandateDtoRes.setDateto(entity.getValidto());
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDtoRes.setVerificationCode(entity.getValidationcode());
         mandateDtoRes.setVisibilityIds(new ArrayList<>());
         mandateDtoRes.setDelegate(new UserDto());
@@ -247,7 +248,7 @@ class MandateServiceTest {
         MandateEntity entity = MandateDaoTestIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
-        mandateDto.setDateto(entity.getValidto());
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(entity.getValidationcode());
         mandateDto.setVisibilityIds(new ArrayList<>());
         mandateDto.setDelegate(new UserDto());
@@ -274,7 +275,7 @@ class MandateServiceTest {
         MandateEntity entity = MandateDaoTestIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
-        mandateDto.setDateto(entity.getValidto());
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(entity.getValidationcode());
         mandateDto.setVisibilityIds(new ArrayList<>());
         mandateDto.setDelegate(new UserDto());
@@ -301,7 +302,7 @@ class MandateServiceTest {
         MandateEntity entity = MandateDaoTestIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
-        mandateDto.setDateto(entity.getValidto());
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(null);
         mandateDto.setVisibilityIds(new ArrayList<>());
         mandateDto.setDelegate(new UserDto());
@@ -328,7 +329,7 @@ class MandateServiceTest {
         MandateEntity entity = MandateDaoTestIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
-        mandateDto.setDateto(entity.getValidto());
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode("123456");
         mandateDto.setVisibilityIds(new ArrayList<>());
         mandateDto.setDelegate(new UserDto());
@@ -355,7 +356,7 @@ class MandateServiceTest {
         MandateEntity entity = MandateDaoTestIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
-        mandateDto.setDateto(entity.getValidto());
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(entity.getValidationcode());
         mandateDto.setVisibilityIds(new ArrayList<>());
         mandateDto.setDelegate(new UserDto());
@@ -366,9 +367,9 @@ class MandateServiceTest {
 
         final MandateDto mandateDtoRes = new MandateDto();
         mandateDtoRes.setMandateId(entity.getMandateId());
-        mandateDtoRes.setDatefrom(entity.getValidfrom());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
         mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
-        mandateDtoRes.setDateto(entity.getValidto());
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDtoRes.setVerificationCode(entity.getValidationcode());
         mandateDtoRes.setVisibilityIds(new ArrayList<>());
         mandateDtoRes.setDelegate(new UserDto());
@@ -402,7 +403,7 @@ class MandateServiceTest {
         MandateEntity entity = MandateDaoTestIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
-        mandateDto.setDateto(entity.getValidto());
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(entity.getValidationcode());
         mandateDto.setVisibilityIds(new ArrayList<>());
         mandateDto.setDelegate(new UserDto());
@@ -413,9 +414,9 @@ class MandateServiceTest {
 
         final MandateDto mandateDtoRes = new MandateDto();
         mandateDtoRes.setMandateId(entity.getMandateId());
-        mandateDtoRes.setDatefrom(entity.getValidfrom());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
         mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
-        mandateDtoRes.setDateto(entity.getValidto());
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDtoRes.setVerificationCode(entity.getValidationcode());
         mandateDtoRes.setVisibilityIds(new ArrayList<>());
         mandateDtoRes.setDelegate(new UserDto());

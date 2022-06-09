@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.utils;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -7,18 +8,24 @@ import java.time.format.DateTimeFormatter;
 
 public class DateUtils {
 
+    private static final ZoneId italianZoneId =  ZoneId.of("Europe/Rome");
+
     private DateUtils(){}
-    
-    public static String formatDate(ZonedDateTime date)
+
+
+    public static String formatDate(Instant instant)
     {
+        if (instant == null)
+            return null;
+
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
-        return date.format(formatter);
+        return LocalDate.ofInstant(instant, italianZoneId).format(formatter);
     }
 
     public static String formatTime(ZonedDateTime datetime)
     {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-        return datetime.format(formatter.withZone(ZoneId.of("Europe/Rome")));
+        return datetime.format(formatter.withZone(italianZoneId));
     }
 
     public static ZonedDateTime parseDate(String date)
@@ -26,7 +33,13 @@ public class DateUtils {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
         LocalDate locdate = LocalDate.parse(date, formatter);
 
-        return locdate.atStartOfDay(ZoneId.of("Europe/Rome"));
+        return locdate.atStartOfDay(italianZoneId);
+    }
+
+    public static ZonedDateTime atStartOfDay(Instant instant)
+    {
+        LocalDate locdate = LocalDate.ofInstant(instant, italianZoneId);
+        return locdate.atStartOfDay(italianZoneId);
     }
 
     public static ZonedDateTime parseTime(String date)

@@ -25,6 +25,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.Select;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -82,7 +83,7 @@ public class MandateDao extends BaseDao {
         // infatti se una delega è scaduta, potrebbe rimanere a sistema per qualche ora/giorno prima di essere svecchiata
         // e quindi va sempre previsto un filtro sulla data di scadenza
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now())).build());
+        expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
         String expression = MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")";
 
         if (mandateId != null)
@@ -142,7 +143,7 @@ public class MandateDao extends BaseDao {
         // infatti se una delega è scaduta, potrebbe rimanere a sistema per qualche ora/giorno prima di essere svecchiata
         // e quindi va sempre previsto un filtro sulla data di scadenza
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now())).build());
+        expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
         expressionValues.put(":status", AttributeValue.builder().n(iState + "").build());
         if (mandateId != null)
         {
@@ -194,7 +195,7 @@ public class MandateDao extends BaseDao {
                     if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING))
                     {
                         // aggiorno lo stato, solo se era in pending. NB: non do errore
-                        mandate.setAccepted(DateUtils.formatTime(ZonedDateTime.now()));
+                        mandate.setAccepted(Instant.now());
                         mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE));
                     }
                     else if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
@@ -210,7 +211,7 @@ public class MandateDao extends BaseDao {
                     // Questo perchè se mettevo il TTL nel record principale e per qualche anomalia non veniva gestito l'evento di cancellazione
                     // avrei perso definitivamente il record della delega (scaduta, ma che va mantenuta per 10 anni nello storico)
                     TransactWriteItemsEnhancedRequest.Builder transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-                    if (mandate.getValidto() != null && !mandate.getValidto().equals("")) {
+                    if (mandate.getValidto() != null) {
                         MandateSupportEntity support = new MandateSupportEntity(mandate);
                         transactionBuilder.addPutItem(mandateSupportTable, TransactPutItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build());
                         log.info("mandate has validto setted, creating also support entity for ttl expiration");
@@ -252,13 +253,13 @@ public class MandateDao extends BaseDao {
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
                 .switchIfEmpty(Mono.error(new MandateNotFoundException()))
                 .flatMap(mandate -> {
-                    log.info("mandate for delegate retrieved mandateobj:{}", mandate);
+                    log.info("rejectMandate mandate for delegate retrieved mandateobj:{}", mandate);
 
                     if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                             || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.REJECTED))
                     {
                         // aggiorno lo stato, solo se era in pending. NB: non do errore
-                        mandate.setRejected(DateUtils.formatTime(ZonedDateTime.now()));
+                        mandate.setRejected(Instant.now());
                         mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REJECTED));
                         return Mono.fromFuture(saveHistoryAndDeleteFromMain(mandate, StatusEnum.REJECTED)).then();
                     }
@@ -289,16 +290,16 @@ public class MandateDao extends BaseDao {
                 .thenCompose(mandate -> {
                             if (mandate == null)
                             {
-                                log.info("skipped, mandate not found mandateid:{}", mandateId);
+                                log.info("revokeMandate skipped, mandate not found mandateid:{}", mandateId);
                                 return CompletableFuture.completedFuture(mandate);
                             }
 
-                            log.info("mandate for delegate retrieved mandateobj:{}", mandate);
+                            log.info("revokeMandate mandate for delegate retrieved mandateobj:{}", mandate);
                             if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                                     || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
                             {
                                 // aggiorno lo stato, solo se era in pending. NB: non do errore
-                                mandate.setRevoked(DateUtils.formatTime(ZonedDateTime.now()));
+                                mandate.setRevoked(Instant.now());
                                 mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REVOKED));
                                 return saveHistoryAndDeleteFromMain(mandate, StatusEnum.REVOKED);
                             }
@@ -327,7 +328,7 @@ public class MandateDao extends BaseDao {
                             if (mandate == null)
                                 throw new MandateNotFoundException();
 
-                            log.info("mandate for delegate retrieved mandateobj:{}", mandate);
+                            log.info("expireMandate mandate for delegate retrieved mandateobj:{}", mandate);
                             mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
                             return saveHistoryAndDeleteFromMain(mandate, StatusEnum.EXPIRED);
                         })
@@ -448,7 +449,7 @@ public class MandateDao extends BaseDao {
         expressionValues.put(":delegate",  AttributeValue.builder().s(delegateInternaluserid).build());
         expressionValues.put(":delegator",  AttributeValue.builder().s(delegatorInternaluserid).build());
         expressionValues.put(":mandateprefix",  AttributeValue.builder().s(MandateEntity.MANDATE_PREFIX).build());
-        expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now())).build());
+        expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
         expressionValues.put(":status", AttributeValue.builder().n(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE) + "").build());
 
         QueryRequest qeRequest = QueryRequest

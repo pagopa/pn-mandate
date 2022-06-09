@@ -5,12 +5,10 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
+import it.pagopa.pn.mandate.utils.DateUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Component
 public class MandateEntityMandateDtoMapper implements BaseMapperInterface<MandateDto, MandateEntity> {
@@ -24,8 +22,8 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
     public MandateEntity toEntity(MandateDto dto) {
         final MandateEntity target = new MandateEntity();
         target.setMandateId(dto.getMandateId());
-        target.setValidfrom(dto.getDatefrom());
-        target.setValidto(dto.getDateto());
+        if (dto.getDateto() != null)
+            target.setValidto(DateUtils.atStartOfDay(DateUtils.parseDate(dto.getDateto()).toInstant()).plusDays(1).minusSeconds(1).toInstant());
         if (dto.getStatus() != null)
             target.setState(StatusEnumMapper.intValfromStatus(dto.getStatus()));
         target.setValidationcode(dto.getVerificationCode());
@@ -42,8 +40,8 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
     public MandateDto toDto(MandateEntity entity) {
         final MandateDto target = new MandateDto();
         target.setMandateId(entity.getMandateId());
-        target.setDatefrom(entity.getValidfrom());
-        target.setDateto(entity.getValidto());
+        target.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
+        target.setDateto(DateUtils.formatDate(entity.getValidto()));
         target.setStatus(StatusEnumMapper.fromValue(entity.getState()));
         target.setVerificationCode(entity.getValidationcode());
         target.setVisibilityIds(getOrgidsDtos(entity.getVisibilityIds()));
@@ -74,7 +72,7 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
 
     private Set<String> getOrgidsEntities(List<OrganizationIdDto> ids){
         if (ids == null || ids.isEmpty())
-            return null;
+            return null;    // a dynamo non piace il set vuoto, vuole null
         
         Set<String> r = new HashSet<>();
         ids.forEach(oid -> r.add(oid.getUniqueIdentifier()));

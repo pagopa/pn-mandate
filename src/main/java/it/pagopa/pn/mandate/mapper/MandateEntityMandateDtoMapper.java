@@ -7,6 +7,7 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 
@@ -75,8 +76,14 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
             return null;    // a dynamo non piace il set vuoto, vuole null
         
         Set<String> r = new HashSet<>();
-        ids.forEach(oid -> r.add(oid.getUniqueIdentifier()));
-        
+        ids.forEach(oid -> {
+            if (StringUtils.hasText(oid.getUniqueIdentifier()))
+                r.add(oid.getUniqueIdentifier());
+        });
+
+        if (r.isEmpty())
+            return null;    // a dynamo non piace il set vuoto, vuole null
+
         return r;
     }
 

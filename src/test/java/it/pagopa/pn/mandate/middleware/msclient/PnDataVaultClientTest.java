@@ -86,8 +86,9 @@ class PnDataVaultClientTest {
 
         new MockServerClient("localhost", 9998)
                 .when(request()
-                        .withMethod("GET")
-                        .withPath("/datavault-private/v1/recipients/external/{recipientType}/{taxId}".replace("{recipientType}","PF").replace("{taxId}", cf)))
+                        .withMethod("POST")
+                        .withBody(cf)
+                        .withPath("/datavault-private/v1/recipients/external/{recipientType}".replace("{recipientType}","PF")))
                 .respond(response()
                         .withBody(iuid)
                         .withContentType(MediaType.APPLICATION_JSON)

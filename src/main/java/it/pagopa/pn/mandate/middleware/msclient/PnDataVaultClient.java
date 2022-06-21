@@ -1,36 +1,31 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
 
-import io.netty.channel.ChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.TimeoutException;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.ApiClient;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.MandatesApi;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.RecipientsApi;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.RecipientTypeDto;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import it.pagopa.pn.mandate.middleware.msclient.common.BaseClient;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClient;
 import reactor.util.retry.Retry;
 
 import javax.annotation.PostConstruct;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Classe wrapper di pn-data-vault, con gestione del backoff
  */
 @Component
-public class PnDataVaultClient {
+public class PnDataVaultClient extends BaseClient {
     
     private RecipientsApi recipientsApi;
     private MandatesApi mandatesApi;
@@ -42,23 +37,12 @@ public class PnDataVaultClient {
 
     @PostConstruct
     public void init(){
-        HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
-                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(10000, TimeUnit.MILLISECONDS)));
 
-        WebClient webClient = ApiClient.buildWebClientBuilder()
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .build();
-        ApiClient newApiClient = new ApiClient(webClient);
+        ApiClient newApiClient = new ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
         newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
         this.recipientsApi = new RecipientsApi(newApiClient);
 
-        httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
-                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(10000, TimeUnit.MILLISECONDS)));
-
-        webClient = ApiClient.buildWebClientBuilder()
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .build();
-        newApiClient = new ApiClient(webClient);
+        newApiClient = new ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
         newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
         this.mandatesApi = new MandatesApi(newApiClient);
     }

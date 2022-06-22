@@ -350,6 +350,33 @@ class MandateServiceTest {
         //nothing
     }
 
+
+    @Test
+    void createMandateFailNoValidTo() {
+        //Given
+        MandateEntity entity = MandateDaoTestIT.newMandate(true);
+
+        // MAndateDto come proviene da FE quindi senza alcune info
+        final MandateDto mandateDto = new MandateDto();
+        mandateDto.setDateto(null);
+        mandateDto.setVerificationCode(entity.getValidationcode());
+        mandateDto.setVisibilityIds(new ArrayList<>());
+        mandateDto.setDelegate(new UserDto());
+        mandateDto.getDelegate().setFirstName("mario");
+        mandateDto.getDelegate().setLastName("rossi");
+        mandateDto.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
+
+        //When
+        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true);
+        assertThrows(InvalidInputException.class, () -> {
+            mono.block(d);
+        });
+
+        //Then
+        //nothing
+    }
+
     @Test
     void listMandatesByDelegate() {
         //Given

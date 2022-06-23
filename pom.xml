@@ -18,32 +18,11 @@
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webflux</artifactId>
+			<groupId>it.pagopa.pn</groupId>
+			<artifactId>pn-commons</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-			 <exclusions>
-                <exclusion>
-                    <groupId>org.junit.vintage</groupId>
-                    <artifactId>junit-vintage-engine</artifactId>
-                </exclusion>
-            </exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springdoc</groupId> 
-			<artifactId>springdoc-openapi-webflux-core</artifactId>
-			<version>1.6.6</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springdoc</groupId> 
-			<artifactId>springdoc-openapi-webflux-ui</artifactId>
-			<version>1.6.6</version>
-		</dependency>
 		<!-- https://mvnrepository.com/artifact/io.swagger/swagger-annotations -->
 		<dependency>
 			<groupId>io.swagger</groupId>
@@ -51,11 +30,6 @@
 			<version>1.6.5</version>
 		</dependency>
 
-		<dependency>
-			<groupId>com.google.code.findbugs</groupId>
-			<artifactId>jsr305</artifactId>
-			<version>3.0.2</version>
-		</dependency>        
 
 		<!-- https://mvnrepository.com/artifact/software.amazon.awssdk/dynamodb-enhanced -->
 		<dependency>
@@ -66,11 +40,21 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.22</version>
 			<scope>provided</scope>
 		</dependency>
 
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.junit.vintage</groupId>
+					<artifactId>junit-vintage-engine</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/junit/junit -->
 		<dependency>
             <groupId>io.projectreactor</groupId>

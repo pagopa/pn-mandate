@@ -1,23 +1,12 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
-import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.time.temporal.TemporalUnit;
-import java.util.*;
-
-import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
-import it.pagopa.pn.mandate.middleware.db.DelegateDao;
-import it.pagopa.pn.mandate.rest.utils.InvalidInputException;
-import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
-import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
-import it.pagopa.pn.mandate.utils.DateUtils;
-import org.springframework.stereotype.Service;
-
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
+import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
@@ -25,13 +14,25 @@ import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum; 
+import it.pagopa.pn.mandate.rest.utils.InvalidInputException;
+import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
+import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
 import it.pagopa.pn.mandate.rest.utils.UnsupportedFilterException;
+import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -183,6 +184,10 @@ public class MandateService  {
             throw new InvalidInputException();
         if (!mandateDto.getDelegate().getPerson()
                 && !mandateDto.getDelegate().getFiscalCode().matches("[0-9]{11}"))
+            throw new InvalidInputException();
+
+        // la delega richiede la data di fine
+        if (!StringUtils.hasText(mandateDto.getDateto()))
             throw new InvalidInputException();
 
         return mandateDto;

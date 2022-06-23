@@ -233,7 +233,7 @@ class MandateServiceTest {
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true).block(d);
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true).block(d);
 
         //Then
         assertNotNull(result);
@@ -394,10 +394,10 @@ class MandateServiceTest {
         mandateDto.getDelegate().setFiscalCode("RSSMRA85T10A562S");
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
-        when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
+        when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegator()));
 
         //When
-        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true);
+        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true);
         assertThrows(InvalidInputException.class, () -> {
             mono.block(d);
         });

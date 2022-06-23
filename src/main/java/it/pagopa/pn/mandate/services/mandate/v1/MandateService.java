@@ -120,7 +120,7 @@ public class MandateService  {
 
                             // qui posso controllare se delegante e delegato sono gli stessi (prima non li avevo disponibili)
                             if (delegateInternaluserId.equals(requesterInternaluserId))
-                                Mono.error(new InvalidInputException());
+                                throw new InvalidInputException();
 
                             MandateEntity entity = mandateEntityMandateDtoMapper.toEntity(dto);
                             entity.setDelegate(delegateInternaluserId);

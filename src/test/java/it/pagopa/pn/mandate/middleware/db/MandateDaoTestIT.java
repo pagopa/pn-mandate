@@ -753,6 +753,45 @@ public class MandateDaoTestIT {
 
 
     @Test
+    void rejectMandateActive() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        mandateDao.rejectMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId()).block(d);
+
+
+        //Then
+        try {
+            MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            MandateEntity elementHistoryFromDb = testDao.getHistory(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+
+            Assertions.assertNull( elementFromDb);
+            Assertions.assertNotNull( elementHistoryFromDb);
+            Assertions.assertEquals( StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.REJECTED), elementHistoryFromDb.getState());
+            Assertions.assertNotNull(elementHistoryFromDb.getRejected());
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.deleteHistory(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+
+    @Test
     void rejectMandateNotFound() {
         //Given
         MandateEntity mandateToInsert = newMandate(false);

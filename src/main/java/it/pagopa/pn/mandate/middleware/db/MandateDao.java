@@ -256,15 +256,15 @@ public class MandateDao extends BaseDao {
                     log.info("rejectMandate mandate for delegate retrieved mandateobj:{}", mandate);
 
                     if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
-                            || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.REJECTED))
+                            || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
                     {
-                        // aggiorno lo stato, solo se era in pending. NB: non do errore
+                        // aggiorno lo stato, solo se era in pending o active, ignoro eventuali altri stati (che NON dovrebbero essere presenti)
                         mandate.setRejected(Instant.now());
                         mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REJECTED));
                         return Mono.fromFuture(saveHistoryAndDeleteFromMain(mandate, StatusEnum.REJECTED)).then();
                     }
                     else
-                        log.warn("no mandate found in pending or rejected state, fail silently");
+                        log.warn("no mandate found in pending,active or rejected state, fail silently");
 
                     return Mono.empty();
                 });
@@ -298,7 +298,7 @@ public class MandateDao extends BaseDao {
                             if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                                     || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
                             {
-                                // aggiorno lo stato, solo se era in pending. NB: non do errore
+                                // aggiorno lo stato, solo se era in pending o active, ignoro eventuali altri stati (che NON dovrebbero essere presenti)
                                 mandate.setRevoked(Instant.now());
                                 mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REVOKED));
                                 return saveHistoryAndDeleteFromMain(mandate, StatusEnum.REVOKED);

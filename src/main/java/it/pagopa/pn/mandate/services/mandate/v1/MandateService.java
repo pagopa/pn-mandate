@@ -117,6 +117,11 @@ public class MandateService  {
                 .map(this::validate)
                 .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegate().getPerson(), dto.getDelegate().getFiscalCode())
                         .map(delegateInternaluserId -> {
+
+                            // qui posso controllare se delegante e delegato sono gli stessi (prima non li avevo disponibili)
+                            if (delegateInternaluserId.equals(requesterInternaluserId))
+                                Mono.error(new InvalidInputException());
+
                             MandateEntity entity = mandateEntityMandateDtoMapper.toEntity(dto);
                             entity.setDelegate(delegateInternaluserId);
                             entity.setMandateId(uuid);
@@ -130,10 +135,10 @@ public class MandateService  {
 
                             return  entity;
                         })
-                        .flatMap(mandateDao::createMandate)
                         .flatMap(ent -> pnDatavaultClient.updateMandateById(uuid, dto.getDelegate().getFirstName(),
-                                dto.getDelegate().getLastName(), dto.getDelegate().getCompanyName())
-                                  .then(Mono.just(ent)))
+                                        dto.getDelegate().getLastName(), dto.getDelegate().getCompanyName())
+                                .then(Mono.just(ent)))
+                        .flatMap(mandateDao::createMandate)
                 ,(ddto, entity) -> entity)
             .map(r -> {
                 r.setDelegator(null);

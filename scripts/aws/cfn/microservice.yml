@@ -78,6 +78,10 @@ Parameters:
   MandatesDynamoTableHistoryArn:
     Type: String
     Description: 'ARN of dynamodb table containing mandates history'
+  
+  Version:
+    Type: String
+    Description: 'keep track of used projects commitIds'
 
 Resources:
 

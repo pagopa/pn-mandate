@@ -14,6 +14,7 @@ import it.pagopa.pn.mandate.rest.utils.MandateAlreadyExistsException;
 import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -38,6 +39,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Repository
 @Slf4j
+@Import(PnAuditLogBuilder.class)
 public class MandateDao extends BaseDao {
 
     private final PnAuditLogBuilder auditLogBuilder;

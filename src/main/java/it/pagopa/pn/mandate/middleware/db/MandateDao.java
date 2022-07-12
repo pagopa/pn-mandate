@@ -80,7 +80,7 @@ public class MandateDao extends BaseDao {
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
         // affidamento ad indici diversi e query diverse
         // listMandatesByDelegate si affida all'indice GSI delegate-state, che filtra per utente delegato E stato.
-        log.info("listMandatesByDelegate uid:{} status:{}", delegateInternaluserid, status);
+        log.info("listMandatesByDelegate uid={} status={}", delegateInternaluserid, status);
 
         QueryConditional queryConditional = QueryConditional.sortLessThanOrEqualTo(getKeyBuild(delegateInternaluserid, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)));
         if (status != null)
@@ -138,7 +138,7 @@ public class MandateDao extends BaseDao {
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
         // affidamento ad indici diversi e query diverse
         // listMandatesByDelegator si affida all'ordinamento principale, che filtra per utente e delega. Lo stato va previsto a parte nell'expressionfilter
-        log.info("listMandatesByDelegator uid:{} status:{}", delegatorInternaluserid, status);
+        log.info("listMandatesByDelegator uid={} status={}", delegatorInternaluserid, status);
 
         int iState = StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE);
         String filterexp = "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) AND (" + MandateEntity.COL_I_STATE + " <= :status)";
@@ -197,7 +197,7 @@ public class MandateDao extends BaseDao {
         PnAuditLogEvent logEvent = auditLogBuilder
                 .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
                 .build();
-        log.info(logMessage);
+
         logEvent.log();
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
                 .switchIfEmpty(Mono.error(new MandateNotFoundException()))
@@ -205,7 +205,7 @@ public class MandateDao extends BaseDao {
                     if (!mandate.getValidationcode().equals(verificationCode))
                         throw new InvalidVerificationCodeException();
 
-                    log.info("retrieved mandateobj:{}", mandate);
+                    log.info("retrieved mandateobj={}", mandate);
                     if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING))
                     {
                         // aggiorno lo stato, solo se era in pending. NB: non do errore
@@ -242,10 +242,11 @@ public class MandateDao extends BaseDao {
                                 mandate.getDelegator(), mandate.getDelegate(), mandate);
                         logEvent.generateSuccess(messageAction).log();
                         return mandate;
-                    })).then().onErrorResume(throwable -> {
-                        logEvent.generateFailure(throwable.getMessage()).log();
-                        return Mono.error(throwable);
-                    });
+                    })).then();
+                })
+                .onErrorResume(throwable -> {
+                    logEvent.generateFailure(throwable.getMessage()).log();
+                    return Mono.error(throwable);
                 });
 
     }
@@ -267,11 +268,17 @@ public class MandateDao extends BaseDao {
         // devo passare quindi per l'indice sul delegato, recuperarmi la riga, aggiornare il contenuto e salvarla.
         // NB: si noti che ci può essere un problema legato alla concorrenza, ma dato che i dati sulle deleghe non cambiano così frequentemente, 
         // si accetta la possibilità dell'improbabilità che arrivino 2 scritture contemporanee nel piccolo lasso di tempo tra query e update...
-        log.info("rejectMandate for delegate uid:{} mandateid:{}", delegateInternaluserid, mandateId);
+
+        String logMessage = String.format("rejectMandate for delegate uid=%s mandateid=%s", delegateInternaluserid, mandateId);
+        PnAuditLogEvent logEvent = auditLogBuilder
+                .before(PnAuditLogEventType.AUD_DL_REJECT, logMessage)
+                .build();
+        logEvent.log();
+
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
                 .switchIfEmpty(Mono.error(new MandateNotFoundException()))
                 .flatMap(mandate -> {
-                    log.info("rejectMandate mandate for delegate retrieved mandateobj:{}", mandate);
+                    log.info("rejectMandate mandate for delegate retrieved mandateobj={}", mandate);
 
                     if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                             || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
@@ -279,17 +286,21 @@ public class MandateDao extends BaseDao {
                         // aggiorno lo stato, solo se era in pending o active, ignoro eventuali altri stati (che NON dovrebbero essere presenti)
                         mandate.setRejected(Instant.now());
                         mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REJECTED));
-                        String logMessage = String.format("rejectMandate for delegate uid=%s mandateid=%s", delegateInternaluserid, mandateId);
-                        PnAuditLogEvent logEvent = auditLogBuilder
-                                .before(PnAuditLogEventType.AUD_DL_REJECT, logMessage)
-                                .build();
-                        return Mono.fromFuture(saveHistoryAndDeleteFromMain(mandate, StatusEnum.REJECTED, logEvent)).then();
+
+                        return Mono.fromFuture(saveHistoryAndDeleteFromMain(mandate))
+                                .map(m -> {
+                                    logEvent.generateSuccess("mandate rejected mandate={}", m).log();
+                                    return m;
+                                }).then();
                     }
                     else
                         log.warn("no mandate found in pending,active or rejected state, fail silently");
-//                        logEvent.generateFailure("no mandate found in pending,active or rejected state, fail silently").log();
 
                     return Mono.empty();
+                })
+                .onErrorResume(throwable -> {
+                    logEvent.generateFailure(throwable.getMessage()).log();
+                    return Mono.error(throwable);
                 });
 
     }
@@ -312,7 +323,7 @@ public class MandateDao extends BaseDao {
         PnAuditLogEvent logEvent = auditLogBuilder
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
                 .build();
-        log.info(logMessage);
+
         logEvent.log();
         return Mono.fromFuture(retrieveMandateForDelegator(delegatorInternaluserid, mandateId)
                 .thenCompose(mandate -> {
@@ -322,18 +333,26 @@ public class MandateDao extends BaseDao {
                                 return CompletableFuture.completedFuture(mandate);
                             }
                             String messageAction = String.format("revokeMandate mandate for delegate retrieved mandateobj=%s", mandate);
-                            log.info("revokeMandate mandate for delegate retrieved mandateobj:{}", mandate);
+                            log.info("revokeMandate mandate for delegate retrieved mandateobj={}", mandate);
                             if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                                     || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
                             {
                                 // aggiorno lo stato, solo se era in pending o active, ignoro eventuali altri stati (che NON dovrebbero essere presenti)
                                 mandate.setRevoked(Instant.now());
                                 mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REVOKED));
-                                return saveHistoryAndDeleteFromMain(mandate, StatusEnum.REVOKED, logEvent);
+                                return saveHistoryAndDeleteFromMain(mandate);
                             }
                             return CompletableFuture.completedFuture(mandate);
                         })
-                );
+                )
+                .onErrorResume(throwable -> {
+                    logEvent.generateFailure(throwable.getMessage()).log();
+                    return Mono.error(throwable);
+                })
+                .map(m -> {
+                    logEvent.generateSuccess("mandate revoked mandate={}", m).log();
+                    return m;
+                });
     }
 
     /**
@@ -354,19 +373,26 @@ public class MandateDao extends BaseDao {
         PnAuditLogEvent logEvent = auditLogBuilder
                 .before(PnAuditLogEventType.AUD_DL_EXPIRE, logMessage)
                 .build();
-        log.info(logMessage);
+
         logEvent.log();
         return Mono.fromFuture(retrieveMandateForDelegator(delegatorInternaluserid, mandateId)
                 .thenCompose(mandate -> {
                             if (mandate == null) {
-                                logEvent.generateFailure(String.format("expireMandate skipped, mandate not found mandateid=%s", mandateId)).log();
                                 throw new MandateNotFoundException();
                             }
-                            log.info("expireMandate mandate for delegate retrieved mandateobj:{}", mandate);
+                            log.info("expireMandate mandate for delegate retrieved mandateobj={}", mandate);
                             mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
-                            return saveHistoryAndDeleteFromMain(mandate, StatusEnum.EXPIRED, logEvent);
+                            return saveHistoryAndDeleteFromMain(mandate);
                         })
-                );
+                )
+                .onErrorResume(throwable -> {
+                    logEvent.generateFailure(throwable.getMessage()).log();
+                    return Mono.error(throwable);
+                })
+                .map(m -> {
+                    logEvent.generateSuccess("mandate expired mandate={}", m).log();
+                    return m;
+                });
     }
 
     /**
@@ -382,7 +408,7 @@ public class MandateDao extends BaseDao {
         PnAuditLogEvent logEvent = auditLogBuilder
                 .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
                 .build();
-        log.info(logMessage);
+
         logEvent.log();
 
         return Mono.fromFuture(
@@ -401,14 +427,16 @@ public class MandateDao extends BaseDao {
                         });
                     }
                     else {
-                        logEvent.generateFailure("mandate already exist").log();
                         throw new MandateAlreadyExistsException();
                     }
                 }))
+                .onErrorResume(throwable -> {
+                    logEvent.generateFailure(throwable.getMessage()).log();
+                    return Mono.error(throwable);
+                })
                 .map(mandateCreated -> {
                     log.info("created mandate mandateobj={}", mandateCreated);
                     logEvent.generateSuccess(String.format("created mandate mandateobj=%s", mandateCreated)).log();
-                    auditLog(mandate, "created");
 
                     return mandateCreated;
                 });
@@ -503,21 +531,8 @@ public class MandateDao extends BaseDao {
         return dynamoDbAsyncClient.query(qeRequest).thenApply(QueryResponse::count);
     }
 
-    /**
-     * Logga come audit un evento relativo alle deleghe
-     *
-     * @param mandate oggetto delega
-     * @param event evento
-     */
-    private void auditLog(MandateEntity mandate, String event)
-    {
-        if (log.isInfoEnabled())
-            log.info("AUDITLOG: mandate {} delegator uid:{} delegate uid:{} mandateobj:{}", event, mandate.getDelegator(), mandate.getDelegate(), mandate);
 
-    }
-
-
-    private CompletableFuture<MandateEntity> saveHistoryAndDeleteFromMain(MandateEntity mandate, StatusEnum newstatus, PnAuditLogEvent logEvent)
+    private CompletableFuture<MandateEntity> saveHistoryAndDeleteFromMain(MandateEntity mandate)
     {
         // aggiorno il TTL
         mandate.setTtl(LocalDateTime.now().plusYears(10).atZone(ZoneId.systemDefault()).toEpochSecond());
@@ -532,10 +547,8 @@ public class MandateDao extends BaseDao {
 
         return dynamoDbEnhancedAsyncClient.transactWriteItems(transaction).thenApply(x -> {
             if (log.isInfoEnabled())
-                log.info("mandate saved in history and deleted from main table mandateobj:{}", mandate);
-            logEvent.generateSuccess("mandate %s delegator uid=%s delegate uid=%s mandateobj=%S",
-                        newstatus.getValue(), mandate.getDelegator(), mandate.getDelegate(), mandate).log();
-            auditLog(mandate, newstatus.getValue());
+                log.info("mandate saved in history and deleted from main table mandateobj={}", mandate);
+
             return mandate;
         });
     }

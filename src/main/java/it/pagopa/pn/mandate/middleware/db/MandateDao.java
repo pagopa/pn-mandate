@@ -196,6 +196,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("acceptMandate for delegate uid=%s mandateid=%s verificationCode=%s", delegateInternaluserid, mandateId, verificationCode); 
         PnAuditLogEvent logEvent = auditLogBuilder
                 .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
+                .uid(delegateInternaluserid)
                 .build();
 
         logEvent.log();
@@ -272,6 +273,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("rejectMandate for delegate uid=%s mandateid=%s", delegateInternaluserid, mandateId);
         PnAuditLogEvent logEvent = auditLogBuilder
                 .before(PnAuditLogEventType.AUD_DL_REJECT, logMessage)
+                .uid(delegateInternaluserid)
                 .build();
         logEvent.log();
 
@@ -322,6 +324,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("revokeMandate for delegate uid=%s mandateid=%s", delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = auditLogBuilder
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
+                .uid(delegatorInternaluserid)
                 .build();
 
         logEvent.log();
@@ -372,6 +375,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("expireMandate for delegate uid=%s{} mandateid=%s", delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = auditLogBuilder
                 .before(PnAuditLogEventType.AUD_DL_EXPIRE, logMessage)
+                .uid(delegatorInternaluserid)
                 .build();
 
         logEvent.log();
@@ -407,6 +411,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("create mandate mandate=%s", mandate);
         PnAuditLogEvent logEvent = auditLogBuilder
                 .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
+                .uid(mandate.getDelegator())
                 .build();
 
         logEvent.log();

@@ -254,7 +254,6 @@ public class MandateService  {
                                 user.setDisplayName(baseRecipientDtoDto.getDenomination());
                                 user.setFiscalCode(baseRecipientDtoDto.getTaxId());
                             }
-
                             dtos.add(dto);
                         }
                         return dtos;

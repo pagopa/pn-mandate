@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;

@@ -236,7 +236,7 @@ public class MandateService  {
 
                             // ritorno la lista
                             return this.pnDatavaultClient.getRecipientDenominationByInternalId(internaluserIds)
-                                    .collectMap(BaseRecipientDtoDto::getInternalId, BaseRecipientDtoDto::getDenomination);
+                                    .collectMap(BaseRecipientDtoDto::getInternalId, baseRecipientDtoDto -> baseRecipientDtoDto);
                         }
                         else
                             return Mono.just(new HashMap<String, String>());
@@ -250,10 +250,10 @@ public class MandateService  {
                             if (userinfosdtos.containsKey(ent.getDelegator()))
                             {
                                 UserDto user = dto.getDelegator();
-                                String denomination = userinfosdtos.get(ent.getDelegator());
-                                user.setDisplayName(denomination);
+                                BaseRecipientDtoDto baseRecipientDtoDto =  ((BaseRecipientDtoDto)userinfosdtos.get(ent.getDelegator()));
+                                user.setDisplayName(baseRecipientDtoDto.getDenomination());
+                                user.setFiscalCode(baseRecipientDtoDto.getTaxId());
                             }
-
                             dtos.add(dto);
                         }
                         return dtos;

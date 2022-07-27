@@ -30,7 +30,6 @@ Resources:
       Parameters:
         StreamName: !Sub '${ProjectName}-mandate-cdc-stream'
         StreamRetentionPeriodHours: 24
-        StreamShardCount: 10
   
   MandatesDynamoTable:
     Type: AWS::DynamoDB::Table

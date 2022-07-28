@@ -16,10 +16,7 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
-import it.pagopa.pn.mandate.rest.utils.InvalidInputException;
-import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
-import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
-import it.pagopa.pn.mandate.rest.utils.UnsupportedFilterException;
+import it.pagopa.pn.mandate.rest.utils.*;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -68,10 +65,10 @@ public class MandateService  {
         return acceptRequestDto
         .map(m -> {
             if (m == null || m.getVerificationCode() == null)
-                throw new InvalidVerificationCodeException();
+                throw new PnInvalidVerificationCodeException();
 
             if (mandateId == null)
-                throw  new MandateNotFoundException();
+                throw  new PnMandateNotFoundException();
 
             return m;
         })
@@ -98,7 +95,7 @@ public class MandateService  {
        // per ora l'unico stato supportato è il pending, quindi il filtro non viene passato al count
        // Inoltre, ritorno un errore se status != pending
        if (status == null || !status.equals(StatusEnum.PENDING.getValue()))
-        throw new UnsupportedFilterException();
+        throw new PnUnsupportedFilterException("status");
        return userDao.countMandates(internaluserId)                
                 .map(userEntityMandateCountsDtoMapper::toDto);
     }
@@ -120,7 +117,7 @@ public class MandateService  {
 
                             // qui posso controllare se delegante e delegato sono gli stessi (prima non li avevo disponibili)
                             if (delegateInternaluserId.equals(requesterInternaluserId))
-                                throw new InvalidInputException();
+                                throw new PnMandateByHimselfException();
 
                             MandateEntity entity = mandateEntityMandateDtoMapper.toEntity(dto);
                             entity.setDelegate(delegateInternaluserId);
@@ -179,21 +176,21 @@ public class MandateService  {
                 || (mandateDto.getDelegate().getPerson() == null)
                 || (mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null)
                 || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
-            throw new InvalidInputException();
+            throw new PnInvalidInputException("delegate");
         // codice verifica (5 caratteri)
         if (mandateDto.getVerificationCode() == null || !mandateDto.getVerificationCode().matches("\\d\\d\\d\\d\\d"))
-            throw new InvalidInputException();
+            throw new PnInvalidInputException("verificationCode");
 
         if (mandateDto.getDelegate().getPerson()
             && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}[0-9]{2}[A-Za-z]{1}[0-9]{2}[A-Za-z]{1}[0-9]{3}[A-Za-z]{1}"))
-            throw new InvalidInputException();
+            throw new PnInvalidInputException("fiscalCode");
         if (!mandateDto.getDelegate().getPerson()
                 && !mandateDto.getDelegate().getFiscalCode().matches("[0-9]{11}"))
-            throw new InvalidInputException();
+            throw new PnInvalidInputException("fiscalCode");
 
         // la delega richiede la data di fine
         if (!StringUtils.hasText(mandateDto.getDateto()))
-            throw new InvalidInputException();
+            throw new PnInvalidInputException("dateTo");
 
         return mandateDto;
     }
@@ -218,7 +215,7 @@ public class MandateService  {
                 iStatus = StatusEnumMapper.intValfromValueConst(status);
         } catch (Exception e) {
             log.error("invalid state in filter");
-            throw new UnsupportedFilterException();
+            throw new PnUnsupportedFilterException("");
         }
 
         return mandateDao.listMandatesByDelegate(internaluserId, iStatus, null)   // (1)
@@ -337,7 +334,7 @@ public class MandateService  {
      */
     public Mono<Void> rejectMandate(String mandateId, String internaluserId) {
         if (mandateId == null)
-            throw  new MandateNotFoundException();
+            throw  new PnMandateNotFoundException();
 
         return mandateDao.rejectMandate(internaluserId, mandateId)
                 .then(this.pnDatavaultClient.deleteMandateById(mandateId));
@@ -352,7 +349,7 @@ public class MandateService  {
      */
     public Mono<Object> revokeMandate(String mandateId, String internaluserId) {
         if (mandateId == null)
-            throw  new MandateNotFoundException();
+            throw  new PnMandateNotFoundException();
 
         return mandateDao.revokeMandate(internaluserId, mandateId)
                 .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)
@@ -369,7 +366,7 @@ public class MandateService  {
      */
     public Mono<Object> expireMandate(String mandateId, String internaluserId) {
         if (mandateId == null)
-            throw  new MandateNotFoundException();
+            throw  new PnMandateNotFoundException();
 
         return mandateDao.expireMandate(internaluserId, mandateId)
                 .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)

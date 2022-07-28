@@ -1,13 +1,13 @@
 package it.pagopa.pn.mandate.middleware.db;
 
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
-import it.pagopa.pn.mandate.rest.utils.InternalErrorException;
-import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
-import it.pagopa.pn.mandate.rest.utils.MandateAlreadyExistsException;
-import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
+import it.pagopa.pn.mandate.rest.utils.PnInvalidVerificationCodeException;
+import it.pagopa.pn.mandate.rest.utils.PnMandateAlreadyExistsException;
+import it.pagopa.pn.mandate.rest.utils.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -103,7 +103,7 @@ public class MandateDaoTestIT {
         try {
             mandateDao.createMandate(mandateToInsert1).block(d);
             fail("no MandateAlreadyExistsException thrown");
-        } catch (MandateAlreadyExistsException e) {
+        } catch (PnMandateAlreadyExistsException e) {
             // expected
         }
 
@@ -607,7 +607,7 @@ public class MandateDaoTestIT {
 
         //When
         Mono<Void> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode());
-        assertThrows(InternalErrorException.class, () -> mono.block(d));
+        assertThrows(PnInternalException.class, () -> mono.block(d));
 
 
         //Then
@@ -633,7 +633,7 @@ public class MandateDaoTestIT {
 
         //When
         Mono<Void> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), wrongcode);
-        assertThrows(InvalidVerificationCodeException.class, () -> mono.block(d));
+        assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(d));
 
 
         //Then
@@ -661,7 +661,7 @@ public class MandateDaoTestIT {
 
         //When
         Mono<Void> mono = mandateDao.acceptMandate(wrongdelegate, mandateToInsert.getMandateId(), code);
-        assertThrows(MandateNotFoundException.class, () -> mono.block(d));
+        assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
 
 
         //Then
@@ -806,7 +806,7 @@ public class MandateDaoTestIT {
 
         //When
         Mono<Void> mono =  mandateDao.rejectMandate(wrongdelegate, mandateToInsert.getMandateId());
-        assertThrows(MandateNotFoundException.class, () -> mono.block(d));
+        assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
 
 
         //Then
@@ -941,7 +941,7 @@ public class MandateDaoTestIT {
         try {
             mandateDao.expireMandate("fake", "fake").block(d);
             fail("no MandateNotFoundException thrown");
-        } catch (MandateNotFoundException e) {
+        } catch (PnMandateNotFoundException e) {
             //expected
         }
     }

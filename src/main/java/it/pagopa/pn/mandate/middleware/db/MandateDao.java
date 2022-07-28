@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.middleware.db;
 
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnAuditLogBuilder;
 import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnAuditLogEventType;
@@ -8,10 +9,9 @@ import it.pagopa.pn.mandate.middleware.db.config.AwsConfigs;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
-import it.pagopa.pn.mandate.rest.utils.InternalErrorException;
-import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
-import it.pagopa.pn.mandate.rest.utils.MandateAlreadyExistsException;
-import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
+import it.pagopa.pn.mandate.rest.utils.PnInvalidVerificationCodeException;
+import it.pagopa.pn.mandate.rest.utils.PnMandateAlreadyExistsException;
+import it.pagopa.pn.mandate.rest.utils.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Import;
@@ -201,10 +201,10 @@ public class MandateDao extends BaseDao {
 
         logEvent.log();
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
-                .switchIfEmpty(Mono.error(new MandateNotFoundException()))
+                .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
                 .flatMap(mandate -> {
                     if (!mandate.getValidationcode().equals(verificationCode))
-                        throw new InvalidVerificationCodeException();
+                        throw new PnInvalidVerificationCodeException();
 
                     log.info("retrieved mandateobj={}", mandate);
                     if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING))
@@ -219,7 +219,7 @@ public class MandateDao extends BaseDao {
                     {
                         // non dovrebbe veramente succedere, perchè vuol dire che è rimasta una delega scaduta e che qualcuno ci ha pure chiesto l'accettazione, cmq tiro eccezione
                         log.warn("mandate is not PENDING or ACTIVE, throw error");
-                        throw new InternalErrorException();
+                        throw new PnInternalException("accept a expired mandate is not permitted");
                     }
                     // Se la delega prevede una scadenza impostata dall'utente, creo un record di supporto con TTL
                     // e quando questo verrà cancellato, dynamoDB invocherà la nostra logica che andrà a spostare il record principale nello storico.
@@ -278,7 +278,7 @@ public class MandateDao extends BaseDao {
         logEvent.log();
 
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
-                .switchIfEmpty(Mono.error(new MandateNotFoundException()))
+                .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
                 .flatMap(mandate -> {
                     log.info("rejectMandate mandate for delegate retrieved mandateobj={}", mandate);
 
@@ -382,7 +382,7 @@ public class MandateDao extends BaseDao {
         return Mono.fromFuture(retrieveMandateForDelegator(delegatorInternaluserid, mandateId)
                 .thenCompose(mandate -> {
                             if (mandate == null) {
-                                throw new MandateNotFoundException();
+                                throw new PnMandateNotFoundException();
                             }
                             log.info("expireMandate mandate for delegate retrieved mandateobj={}", mandate);
                             mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
@@ -432,7 +432,7 @@ public class MandateDao extends BaseDao {
                         });
                     }
                     else {
-                        throw new MandateAlreadyExistsException();
+                        throw new PnMandateAlreadyExistsException();
                     }
                 }))
                 .onErrorResume(throwable -> {

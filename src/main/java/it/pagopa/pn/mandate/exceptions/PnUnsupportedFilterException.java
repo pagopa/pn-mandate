@@ -1,4 +1,4 @@
-package it.pagopa.pn.mandate.rest.utils;
+package it.pagopa.pn.mandate.exceptions;
 
 import it.pagopa.pn.commons.exceptions.PnValidationException;
 import it.pagopa.pn.commons.exceptions.dto.ProblemError;

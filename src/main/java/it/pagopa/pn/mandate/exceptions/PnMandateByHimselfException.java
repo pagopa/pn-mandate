@@ -1,10 +1,9 @@
-package it.pagopa.pn.mandate.rest.utils;
+package it.pagopa.pn.mandate.exceptions;
 
 import it.pagopa.pn.commons.exceptions.PnRuntimeException;
 import org.springframework.http.HttpStatus;
 
-import static it.pagopa.pn.mandate.rest.utils.PnMandateExceptionCodes.ERROR_CODE_MANDATE_ALREADY_EXISTS;
-import static it.pagopa.pn.mandate.rest.utils.PnMandateExceptionCodes.ERROR_CODE_MANDATE_DELEGATE_HIMSELF;
+import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_DELEGATE_HIMSELF;
 
 public class PnMandateByHimselfException extends PnRuntimeException {
 

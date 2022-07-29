@@ -9,9 +9,10 @@ import it.pagopa.pn.mandate.middleware.db.config.AwsConfigs;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
-import it.pagopa.pn.mandate.rest.utils.PnInvalidVerificationCodeException;
-import it.pagopa.pn.mandate.rest.utils.PnMandateAlreadyExistsException;
-import it.pagopa.pn.mandate.rest.utils.PnMandateNotFoundException;
+import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
+import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
+import it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes;
+import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Import;
@@ -219,7 +220,7 @@ public class MandateDao extends BaseDao {
                     {
                         // non dovrebbe veramente succedere, perchè vuol dire che è rimasta una delega scaduta e che qualcuno ci ha pure chiesto l'accettazione, cmq tiro eccezione
                         log.warn("mandate is not PENDING or ACTIVE, throw error");
-                        throw new PnInternalException("accept a expired mandate is not permitted");
+                        throw new PnInternalException("accept a expired mandate is not permitted", PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOTACCEPTABLE);
                     }
                     // Se la delega prevede una scadenza impostata dall'utente, creo un record di supporto con TTL
                     // e quando questo verrà cancellato, dynamoDB invocherà la nostra logica che andrà a spostare il record principale nello storico.

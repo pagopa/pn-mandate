@@ -1,9 +1,9 @@
-package it.pagopa.pn.mandate.rest.utils;
+package it.pagopa.pn.mandate.exceptions;
 
 import it.pagopa.pn.commons.exceptions.PnRuntimeException;
 import org.springframework.http.HttpStatus;
 
-import static it.pagopa.pn.mandate.rest.utils.PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOT_FOUND;
+import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOT_FOUND;
 
 public class PnMandateNotFoundException extends PnRuntimeException {
 

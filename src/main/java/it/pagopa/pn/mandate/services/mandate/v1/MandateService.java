@@ -95,7 +95,7 @@ public class MandateService  {
        // per ora l'unico stato supportato è il pending, quindi il filtro non viene passato al count
        // Inoltre, ritorno un errore se status != pending
        if (status == null || !status.equals(StatusEnum.PENDING.getValue()))
-        throw new PnUnsupportedFilterException("status");
+           throw new PnUnsupportedFilterException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM, "status");
        return userDao.countMandates(internaluserId)                
                 .map(userEntityMandateCountsDtoMapper::toDto);
     }
@@ -171,26 +171,33 @@ public class MandateService  {
 
     private MandateDto validate(MandateDto mandateDto) {
         // valida delegato
-        if (mandateDto.getDelegate() == null
-                || (mandateDto.getDelegate().getFiscalCode() == null)
-                || (mandateDto.getDelegate().getPerson() == null)
-                || (mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null)
-                || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
-            throw new PnInvalidInputException("delegate");
-        // codice verifica (5 caratteri)
-        if (mandateDto.getVerificationCode() == null || !mandateDto.getVerificationCode().matches("\\d\\d\\d\\d\\d"))
-            throw new PnInvalidInputException("verificationCode");
+        if (mandateDto.getDelegate() == null)
+            throw new PnInvalidInputException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, "delegate");
+        if ((mandateDto.getDelegate().getFiscalCode() == null))
+            throw new PnInvalidInputException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, "delegate.fiscalCode");
 
-        if (mandateDto.getDelegate().getPerson()
+        if ((mandateDto.getDelegate().getPerson() == null))
+            throw new PnInvalidInputException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, "delegate.person");
+
+        if ((mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null)
+                || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
+            throw new PnInvalidInputException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER, "delegate");
+        // codice verifica (5 caratteri)
+        if (mandateDto.getVerificationCode() == null)
+            throw new PnInvalidInputException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, "verificationCode");
+        if (!mandateDto.getVerificationCode().matches("\\d\\d\\d\\d\\d"))
+            throw new PnInvalidInputException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, "verificationCode");
+
+        if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
             && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}[0-9]{2}[A-Za-z]{1}[0-9]{2}[A-Za-z]{1}[0-9]{3}[A-Za-z]{1}"))
-            throw new PnInvalidInputException("fiscalCode");
-        if (!mandateDto.getDelegate().getPerson()
+            throw new PnInvalidInputException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN,"delegate.fiscalCode");
+        if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
                 && !mandateDto.getDelegate().getFiscalCode().matches("[0-9]{11}"))
-            throw new PnInvalidInputException("fiscalCode");
+            throw new PnInvalidInputException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN,"delegate.fiscalCode");
 
         // la delega richiede la data di fine
         if (!StringUtils.hasText(mandateDto.getDateto()))
-            throw new PnInvalidInputException("dateTo");
+            throw new PnInvalidInputException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED,"dateTo");
 
         return mandateDto;
     }
@@ -215,7 +222,7 @@ public class MandateService  {
                 iStatus = StatusEnumMapper.intValfromValueConst(status);
         } catch (Exception e) {
             log.error("invalid state in filter");
-            throw new PnUnsupportedFilterException("");
+            throw new PnUnsupportedFilterException(PnMandateExceptionCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM, "status");
         }
 
         return mandateDao.listMandatesByDelegate(internaluserId, iStatus, null)   // (1)

@@ -151,3 +151,12 @@ Resources:
         NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
         ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+  MandateMicroservicePublicWebApiWaf:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
+      Parameters:
+        WAFName: !Sub '${ProjectName}-mandate-web'
+        WAFRuleVendors: "AWS, AWS, AWS, AWS"
+        WAFRuleNames: "AWSManagedRulesBotControlRuleSet, AWSManagedRulesKnownBadInputsRuleSet, AWSManagedRulesAdminProtectionRuleSet, AWSManagedRulesCommonRuleSet"
+        APIGatewayARN: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN

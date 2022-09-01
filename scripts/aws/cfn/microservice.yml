@@ -100,7 +100,7 @@ Resources:
         ContainerEnvEntry2: !Sub 'CORS_ALLOWED_DOMAINS=${CorsAllowedDomains}'
         ContainerEnvEntry3: !Sub 'AWS_DYNAMODB_TABLE=${MandatesDynamoTableName}'
         ContainerEnvEntry4: !Sub 'AWS_DYNAMODB_TABLE_HISTORY=${MandatesDynamoTableHistoryName}'
-        ContainerEnvEntry5: !Sub 'PN_MANDATE_CLIENT_DATAVAULT_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
+        ContainerEnvEntry5: 'PN_MANDATE_CLIENT_DATAVAULT_BASEPATH=http://alb.confidential.pn.internal:8080'
         ContainerEnvEntry6: !Sub 'PN_MANDATE_CLIENT_INFOPA_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
@@ -151,3 +151,12 @@ Resources:
         NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
         ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+  MandateMicroservicePublicWebApiWaf:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
+      Parameters:
+        WAFName: !Sub '${ProjectName}-mandate-web'
+        WAFRuleVendors: "AWS, AWS, AWS, AWS"
+        WAFRuleNames: "AWSManagedRulesBotControlRuleSet, AWSManagedRulesKnownBadInputsRuleSet, AWSManagedRulesAdminProtectionRuleSet, AWSManagedRulesCommonRuleSet"
+        APIGatewayARNs: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN

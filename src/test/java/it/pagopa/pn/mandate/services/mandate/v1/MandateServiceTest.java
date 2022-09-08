@@ -2,7 +2,6 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
@@ -17,9 +16,9 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
-import it.pagopa.pn.mandate.rest.utils.InvalidInputException;
-import it.pagopa.pn.mandate.rest.utils.InvalidVerificationCodeException;
-import it.pagopa.pn.mandate.rest.utils.MandateNotFoundException;
+import it.pagopa.pn.mandate.exceptions.PnInvalidInputException;
+import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
+import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -95,7 +94,7 @@ class MandateServiceTest {
         //When
         Mono<Object> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate());
-        assertThrows(InvalidVerificationCodeException.class, () -> {
+        assertThrows(PnInvalidVerificationCodeException.class, () -> {
             mono.block(d);
         });
 
@@ -111,12 +110,12 @@ class MandateServiceTest {
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode("44444");
 
-        when(mandateDao.acceptMandate (Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenThrow(new InvalidVerificationCodeException());
+        when(mandateDao.acceptMandate (Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenThrow(new PnInvalidVerificationCodeException());
 
         //When
         Mono<Object> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate());
-        assertThrows(InvalidVerificationCodeException.class, () -> {
+        assertThrows(PnInvalidVerificationCodeException.class, () -> {
             mono.block(d);
         });
 
@@ -133,12 +132,12 @@ class MandateServiceTest {
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode("44444");
 
-        when(mandateDao.acceptMandate (Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenThrow(new MandateNotFoundException());
+        when(mandateDao.acceptMandate (Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenThrow(new PnMandateNotFoundException());
 
         //When
         Mono<Object> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate());
-        assertThrows(MandateNotFoundException.class, () -> {
+        assertThrows(PnMandateNotFoundException.class, () -> {
             mono.block(d);
         });
 
@@ -161,7 +160,7 @@ class MandateServiceTest {
             Object result = mandateService.acceptMandate(null,
                     Mono.just(acceptRequestDto), mandateEntity.getDelegate()).block(d);
             fail("no MandateNotFoundException thrown");
-        } catch (MandateNotFoundException e) {
+        } catch (PnMandateNotFoundException e) {
             // nothing
         }
 
@@ -262,7 +261,7 @@ class MandateServiceTest {
         try {
             MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true).block(d);
             fail("no InvalidInputException thrown");
-        } catch (InvalidInputException e) {
+        } catch (PnInvalidInputException e) {
             //nothing
         }
 
@@ -289,7 +288,7 @@ class MandateServiceTest {
         try {
             MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true).block(d);
             fail("no InvalidInputException thrown");
-        } catch (InvalidInputException e) {
+        } catch (PnInvalidInputException e) {
             //nothing
         }
 
@@ -316,7 +315,7 @@ class MandateServiceTest {
         try {
             MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true).block(d);
             fail("no InvalidInputException thrown");
-        } catch (InvalidInputException e) {
+        } catch (PnInvalidInputException e) {
             //nothing
         }
 
@@ -343,7 +342,7 @@ class MandateServiceTest {
         try {
             MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true).block(d);
             fail("no InvalidInputException thrown");
-        } catch (InvalidInputException e) {
+        } catch (PnInvalidInputException e) {
             //nothing
         }
 
@@ -370,7 +369,7 @@ class MandateServiceTest {
 
         //When
         Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true);
-        assertThrows(InvalidInputException.class, () -> {
+        assertThrows(PnInvalidInputException.class, () -> {
             mono.block(d);
         });
 
@@ -399,7 +398,7 @@ class MandateServiceTest {
 
         //When
         Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true);
-        assertThrows(InvalidInputException.class, () -> {
+        assertThrows(PnInvalidInputException.class, () -> {
             mono.block(d);
         });
 
@@ -528,7 +527,7 @@ class MandateServiceTest {
         try {
             Object result = mandateService.rejectMandate(null, mandateEntity.getDelegate()).block(d);
             fail("no MandateNotFoundException thrown");
-        } catch (MandateNotFoundException e) {
+        } catch (PnMandateNotFoundException e) {
             //nothing
         }
 
@@ -563,7 +562,7 @@ class MandateServiceTest {
         try {
             Object result = mandateService.revokeMandate(null, mandateEntity.getDelegator()).block(d);
             fail("no MandateNotFoundException thrown");
-        } catch (MandateNotFoundException e) {
+        } catch (PnMandateNotFoundException e) {
             //nothing
         }
 
@@ -598,7 +597,7 @@ class MandateServiceTest {
         try {
             Object result = mandateService.expireMandate(null, mandateEntity.getDelegator()).block(d);
             fail("no MandateNotFoundException thrown");
-        } catch (MandateNotFoundException e) {
+        } catch (PnMandateNotFoundException e) {
             //nothing
         }
 

@@ -2,11 +2,31 @@ openapi: 3.0.1
 info:
   title: PN Mandate u-service
   description: Documentation APIs v1.0
-  version: '1.0'
+  termsOfService: https://termofservice.it
+  x-api-id: api-internal-mandate
+  x-summary: 'Piattaforma Notifiche: API gestione deleghe'
+  version: '1.0.0'
+  contact:
+    email: pn@pagopa.it
+  license:
+    name: Licenza di PN
+    url: 'https://da-definire/'
 servers:
-  - url: http://localhost:8080
+  - url: https://api.pn.pagopa.it
     description: Generated server url
 paths:
+  /status:
+    get:
+      summary: healthCheck path
+      description: health check path per verificare lo stato del micro servizio
+      tags:
+        - HealthCheck
+      operationId: status
+      responses:
+        '200':
+          description: Ok
+        '500':
+          description: Internal Server Error
   /mandate/api/v1/count-by-delegate:
     get:
       tags:
@@ -77,7 +97,7 @@ paths:
             type: string
       requestBody:
         content:
-          application/json:
+          application/json-patch:
             schema:
               $ref: '#/components/schemas/AcceptRequestDto'
       responses:

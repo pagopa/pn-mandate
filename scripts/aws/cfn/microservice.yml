@@ -157,6 +157,4 @@ Resources:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
       Parameters:
         WAFName: !Sub '${ProjectName}-mandate-web'
-        WAFRuleVendors: "AWS, AWS, AWS, AWS"
-        WAFRuleNames: "AWSManagedRulesBotControlRuleSet, AWSManagedRulesKnownBadInputsRuleSet, AWSManagedRulesAdminProtectionRuleSet, AWSManagedRulesCommonRuleSet"
         APIGatewayARNs: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN

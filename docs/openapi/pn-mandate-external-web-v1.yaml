@@ -97,7 +97,7 @@ paths:
             type: string
       requestBody:
         content:
-          application/json-patch:
+          application/json:
             schema:
               $ref: '#/components/schemas/AcceptRequestDto'
       responses:

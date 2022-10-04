@@ -19,18 +19,13 @@ Parameters:
   Version:
     Type: String
     Description: 'keep track of used projects commitIds'
+  
+  CdcKinesisSourceStreamArn:
+    Type: String
+    Description: 'Where to send CDC'
 
 Resources:
 
-  ## KINESIS SOURCE STREAM FOR MANDATE Change Data Capture
-  MandateCdcKinesis:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/kinesis-stream.yaml"
-      Parameters:
-        StreamName: !Sub '${ProjectName}-mandate-cdc-stream'
-        StreamRetentionPeriodHours: 24
-  
   MandatesDynamoTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -68,7 +63,7 @@ Resources:
             ReadCapacityUnits: 5
             WriteCapacityUnits: 5
       KinesisStreamSpecification:
-        StreamArn: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamArn
+        StreamArn: !Ref CdcKinesisSourceStreamArn
       StreamSpecification: 
         StreamViewType: NEW_IMAGE
      
@@ -108,16 +103,16 @@ Outputs:
     Description: ARN of dynamodb table containing mandates history
     Value: !Sub '${MandatesDynamoTableHistory.Arn}'
 
-  # Mandate Change Data Capture kinesis stream
-  MandateCdcKinesisStreamName:
-    Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamName
-    Description: kinesis stream name for mandate dynamo table
-  MandateCdcKinesisStreamArn:
-    Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamArn
-    Description: kinesis stream Arn for mandate dynamo table
-  MandateCdcKinesisKeyArn:
-    Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamKeyArn
-    Description: KMS key arn for mandate stream decryption
-  MandateCdcKinesisStreamReadOnlyRoleArn:
-    Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamReadOnlyRoleArn
-    Description: KMS key arn for mandate stream decryption
+  # # Mandate Change Data Capture kinesis stream
+  # MandateCdcKinesisStreamName:
+  #   Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamName
+  #   Description: kinesis stream name for mandate dynamo table
+  # MandateCdcKinesisStreamArn:
+  #   Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamArn
+  #   Description: kinesis stream Arn for mandate dynamo table
+  # MandateCdcKinesisKeyArn:
+  #   Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamKeyArn
+  #   Description: KMS key arn for mandate stream decryption
+  # MandateCdcKinesisStreamReadOnlyRoleArn:
+  #   Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamReadOnlyRoleArn
+  #   Description: KMS key arn for mandate stream decryption

@@ -102,17 +102,3 @@ Outputs:
   MandatesDynamoTableHistoryArn:
     Description: ARN of dynamodb table containing mandates history
     Value: !Sub '${MandatesDynamoTableHistory.Arn}'
-
-  # # Mandate Change Data Capture kinesis stream
-  # MandateCdcKinesisStreamName:
-  #   Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamName
-  #   Description: kinesis stream name for mandate dynamo table
-  # MandateCdcKinesisStreamArn:
-  #   Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamArn
-  #   Description: kinesis stream Arn for mandate dynamo table
-  # MandateCdcKinesisKeyArn:
-  #   Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamKeyArn
-  #   Description: KMS key arn for mandate stream decryption
-  # MandateCdcKinesisStreamReadOnlyRoleArn:
-  #   Value: !GetAtt MandateCdcKinesis.Outputs.KinesisStreamReadOnlyRoleArn
-  #   Description: KMS key arn for mandate stream decryption

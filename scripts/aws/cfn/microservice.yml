@@ -163,3 +163,23 @@ Resources:
       Parameters:
         WAFName: !Sub '${ProjectName}-mandate-web'
         APIGatewayARNs: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN
+
+  MandateMicroserviceCloudWatchDashboard:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/microservice-cloudwatch-dashboard.yaml"
+      Parameters:
+        DashboardName: !Sub "${ProjectName}-mandate"
+        DynamoDBArns: !Join 
+          - ',' 
+          - - !Ref MandatesDynamoTableArn 
+            - !Ref MandatesDynamoTableHistoryArn
+        RestApiStageArns: !Join
+          - ','
+          - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiStageArn
+        RestApiNames: !Join
+          - ','
+          - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiName
+        AlarmArns: !Join
+          - ','
+          - - !GetAtt MandateMicroservice.Outputs.AutoScalingAlarmArn

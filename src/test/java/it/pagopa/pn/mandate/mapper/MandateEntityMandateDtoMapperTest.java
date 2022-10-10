@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,7 +42,7 @@ class MandateEntityMandateDtoMapperTest {
             Assertions.assertNotNull(result.getValidationcode());
 
             Assertions.assertEquals(mandateToInsert.getMandateId(),  result.getMandateId());
-            Assertions.assertEquals(mandateToInsert.getValidto(),  result.getValidto());
+            Assertions.assertEquals(mandateToInsert.getValidto().atZone(ZoneId.of("Europe/Rome")).getDayOfYear(),  result.getValidto().atZone(ZoneId.of("Europe/Rome")).getDayOfYear());
             Assertions.assertEquals(mandateToInsert.getValidationcode(),  result.getValidationcode());
             // implicano la risoluzione da datavault, non ha senso testarli
             //Assertions.assertEquals(mandateToInsert.getDelegateisperson(),  result.getDelegate().getPerson());

@@ -94,7 +94,7 @@ public class MandateDao extends BaseDao {
         // e quindi va sempre previsto un filtro sulla data di scadenza
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
-        String expression = MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")";
+        String expression = "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ") ) ";
 
         if (mandateId != null)
         {
@@ -336,7 +336,7 @@ public class MandateDao extends BaseDao {
                                 logEvent.generateFailure(String.format("revokeMandate skipped, mandate not found mandateid=%s", mandateId)).log();
                                 return CompletableFuture.completedFuture(mandate);
                             }
-                            String messageAction = String.format("revokeMandate mandate for delegate retrieved mandateobj=%s", mandate);
+
                             log.info("revokeMandate mandate for delegate retrieved mandateobj={}", mandate);
                             if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                                     || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))

@@ -163,3 +163,4 @@ Resources:
       Parameters:
         WAFName: !Sub '${ProjectName}-mandate-web'
         APIGatewayARNs: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN
+        Limit: 3000

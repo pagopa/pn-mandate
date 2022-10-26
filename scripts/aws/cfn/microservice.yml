@@ -185,3 +185,4 @@ Resources:
           - ','
           - - !GetAtt MandateMicroservice.Outputs.AutoScalingAlarmArn
             - !GetAtt MandateMicroservice.Outputs.FatalLogsMetricAlarmArn
+            - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiErrorAlarmArn

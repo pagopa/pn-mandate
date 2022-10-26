@@ -164,3 +164,25 @@ Resources:
         WAFName: !Sub '${ProjectName}-mandate-web'
         APIGatewayARNs: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN
         Limit: 3000
+
+  MandateMicroserviceCloudWatchDashboard:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/microservice-cloudwatch-dashboard.yaml"
+      Parameters:
+        DashboardName: !Sub "${ProjectName}-mandate"
+        DynamoDBTableNames: !Join 
+          - ',' 
+          - - !Ref MandatesDynamoTableName 
+            - !Ref MandatesDynamoTableHistoryName
+        RestApiStageArns: !Join
+          - ','
+          - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiStageArn
+        RestApiNames: !Join
+          - ','
+          - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiName
+        AlarmArns: !Join
+          - ','
+          - - !GetAtt MandateMicroservice.Outputs.AutoScalingAlarmArn
+            - !GetAtt MandateMicroservice.Outputs.FatalLogsMetricAlarmArn
+            - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiErrorAlarmArn

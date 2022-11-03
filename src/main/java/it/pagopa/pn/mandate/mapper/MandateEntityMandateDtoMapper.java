@@ -71,6 +71,7 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
         return r;
     }
 
+    @java.lang.SuppressWarnings("java:S1168") // a dynamo non piace il set vuoto, vuole null
     private Set<String> getOrgidsEntities(List<OrganizationIdDto> ids){
         if (ids == null || ids.isEmpty())
             return null;    // a dynamo non piace il set vuoto, vuole null

@@ -20,6 +20,7 @@ import it.pagopa.pn.mandate.exceptions.PnInvalidInputException;
 import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -524,12 +525,7 @@ class MandateServiceTest {
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When
-        try {
-            Object result = mandateService.rejectMandate(null, mandateEntity.getDelegate()).block(d);
-            fail("no MandateNotFoundException thrown");
-        } catch (PnMandateNotFoundException e) {
-            //nothing
-        }
+        assertThrows(PnMandateNotFoundException.class, () -> mandateService.rejectMandate(null, mandateEntity.getDelegate()));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -559,12 +555,7 @@ class MandateServiceTest {
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When
-        try {
-            Object result = mandateService.revokeMandate(null, mandateEntity.getDelegator()).block(d);
-            fail("no MandateNotFoundException thrown");
-        } catch (PnMandateNotFoundException e) {
-            //nothing
-        }
+        assertThrows(PnMandateNotFoundException.class, () -> mandateService.revokeMandate(null, mandateEntity.getDelegator()));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -594,12 +585,9 @@ class MandateServiceTest {
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When
-        try {
-            Object result = mandateService.expireMandate(null, mandateEntity.getDelegator()).block(d);
-            fail("no MandateNotFoundException thrown");
-        } catch (PnMandateNotFoundException e) {
-            //nothing
-        }
+        Assertions.assertThrows(PnMandateNotFoundException.class, () -> {
+            Mono<Object> mono = mandateService.expireMandate(null, mandateEntity.getDelegator());
+        });
 
         //Then
         // nothing, basta che non ci sia eccezione

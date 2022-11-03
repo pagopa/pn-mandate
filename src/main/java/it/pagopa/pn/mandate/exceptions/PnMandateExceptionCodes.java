@@ -1,6 +1,5 @@
 package it.pagopa.pn.mandate.exceptions;
 
-import it.pagopa.pn.commons.exceptions.ExceptionHelper;
 import it.pagopa.pn.commons.exceptions.PnExceptionsCodes;
 
 public class PnMandateExceptionCodes extends PnExceptionsCodes {

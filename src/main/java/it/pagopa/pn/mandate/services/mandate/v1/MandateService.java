@@ -197,10 +197,10 @@ public class MandateService  {
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, VERIFICATION_CODE);
 
         if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
-            && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}[0-9]{2}[A-Za-z]{1}[0-9]{2}[A-Za-z]{1}[0-9]{3}[A-Za-z]{1}"))
+            && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}\\d{2}[A-Za-z]{1}\\d{2}[A-Za-z]{1}\\d{3}[A-Za-z]{1}"))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
         if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
-                && !mandateDto.getDelegate().getFiscalCode().matches("[0-9]{11}"))
+                && !mandateDto.getDelegate().getFiscalCode().matches("\\d{11}"))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
 
         // la delega richiede la data di fine

@@ -1,6 +1,8 @@
 package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogBuilder;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
@@ -9,7 +11,9 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.utils.DateUtils;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,11 +32,13 @@ public class MandateDaoTest extends BaseIT {
 
     private final Duration d = Duration.ofMillis(60000);
 
-    @Autowired
     private MandateDao mandateDao;
 
     @Autowired
-    DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
+    PnMandateConfig cfg;
+
+    @Autowired
+    PnAuditLogBuilder pnAuditLogBuilder;
 
     TestDao testDao;
 
@@ -41,7 +47,12 @@ public class MandateDaoTest extends BaseIT {
     @BeforeEach
     void setup( @Value("${aws.dynamodb_table}") String table,
                 @Value("${aws.dynamodb_table_history}") String tableHistory) {
+        DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient(dynamoDbAsyncClient());
         testDao = new TestDao( dynamoDbEnhancedAsyncClient, table, tableHistory);
+        this.mandateDao = new MandateDao(dynamoDbEnhancedAsyncClient,
+                dynamoDbAsyncClient(),
+                cfg,
+                pnAuditLogBuilder);
     }
 
     @Test

@@ -1,17 +1,12 @@
 package it.pagopa.pn.mandate.middleware.db;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
-import it.pagopa.pn.mandate.middleware.db.config.AwsConfigs;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
-
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
@@ -20,6 +15,9 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.Select;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Repository
 @Slf4j
@@ -32,7 +30,7 @@ public class DelegateDao extends BaseDao {
 
     public DelegateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                        DynamoDbAsyncClient dynamoDbAsyncClient,
-                       AwsConfigs awsConfigs) {
+                       PnMandateConfig awsConfigs) {
         this.userTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTable(), TableSchema.fromBean(DelegateEntity.class));
         this.dynamoDbAsyncClient = dynamoDbAsyncClient;
         this.table = awsConfigs.getDynamodbTable();

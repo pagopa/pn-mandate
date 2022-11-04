@@ -1,5 +1,7 @@
 package it.pagopa.pn.mandate.middleware.db;
 
+import it.pagopa.pn.commons.log.PnAuditLogBuilder;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
@@ -21,21 +23,26 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(SpringExtension.class)
 class DelegateDaoTest extends BaseIT {
 
-    @Autowired
     private MandateDao mandateDao;
 
-    @Autowired
     private DelegateDao delegateDao;
 
     @Autowired
-    DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
+    PnMandateConfig cfg;
+
+    @Autowired
+    PnAuditLogBuilder pnAuditLogBuilder;
 
     TestDao testDao;
 
     @BeforeEach
     void setup( @Value("${aws.dynamodb_table}") String table,
                 @Value("${aws.dynamodb_table_history}") String tableHistory) {
+
+        DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient(dynamoDbAsyncClient());
         testDao = new TestDao( dynamoDbEnhancedAsyncClient, table, tableHistory);
+        this.delegateDao = new DelegateDao(dynamoDbEnhancedAsyncClient, dynamoDbAsyncClient(), cfg);
+        this.mandateDao = new MandateDao(dynamoDbEnhancedAsyncClient, dynamoDbAsyncClient(), cfg, pnAuditLogBuilder);
     }
 
     @Test

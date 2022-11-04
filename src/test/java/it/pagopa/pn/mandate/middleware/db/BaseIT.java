@@ -3,15 +3,23 @@ package it.pagopa.pn.mandate.middleware.db;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import org.junit.Assert;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.ssm.SsmClient;
 
 import java.util.List;
 
@@ -45,14 +53,58 @@ public class BaseIT {
 
     @DynamicPropertySource
     static void overrideConfiguration(DynamicPropertyRegistry registry) {
-        //registry.add("event-processing.order-event-queue", () -> QUEUE_NAME);
-        //registry.add("event-processing.order-event-bucket", () -> BUCKET_NAME);
+
         registry.add("aws.endpoint-url", () -> localstack.getEndpointOverride(LocalStackContainer.Service.DYNAMODB));
         registry.add("aws.credentials.access-key", localstack::getAccessKey);
         registry.add("aws.credentials.secret-key", localstack::getSecretKey);
     }
 
+    @Bean
+    @Primary
+    public DynamoDbAsyncClient dynamoDbAsyncClient() {
+        return this.configureBuilder( DynamoDbAsyncClient.builder() );
+    }
 
+    @Bean
+    @Primary
+    public DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient(DynamoDbAsyncClient baseAsyncClient) {
+        return DynamoDbEnhancedAsyncClient.builder()
+                .dynamoDbClient( baseAsyncClient )
+                .build();
+    }
+
+    @Bean
+    @Primary
+    public DynamoDbClient dynamoDbClient() {
+        return configureBuilder( DynamoDbClient.builder() );
+    }
+
+    @Bean
+    @Primary
+    public DynamoDbEnhancedClient dynamoDbEnhancedClient(DynamoDbClient baseClient ) {
+        return DynamoDbEnhancedClient.builder()
+                .dynamoDbClient( baseClient )
+                .build();
+    }
+
+    @Bean
+    @Primary
+    public SqsClient sqsClient() {
+        return configureBuilder( SqsClient.builder() );
+    }
+
+    @Bean
+    @Primary
+    public SsmClient ssmClient() { return configureBuilder( SsmClient.builder() ); }
+
+    private <C> C configureBuilder(AwsClientBuilder<?, C> builder) {
+         return builder.credentialsProvider( StaticCredentialsProvider.create(
+                 AwsBasicCredentials.create(localstack.getAccessKey(), localstack.getSecretKey())
+             ))
+             .endpointOverride(localstack.getEndpointOverride(LocalStackContainer.Service.DYNAMODB))
+             .region(Region.of(localstack.getRegion()))
+             .build();
+    }
 
     static void createTestTables() {
         CreateTableResponse res = createMandateTable(TABLE_NAME);

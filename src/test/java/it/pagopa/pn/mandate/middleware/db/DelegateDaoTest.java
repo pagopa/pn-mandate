@@ -10,8 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 
@@ -21,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 @ExtendWith(SpringExtension.class)
-class DelegateDaoTestIT extends BaseIT {
+class DelegateDaoTest extends BaseIT {
 
     @Autowired
     private MandateDao mandateDao;
@@ -43,7 +41,7 @@ class DelegateDaoTestIT extends BaseIT {
     @Test
     void countMandatesPendingOnly() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(false);
+        MandateEntity mandateToInsert = MandateDaoTest.newMandate(false);
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
@@ -74,8 +72,8 @@ class DelegateDaoTestIT extends BaseIT {
     @Test
     void countMandatesPendingAndActive() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(false);
-        MandateEntity mandateToInsert1 = MandateDaoTestIT.newMandate(false);
+        MandateEntity mandateToInsert = MandateDaoTest.newMandate(false);
+        MandateEntity mandateToInsert1 = MandateDaoTest.newMandate(false);
         mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
         mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
         mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
@@ -112,7 +110,7 @@ class DelegateDaoTestIT extends BaseIT {
     @Test
     void countMandatesActiveOnly() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(false);
+        MandateEntity mandateToInsert = MandateDaoTest.newMandate(false);
         mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
 
         try {

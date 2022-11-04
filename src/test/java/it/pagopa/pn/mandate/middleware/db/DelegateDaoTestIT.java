@@ -21,13 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 @ExtendWith(SpringExtension.class)
-@TestPropertySource(properties = {
-        "aws.region-code=us-east-1",
-        "aws.profile-name=${PN_AWS_PROFILE_NAME:default}",
-        "aws.endpoint-url=http://localhost:4566"
-})
-@SpringBootTest
-class DelegateDaoTestIT {
+class DelegateDaoTestIT extends BaseIT {
 
     @Autowired
     private MandateDao mandateDao;

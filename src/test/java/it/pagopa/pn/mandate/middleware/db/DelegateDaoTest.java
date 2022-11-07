@@ -1,7 +1,6 @@
 package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.commons.log.PnAuditLogBuilder;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
@@ -12,26 +11,32 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 
 import java.time.Duration;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
+@SpringBootTest
 @ExtendWith(SpringExtension.class)
-class DelegateDaoTest extends BaseIT {
+@Import(LocalStackTestConfig.class)
+class DelegateDaoTest {
 
+    @Autowired
     private MandateDao mandateDao;
 
+    @Autowired
     private DelegateDao delegateDao;
 
     @Autowired
-    PnMandateConfig cfg;
-
-    @Autowired
     PnAuditLogBuilder pnAuditLogBuilder;
+    @Autowired
+    DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
+
 
     TestDao testDao;
 
@@ -39,10 +44,7 @@ class DelegateDaoTest extends BaseIT {
     void setup( @Value("${aws.dynamodb_table}") String table,
                 @Value("${aws.dynamodb_table_history}") String tableHistory) {
 
-        DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient(dynamoDbAsyncClient());
         testDao = new TestDao( dynamoDbEnhancedAsyncClient, table, tableHistory);
-        this.delegateDao = new DelegateDao(dynamoDbEnhancedAsyncClient, dynamoDbAsyncClient(), cfg);
-        this.mandateDao = new MandateDao(dynamoDbEnhancedAsyncClient, dynamoDbAsyncClient(), cfg, pnAuditLogBuilder);
     }
 
     @Test

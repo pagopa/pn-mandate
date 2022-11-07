@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
@@ -28,10 +30,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(SpringExtension.class)
-public class MandateDaoTest extends BaseIT {
+@SpringBootTest
+@Import(LocalStackTestConfig.class)
+public class MandateDaoTest {
 
     private final Duration d = Duration.ofMillis(60000);
 
+    @Autowired
     private MandateDao mandateDao;
 
     @Autowired
@@ -40,6 +45,9 @@ public class MandateDaoTest extends BaseIT {
     @Autowired
     PnAuditLogBuilder pnAuditLogBuilder;
 
+    @Autowired
+    DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
+
     TestDao testDao;
 
 
@@ -47,12 +55,8 @@ public class MandateDaoTest extends BaseIT {
     @BeforeEach
     void setup( @Value("${aws.dynamodb_table}") String table,
                 @Value("${aws.dynamodb_table_history}") String tableHistory) {
-        DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient(dynamoDbAsyncClient());
+
         testDao = new TestDao( dynamoDbEnhancedAsyncClient, table, tableHistory);
-        this.mandateDao = new MandateDao(dynamoDbEnhancedAsyncClient,
-                dynamoDbAsyncClient(),
-                cfg,
-                pnAuditLogBuilder);
     }
 
     @Test

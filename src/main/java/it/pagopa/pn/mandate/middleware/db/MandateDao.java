@@ -51,7 +51,6 @@ public class MandateDao extends BaseDao {
     DynamoDbAsyncTable<MandateEntity> mandateHistoryTable;
     
     String table;
-    
 
     public MandateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                        DynamoDbAsyncClient dynamoDbAsyncClient,

@@ -65,6 +65,7 @@ public class MandateDao extends BaseDao {
         this.auditLogBuilder = pnAuditLogBuilder;
     }
 
+
     //#region public methods
 
     /**

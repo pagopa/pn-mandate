@@ -27,7 +27,6 @@ public class DelegateDao extends BaseDao {
     DynamoDbAsyncClient dynamoDbAsyncClient;
     String table ;
 
-
     public DelegateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                        DynamoDbAsyncClient dynamoDbAsyncClient,
                        PnMandateConfig awsConfigs) {

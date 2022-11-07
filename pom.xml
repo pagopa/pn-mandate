@@ -134,7 +134,7 @@
 				<configuration>
 					<excludes>
 						<exclude>**/generated/**</exclude>
-						<exclude>it.pagopa.pn.mandate.rest.mandate.v1/**</exclude>
+						<exclude>**it/pagopa/pn/mandate/rest/mandate/v1/**</exclude>
 					</excludes>
 				</configuration>
 			</plugin>

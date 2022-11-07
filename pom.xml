@@ -14,7 +14,7 @@
 	<description>Mandate microservice</description>
 	<properties>
 		<java.version>11</java.version>
-    	<jacoco.min.line.cover.ratio>0.80</jacoco.min.line.cover.ratio>
+    	<jacoco.min.line.cover.ratio>0.60</jacoco.min.line.cover.ratio>
 		<testcontainers.version>1.16.2</testcontainers.version>
 		<awaitility.version>4.1.1</awaitility.version>
 		<awspring.version>2.3.2</awspring.version>

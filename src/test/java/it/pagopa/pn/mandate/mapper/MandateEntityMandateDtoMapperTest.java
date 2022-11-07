@@ -1,6 +1,6 @@
 package it.pagopa.pn.mandate.mapper;
 
-import it.pagopa.pn.mandate.middleware.db.MandateDaoTest;
+import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
@@ -27,7 +27,7 @@ class MandateEntityMandateDtoMapperTest {
     @Test
     void toEntity() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(true);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
         MandateDto dto = mapper.toDto(mandateToInsert);
 
         //When
@@ -57,7 +57,7 @@ class MandateEntityMandateDtoMapperTest {
     @Test
     void toEntityNoStatus() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(true);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
         MandateDto dto = mapper.toDto(mandateToInsert);
         dto.setStatus(null);
 
@@ -77,7 +77,7 @@ class MandateEntityMandateDtoMapperTest {
     @Test
     void toEntityNoDelegate() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(true);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
         MandateDto dto = mapper.toDto(mandateToInsert);
         dto.setDelegate(null);
 
@@ -97,7 +97,7 @@ class MandateEntityMandateDtoMapperTest {
     @Test
     void toEntityNoDelegator() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(true);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
         MandateDto dto = mapper.toDto(mandateToInsert);
         dto.setDelegator(null);
 
@@ -117,7 +117,7 @@ class MandateEntityMandateDtoMapperTest {
     @Test
     void toEntityWithList() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(true);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
         MandateDto dto = mapper.toDto(mandateToInsert);
         List<OrganizationIdDto> list = new ArrayList<>();
         OrganizationIdDto organizationIdDto = new OrganizationIdDto();
@@ -141,7 +141,7 @@ class MandateEntityMandateDtoMapperTest {
     @Test
     void toDto() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(true);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
 
         //When
         MandateDto result = mapper.toDto(mandateToInsert);
@@ -176,7 +176,7 @@ class MandateEntityMandateDtoMapperTest {
     @Test
     void toDtoWithList() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(true);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
         Set<String> ids = new HashSet<>();
         ids.add("123");
         mandateToInsert.setVisibilityIds(ids);

@@ -10,7 +10,7 @@ import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.Rec
 import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
-import it.pagopa.pn.mandate.middleware.db.MandateDaoTest;
+import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
@@ -32,7 +32,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
@@ -66,7 +65,7 @@ class MandateServiceTest {
     @Test
     void acceptMandate() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode(mandateEntity.getValidationcode());
 
@@ -85,7 +84,7 @@ class MandateServiceTest {
     @Test
     void acceptMandateFailVercode() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode(null);
 
@@ -104,7 +103,7 @@ class MandateServiceTest {
     @Test
     void acceptMandateFailWrongVercode() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode("44444");
 
@@ -124,7 +123,7 @@ class MandateServiceTest {
     @Test
     void acceptMandateFailWrongMandateId() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode("44444");
 
@@ -143,7 +142,7 @@ class MandateServiceTest {
     @Test
     void acceptMandateFailMandateid() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode(mandateEntity.getValidationcode());
 
@@ -214,7 +213,7 @@ class MandateServiceTest {
     @Test
     void createMandate() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -271,7 +270,7 @@ class MandateServiceTest {
     @Test
     void createMandateWithList() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -331,7 +330,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailFiscalcode() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -357,7 +356,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailFiscalcodeNull() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -383,7 +382,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailVercodeNull() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -408,7 +407,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailVercodeInvalidformat() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -434,7 +433,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailNoValidTo() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
 
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
@@ -459,7 +458,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailSameUserDelegateDelegator() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
 
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
@@ -486,7 +485,7 @@ class MandateServiceTest {
     @Test
     void listMandatesByDelegate() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -533,7 +532,7 @@ class MandateServiceTest {
     @Test
     void listMandatesByDelegateWithPas() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -584,7 +583,7 @@ class MandateServiceTest {
     @Test
     void listMandatesByDelegateWithDenominations() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -644,7 +643,7 @@ class MandateServiceTest {
     @Test
     void listMandatesByDelegateInvalid1() {
         //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -687,7 +686,7 @@ class MandateServiceTest {
     @Test
     void listMandatesByDelegator() {
 //Given
-        MandateEntity entity = MandateDaoTest.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -734,7 +733,7 @@ class MandateServiceTest {
     @Test
     void rejectMandate() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.rejectMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
@@ -749,7 +748,7 @@ class MandateServiceTest {
     @Test
     void rejectMandateFailMandateId() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.rejectMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
@@ -765,7 +764,7 @@ class MandateServiceTest {
     @Test
     void revokeMandate() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.revokeMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
@@ -780,7 +779,7 @@ class MandateServiceTest {
     @Test
     void revokeMandateFailMandateId() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.revokeMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
@@ -796,7 +795,7 @@ class MandateServiceTest {
     @Test
     void expireMandate() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.expireMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
@@ -811,7 +810,7 @@ class MandateServiceTest {
     @Test
     void expireMandateFailMandateId() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.expireMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());

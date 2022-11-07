@@ -2,7 +2,7 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityInternalMandateDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
-import it.pagopa.pn.mandate.middleware.db.MandateDaoTest;
+import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class MandatePrivateServiceTest {
     @Test
     void listMandatesByDelegate() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         List<MandateEntity> list = new ArrayList<>();
         list.add(mandateEntity);
         when(mandateDao.listMandatesByDelegate (Mockito.same(mandateEntity.getDelegate()), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(list));
@@ -54,7 +54,7 @@ class MandatePrivateServiceTest {
     @Test
     void listMandatesByDelegator() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTest.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         List<MandateEntity> list = new ArrayList<>();
         list.add(mandateEntity);
         when(mandateDao.listMandatesByDelegator (Mockito.same(mandateEntity.getDelegate()), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(list));

@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 @Import(LocalStackTestConfig.class)
-public class MandateDaoTest {
+public class MandateDaoIT {
 
     private final Duration d = Duration.ofMillis(60000);
 

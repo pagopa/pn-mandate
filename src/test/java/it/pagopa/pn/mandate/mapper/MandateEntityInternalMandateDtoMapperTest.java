@@ -1,6 +1,6 @@
 package it.pagopa.pn.mandate.mapper;
 
-import it.pagopa.pn.mandate.middleware.db.MandateDaoTest;
+import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
 import org.junit.jupiter.api.Assertions;
@@ -29,7 +29,7 @@ class MandateEntityInternalMandateDtoMapperTest {
     @Test
     void toDto() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTest.newMandate(true);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
 
 
         //When

@@ -2,7 +2,7 @@ package it.pagopa.pn.mandate.rest.mandate;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
-import it.pagopa.pn.mandate.middleware.db.MandateDaoTest;
+import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
@@ -86,7 +86,7 @@ class MandateRestV1ControllerTest {
         //Given
         String url = "/mandate/api/v1/mandate";
 
-        MandateDto dto = mapper.toDto(MandateDaoTest.newMandate(true));
+        MandateDto dto = mapper.toDto(MandateDaoIT.newMandate(true));
 
         //When
         Mockito.when( mandateService.createMandate( Mockito.any(), Mockito.any() , Mockito.anyBoolean()))
@@ -108,7 +108,7 @@ class MandateRestV1ControllerTest {
         //Given
         String url = "/mandate/api/v1/mandates-by-delegate";
         List<MandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoTest.newMandate(true))
+                mapper.toDto(MandateDaoIT.newMandate(true))
         );
 
         //When
@@ -130,7 +130,7 @@ class MandateRestV1ControllerTest {
         //Given
         String url = "/mandate/api/v1/mandates-by-delegator";
         List<MandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoTest.newMandate(true))
+                mapper.toDto(MandateDaoIT.newMandate(true))
         );
 
         //When

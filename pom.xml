@@ -18,8 +18,6 @@
 		<awaitility.version>4.1.1</awaitility.version>
 		<awspring.version>2.3.2</awspring.version>
 
-		<sonar.coverage.exclusions>it.pagopa.pn.mandate.microservice.msclient.generated/**/*.java</sonar.coverage.exclusions>
-		<sonar.coverage.exclusions>it.pagopa.pn.mandate.rest.mandate.v1/**/*.java</sonar.coverage.exclusions>
 	</properties>
 
 	<dependencyManagement>

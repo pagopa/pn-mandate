@@ -6,6 +6,7 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.images.ImagePullPolicy;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
@@ -22,7 +23,7 @@ import static org.testcontainers.containers.localstack.LocalStackContainer.Servi
 public class LocalStackTestConfig {
 
     static LocalStackContainer localStack =
-            new LocalStackContainer(DockerImageName.parse("public.ecr.aws/localstack/localstack").asCompatibleSubstituteFor("localstack/localstack"))
+            new LocalStackContainer(DockerImageName.parse("public.ecr.aws/localstack/localstack:1.0.4").asCompatibleSubstituteFor("localstack/localstack"))
                     .withServices(DYNAMODB)
                     .withClasspathResourceMapping("testcontainers/init.sh",
                             "/docker-entrypoint-initaws.d/make-storages.sh", BindMode.READ_ONLY)

@@ -36,7 +36,13 @@ import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.*;
 @Service
 @Slf4j
 public class MandateService  {
-   
+
+    private static final String DELEGATE_FISCAL_CODE = "delegate.fiscalCode";
+    private static final String VERIFICATION_CODE = "verificationCode";
+    private static final String DELEGATE_PERSON = "delegate.person";
+    private static final String DELEGATE = "delegate";
+    private static final String DATE_TO = "dateTo";
+
     private final MandateDao mandateDao;
     private final DelegateDao userDao;
     private final MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper;
@@ -174,32 +180,32 @@ public class MandateService  {
     private MandateDto validate(MandateDto mandateDto) {
         // valida delegato
         if (mandateDto.getDelegate() == null)
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, "delegate");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATE);
         if ((mandateDto.getDelegate().getFiscalCode() == null))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, "delegate.fiscalCode");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATE_FISCAL_CODE);
 
         if ((mandateDto.getDelegate().getPerson() == null))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, "delegate.person");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATE_PERSON);
 
         if ((mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null)
                 || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER, "delegate");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER, DELEGATE);
         // codice verifica (5 caratteri)
         if (mandateDto.getVerificationCode() == null)
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, "verificationCode");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, VERIFICATION_CODE);
         if (!mandateDto.getVerificationCode().matches("\\d\\d\\d\\d\\d"))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, "verificationCode");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, VERIFICATION_CODE);
 
         if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
-            && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}[0-9]{2}[A-Za-z]{1}[0-9]{2}[A-Za-z]{1}[0-9]{3}[A-Za-z]{1}"))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN,"delegate.fiscalCode");
+            && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}\\d{2}[A-Za-z]\\d{2}[A-Za-z]\\d{3}[A-Za-z]"))
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
         if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
-                && !mandateDto.getDelegate().getFiscalCode().matches("[0-9]{11}"))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN,"delegate.fiscalCode");
+                && !mandateDto.getDelegate().getFiscalCode().matches("\\d{11}"))
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
 
         // la delega richiede la data di fine
         if (!StringUtils.hasText(mandateDto.getDateto()))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED,"dateTo");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DATE_TO);
 
         return mandateDto;
     }
@@ -387,7 +393,7 @@ public class MandateService  {
         user.setCompanyName(info.getDestBusinessName());
         user.setFirstName(info.getDestName());
         user.setLastName(info.getDestSurname());
-        if (user.getPerson())
+        if (Boolean.TRUE.equals(user.getPerson()))
             user.setDisplayName(info.getDestName() + " " + info.getDestSurname());
         else
             user.setDisplayName(info.getDestBusinessName());

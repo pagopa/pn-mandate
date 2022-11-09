@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.middleware.db;
 
+import it.pagopa.pn.commons.log.PnAuditLogBuilder;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
@@ -11,23 +12,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 
 import java.time.Duration;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 
-@ExtendWith(SpringExtension.class)
-@TestPropertySource(properties = {
-        "aws.region-code=us-east-1",
-        "aws.profile-name=${PN_AWS_PROFILE_NAME:default}",
-        "aws.endpoint-url=http://localhost:4566"
-})
 @SpringBootTest
-class DelegateDaoTestIT {
+@ExtendWith(SpringExtension.class)
+@Import(LocalStackTestConfig.class)
+class DelegateDaoIT {
 
     @Autowired
     private MandateDao mandateDao;
@@ -36,20 +33,24 @@ class DelegateDaoTestIT {
     private DelegateDao delegateDao;
 
     @Autowired
+    PnAuditLogBuilder pnAuditLogBuilder;
+    @Autowired
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
+
 
     TestDao testDao;
 
     @BeforeEach
     void setup( @Value("${aws.dynamodb_table}") String table,
                 @Value("${aws.dynamodb_table_history}") String tableHistory) {
+
         testDao = new TestDao( dynamoDbEnhancedAsyncClient, table, tableHistory);
     }
 
     @Test
     void countMandatesPendingOnly() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(false);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(false);
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
@@ -80,8 +81,8 @@ class DelegateDaoTestIT {
     @Test
     void countMandatesPendingAndActive() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(false);
-        MandateEntity mandateToInsert1 = MandateDaoTestIT.newMandate(false);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(false);
+        MandateEntity mandateToInsert1 = MandateDaoIT.newMandate(false);
         mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
         mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
         mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
@@ -118,7 +119,7 @@ class DelegateDaoTestIT {
     @Test
     void countMandatesActiveOnly() {
         //Given
-        MandateEntity mandateToInsert = MandateDaoTestIT.newMandate(false);
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(false);
         mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
 
         try {

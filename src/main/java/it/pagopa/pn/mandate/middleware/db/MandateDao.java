@@ -4,15 +4,15 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnAuditLogBuilder;
 import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnAuditLogEventType;
-import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
-import it.pagopa.pn.mandate.middleware.db.config.AwsConfigs;
-import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
 import it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
+import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Import;
@@ -51,11 +51,10 @@ public class MandateDao extends BaseDao {
     DynamoDbAsyncTable<MandateEntity> mandateHistoryTable;
     
     String table;
-    
 
     public MandateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                        DynamoDbAsyncClient dynamoDbAsyncClient,
-                       AwsConfigs awsConfigs,
+                       PnMandateConfig awsConfigs,
                        PnAuditLogBuilder pnAuditLogBuilder) {
         this.mandateTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTable(), TableSchema.fromBean(MandateEntity.class));
         this.mandateSupportTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTable(), TableSchema.fromBean(MandateSupportEntity.class));
@@ -94,12 +93,12 @@ public class MandateDao extends BaseDao {
         // e quindi va sempre previsto un filtro sulla data di scadenza
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
-        String expression = "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ") ) ";
+        String expression = getValidToFilterExpression();
 
         if (mandateId != null)
         {
             expressionValues.put(":mandateId", AttributeValue.builder().s(mandateId).build());
-            expression += " AND " + MandateEntity.COL_S_MANDATEID + " = :mandateId";
+            expression += "  AND " + getMandateFilterExpression();
         }
 
 
@@ -142,10 +141,10 @@ public class MandateDao extends BaseDao {
         log.info("listMandatesByDelegator uid={} status={}", delegatorInternaluserid, status);
 
         int iState = StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE);
-        String filterexp = "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) AND (" + MandateEntity.COL_I_STATE + " <= :status)";
+        String filterexp = getValidToFilterExpression() + " AND  " + getStatusFilterExpression(true);
         if (status != null)
         {
-            filterexp = "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) AND (" + MandateEntity.COL_I_STATE + " = :status)";   // si noti = status
+            filterexp = getValidToFilterExpression() + "  AND " + getStatusFilterExpression(false);   // si noti = status
             iState = status;
         }
 
@@ -158,7 +157,7 @@ public class MandateDao extends BaseDao {
         if (mandateId != null)
         {
             expressionValues.put(":mandateId", AttributeValue.builder().s(mandateId).build());
-            filterexp += " AND " + MandateEntity.COL_S_MANDATEID + " = :mandateId";
+            filterexp += " AND " + getMandateFilterExpression();
         }
 
         Expression exp = Expression.builder()                
@@ -529,7 +528,7 @@ public class MandateDao extends BaseDao {
                 .builder()
                 .select(Select.COUNT)
                 .tableName(table)
-                .filterExpression("(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) AND (" + MandateEntity.COL_I_STATE + " <= :status) AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)")
+                .filterExpression(getValidToFilterExpression() + " AND " + getStatusFilterExpression(true) + " AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)")
                 .keyConditionExpression(MandateEntity.COL_PK + " = :delegator AND begins_with(" + MandateEntity.COL_SK + ", :mandateprefix)")
                 .expressionAttributeValues(expressionValues)
                 .build();
@@ -557,6 +556,18 @@ public class MandateDao extends BaseDao {
 
             return mandate;
         });
+    }
+
+    private String getValidToFilterExpression(){
+        return "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) ";
+    }
+
+    private String getStatusFilterExpression(boolean lessEqualThan){
+        return " (" + MandateEntity.COL_I_STATE + " " + (lessEqualThan?"<=":"=") + " :status) ";
+    }
+
+    private String getMandateFilterExpression() {
+        return "(" + MandateEntity.COL_S_MANDATEID + " = :mandateId) ";
     }
     //#endregion
 }

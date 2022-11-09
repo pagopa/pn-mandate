@@ -1,13 +1,15 @@
 package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogBuilder;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
+import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
+import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
+import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
-import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
-import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
-import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,41 +18,44 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 
 import java.time.*;
-import java.time.temporal.TemporalUnit;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-
 @ExtendWith(SpringExtension.class)
-@TestPropertySource(properties = {
-        "aws.region-code=us-east-1",
-        "aws.profile-name=${PN_AWS_PROFILE_NAME:default}",
-        "aws.endpoint-url=http://localhost:4566"
-})
 @SpringBootTest
-public class MandateDaoTestIT {
+@Import(LocalStackTestConfig.class)
+public class MandateDaoIT {
 
-    private final Duration d = Duration.ofMillis(3000);
-    
+    private final Duration d = Duration.ofMillis(60000);
+
     @Autowired
     private MandateDao mandateDao;
+
+    @Autowired
+    PnMandateConfig cfg;
+
+    @Autowired
+    PnAuditLogBuilder pnAuditLogBuilder;
 
     @Autowired
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
 
     TestDao testDao;
 
+
+
     @BeforeEach
     void setup( @Value("${aws.dynamodb_table}") String table,
                 @Value("${aws.dynamodb_table_history}") String tableHistory) {
+
         testDao = new TestDao( dynamoDbEnhancedAsyncClient, table, tableHistory);
     }
 

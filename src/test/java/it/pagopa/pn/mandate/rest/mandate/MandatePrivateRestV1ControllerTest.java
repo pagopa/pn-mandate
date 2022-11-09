@@ -1,7 +1,7 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityInternalMandateDtoMapper;
-import it.pagopa.pn.mandate.middleware.db.MandateDaoTestIT;
+import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
 import it.pagopa.pn.mandate.services.mandate.v1.MandatePrivateService;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class MandatePrivateRestV1ControllerTest {
         String url = "/mandate-private/api/v1/mandates-by-internaldelegate/{internaluserId}"
                 .replace("{internaluserId}", "internauserid1234");
         List<InternalMandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoTestIT.newMandate(true))
+                mapper.toDto(MandateDaoIT.newMandate(true))
         );
 
         //When
@@ -63,7 +63,7 @@ class MandatePrivateRestV1ControllerTest {
                 .replace("{internaluserId}", "internauserid1234")
                 .replace("{mandateId}", "mandateId12345");
         List<InternalMandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoTestIT.newMandate(true))
+                mapper.toDto(MandateDaoIT.newMandate(true))
         );
 
         //When
@@ -85,7 +85,7 @@ class MandatePrivateRestV1ControllerTest {
         String url = "/mandate-private/api/v1/mandates-by-internaldelegator/{internaluserId}"
                 .replace("{internaluserId}", "internauserid1234");
         List<InternalMandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoTestIT.newMandate(true))
+                mapper.toDto(MandateDaoIT.newMandate(true))
         );
 
         //When
@@ -109,7 +109,7 @@ class MandatePrivateRestV1ControllerTest {
                 .replace("{internaluserId}", "internauserid1234")
                 .replace("{mandateId}", "mandateId12345");
         List<InternalMandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoTestIT.newMandate(true))
+                mapper.toDto(MandateDaoIT.newMandate(true))
         );
 
         //When

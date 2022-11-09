@@ -1,25 +1,23 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
+import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.RecipientTypeDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
-import it.pagopa.pn.mandate.middleware.db.MandateDaoTestIT;
+import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
-import it.pagopa.pn.mandate.exceptions.PnInvalidInputException;
-import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
-import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -30,6 +28,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +65,7 @@ class MandateServiceTest {
     @Test
     void acceptMandate() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode(mandateEntity.getValidationcode());
 
@@ -74,7 +73,7 @@ class MandateServiceTest {
 
         //When
         assertDoesNotThrow(() -> {
-            Object result = mandateService.acceptMandate(mandateEntity.getMandateId(),
+            mandateService.acceptMandate(mandateEntity.getMandateId(),
                             Mono.just(acceptRequestDto), mandateEntity.getDelegate()).block(d);
                 });
 
@@ -85,7 +84,7 @@ class MandateServiceTest {
     @Test
     void acceptMandateFailVercode() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode(null);
 
@@ -94,9 +93,7 @@ class MandateServiceTest {
         //When
         Mono<Object> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate());
-        assertThrows(PnInvalidVerificationCodeException.class, () -> {
-            mono.block(d);
-        });
+        assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(d));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -106,7 +103,7 @@ class MandateServiceTest {
     @Test
     void acceptMandateFailWrongVercode() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode("44444");
 
@@ -115,9 +112,7 @@ class MandateServiceTest {
         //When
         Mono<Object> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate());
-        assertThrows(PnInvalidVerificationCodeException.class, () -> {
-            mono.block(d);
-        });
+        assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(d));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -128,7 +123,7 @@ class MandateServiceTest {
     @Test
     void acceptMandateFailWrongMandateId() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode("44444");
 
@@ -137,9 +132,7 @@ class MandateServiceTest {
         //When
         Mono<Object> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate());
-        assertThrows(PnMandateNotFoundException.class, () -> {
-            mono.block(d);
-        });
+        assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -149,20 +142,17 @@ class MandateServiceTest {
     @Test
     void acceptMandateFailMandateid() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode(mandateEntity.getValidationcode());
 
         when(mandateDao.acceptMandate (Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
 
         //When
-        try {
-            Object result = mandateService.acceptMandate(null,
-                    Mono.just(acceptRequestDto), mandateEntity.getDelegate()).block(d);
-            fail("no MandateNotFoundException thrown");
-        } catch (PnMandateNotFoundException e) {
-            // nothing
-        }
+        Mono<AcceptRequestDto> monodto = Mono.just(acceptRequestDto);
+        String delegate = mandateEntity.getDelegate();
+        Mono<Object> mono = mandateService.acceptMandate(null, monodto, delegate);
+        Assertions.assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -188,9 +178,42 @@ class MandateServiceTest {
     }
 
     @Test
+    void countMandatesByDelegateInvalid1() {
+        //Given
+        DelegateEntity delegateEntity = new DelegateEntity();
+        delegateEntity.setPendingcount(5);
+        MandateCountsDto dto = new MandateCountsDto();
+        dto.setValue(delegateEntity.getPendingcount());
+
+        when(delegateDao.countMandates (Mockito.anyString())).thenReturn(Mono.just(delegateEntity));
+        when(userEntityMandateCountsDtoMapper.toDto(Mockito.same(delegateEntity))).thenReturn(dto);
+
+        //When
+        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mandateService.countMandatesByDelegate(null,  "fake"));
+
+    }
+
+    @Test
+    void countMandatesByDelegateInvalid2() {
+        //Given
+        DelegateEntity delegateEntity = new DelegateEntity();
+        delegateEntity.setPendingcount(5);
+        MandateCountsDto dto = new MandateCountsDto();
+        dto.setValue(delegateEntity.getPendingcount());
+
+        when(delegateDao.countMandates (Mockito.anyString())).thenReturn(Mono.just(delegateEntity));
+        when(userEntityMandateCountsDtoMapper.toDto(Mockito.same(delegateEntity))).thenReturn(dto);
+
+        //When
+        String status = MandateDto.StatusEnum.ACTIVE.getValue();
+        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mandateService.countMandatesByDelegate(status,  "fake"));
+
+    }
+
+    @Test
     void createMandate() {
         //Given
-        MandateEntity entity = MandateDaoTestIT.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -218,9 +241,71 @@ class MandateServiceTest {
         List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
         MandateDtoDto mandateDtoDto = new MandateDtoDto();
         mandateDtoDto.mandateId(entity.getMandateId());
-        mandateDtoDto.setInfo(new DenominationDtoDto());
-        mandateDtoDto.getInfo().setDestName("mario");
-        mandateDtoDto.getInfo().setDestSurname("rossi");
+        DenominationDtoDto denominationDtoDto = new DenominationDtoDto();
+        denominationDtoDto.setDestName("mario");
+        denominationDtoDto.setDestSurname("rossi");
+        mandateDtoDto.setInfo(denominationDtoDto);
+        resgetmandatesbyid.add(mandateDtoDto);
+
+
+        when(mandateDao.createMandate (Mockito.any())).thenReturn(Mono.just(entity));
+        when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
+        when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(),  Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
+        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
+        when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
+        when(mapper.toEntity(Mockito.any())).thenReturn(entity);
+        when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+
+        //When
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true).block(d);
+
+        //Then
+        assertNotNull(result);
+        assertNotNull(result.getMandateId());
+        assertNotNull(result.getStatus());
+        assertEquals(mandateDto.getVerificationCode(), result.getVerificationCode());
+    }
+
+
+    @Test
+    void createMandateWithList() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+        // MAndateDto come proviene da FE quindi senza alcune info
+        final MandateDto mandateDto = new MandateDto();
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDto.setVerificationCode(entity.getValidationcode());
+        mandateDto.setVisibilityIds(new ArrayList<>());
+        OrganizationIdDto organizationIdDto = new OrganizationIdDto();
+        organizationIdDto.setUniqueIdentifier("abcd");
+        mandateDto.getVisibilityIds().add(organizationIdDto);
+        mandateDto.setDelegate(new UserDto());
+        mandateDto.getDelegate().setFirstName("mario");
+        mandateDto.getDelegate().setLastName("rossi");
+        mandateDto.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
+
+        final MandateDto mandateDtoRes = new MandateDto();
+        mandateDtoRes.setMandateId(entity.getMandateId());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
+        mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRes.setVerificationCode(entity.getValidationcode());
+        mandateDtoRes.setVisibilityIds(new ArrayList<>());
+        mandateDtoRes.getVisibilityIds().add(organizationIdDto);
+        mandateDtoRes.setDelegate(new UserDto());
+        mandateDtoRes.getDelegate().setFirstName("mario");
+        mandateDtoRes.getDelegate().setLastName("rossi");
+        mandateDtoRes.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
+
+        List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
+        MandateDtoDto mandateDtoDto = new MandateDtoDto();
+        mandateDtoDto.mandateId(entity.getMandateId());
+        DenominationDtoDto denominationDtoDto = new DenominationDtoDto();
+        denominationDtoDto.setDestName("mario");
+        denominationDtoDto.setDestSurname("rossi");
+        mandateDtoDto.setInfo(denominationDtoDto);
         resgetmandatesbyid.add(mandateDtoDto);
 
 
@@ -245,7 +330,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailFiscalcode() {
         //Given
-        MandateEntity entity = MandateDaoTestIT.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -258,12 +343,11 @@ class MandateServiceTest {
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
         //When
-        try {
-            MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true).block(d);
-            fail("no InvalidInputException thrown");
-        } catch (PnInvalidInputException e) {
-            //nothing
-        }
+        Mono<MandateDto> monodto = Mono.just(mandateDto);
+        String delegate = entity.getDelegate();
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, true);
+        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
+
 
         //Then
         //nothing
@@ -272,7 +356,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailFiscalcodeNull() {
         //Given
-        MandateEntity entity = MandateDaoTestIT.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -285,12 +369,11 @@ class MandateServiceTest {
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
         //When
-        try {
-            MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true).block(d);
-            fail("no InvalidInputException thrown");
-        } catch (PnInvalidInputException e) {
-            //nothing
-        }
+        Mono<MandateDto> monodto = Mono.just(mandateDto);
+        String delegate = entity.getDelegate();
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, true);
+        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
+
 
         //Then
         //nothing
@@ -299,7 +382,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailVercodeNull() {
         //Given
-        MandateEntity entity = MandateDaoTestIT.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -312,12 +395,10 @@ class MandateServiceTest {
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
         //When
-        try {
-            MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true).block(d);
-            fail("no InvalidInputException thrown");
-        } catch (PnInvalidInputException e) {
-            //nothing
-        }
+        Mono<MandateDto> monodto = Mono.just(mandateDto);
+        String delegate = entity.getDelegate();
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, true);
+        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
 
         //Then
         //nothing
@@ -326,7 +407,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailVercodeInvalidformat() {
         //Given
-        MandateEntity entity = MandateDaoTestIT.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -339,12 +420,10 @@ class MandateServiceTest {
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
         //When
-        try {
-            MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true).block(d);
-            fail("no InvalidInputException thrown");
-        } catch (PnInvalidInputException e) {
-            //nothing
-        }
+        Mono<MandateDto> monodto = Mono.just(mandateDto);
+        String delegate = entity.getDelegate();
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, true);
+        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
 
         //Then
         //nothing
@@ -354,7 +433,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailNoValidTo() {
         //Given
-        MandateEntity entity = MandateDaoTestIT.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
 
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
@@ -369,9 +448,7 @@ class MandateServiceTest {
 
         //When
         Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), true);
-        assertThrows(PnInvalidInputException.class, () -> {
-            mono.block(d);
-        });
+        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
 
         //Then
         //nothing
@@ -381,7 +458,7 @@ class MandateServiceTest {
     @Test
     void createMandateFailSameUserDelegateDelegator() {
         //Given
-        MandateEntity entity = MandateDaoTestIT.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
 
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
@@ -389,6 +466,7 @@ class MandateServiceTest {
         mandateDto.setVerificationCode(entity.getValidationcode());
         mandateDto.setVisibilityIds(new ArrayList<>());
         mandateDto.setDelegate(new UserDto());
+        mandateDto.setDateto(Instant.now().toString());
         mandateDto.getDelegate().setFirstName("mario");
         mandateDto.getDelegate().setLastName("rossi");
         mandateDto.getDelegate().setFiscalCode("RSSMRA85T10A562S");
@@ -398,9 +476,7 @@ class MandateServiceTest {
 
         //When
         Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true);
-        assertThrows(PnInvalidInputException.class, () -> {
-            mono.block(d);
-        });
+        assertThrows(PnMandateByHimselfException.class, () -> mono.block(d));
 
         //Then
         //nothing
@@ -409,7 +485,7 @@ class MandateServiceTest {
     @Test
     void listMandatesByDelegate() {
         //Given
-        MandateEntity entity = MandateDaoTestIT.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -454,9 +530,163 @@ class MandateServiceTest {
     }
 
     @Test
+    void listMandatesByDelegateWithPas() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+        // MAndateDto come proviene da FE quindi senza alcune info
+        final MandateDto mandateDto = new MandateDto();
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDto.setVerificationCode(entity.getValidationcode());
+        mandateDto.setVisibilityIds(new ArrayList<>());
+        OrganizationIdDto organizationIdDto = new OrganizationIdDto();
+        organizationIdDto.setUniqueIdentifier("abcd");
+        mandateDto.getVisibilityIds().add(organizationIdDto);
+        mandateDto.setDelegate(new UserDto());
+        mandateDto.getDelegate().setFirstName("mario");
+        mandateDto.getDelegate().setLastName("rossi");
+        mandateDto.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
+
+        final MandateDto mandateDtoRes = new MandateDto();
+        mandateDtoRes.setMandateId(entity.getMandateId());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
+        mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRes.setVerificationCode(entity.getValidationcode());
+        mandateDtoRes.setVisibilityIds(new ArrayList<>());
+        mandateDtoRes.getVisibilityIds().add(organizationIdDto);
+        mandateDtoRes.setDelegate(new UserDto());
+        mandateDtoRes.getDelegate().setFirstName("mario");
+        mandateDtoRes.getDelegate().setLastName("rossi");
+        mandateDtoRes.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
+
+        List<MandateEntity> listFromDb = new ArrayList<>();
+        listFromDb.add(entity);
+
+        when(mandateDao.listMandatesByDelegate (Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
+        when(pnDatavaultClient.getRecipientDenominationByInternalId(Mockito.any())).thenReturn(Flux.empty());
+        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.empty());
+        when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
+        when(mapper.toEntity(Mockito.any())).thenReturn(entity);
+        when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+
+        //When
+        List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate()).collectList().block(d);
+
+        //Then
+        assertNotNull(result);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void listMandatesByDelegateWithDenominations() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+        // MAndateDto come proviene da FE quindi senza alcune info
+        final MandateDto mandateDto = new MandateDto();
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDto.setVerificationCode(entity.getValidationcode());
+        mandateDto.setVisibilityIds(new ArrayList<>());
+        OrganizationIdDto organizationIdDto = new OrganizationIdDto();
+        organizationIdDto.setUniqueIdentifier("abcd");
+        mandateDto.getVisibilityIds().add(organizationIdDto);
+        mandateDto.setDelegate(new UserDto());
+        mandateDto.getDelegate().setFirstName("mario");
+        mandateDto.getDelegate().setLastName("rossi");
+        mandateDto.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
+
+        final MandateDto mandateDtoRes = new MandateDto();
+        mandateDtoRes.setMandateId(entity.getMandateId());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
+        mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRes.setVerificationCode(entity.getValidationcode());
+        mandateDtoRes.setVisibilityIds(new ArrayList<>());
+        mandateDtoRes.getVisibilityIds().add(organizationIdDto);
+        mandateDtoRes.setDelegate(new UserDto());
+        mandateDtoRes.getDelegate().setFirstName("mario");
+        mandateDtoRes.getDelegate().setLastName("rossi");
+        mandateDtoRes.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
+        mandateDtoRes.setDelegator(new UserDto());
+
+
+        List<MandateEntity> listFromDb = new ArrayList<>();
+        listFromDb.add(entity);
+
+        List<BaseRecipientDtoDto> denominations = new ArrayList<>();
+        denominations.add(new BaseRecipientDtoDto());
+        denominations.get(0).setInternalId(entity.getDelegator());
+        denominations.get(0).setDenomination("test user");
+        denominations.get(0).setRecipientType(RecipientTypeDto.PF);
+        denominations.get(0).setTaxId("TAXIDDELEGATOR");
+
+        when(mandateDao.listMandatesByDelegate (Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
+        when(pnDatavaultClient.getRecipientDenominationByInternalId(Mockito.any())).thenReturn(Flux.fromIterable(denominations));
+        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.empty());
+        when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
+        when(mapper.toEntity(Mockito.any())).thenReturn(entity);
+        when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+
+        //When
+        List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate()).collectList().block(d);
+
+        //Then
+        assertNotNull(result);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void listMandatesByDelegateInvalid1() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+        // MAndateDto come proviene da FE quindi senza alcune info
+        final MandateDto mandateDto = new MandateDto();
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDto.setVerificationCode(entity.getValidationcode());
+        mandateDto.setVisibilityIds(new ArrayList<>());
+        mandateDto.setDelegate(new UserDto());
+        mandateDto.getDelegate().setFirstName("mario");
+        mandateDto.getDelegate().setLastName("rossi");
+        mandateDto.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
+
+        final MandateDto mandateDtoRes = new MandateDto();
+        mandateDtoRes.setMandateId(entity.getMandateId());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
+        mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRes.setVerificationCode(entity.getValidationcode());
+        mandateDtoRes.setVisibilityIds(new ArrayList<>());
+        mandateDtoRes.setDelegate(new UserDto());
+        mandateDtoRes.getDelegate().setFirstName("mario");
+        mandateDtoRes.getDelegate().setLastName("rossi");
+        mandateDtoRes.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
+
+        List<MandateEntity> listFromDb = new ArrayList<>();
+        listFromDb.add(entity);
+
+        when(mandateDao.listMandatesByDelegate (Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
+        when(pnDatavaultClient.getRecipientDenominationByInternalId(Mockito.any())).thenReturn(Flux.empty());
+        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.empty());
+        when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
+        when(mapper.toEntity(Mockito.any())).thenReturn(entity);
+        when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+
+        //When
+        String delegate = entity.getDelegate();
+        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mandateService.listMandatesByDelegate("INVALID", delegate));
+    }
+
+    @Test
     void listMandatesByDelegator() {
 //Given
-        MandateEntity entity = MandateDaoTestIT.newMandate(true);
+        MandateEntity entity = MandateDaoIT.newMandate(true);
         // MAndateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
@@ -503,7 +733,7 @@ class MandateServiceTest {
     @Test
     void rejectMandate() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.rejectMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
@@ -518,18 +748,14 @@ class MandateServiceTest {
     @Test
     void rejectMandateFailMandateId() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.rejectMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When
-        try {
-            Object result = mandateService.rejectMandate(null, mandateEntity.getDelegate()).block(d);
-            fail("no MandateNotFoundException thrown");
-        } catch (PnMandateNotFoundException e) {
-            //nothing
-        }
+        String delegate = mandateEntity.getDelegate();
+        assertThrows(PnMandateNotFoundException.class, () -> mandateService.rejectMandate(null, delegate));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -538,7 +764,7 @@ class MandateServiceTest {
     @Test
     void revokeMandate() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.revokeMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
@@ -553,18 +779,14 @@ class MandateServiceTest {
     @Test
     void revokeMandateFailMandateId() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.revokeMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When
-        try {
-            Object result = mandateService.revokeMandate(null, mandateEntity.getDelegator()).block(d);
-            fail("no MandateNotFoundException thrown");
-        } catch (PnMandateNotFoundException e) {
-            //nothing
-        }
+        String delegator = mandateEntity.getDelegator();
+        assertThrows(PnMandateNotFoundException.class, () -> mandateService.revokeMandate(null, delegator));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -573,7 +795,7 @@ class MandateServiceTest {
     @Test
     void expireMandate() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.expireMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
@@ -588,18 +810,14 @@ class MandateServiceTest {
     @Test
     void expireMandateFailMandateId() {
         //Given
-        MandateEntity mandateEntity = MandateDaoTestIT.newMandate(true);
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
         when(mandateDao.expireMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When
-        try {
-            Object result = mandateService.expireMandate(null, mandateEntity.getDelegator()).block(d);
-            fail("no MandateNotFoundException thrown");
-        } catch (PnMandateNotFoundException e) {
-            //nothing
-        }
+        String delegator = mandateEntity.getDelegator();
+        Assertions.assertThrows(PnMandateNotFoundException.class, () -> mandateService.expireMandate(null, delegator));
 
         //Then
         // nothing, basta che non ci sia eccezione

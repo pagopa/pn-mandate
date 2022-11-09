@@ -6,9 +6,7 @@ import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
-import reactor.netty.resources.ConnectionProvider;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 public abstract class BaseClient extends CommonBaseClient {

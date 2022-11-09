@@ -1,4 +1,4 @@
-package it.pagopa.pn.mandate.middleware.db;
+package it.pagopa.pn.mandate;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.core.io.ClassPathResource;
@@ -29,7 +29,7 @@ public class LocalStackTestConfig {
                     .withClasspathResourceMapping("testcontainers/credentials",
                             "/root/.aws/credentials", BindMode.READ_ONLY)
                     .withNetworkAliases("localstack")
-                    .withNetwork(Network.builder().createNetworkCmdModifier(cmd -> cmd.withName("test-net")).build())
+                    .withNetwork(Network.builder().createNetworkCmdModifier(cmd -> cmd.withName("mandate-net")).build())
                     .waitingFor(Wait.forLogMessage(".*Initialization terminated.*", 1));
 
     static {

@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnAuditLogBuilder;
+import it.pagopa.pn.mandate.LocalStackTestConfig;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;

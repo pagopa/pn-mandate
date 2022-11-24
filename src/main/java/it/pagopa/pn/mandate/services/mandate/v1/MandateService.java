@@ -258,6 +258,7 @@ public class MandateService  {
 
                         for(MandateEntity ent : entities)
                         {
+                            log.info("listMandatesByDelegate found mandate={}",ent);
                             MandateDto dto = mandateEntityMandateDtoMapper.toDto(ent);
                             if (userinfosdtos.containsKey(ent.getDelegator()))
                             {
@@ -320,6 +321,7 @@ public class MandateService  {
 
                     for(MandateDto dto : dtos)
                     {
+                        log.info("listMandatesByDelegator found mandate={}",dto);   // loggo prima di aggiungere le info sensibili
                         if (userinfosdtos.containsKey(dto.getMandateId()))
                             updateUserDto(dto.getDelegate(), userinfosdtos.get(dto.getMandateId()));
                     }

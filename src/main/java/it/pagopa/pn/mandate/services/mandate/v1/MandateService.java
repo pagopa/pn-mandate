@@ -237,7 +237,8 @@ public class MandateService  {
                 .map(ent -> {         
                     ent.setValidationcode(null);   // (2)
                     return ent;        
-                })                 
+                })
+                .doOnNext(mand -> log.info("listMandatesByDelegate found mandate={}",mand))
                 .collectList()                                                        // (3)
                 .zipWhen(entities -> {
                         if (!entities.isEmpty())
@@ -300,6 +301,7 @@ public class MandateService  {
     public Flux<MandateDto> listMandatesByDelegator(String internaluserId) {
 
         return mandateDao.listMandatesByDelegator(internaluserId, null, null)    // (1)
+            .doOnNext(mand -> log.info("listMandatesByDelegator found mandate={}",mand))
             .map(mandateEntityMandateDtoMapper::toDto)  // (2)
             .collectList()                                                        // (3)
             .zipWhen(dtos -> {

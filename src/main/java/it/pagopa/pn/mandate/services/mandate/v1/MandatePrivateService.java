@@ -28,17 +28,17 @@ public class MandatePrivateService {
 
     public Flux<InternalMandateDto> listMandatesByDelegate(String internaluserId, String mandateId) {
         // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE
-        if (log.isInfoEnabled())
-                    log.info("listing private mandates by delegate for " + internaluserId);
+        log.info("listing private mandates by delegate for internaluserId={} mandateId={}", internaluserId, mandateId);
         return mandateDao.listMandatesByDelegate(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE), mandateId)
-                .map(mandateEntityInternalMandateDtoMapper::toDto);
+                .map(mandateEntityInternalMandateDtoMapper::toDto)
+                .doOnNext(mand -> log.info("listMandatesByDelegate found mandate={}",mand));
     }
 
     public Flux<InternalMandateDto> listMandatesByDelegator(String internaluserId, String mandateId) {
         // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE
-        if (log.isInfoEnabled())
-            log.info("listing private mandates by delegate for " + internaluserId);
+        log.info("listing private mandates by delegate for internaluserId={} mandateId={}", internaluserId, mandateId);
         return mandateDao.listMandatesByDelegator(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE), mandateId)
-                .map(mandateEntityInternalMandateDtoMapper::toDto);
+                .map(mandateEntityInternalMandateDtoMapper::toDto)
+                .doOnNext(mand -> log.info("listMandatesByDelegator found mandate={}",mand));
     }
 }

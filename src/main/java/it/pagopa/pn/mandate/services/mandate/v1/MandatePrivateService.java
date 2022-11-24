@@ -31,10 +31,7 @@ public class MandatePrivateService {
         log.info("listing private mandates by delegate for internaluserId={} mandateId={}", internaluserId, mandateId);
         return mandateDao.listMandatesByDelegate(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE), mandateId)
                 .map(mandateEntityInternalMandateDtoMapper::toDto)
-                .map(mand -> {
-                    log.info("listMandatesByDelegate found mandate={}",mand);
-                    return mand;
-                });
+                .doOnNext(mand -> log.info("listMandatesByDelegate found mandate={}",mand));
     }
 
     public Flux<InternalMandateDto> listMandatesByDelegator(String internaluserId, String mandateId) {
@@ -42,9 +39,6 @@ public class MandatePrivateService {
         log.info("listing private mandates by delegate for internaluserId={} mandateId={}", internaluserId, mandateId);
         return mandateDao.listMandatesByDelegator(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE), mandateId)
                 .map(mandateEntityInternalMandateDtoMapper::toDto)
-                .map(mand -> {
-                    log.info("listMandatesByDelegator found mandate={}",mand);
-                    return mand;
-                });
+                .doOnNext(mand -> log.info("listMandatesByDelegator found mandate={}",mand));
     }
 }

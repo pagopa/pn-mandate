@@ -66,7 +66,8 @@ Resources:
         StreamArn: !Ref CdcKinesisSourceStreamArn
       StreamSpecification: 
         StreamViewType: NEW_IMAGE
-     
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true       
 
   MandatesDynamoTableHistory:
     Type: AWS::DynamoDB::Table
@@ -85,7 +86,9 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
-
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true  
+        
 Outputs:
   MandatesDynamoTableName:
     Description: Name of dynamodb table containing mandates

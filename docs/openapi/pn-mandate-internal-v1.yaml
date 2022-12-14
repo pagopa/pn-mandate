@@ -33,7 +33,13 @@ paths:
         - mandate-private-service                                                                 # NO EXTERNAL
       summary: Return only active mandates for delegate, optionally filtered by single mandateId  # NO EXTERNAL
       operationId: listMandatesByDelegate                                                         # NO EXTERNAL
-      parameters:                                                                                 # NO EXTERNAL
+      parameters:
+        - name: x-pagopa-pn-cx-type
+          in: query
+          description: cx-type (PF, PG, PA)
+          required: true
+          schema:
+            $ref: '#/components/schemas/cxTypeAuthFleet'                                         # NO EXTERNAL
         - name: internaluserId                                                                    # NO EXTERNAL
           in: path                                                                                # NO EXTERNAL
           required: true                                                                          # NO EXTERNAL
@@ -43,6 +49,12 @@ paths:
           in: query                                                                               # NO EXTERNAL
           schema:                                                                                 # NO EXTERNAL
             type: string                                                                          # NO EXTERNAL
+        - name: x-pagopa-pn-cx-groups                                                                         # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            type: array
+            items:
+              type: string
       responses:                                                                                  # NO EXTERNAL
         '200':                                                                                    # NO EXTERNAL
           description: OK                                                                         # NO EXTERNAL
@@ -64,7 +76,13 @@ paths:
         - mandate-private-service                                                                 # NO EXTERNAL
       summary: Return only active mandates for delegator, optionally filtered by single mandateId # NO EXTERNAL
       operationId: listMandatesByDelegator                                                        # NO EXTERNAL
-      parameters:                                                                                 # NO EXTERNAL
+      parameters:
+        - name: x-pagopa-pn-cx-type
+          in: query
+          description: cx-type (PF, PG, PA)
+          required: true
+          schema:
+            $ref: '#/components/schemas/cxTypeAuthFleet'                                        # NO EXTERNAL
         - name: internaluserId                                                                    # NO EXTERNAL
           in: path                                                                                # NO EXTERNAL
           required: true                                                                          # NO EXTERNAL
@@ -74,6 +92,16 @@ paths:
           in: query                                                                               # NO EXTERNAL
           schema:                                                                                 # NO EXTERNAL
             type: string                                                                          # NO EXTERNAL
+        - name: x-pagopa-pn-cx-groups                                                                         # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          schema:
+            type: array
+            items:
+              type: string
+        - name: cx-role                                                                           # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          schema:
+            type: string
       responses:                                                                                  # NO EXTERNAL
         '200':                                                                                    # NO EXTERNAL
           description: OK                                                                         # NO EXTERNAL
@@ -102,6 +130,8 @@ paths:
       parameters:
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
+        - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
         - name: status
           in: query
           schema:
@@ -129,7 +159,9 @@ paths:
 #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
       parameters:                                                               # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'
+        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
+        - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
       requestBody:
         content:
           application/json:
@@ -159,6 +191,8 @@ paths:
       parameters:
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
+        - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
         - name: mandateId
           in: path
           required: true
@@ -244,6 +278,7 @@ paths:
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
+        - $ref: '#/components/parameters/cxRoleAuthFleet'
         - name: status
           in: query
           schema:
@@ -301,6 +336,12 @@ components:
       schema:
         type: string
   schemas:
+    cxTypeAuthFleet:
+      type: string
+      enum:
+        - PG
+        - PF
+        - PA
     InternalMandateDto:                                                               # NO EXTERNAL
       type: object                                                                    # NO EXTERNAL
       properties:                                                                     # NO EXTERNAL
@@ -394,6 +435,10 @@ components:
       properties:
         verificationCode:
           type: string
+        groups:
+          type: array
+          items:
+            type: string
 #  securitySchemes:                                      # ONLY EXTERNAL
 #    bearerAuth:                                         # ONLY EXTERNAL
 #      type: http                                        # ONLY EXTERNAL

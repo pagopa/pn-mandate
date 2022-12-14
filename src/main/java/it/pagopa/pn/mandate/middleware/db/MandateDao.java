@@ -12,6 +12,7 @@ import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +36,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+
+import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 
 @Repository
 @Slf4j
@@ -74,7 +79,7 @@ public class MandateDao extends BaseDao {
      * @param status stato da usare nel filtro (OPZIONALE)
      * @return lista delle deleghe
      */
-    public Flux<MandateEntity> listMandatesByDelegate(String delegateInternaluserid, Integer status, String mandateId) {
+    public Flux<MandateEntity> listMandatesByDelegate(String delegateInternaluserid, Integer status, String mandateId, CxTypeAuthFleet xPagopaPnCxType, List<String> cxGroups) {
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
@@ -101,7 +106,11 @@ public class MandateDao extends BaseDao {
             expression += "  AND " + getMandateFilterExpression();
         }
 
+        if(xPagopaPnCxType.equals(CxTypeAuthFleet.PG) && cxGroups!=null && !cxGroups.isEmpty()){
+            expression += " AND " + buildExpressionGroupFilter(cxGroups, expressionValues);
+        }
 
+        log.info("expression: {}", expression);
 
         Expression exp = Expression.builder()
             .expression(expression)
@@ -191,7 +200,8 @@ public class MandateDao extends BaseDao {
      * @param verificationCode codice di verifica della relativo all'accettazione
      * @return void
      */
-    public Mono<Void> acceptMandate(String delegateInternaluserid, String mandateId, String verificationCode)
+    public Mono<Void> acceptMandate(String delegateInternaluserid, String mandateId, String verificationCode,
+                                    List<String> groups, CxTypeAuthFleet cxTypeAuthFleet)
     {
         String logMessage = String.format("acceptMandate for delegate uid=%s mandateid=%s verificationCode=%s", delegateInternaluserid, mandateId, verificationCode); 
         PnAuditLogEvent logEvent = auditLogBuilder
@@ -207,6 +217,9 @@ public class MandateDao extends BaseDao {
                         throw new PnInvalidVerificationCodeException();
 
                     log.info("retrieved mandateobj={}", mandate);
+                    if(CxTypeAuthFleet.PG.equals(cxTypeAuthFleet))
+                        mandate.setGroups(groups!=null?Set.copyOf(groups):Set.of());
+
                     if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING))
                     {
                         // aggiorno lo stato, solo se era in pending. NB: non do errore

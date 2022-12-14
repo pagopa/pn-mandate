@@ -10,6 +10,7 @@ import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
@@ -182,7 +183,7 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, null).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, null, CxTypeAuthFleet.PF,null).collectList().block(d);
 
         //Then
         try {
@@ -236,7 +237,7 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, mandateToInsert1.getMandateId()).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, mandateToInsert1.getMandateId(), CxTypeAuthFleet.PF, null).collectList().block(d);
 
         //Then
         try {
@@ -289,7 +290,7 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert2.getDelegate(), null, mandateToInsert2.getMandateId()).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert2.getDelegate(), null, mandateToInsert2.getMandateId(), CxTypeAuthFleet.PF, null).collectList().block(d);
 
         //Then
         try {
@@ -342,7 +343,7 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert2.getDelegate(), null, mandateToInsert2.getMandateId()).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert2.getDelegate(), null, mandateToInsert2.getMandateId(),CxTypeAuthFleet.PF, null).collectList().block(d);
 
         //Then
         try {
@@ -393,7 +394,7 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null, CxTypeAuthFleet.PF,null).collectList().block(d);
 
         //Then
         try {
@@ -449,7 +450,7 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null, CxTypeAuthFleet.PF, null).collectList().block(d);
 
         //Then
         try {
@@ -645,7 +646,7 @@ public class MandateDaoIT {
         }
 
         //When
-        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode()).block(d);
+        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(), null, CxTypeAuthFleet.PF).block(d);
 
         //Then
         try {
@@ -674,13 +675,13 @@ public class MandateDaoIT {
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
             mandateDao.createMandate(mandateToInsert).block(d);
-            mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode()).block(d);
+            mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(),null, CxTypeAuthFleet.PF).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
         //When
-        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode()).block(d);
+        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(),null, CxTypeAuthFleet.PF).block(d);
 
         //Then
         try {
@@ -715,7 +716,7 @@ public class MandateDaoIT {
         }
 
         //When
-        Mono<Void> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode());
+        Mono<Void> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(), null, CxTypeAuthFleet.PF);
         assertThrows(PnInternalException.class, () -> mono.block(d));
 
 
@@ -741,7 +742,7 @@ public class MandateDaoIT {
         }
 
         //When
-        Mono<Void> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), wrongcode);
+        Mono<Void> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), wrongcode, null, CxTypeAuthFleet.PF);
         assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(d));
 
 
@@ -769,7 +770,7 @@ public class MandateDaoIT {
         }
 
         //When
-        Mono<Void> mono = mandateDao.acceptMandate(wrongdelegate, mandateToInsert.getMandateId(), code);
+        Mono<Void> mono = mandateDao.acceptMandate(wrongdelegate, mandateToInsert.getMandateId(), code, null, CxTypeAuthFleet.PF);
         assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
 
 
@@ -797,7 +798,7 @@ public class MandateDaoIT {
         }
 
         //When
-        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode()).block(d);
+        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(), null,CxTypeAuthFleet.PF).block(d);
 
         //Then
         try {

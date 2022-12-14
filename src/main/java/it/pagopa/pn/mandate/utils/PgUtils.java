@@ -7,8 +7,10 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -51,4 +53,21 @@ public class PgUtils {
         return Mono.just(new Object());
     }
 
+    /**
+     * Costruisce la filter expression per la verifica dei gruppi in caso di PG
+     *
+     * @param xPagopaPnCxGroups groupsList
+     * @param expressionValues  map of AttributeValue
+     */
+    public static String buildExpressionGroupFilter(List<String> xPagopaPnCxGroups, Map<String, AttributeValue> expressionValues) {
+        StringBuilder expressionGroup = new StringBuilder();
+        expressionGroup.append("(");
+        for (int i = 0; i < xPagopaPnCxGroups.size(); i++) {
+            AttributeValue pnCxGroup = AttributeValue.builder().s(xPagopaPnCxGroups.get(i)).build();
+            expressionValues.put(":group" + i, pnCxGroup);
+            expressionGroup.append(" contains(groups,:group").append(i).append(") OR");
+        }
+        expressionGroup.replace(expressionGroup.length()-2, expressionGroup.length(),")");
+        return expressionGroup.toString();
+    }
 }

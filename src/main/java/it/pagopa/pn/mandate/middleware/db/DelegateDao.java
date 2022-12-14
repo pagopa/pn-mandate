@@ -4,6 +4,7 @@ import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -17,7 +18,10 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.Select;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 
 @Repository
 @Slf4j
@@ -35,7 +39,7 @@ public class DelegateDao extends BaseDao {
         this.table = awsConfigs.getDynamodbTable();
     }
 
-    public Mono<DelegateEntity> countMandates(String delegateInternaluserid) {
+    public Mono<DelegateEntity> countMandates(String delegateInternaluserid, CxTypeAuthFleet cxTypeAuthFleet, List<String> cxGroups) {
         if (log.isInfoEnabled())
             log.info("Get user pending count uid:{}", delegateInternaluserid);
 
@@ -45,6 +49,11 @@ public class DelegateDao extends BaseDao {
         expressionValues.put(":delegate", AttributeValue.builder().s(delegateInternaluserid).build());
         expressionValues.put(":state", AttributeValue.builder().n(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING) + "").build());  //anche se numero, va convertito in stringa, a dynamo piace così
 
+        String expression = null;
+
+        if(CxTypeAuthFleet.PG.equals(cxTypeAuthFleet) && cxGroups!=null && !cxGroups.isEmpty())
+            expression = buildExpressionGroupFilter(cxGroups, expressionValues);
+
         QueryRequest qeRequest = QueryRequest
                 .builder()
                 .select(Select.COUNT)
@@ -52,6 +61,7 @@ public class DelegateDao extends BaseDao {
                 .indexName(GSI_INDEX_DELEGATE_STATE)
                 .keyConditionExpression(MandateEntity.COL_S_DELEGATE + " = :delegate AND " + MandateEntity.COL_I_STATE + " = :state")
                 .expressionAttributeValues(expressionValues)
+                .filterExpression(expression)
                 .build();
 
         return Mono.fromFuture(dynamoDbAsyncClient.query(qeRequest).thenApply(x -> {

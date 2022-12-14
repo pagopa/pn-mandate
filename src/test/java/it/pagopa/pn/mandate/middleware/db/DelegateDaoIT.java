@@ -5,6 +5,7 @@ import it.pagopa.pn.mandate.LocalStackTestConfig;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 
 import java.time.Duration;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -61,7 +63,8 @@ class DelegateDaoIT {
         }
 
         //When
-        DelegateEntity result = delegateDao.countMandates(mandateToInsert.getDelegate()).block(Duration.ofMillis(3000));
+        DelegateEntity result = delegateDao.countMandates(mandateToInsert.getDelegate(), CxTypeAuthFleet.PF, null)
+                .block(Duration.ofMillis(3000));
 
         //Then
         try {
@@ -98,7 +101,8 @@ class DelegateDaoIT {
         }
 
         //When
-        DelegateEntity result = delegateDao.countMandates(mandateToInsert.getDelegate()).block(Duration.ofMillis(3000));
+        DelegateEntity result = delegateDao.countMandates(mandateToInsert.getDelegate(), CxTypeAuthFleet.PF, null)
+                .block(Duration.ofMillis(3000));
 
         //Then
         try {
@@ -131,7 +135,40 @@ class DelegateDaoIT {
         }
 
         //When
-        DelegateEntity result = delegateDao.countMandates(mandateToInsert.getDelegate()).block(Duration.ofMillis(3000));
+        DelegateEntity result = delegateDao.countMandates(mandateToInsert.getDelegate(), CxTypeAuthFleet.PF, null)
+                .block(Duration.ofMillis(3000));
+
+        //Then
+        try {
+            Assertions.assertNotNull( result);
+            Assertions.assertEquals(0,  result.getPendingcount());
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void countMandatesActiveOnlyPG() {
+        //Given
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(false);
+        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        DelegateEntity result = delegateDao.countMandates(mandateToInsert.getDelegate(), CxTypeAuthFleet.PG, List.of("RECLAMI"))
+                .block(Duration.ofMillis(3000));
 
         //Then
         try {

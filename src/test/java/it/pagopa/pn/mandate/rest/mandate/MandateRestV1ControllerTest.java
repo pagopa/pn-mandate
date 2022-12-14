@@ -7,7 +7,6 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;

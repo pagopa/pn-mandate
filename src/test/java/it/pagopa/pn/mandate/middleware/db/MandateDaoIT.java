@@ -152,6 +152,59 @@ public class MandateDaoIT {
         return new MandateSupportEntity(source);
     }
 
+    @Test
+    void listMandatesByDelegatePG() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        MandateEntity mandateToInsert1 = newMandate(false);
+        mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
+        mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
+        mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        MandateEntity mandateToInsert2 = newMandate(false);
+        mandateToInsert2.setDelegator(mandateToInsert2.getDelegator() + "_2");
+        mandateToInsert2.setMandateId(mandateToInsert2.getMandateId() + "_2");
+        MandateEntity mandateToInsert3 = newMandate(false);
+        mandateToInsert3.setDelegator(mandateToInsert3.getDelegator() + "_3");
+        mandateToInsert3.setMandateId(mandateToInsert3.getMandateId() + "_3");
+        mandateToInsert3.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+            testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            mandateDao.createMandate(mandateToInsert2).block(d);
+            testDao.delete(mandateToInsert3.getDelegator(), mandateToInsert3.getSk());
+            mandateDao.createMandate(mandateToInsert3).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, null, CxTypeAuthFleet.PG,List.of("RECLAMI")).collectList().block(d);
+
+        //Then
+        try {
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals(4, results.size());
+            Assertions.assertTrue(results.contains(mandateToInsert));
+            Assertions.assertTrue(results.contains(mandateToInsert1));
+            Assertions.assertTrue(results.contains(mandateToInsert2));
+            Assertions.assertTrue(results.contains(mandateToInsert3));
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+                testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+                testDao.delete(mandateToInsert3.getDelegator(), mandateToInsert3.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
 
     @Test
     void listMandatesByDelegate() {

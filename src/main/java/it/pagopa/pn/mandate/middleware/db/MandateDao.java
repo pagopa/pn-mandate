@@ -48,6 +48,8 @@ import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 @Import(PnAuditLogBuilder.class)
 public class MandateDao extends BaseDao {
 
+    private static final String AND = " AND ";
+
     private final PnAuditLogBuilder auditLogBuilder;
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
     DynamoDbAsyncClient dynamoDbAsyncClient;
@@ -88,8 +90,7 @@ public class MandateDao extends BaseDao {
         log.info("listMandatesByDelegate uid={} status={}", delegateInternaluserid, status);
 
         QueryConditional queryConditional = QueryConditional.sortLessThanOrEqualTo(getKeyBuild(delegateInternaluserid, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)));
-        if (status != null)
-        {
+        if (status != null) {
                 queryConditional = QueryConditional.keyEqualTo(getKeyBuild(delegateInternaluserid, status));    // si noti keyEqualTo al posto di sortLessThanOrEqualTo
         }        
 
@@ -100,14 +101,13 @@ public class MandateDao extends BaseDao {
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
         String expression = getValidToFilterExpression();
 
-        if (mandateId != null)
-        {
+        if (mandateId != null) {
             expressionValues.put(":mandateId", AttributeValue.builder().s(mandateId).build());
-            expression += "  AND " + getMandateFilterExpression();
+            expression += AND + getMandateFilterExpression();
         }
 
-        if(xPagopaPnCxType.equals(CxTypeAuthFleet.PG) && cxGroups!=null && !cxGroups.isEmpty()){
-            expression += " AND " + buildExpressionGroupFilter(cxGroups, expressionValues);
+        if (CxTypeAuthFleet.PG.equals(xPagopaPnCxType) && cxGroups != null && !cxGroups.isEmpty()) {
+            expression += AND + buildExpressionGroupFilter(cxGroups, expressionValues);
         }
 
         log.info("expression: {}", expression);
@@ -166,7 +166,7 @@ public class MandateDao extends BaseDao {
         if (mandateId != null)
         {
             expressionValues.put(":mandateId", AttributeValue.builder().s(mandateId).build());
-            filterexp += " AND " + getMandateFilterExpression();
+            filterexp += AND + getMandateFilterExpression();
         }
 
         Expression exp = Expression.builder()                
@@ -541,7 +541,7 @@ public class MandateDao extends BaseDao {
                 .builder()
                 .select(Select.COUNT)
                 .tableName(table)
-                .filterExpression(getValidToFilterExpression() + " AND " + getStatusFilterExpression(true) + " AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)")
+                .filterExpression(getValidToFilterExpression() + AND + getStatusFilterExpression(true) + " AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)")
                 .keyConditionExpression(MandateEntity.COL_PK + " = :delegator AND begins_with(" + MandateEntity.COL_SK + ", :mandateprefix)")
                 .expressionAttributeValues(expressionValues)
                 .build();

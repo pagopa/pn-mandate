@@ -36,11 +36,11 @@ public class MandateEntity {
     public static final String COL_S_VALIDATIONCODE = "s_validationcode";
     public static final String COL_A_VISIBILITYIDS = "a_visibilityids";
     public static final String COL_I_TTL = "i_ttl";
+    public static final String COL_A_GROUPS = "a_groups";
 
-    public MandateEntity(String delegator, String mandateid)
-    {
+    public MandateEntity(String delegator, String mandateId) {
         this.setDelegator(delegator);
-        this.setMandateId(mandateid);
+        this.setMandateId(mandateId);
     }
 
     @DynamoDbAttribute(COL_S_MANDATEID)
@@ -72,6 +72,7 @@ public class MandateEntity {
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_S_VALIDATIONCODE)}))  private String validationcode;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_A_VISIBILITYIDS)}))  private Set<String> visibilityIds;
 
+    @Getter(onMethod = @__({@DynamoDbAttribute(COL_A_GROUPS)})) private Set<String> groups;
 
     // per lo storico e per la struttura dati di appoggio
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_TTL)}))  private Long ttl;

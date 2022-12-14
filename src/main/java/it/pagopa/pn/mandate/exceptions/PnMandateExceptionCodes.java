@@ -10,4 +10,5 @@ public class PnMandateExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_CODE_MANDATE_NOTACCEPTABLE = "PN_MANDATE_NOTACCEPTABLE";
     public static final String ERROR_CODE_MANDATE_DELEGATE_HIMSELF = "PN_MANDATE_DELEGATEHIMSELF";
     public static final String ERROR_CODE_INVALID_VERIFICATION_CODE = "PN_MANDATE_INVALIDVERIFICATIONCODE";
+    public static final String ERROR_CODE_FORBIDDEN = "PN_MANDATE_FORBIDDEN";
 }

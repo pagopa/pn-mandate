@@ -521,7 +521,8 @@ class MandateServiceTest {
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
 
         //When
-        List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate()).collectList().block(d);
+        List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate(), CxTypeAuthFleet.PF, null)
+                .collectList().block(d);
 
         //Then
         assertNotNull(result);
@@ -572,7 +573,8 @@ class MandateServiceTest {
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
 
         //When
-        List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate()).collectList().block(d);
+        List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate(), CxTypeAuthFleet.PF, null)
+                .collectList().block(d);
 
         //Then
         assertNotNull(result);
@@ -632,7 +634,8 @@ class MandateServiceTest {
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
 
         //When
-        List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate()).collectList().block(d);
+        List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate(), CxTypeAuthFleet.PF, null)
+                .collectList().block(d);
 
         //Then
         assertNotNull(result);
@@ -680,7 +683,7 @@ class MandateServiceTest {
 
         //When
         String delegate = entity.getDelegate();
-        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mandateService.listMandatesByDelegate("INVALID", delegate));
+        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mandateService.listMandatesByDelegate("INVALID", delegate, CxTypeAuthFleet.PF, null));
     }
 
     @Test
@@ -722,7 +725,8 @@ class MandateServiceTest {
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
 
         //When
-        List<MandateDto> result = mandateService.listMandatesByDelegator(entity.getDelegate()).collectList().block(d);
+        List<MandateDto> result = mandateService.listMandatesByDelegator(entity.getDelegate(), CxTypeAuthFleet.PF, null, null)
+                .collectList().block(d);
 
         //Then
         assertNotNull(result);
@@ -735,11 +739,14 @@ class MandateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        when(mandateDao.rejectMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
+        when(mandateDao.rejectMandate(Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When
-        assertDoesNotThrow(() -> {mandateService.rejectMandate(mandateEntity.getMandateId(), mandateEntity.getDelegate()).block(d);});
+        assertDoesNotThrow(() -> {
+            mandateService.rejectMandate(mandateEntity.getMandateId(), mandateEntity.getDelegate(), CxTypeAuthFleet.PF, null, null)
+                    .block(d);
+        });
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -750,12 +757,12 @@ class MandateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        when(mandateDao.rejectMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
+        when(mandateDao.rejectMandate(Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When
         String delegate = mandateEntity.getDelegate();
-        assertThrows(PnMandateNotFoundException.class, () -> mandateService.rejectMandate(null, delegate));
+        assertThrows(PnMandateNotFoundException.class, () -> mandateService.rejectMandate(null, delegate, CxTypeAuthFleet.PF, null, null));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -766,11 +773,14 @@ class MandateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        when(mandateDao.revokeMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
+        when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When
-        assertDoesNotThrow(() -> {mandateService.revokeMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator()).block(d);});
+        assertDoesNotThrow(() -> {
+            mandateService.revokeMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator(), CxTypeAuthFleet.PF, null, null)
+                    .block(d);
+        });
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -781,12 +791,12 @@ class MandateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        when(mandateDao.revokeMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
+        when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When
         String delegator = mandateEntity.getDelegator();
-        assertThrows(PnMandateNotFoundException.class, () -> mandateService.revokeMandate(null, delegator));
+        assertThrows(PnMandateNotFoundException.class, () -> mandateService.revokeMandate(null, delegator, CxTypeAuthFleet.PF, null, null));
 
         //Then
         // nothing, basta che non ci sia eccezione

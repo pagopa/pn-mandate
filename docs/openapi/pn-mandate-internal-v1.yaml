@@ -189,6 +189,8 @@ paths:
       parameters:
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
+        - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
         - name: mandateId
           in: path
           required: true
@@ -214,6 +216,8 @@ paths:
       parameters:
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
+        - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
         - name: mandateId
           in: path
           required: true
@@ -293,7 +297,7 @@ components:
       name: x-pagopa-pn-cx-role
       in: header
       description: Ruolo (estratto da token di Self Care)
-      required: true
+      required: false
       schema:
         type: string
   schemas:

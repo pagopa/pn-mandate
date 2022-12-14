@@ -26,6 +26,7 @@ class MandateRestV1ControllerTest {
 
     public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-cx-id";
     public static final String PN_PAGOPA_CX_TYPE = "x-pagopa-pn-cx-type";
+
     @Autowired
     WebTestClient webTestClient;
 
@@ -107,20 +108,18 @@ class MandateRestV1ControllerTest {
     void listMandatesByDelegate1() {
         //Given
         String url = "/mandate/api/v1/mandates-by-delegate";
-        List<MandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoIT.newMandate(true))
-        );
+        List<MandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
 
         //When
-        Mockito.when( mandateService.listMandatesByDelegate( Mockito.any(), Mockito.any() ))
-                .thenReturn(Flux.fromIterable(mandateDtoList ));
+        Mockito.when(mandateService.listMandatesByDelegate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Flux.fromIterable(mandateDtoList));
 
         //Then
         webTestClient.get()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
-                .header( PN_PAGOPA_CX_TYPE, "PF")
+                .header(PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk().expectBodyList(MandateDto.class);
     }
@@ -129,20 +128,18 @@ class MandateRestV1ControllerTest {
     void listMandatesByDelegator1() {
         //Given
         String url = "/mandate/api/v1/mandates-by-delegator";
-        List<MandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoIT.newMandate(true))
-        );
+        List<MandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
 
         //When
-        Mockito.when( mandateService.listMandatesByDelegator( Mockito.any()))
-                .thenReturn(Flux.fromIterable(mandateDtoList ));
+        Mockito.when(mandateService.listMandatesByDelegator(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Flux.fromIterable(mandateDtoList));
 
         //Then
         webTestClient.get()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
-                .header( PN_PAGOPA_CX_TYPE, "PF")
+                .header(PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk().expectBodyList(MandateDto.class);
     }
@@ -154,15 +151,15 @@ class MandateRestV1ControllerTest {
                 .replace("{mandateId}", "mandateId12345");
 
         //When
-        Mockito.when( mandateService.rejectMandate( Mockito.any(), Mockito.any()))
+        Mockito.when(mandateService.rejectMandate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(Mono.empty());
 
         //Then
         webTestClient.patch()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
-                .header( PN_PAGOPA_CX_TYPE, "PF")
+                .header(PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isNoContent();
     }
@@ -174,15 +171,15 @@ class MandateRestV1ControllerTest {
                 .replace("{mandateId}", "mandateId12345");
 
         //When
-        Mockito.when( mandateService.revokeMandate( Mockito.any(), Mockito.any()))
+        Mockito.when(mandateService.revokeMandate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(Mono.just(""));
 
         //Then
         webTestClient.patch()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
-                .header( PN_PAGOPA_CX_TYPE, "PF")
+                .header(PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isNoContent();
     }

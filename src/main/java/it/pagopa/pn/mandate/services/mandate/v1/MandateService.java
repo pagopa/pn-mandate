@@ -216,7 +216,6 @@ public class MandateService  {
      *  (3) risolvere internalId del delegante (il delegato sono io, e non serve popolarlo) nel relativo microservizio
      *  (4) risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
      *
-     *
      * @param status stato per il filtro
      * @param internaluserId iuid del delegato
      * @return deleghe
@@ -342,34 +341,41 @@ public class MandateService  {
     }
 
     /**
-     * Rifiuta una delega
+     * Rifiuta una delega. Per una PG solo l'amministratore può rifiutare una delega.
      *
      * @param mandateId id della delega
-     * @param internaluserId iuid del delegato
+     * @param internalUserId iuid del delegato
+     * @param pnCxRole ruolo dell'utente
+     * @param pnCxGroups gruppi a cui appartiene l'utente
+     * @param pnCxType tipo di utente
      * @return void
      */
-    public Mono<Void> rejectMandate(String mandateId, String internaluserId) {
-        if (mandateId == null)
-            throw  new PnMandateNotFoundException();
-
-        return mandateDao.rejectMandate(internaluserId, mandateId)
+    public Mono<Void> rejectMandate(String mandateId, String internalUserId, CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
+        if (mandateId == null) {
+            throw new PnMandateNotFoundException();
+        }
+        return PgUtils.validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
+                .flatMap(o -> mandateDao.rejectMandate(internalUserId, mandateId))
                 .then(this.pnDatavaultClient.deleteMandateById(mandateId));
     }
 
     /**
-     * Revoca una delega
+     * Revoca una delega. Per una PG solo l'amministratore può revocare una delega.
      *
      * @param mandateId id della delega
-     * @param internaluserId iuid del delegante
+     * @param internalUserId iuid del delegante
+     * @param pnCxRole ruolo dell'utente
+     * @param pnCxGroups gruppi a cui appartiene l'utente
+     * @param pnCxType tipo di utente
      * @return void
      */
-    public Mono<Object> revokeMandate(String mandateId, String internaluserId) {
-        if (mandateId == null)
-            throw  new PnMandateNotFoundException();
-
-        return mandateDao.revokeMandate(internaluserId, mandateId)
-                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)
-                ,(r, d) -> d);
+    public Mono<Object> revokeMandate(String mandateId, String internalUserId, CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
+        if (mandateId == null) {
+            throw new PnMandateNotFoundException();
+        }
+        return PgUtils.validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
+                .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId))
+                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> d);
     }
 
     /**

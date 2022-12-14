@@ -239,6 +239,7 @@ paths:
       parameters:
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
         - name: status
           in: query
           schema:
@@ -269,6 +270,8 @@ paths:
       parameters:                                                               # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
+        - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
       responses:
         '200':
           description: OK
@@ -285,6 +288,14 @@ paths:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
 components:
+  parameters:
+    cxRoleAuthFleet:
+      name: x-pagopa-pn-cx-role
+      in: header
+      description: Ruolo (estratto da token di Self Care)
+      required: true
+      schema:
+        type: string
   schemas:
     InternalMandateDto:                                                               # NO EXTERNAL
       type: object                                                                    # NO EXTERNAL

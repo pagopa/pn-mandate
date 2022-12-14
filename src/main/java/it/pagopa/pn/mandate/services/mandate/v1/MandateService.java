@@ -12,12 +12,10 @@ import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.PgUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -288,58 +286,59 @@ public class MandateService  {
     }
 
     /**
-     *  il metodo si occupa di tornare la lista delle deleghe per delegato.
+     *  Il metodo si occupa di tornare la lista delle deleghe per delegante.
      *  Gli step sono:
+     *  (0) validazione accesso per le PG (solo gli amministratori possono visualizzare le deleghe dove la PG è delegante)
      *  (1) recuperare la lista delle entity da db
      *  (2) converto entity in dto
      *  (3) recupero le info dei DELEGATI, eseguendo una richiesta con la lista degli id delle deleghe
      *  (4) risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
      *
-     * @param internaluserId iuid del delegante
+     * @param internalUserId iuid del delegante
+     * @param pnCxType tipo di utente
+     * @param pnCxRole ruolo dell'utente
+     * @param pnCxGroups gruppi a cui appartiene l'utente
      * @return deleghe
      */
-    public Flux<MandateDto> listMandatesByDelegator(String internaluserId) {
+    public Flux<MandateDto> listMandatesByDelegator(String internalUserId, CxTypeAuthFleet pnCxType, List<String> pnCxGroups, String pnCxRole) {
+        return PgUtils.validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups) // (0)
+                .flatMapMany(o -> mandateDao.listMandatesByDelegator(internalUserId, null, null))    // (1)
+                .doOnNext(mand -> log.info("listMandatesByDelegator found mandate={}", mand))
+                .map(mandateEntityMandateDtoMapper::toDto)  // (2)
+                .collectList()                                                        // (3)
+                .zipWhen(dtos -> {
+                            if (!dtos.isEmpty()) {
+                                // genero la lista degli id delega
+                                List<String> mandateIds = new ArrayList<>();
+                                dtos.forEach(dto -> mandateIds.add(dto.getMandateId()));
 
-        return mandateDao.listMandatesByDelegator(internaluserId, null, null)    // (1)
-            .doOnNext(mand -> log.info("listMandatesByDelegator found mandate={}",mand))
-            .map(mandateEntityMandateDtoMapper::toDto)  // (2)
-            .collectList()                                                        // (3)
-            .zipWhen(dtos -> {
-                        if (!dtos.isEmpty())
-                        {
-                            // genero la lista degli id delega
-                            List<String> mandateIds = new ArrayList<>();
-                            dtos.forEach(dto -> mandateIds.add(dto.getMandateId()));
-
-                            // ritorno la lista
-                            return this.pnDatavaultClient.getMandatesByIds(mandateIds)
-                                    .collectMap(MandateDtoDto::getMandateId, MandateDtoDto::getInfo);
-                        }
-                        else
-                            return Mono.just(new HashMap<String, DenominationDtoDto>());
-                },
-                (dtos, userinfosdtos) -> {
-
-                    for(MandateDto dto : dtos)
-                    {
-                        if (userinfosdtos.containsKey(dto.getMandateId()))
-                            updateUserDto(dto.getDelegate(), userinfosdtos.get(dto.getMandateId()));
+                                // ritorno la lista
+                                return this.pnDatavaultClient.getMandatesByIds(mandateIds)
+                                        .collectMap(MandateDtoDto::getMandateId, MandateDtoDto::getInfo);
+                            } else {
+                                return Mono.just(new HashMap<String, DenominationDtoDto>());
+                            }
+                        },
+                        (dtos, userinfosdtos) -> {
+                            for (MandateDto dto : dtos) {
+                                if (userinfosdtos.containsKey(dto.getMandateId()))
+                                    updateUserDto(dto.getDelegate(), userinfosdtos.get(dto.getMandateId()));
+                            }
+                            return dtos;
+                        })
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(ent -> {                                           // (4)
+                    if (!ent.getVisibilityIds().isEmpty()) {
+                        return pnInfoPaClient
+                                .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
+                                .flatMap(pa -> {
+                                    ent.getVisibilityIds().get(0).setName(pa.getName());
+                                    return Mono.just(ent);
+                                });
+                    } else {
+                        return Mono.just(ent);
                     }
-                    return dtos;
-                })
-            .flatMapMany(Flux::fromIterable)
-            .flatMap(ent -> {                                           // (4)
-                if (!ent.getVisibilityIds().isEmpty())
-                    return pnInfoPaClient
-                        .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
-                        .flatMap(pa -> {
-                            ent.getVisibilityIds().get(0).setName(pa.getName());
-                            return Mono.just(ent);
-                            });   
-                else
-                    return Mono.just(ent);
-            })         
-        ;
+                });
     }
 
     /**

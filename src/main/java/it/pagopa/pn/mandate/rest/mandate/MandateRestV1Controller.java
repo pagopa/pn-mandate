@@ -13,6 +13,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RestController
 public class MandateRestV1Controller  implements MandateServiceApi   {
 
@@ -47,19 +49,25 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegate1(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String status, ServerWebExchange exchange) {
-
-        return  mandateService.listMandatesByDelegate(status, xPagopaPnCxId)
-            .collectList()     
-            .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));     
+    public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegate1(String xPagopaPnCxId,
+                                                                          CxTypeAuthFleet xPagopaPnCxType,
+                                                                          List<String> xPagopaPnCxGroups,
+                                                                          String status,
+                                                                          ServerWebExchange exchange) {
+        return mandateService.listMandatesByDelegate(status, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups)
+                .collectList()
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegator1(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, ServerWebExchange exchange) {
-
-        return  mandateService.listMandatesByDelegator(xPagopaPnCxId)
-            .collectList()     
-            .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));     
+    public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegator1(String xPagopaPnCxId,
+                                                                           CxTypeAuthFleet xPagopaPnCxType,
+                                                                           String xPagopaPnCxRole,
+                                                                           List<String> xPagopaPnCxGroups,
+                                                                           ServerWebExchange exchange) {
+        return mandateService.listMandatesByDelegator(xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole)
+                .collectList()
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
     }
 
     @Override

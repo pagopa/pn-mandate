@@ -89,6 +89,7 @@ Parameters:
 
   AlbSecurityGroup:
     Type: String
+    Description: 'Application load balancer security group'
 
 Resources:
 

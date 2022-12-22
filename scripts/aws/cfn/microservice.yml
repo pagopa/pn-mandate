@@ -87,6 +87,10 @@ Parameters:
     Type: String
     Description: 'keep track of used projects commitIds'
 
+  AlbSecurityGroup:
+    Type: String
+    Description: 'Application load balancer security group'
+
 Resources:
 
   # PN-Mandate microservice
@@ -114,6 +118,7 @@ Resources:
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
         CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
+        AlbSecurityGroup: !Ref AlbSecurityGroup
         TaskRoleManagedPolicyArn: !Ref MandateMicroserviceTaskManagedPolicy
 
   # Grant operational rights to PN-Mandate microservice

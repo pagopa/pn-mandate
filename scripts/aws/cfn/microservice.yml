@@ -119,14 +119,12 @@ Resources:
         LoadbalancerRulePriority: !Ref MicroserviceNumber
         CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
         AlbSecurityGroup: !Ref AlbSecurityGroup
+        TaskRoleManagedPolicyArn: !Ref MandateMicroserviceTaskManagedPolicy
 
   # Grant operational rights to PN-Mandate microservice
-  MandateMicroserviceTaskPolicy:
-    Type: AWS::IAM::Policy
+  MandateMicroserviceTaskManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
     Properties:
-      PolicyName: !Sub '${ProjectName}-mandate-CustomTaskPolicy'
-      Roles:
-        - !GetAtt MandateMicroservice.Outputs.TaskRoleName
       PolicyDocument:
         Version: 2012-10-17
         Statement:

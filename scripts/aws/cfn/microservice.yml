@@ -87,6 +87,10 @@ Parameters:
     Type: String
     Description: 'keep track of used projects commitIds'
 
+  AlbSecurityGroup:
+    Type: String
+    Description: 'Application load balancer security group'
+
 Resources:
 
   # PN-Mandate microservice
@@ -114,14 +118,13 @@ Resources:
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
         CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
+        AlbSecurityGroup: !Ref AlbSecurityGroup
+        TaskRoleManagedPolicyArn: !Ref MandateMicroserviceTaskManagedPolicy
 
   # Grant operational rights to PN-Mandate microservice
-  MandateMicroserviceTaskPolicy:
-    Type: AWS::IAM::Policy
+  MandateMicroserviceTaskManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
     Properties:
-      PolicyName: !Sub '${ProjectName}-mandate-CustomTaskPolicy'
-      Roles:
-        - !GetAtt MandateMicroservice.Outputs.TaskRoleName
       PolicyDocument:
         Version: 2012-10-17
         Statement:

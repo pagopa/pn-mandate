@@ -68,7 +68,7 @@ public class MandateService  {
      * @param internaluserId iuid del delegato
      * @return void
      */
-    public Mono<Object> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
+    public Mono<MandateEntity> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
             String internaluserId) {
         return acceptRequestDto
         .map(m -> {

@@ -3,6 +3,7 @@ package it.pagopa.pn.mandate.rest.mandate;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
@@ -68,7 +69,7 @@ class MandateRestV1ControllerTest {
 
         //When
         Mockito.when( mandateService.acceptMandate( Mockito.any(), Mockito.any() , Mockito.any()))
-                .thenReturn(Mono.just(""));
+                .thenReturn(Mono.just(new MandateEntity()));
 
         //Then
         webTestClient.patch()

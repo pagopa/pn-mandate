@@ -187,7 +187,6 @@ Resources:
           - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiName
         AlarmArns: !Join
           - ','
-          - - !GetAtt MandateMicroservice.Outputs.AutoScalingAlarmArn
-            - !GetAtt MandateMicroservice.Outputs.FatalLogsMetricAlarmArn
+          - - !GetAtt MandateMicroservice.Outputs.FatalLogsMetricAlarmArn
             - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiErrorAlarmArn
             - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiLatencyAlarmArn

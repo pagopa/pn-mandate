@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.utils;
 
+import lombok.EqualsAndHashCode;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+@EqualsAndHashCode
 public class DynamoDbEnhancedAsyncClientDecorator implements DynamoDbEnhancedAsyncClient {
 
     private final DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;

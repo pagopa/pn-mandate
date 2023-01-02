@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.utils;
 
 
+import lombok.EqualsAndHashCode;
 import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClientExtension;
@@ -13,6 +14,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import java.util.Map;
 import java.util.function.Consumer;
 
+@EqualsAndHashCode
 public class DynamoDbAsyncIndexDecorator<T> implements DynamoDbAsyncIndex<T> {
 
     private final DynamoDbAsyncIndex<T> tDynamoDbAsyncIndex;
@@ -23,7 +25,7 @@ public class DynamoDbAsyncIndexDecorator<T> implements DynamoDbAsyncIndex<T> {
 
     @Override
     public DynamoDbEnhancedClientExtension mapperExtension() {
-        return null;
+        return this.tDynamoDbAsyncIndex.mapperExtension();
     }
 
     @Override

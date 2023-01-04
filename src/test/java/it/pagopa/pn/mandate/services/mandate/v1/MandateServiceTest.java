@@ -91,7 +91,7 @@ class MandateServiceTest {
         when(mandateDao.acceptMandate (Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
 
         //When
-        Mono<Object> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
+        Mono<MandateEntity> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate());
         assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(d));
 
@@ -110,7 +110,7 @@ class MandateServiceTest {
         when(mandateDao.acceptMandate (Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenThrow(new PnInvalidVerificationCodeException());
 
         //When
-        Mono<Object> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
+        Mono<MandateEntity> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate());
         assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(d));
 
@@ -130,7 +130,7 @@ class MandateServiceTest {
         when(mandateDao.acceptMandate (Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenThrow(new PnMandateNotFoundException());
 
         //When
-        Mono<Object> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
+        Mono<MandateEntity> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate());
         assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
 
@@ -151,7 +151,7 @@ class MandateServiceTest {
         //When
         Mono<AcceptRequestDto> monodto = Mono.just(acceptRequestDto);
         String delegate = mandateEntity.getDelegate();
-        Mono<Object> mono = mandateService.acceptMandate(null, monodto, delegate);
+        Mono<MandateEntity> mono = mandateService.acceptMandate(null, monodto, delegate);
         Assertions.assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
 
         //Then

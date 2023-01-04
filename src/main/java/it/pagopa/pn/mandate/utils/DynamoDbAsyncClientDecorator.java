@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.utils;
 
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.paginators.QueryPublisher;
@@ -40,6 +41,7 @@ public class DynamoDbAsyncClientDecorator implements DynamoDbAsyncClient {
                 .thenApply(queryResponse -> MDCUtils.enrichWithMDC(queryResponse, copyOfContextMap));
     }
 
+    // nei metodi queryPaginator non aggiungiamo l'MDC perché il metodo richiama il metodo query che già ha l'MDC
     @Override
     public QueryPublisher queryPaginator(Consumer<QueryRequest.Builder> queryRequest) {
         return this.dynamoDbAsyncClient.queryPaginator(queryRequest);

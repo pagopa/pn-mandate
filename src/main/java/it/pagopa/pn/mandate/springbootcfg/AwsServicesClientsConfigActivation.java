@@ -19,15 +19,15 @@ public class AwsServicesClientsConfigActivation extends AwsServicesClientsConfig
     }
 
     @Bean
-    @Primary
-    DynamoDbAsyncClient dynamoDbAsyncClientDecorator(DynamoDbAsyncClient delegate) {
-        return new DynamoDbAsyncClientDecorator(delegate);
+    @Override
+    public DynamoDbAsyncClient dynamoDbAsyncClient() {
+        return new DynamoDbAsyncClientDecorator(super.dynamoDbAsyncClient());
     }
 
     @Bean
-    @Primary
-    DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClientDecorator(DynamoDbEnhancedAsyncClient delegate) {
-        return new DynamoDbEnhancedAsyncClientDecorator(delegate);
+    @Override
+    public DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient(DynamoDbAsyncClient delegate) {
+        return new DynamoDbEnhancedAsyncClientDecorator(super.dynamoDbEnhancedAsyncClient(delegate));
     }
 
 }

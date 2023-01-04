@@ -1,6 +1,5 @@
 package it.pagopa.pn.mandate.utils;
 
-import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.paginators.QueryPublisher;

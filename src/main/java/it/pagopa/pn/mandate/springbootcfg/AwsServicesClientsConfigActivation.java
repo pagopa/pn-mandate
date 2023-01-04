@@ -7,7 +7,6 @@ import it.pagopa.pn.mandate.utils.DynamoDbAsyncClientDecorator;
 import it.pagopa.pn.mandate.utils.DynamoDbEnhancedAsyncClientDecorator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 

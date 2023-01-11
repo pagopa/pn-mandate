@@ -37,7 +37,6 @@ paths:
         - name: x-pagopa-pn-cx-type
           in: query
           description: cx-type (PF, PG, PA)
-          required: true
           schema:
             $ref: '#/components/schemas/cxTypeAuthFleet'                                         # NO EXTERNAL
         - name: internaluserId                                                                    # NO EXTERNAL
@@ -80,7 +79,6 @@ paths:
         - name: x-pagopa-pn-cx-type
           in: query
           description: cx-type (PF, PG, PA)
-          required: true
           schema:
             $ref: '#/components/schemas/cxTypeAuthFleet'                                        # NO EXTERNAL
         - name: internaluserId                                                                    # NO EXTERNAL
@@ -361,6 +359,10 @@ components:
         dateto:                                                                       # NO EXTERNAL
           type: string                                                                # NO EXTERNAL
           description: ISO 8601 format                                                # NO EXTERNAL
+        groups:                                                                       # NO EXTERNAL
+          type: array                                                                 # NO EXTERNAL
+          items:                                                                      # NO EXTERNAL
+            type: string                                                              # NO EXTERNAL
     MandateCountsDto:
       type: object
       properties:

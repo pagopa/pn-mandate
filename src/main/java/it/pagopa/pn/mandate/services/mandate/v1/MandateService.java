@@ -187,7 +187,7 @@ public class MandateService  {
         if ((mandateDto.getDelegate().getPerson() == null))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATE_PERSON);
 
-        if ((mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null)
+        if ((mandateDto.getDelegate().getPerson() && (mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null))
                 || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER, DELEGATE);
         // codice verifica (5 caratteri)

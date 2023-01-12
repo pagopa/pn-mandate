@@ -187,7 +187,7 @@ public class MandateService  {
         if ((mandateDto.getDelegate().getPerson() == null))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATE_PERSON);
 
-        if ((mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null)
+        if ((mandateDto.getDelegate().getPerson() && (mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null))
                 || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER, DELEGATE);
         // codice verifica (5 caratteri)
@@ -199,8 +199,10 @@ public class MandateService  {
         if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
             && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}\\d{2}[A-Za-z]\\d{2}[A-Za-z]\\d{3}[A-Za-z]"))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
+        // le PG possono avere p.iva o CF!
         if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
-                && !mandateDto.getDelegate().getFiscalCode().matches("\\d{11}"))
+                && !(mandateDto.getDelegate().getFiscalCode().matches("\\d{11}")
+                || mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}\\d{2}[A-Za-z]\\d{2}[A-Za-z]\\d{3}[A-Za-z]")))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
 
         // la delega richiede la data di fine

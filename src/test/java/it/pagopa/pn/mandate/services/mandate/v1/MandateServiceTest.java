@@ -266,6 +266,114 @@ class MandateServiceTest {
         assertEquals(mandateDto.getVerificationCode(), result.getVerificationCode());
     }
 
+    @Test
+    void createMandate_PG() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+        entity.setDelegateisperson(false);
+        // MAndateDto come proviene da FE quindi senza alcune info
+        final MandateDto mandateDto = new MandateDto();
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDto.setVerificationCode(entity.getValidationcode());
+        mandateDto.setVisibilityIds(new ArrayList<>());
+        mandateDto.setDelegate(new UserDto());
+        mandateDto.getDelegate().setCompanyName("mario srl");
+        mandateDto.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
+
+        final MandateDto mandateDtoRes = new MandateDto();
+        mandateDtoRes.setMandateId(entity.getMandateId());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
+        mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRes.setVerificationCode(entity.getValidationcode());
+        mandateDtoRes.setVisibilityIds(new ArrayList<>());
+        mandateDtoRes.setDelegate(new UserDto());
+        mandateDtoRes.getDelegate().setCompanyName("mario srl");
+        mandateDtoRes.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
+
+        List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
+        MandateDtoDto mandateDtoDto = new MandateDtoDto();
+        mandateDtoDto.mandateId(entity.getMandateId());
+        DenominationDtoDto denominationDtoDto = new DenominationDtoDto();
+        denominationDtoDto.setDestBusinessName("mario srl");
+        mandateDtoDto.setInfo(denominationDtoDto);
+        resgetmandatesbyid.add(mandateDtoDto);
+
+
+        when(mandateDao.createMandate (Mockito.any())).thenReturn(Mono.just(entity));
+        when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
+        when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(),  Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
+        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
+        when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
+        when(mapper.toEntity(Mockito.any())).thenReturn(entity);
+        when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+
+        //When
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true).block(d);
+
+        //Then
+        assertNotNull(result);
+        assertNotNull(result.getMandateId());
+        assertNotNull(result.getStatus());
+        assertEquals(mandateDto.getVerificationCode(), result.getVerificationCode());
+    }
+
+
+    @Test
+    void createMandate_PG_piva() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+        entity.setDelegateisperson(false);
+        // MAndateDto come proviene da FE quindi senza alcune info
+        final MandateDto mandateDto = new MandateDto();
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDto.setVerificationCode(entity.getValidationcode());
+        mandateDto.setVisibilityIds(new ArrayList<>());
+        mandateDto.setDelegate(new UserDto());
+        mandateDto.getDelegate().setCompanyName("mario srl");
+        mandateDto.getDelegate().setFiscalCode("12345678901");
+        mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
+
+        final MandateDto mandateDtoRes = new MandateDto();
+        mandateDtoRes.setMandateId(entity.getMandateId());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
+        mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRes.setVerificationCode(entity.getValidationcode());
+        mandateDtoRes.setVisibilityIds(new ArrayList<>());
+        mandateDtoRes.setDelegate(new UserDto());
+        mandateDtoRes.getDelegate().setCompanyName("mario srl");
+        mandateDtoRes.getDelegate().setFiscalCode("12345678901");
+        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
+
+        List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
+        MandateDtoDto mandateDtoDto = new MandateDtoDto();
+        mandateDtoDto.mandateId(entity.getMandateId());
+        DenominationDtoDto denominationDtoDto = new DenominationDtoDto();
+        denominationDtoDto.setDestBusinessName("mario srl");
+        mandateDtoDto.setInfo(denominationDtoDto);
+        resgetmandatesbyid.add(mandateDtoDto);
+
+
+        when(mandateDao.createMandate (Mockito.any())).thenReturn(Mono.just(entity));
+        when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
+        when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(),  Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
+        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
+        when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
+        when(mapper.toEntity(Mockito.any())).thenReturn(entity);
+        when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+
+        //When
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true).block(d);
+
+        //Then
+        assertNotNull(result);
+        assertNotNull(result.getMandateId());
+        assertNotNull(result.getStatus());
+        assertEquals(mandateDto.getVerificationCode(), result.getVerificationCode());
+    }
 
     @Test
     void createMandateWithList() {
@@ -341,6 +449,31 @@ class MandateServiceTest {
         mandateDto.getDelegate().setLastName("rossi");
         mandateDto.getDelegate().setFiscalCode("FAKEFAKEFAKE");
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
+
+        //When
+        Mono<MandateDto> monodto = Mono.just(mandateDto);
+        String delegate = entity.getDelegate();
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, true);
+        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
+
+
+        //Then
+        //nothing
+    }
+
+    @Test
+    void createMandateFailFiscalcode_PG() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+        // MAndateDto come proviene da FE quindi senza alcune info
+        final MandateDto mandateDto = new MandateDto();
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDto.setVerificationCode(entity.getValidationcode());
+        mandateDto.setVisibilityIds(new ArrayList<>());
+        mandateDto.setDelegate(new UserDto());
+        mandateDto.getDelegate().setCompanyName("mario srl");
+        mandateDto.getDelegate().setFiscalCode("FAKEFAKEFAKE");
+        mandateDto.getDelegate().setPerson(false);
 
         //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);

@@ -13,6 +13,7 @@ import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.DelegateType;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -141,12 +142,13 @@ public class MandateDao extends BaseDao {
      * @param status stato da usare nel filtr (OPZIONALE)
      * @return lista delle deleghe
      */
-    public Flux<MandateEntity> listMandatesByDelegator(String delegatorInternaluserid, Integer status, String mandateId) {
+    public Flux<MandateEntity> listMandatesByDelegator(String delegatorInternaluserid, Integer status, String mandateId, DelegateType delegateType) {
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
         // affidamento ad indici diversi e query diverse
         // listMandatesByDelegator si affida all'ordinamento principale, che filtra per utente e delega. Lo stato va previsto a parte nell'expressionfilter
+        // Il delegateType è il tipo del delegato, utilizzato per trovare le deleghe dato il delegante restringendo la ricerca per tipo dei delegati.
         log.info("listMandatesByDelegator uid={} status={}", delegatorInternaluserid, status);
 
         int iState = StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE);
@@ -167,6 +169,11 @@ public class MandateDao extends BaseDao {
         {
             expressionValues.put(":mandateId", AttributeValue.builder().s(mandateId).build());
             filterexp += AND + getMandateFilterExpression();
+        }
+
+        if (delegateType != null) {
+            filterexp += AND + getDelegateIsPersonExpression();
+            expressionValues.put(":isPerson", AttributeValue.builder().bool(DelegateType.PF == delegateType).build());
         }
 
         Expression exp = Expression.builder()                
@@ -581,6 +588,10 @@ public class MandateDao extends BaseDao {
 
     private String getMandateFilterExpression() {
         return "(" + MandateEntity.COL_S_MANDATEID + " = :mandateId) ";
+    }
+
+    private String getDelegateIsPersonExpression() {
+        return "(" + MandateEntity.COL_B_DELEGATEISPERSON + " = :isPerson) ";
     }
     //#endregion
 }

@@ -557,7 +557,9 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), null, null).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), null, null, null)
+                .collectList()
+                .block(d);
 
         //Then
         try {
@@ -611,7 +613,9 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), null, mandateToInsert1.getMandateId()).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), null, mandateToInsert1.getMandateId(), null)
+                .collectList()
+                .block(d);
 
         //Then
         try {
@@ -662,7 +666,9 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null, null)
+                .collectList()
+                .block(d);
 
         //Then
         try {

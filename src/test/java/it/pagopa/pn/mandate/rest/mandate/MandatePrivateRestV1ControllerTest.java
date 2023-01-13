@@ -82,7 +82,7 @@ class MandatePrivateRestV1ControllerTest {
         List<InternalMandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
 
         //When
-        Mockito.when(mandatePrivateService.listMandatesByDelegator(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+        Mockito.when(mandatePrivateService.listMandatesByDelegator(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(Flux.fromIterable(mandateDtoList));
 
         //Then
@@ -104,7 +104,7 @@ class MandatePrivateRestV1ControllerTest {
         List<InternalMandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
 
         //When
-        Mockito.when(mandatePrivateService.listMandatesByDelegator(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+        Mockito.when(mandatePrivateService.listMandatesByDelegator(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(Flux.fromIterable(mandateDtoList));
 
         //Then

@@ -69,11 +69,12 @@ class MandatePrivateServiceTest {
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         List<MandateEntity> list = new ArrayList<>();
         list.add(mandateEntity);
-        when(mandateDao.listMandatesByDelegator(Mockito.same(mandateEntity.getDelegate()), any(), any())).thenReturn(Flux.fromIterable(list));
+        when(mandateDao.listMandatesByDelegator(Mockito.same(mandateEntity.getDelegate()), any(), any(), any()))
+                .thenReturn(Flux.fromIterable(list));
         when(mapper.toDto(Mockito.same(mandateEntity))).thenReturn(new InternalMandateDto());
 
         //When
-        List<InternalMandateDto> result = mandatePrivateService.listMandatesByDelegator(mandateEntity.getDelegate(), null, CxTypeAuthFleet.PF, null, null)
+        List<InternalMandateDto> result = mandatePrivateService.listMandatesByDelegator(mandateEntity.getDelegate(), null, CxTypeAuthFleet.PF, null, null, null)
                 .collectList()
                 .block(Duration.ofMillis(3000));
 
@@ -87,7 +88,7 @@ class MandatePrivateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        Mono<List<InternalMandateDto>> objectMono = mandatePrivateService.listMandatesByDelegator(mandateEntity.getDelegate(), null, CxTypeAuthFleet.PG, new ArrayList<>(), "operatore")
+        Mono<List<InternalMandateDto>> objectMono = mandatePrivateService.listMandatesByDelegator(mandateEntity.getDelegate(), null, CxTypeAuthFleet.PG, new ArrayList<>(), "operatore", null)
                 .collectList();
 
         //Then

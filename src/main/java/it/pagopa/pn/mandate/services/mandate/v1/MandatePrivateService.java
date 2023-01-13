@@ -4,6 +4,7 @@ import java.util.List;
 
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.DelegateType;
 import it.pagopa.pn.mandate.utils.PgUtils;
 import org.springframework.stereotype.Service;
 
@@ -40,13 +41,14 @@ public class MandatePrivateService {
                                                             String mandateId,
                                                             CxTypeAuthFleet xPagopaPnCxType,
                                                             List<String> cxGroups,
-                                                            String cxRole) {
+                                                            String cxRole,
+                                                            DelegateType delegateType) {
         // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE
         log.info("listing private mandates by delegate for internaluserId={} mandateId={}", internaluserId, mandateId);
 
+        Integer status = StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE);
         return PgUtils.validaAccessoOnlyAdmin(xPagopaPnCxType, cxRole, cxGroups)
-                .flatMapMany(obj ->
-                        mandateDao.listMandatesByDelegator(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE), mandateId))
+                .flatMapMany(obj -> mandateDao.listMandatesByDelegator(internaluserId, status, mandateId, delegateType))
                 .map(mandateEntityInternalMandateDtoMapper::toDto)
                 .doOnNext(mand -> log.info("listMandatesByDelegator found mandate={}", mand));
     }

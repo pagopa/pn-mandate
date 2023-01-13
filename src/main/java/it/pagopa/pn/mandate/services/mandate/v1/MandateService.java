@@ -15,7 +15,6 @@ import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
-import it.pagopa.pn.mandate.utils.PgUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -317,7 +316,7 @@ public class MandateService {
      */
     public Flux<MandateDto> listMandatesByDelegator(String internalUserId, CxTypeAuthFleet pnCxType, List<String> pnCxGroups, String pnCxRole) {
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups) // (0)
-                .flatMapMany(o -> mandateDao.listMandatesByDelegator(internalUserId, null, null))    // (1)
+                .flatMapMany(o -> mandateDao.listMandatesByDelegator(internalUserId, null, null, null))    // (1)
                 .doOnNext(mand -> log.info("listMandatesByDelegator found mandate={}", mand))
                 .map(mandateEntityMandateDtoMapper::toDto)  // (2)
                 .collectList()                                                        // (3)

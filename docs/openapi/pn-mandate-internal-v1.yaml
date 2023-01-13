@@ -33,12 +33,12 @@ paths:
         - mandate-private-service                                                                 # NO EXTERNAL
       summary: Return only active mandates for delegate, optionally filtered by single mandateId  # NO EXTERNAL
       operationId: listMandatesByDelegate                                                         # NO EXTERNAL
-      parameters:
-        - name: x-pagopa-pn-cx-type
-          in: query
-          description: cx-type (PF, PG, PA)
-          schema:
-            $ref: '#/components/schemas/cxTypeAuthFleet'                                         # NO EXTERNAL
+      parameters:                                                                                 # NO EXTERNAL
+        - name: x-pagopa-pn-cx-type                                                               # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          description: cx-type (PF, PG, PA)                                                       # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            $ref: '#/components/schemas/cxTypeAuthFleet'                                          # NO EXTERNAL
         - name: internaluserId                                                                    # NO EXTERNAL
           in: path                                                                                # NO EXTERNAL
           required: true                                                                          # NO EXTERNAL
@@ -48,12 +48,12 @@ paths:
           in: query                                                                               # NO EXTERNAL
           schema:                                                                                 # NO EXTERNAL
             type: string                                                                          # NO EXTERNAL
-        - name: x-pagopa-pn-cx-groups                                                                         # NO EXTERNAL
+        - name: x-pagopa-pn-cx-groups                                                             # NO EXTERNAL
           in: query                                                                               # NO EXTERNAL
           schema:                                                                                 # NO EXTERNAL
-            type: array
-            items:
-              type: string
+            type: array                                                                           # NO EXTERNAL
+            items:                                                                                # NO EXTERNAL
+              type: string                                                                        # NO EXTERNAL
       responses:                                                                                  # NO EXTERNAL
         '200':                                                                                    # NO EXTERNAL
           description: OK                                                                         # NO EXTERNAL
@@ -75,12 +75,12 @@ paths:
         - mandate-private-service                                                                 # NO EXTERNAL
       summary: Return only active mandates for delegator, optionally filtered by single mandateId # NO EXTERNAL
       operationId: listMandatesByDelegator                                                        # NO EXTERNAL
-      parameters:
-        - name: x-pagopa-pn-cx-type
-          in: query
-          description: cx-type (PF, PG, PA)
-          schema:
-            $ref: '#/components/schemas/cxTypeAuthFleet'                                        # NO EXTERNAL
+      parameters:                                                                                 # NO EXTERNAL
+        - name: x-pagopa-pn-cx-type                                                               # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          description: cx-type (PF, PG, PA)                                                       # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            $ref: '#/components/schemas/cxTypeAuthFleet'                                          # NO EXTERNAL
         - name: internaluserId                                                                    # NO EXTERNAL
           in: path                                                                                # NO EXTERNAL
           required: true                                                                          # NO EXTERNAL
@@ -90,16 +90,21 @@ paths:
           in: query                                                                               # NO EXTERNAL
           schema:                                                                                 # NO EXTERNAL
             type: string                                                                          # NO EXTERNAL
-        - name: x-pagopa-pn-cx-groups                                                                         # NO EXTERNAL
+        - name: x-pagopa-pn-cx-groups                                                             # NO EXTERNAL
           in: query                                                                               # NO EXTERNAL
-          schema:
-            type: array
-            items:
-              type: string
+          schema:                                                                                 # NO EXTERNAL
+            type: array                                                                           # NO EXTERNAL
+            items:                                                                                # NO EXTERNAL
+              type: string                                                                        # NO EXTERNAL
         - name: cx-role                                                                           # NO EXTERNAL
           in: query                                                                               # NO EXTERNAL
-          schema:
-            type: string
+          schema:                                                                                 # NO EXTERNAL
+            type: string                                                                          # NO EXTERNAL
+        - name: delegateType                                                                      # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          description: delegate type (PF, PG)                                                     # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            $ref: '#/components/schemas/delegateType'                                             # NO EXTERNAL
       responses:                                                                                  # NO EXTERNAL
         '200':                                                                                    # NO EXTERNAL
           description: OK                                                                         # NO EXTERNAL
@@ -334,12 +339,17 @@ components:
       schema:
         type: string
   schemas:
-    cxTypeAuthFleet:
-      type: string
-      enum:
-        - PG
-        - PF
-        - PA
+    cxTypeAuthFleet:                                                                  # NO EXTERNAL
+      type: string                                                                    # NO EXTERNAL
+      enum:                                                                           # NO EXTERNAL
+        - PG                                                                          # NO EXTERNAL
+        - PF                                                                          # NO EXTERNAL
+        - PA                                                                          # NO EXTERNAL
+    delegateType:                                                                     # NO EXTERNAL
+      type: string                                                                    # NO EXTERNAL
+      enum:                                                                           # NO EXTERNAL
+        - PG                                                                          # NO EXTERNAL
+        - PF                                                                          # NO EXTERNAL
     InternalMandateDto:                                                               # NO EXTERNAL
       type: object                                                                    # NO EXTERNAL
       properties:                                                                     # NO EXTERNAL

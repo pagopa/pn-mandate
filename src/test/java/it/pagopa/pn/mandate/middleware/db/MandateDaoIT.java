@@ -16,12 +16,10 @@ import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 
@@ -31,7 +29,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@ExtendWith(SpringExtension.class)
 @SpringBootTest
 @Import(LocalStackTestConfig.class)
 public class MandateDaoIT {
@@ -775,7 +772,7 @@ public class MandateDaoIT {
         }
 
         //When
-        Mono<Void> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(), null, CxTypeAuthFleet.PF);
+        Mono<MandateEntity> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(), null, CxTypeAuthFleet.PF);
         assertThrows(PnInternalException.class, () -> mono.block(d));
 
 
@@ -801,7 +798,7 @@ public class MandateDaoIT {
         }
 
         //When
-        Mono<Void> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), wrongcode, null, CxTypeAuthFleet.PF);
+        Mono<MandateEntity> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), wrongcode, null, CxTypeAuthFleet.PF);
         assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(d));
 
 
@@ -829,7 +826,7 @@ public class MandateDaoIT {
         }
 
         //When
-        Mono<Void> mono = mandateDao.acceptMandate(wrongdelegate, mandateToInsert.getMandateId(), code, null, CxTypeAuthFleet.PF);
+        Mono<MandateEntity> mono = mandateDao.acceptMandate(wrongdelegate, mandateToInsert.getMandateId(), code, null, CxTypeAuthFleet.PF);
         assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
 
 

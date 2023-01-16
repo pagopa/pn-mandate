@@ -72,8 +72,11 @@ public class MandateService {
      * @param internaluserId   iuid del delegato
      * @return void
      */
-    public Mono<Object> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
-                                      String internaluserId, CxTypeAuthFleet xPagopaPnCxType, List<String> cxGroups, String cxRole) {
+    public Mono<MandateEntity> acceptMandate(String mandateId,
+                                             Mono<AcceptRequestDto> acceptRequestDto,
+                                             String internaluserId,
+                                             CxTypeAuthFleet xPagopaPnCxType,
+                                             List<String> cxGroups, String cxRole) {
         return validaAccessoOnlyAdmin(xPagopaPnCxType, cxRole, cxGroups)
                 .flatMap(obj -> acceptRequestDto
                         .map(m -> {
@@ -91,7 +94,8 @@ public class MandateService {
                                     log.info("accepting mandateobj:{} vercode:{}", mandateId, m);
                                 return mandateDao
                                         .acceptMandate(internaluserId, mandateId, m.getVerificationCode(), m.getGroups(), xPagopaPnCxType)
-                                        .then(Mono.defer(() -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.ACCEPT)));
+                                        .flatMap(entity -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.ACCEPT)
+                                                .then(Mono.just(entity)));
                             } catch (Exception ex) {
                                 throw Exceptions.propagate(ex);
                             }
@@ -205,7 +209,7 @@ public class MandateService {
         if ((mandateDto.getDelegate().getPerson() == null))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATE_PERSON);
 
-        if ((mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getFirstName() == null || mandateDto.getDelegate().getLastName() == null)
+        if ((mandateDto.getDelegate().getPerson() && (mandateDto.getDelegate().getFirstName() == null || mandateDto.getDelegate().getLastName() == null))
                 || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER, DELEGATE);
         // codice verifica (5 caratteri)
@@ -217,8 +221,10 @@ public class MandateService {
         if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
                 && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}\\d{2}[A-Za-z]\\d{2}[A-Za-z]\\d{3}[A-Za-z]"))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
+        // le PG possono avere p.iva o CF!
         if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
-                && !mandateDto.getDelegate().getFiscalCode().matches("\\d{11}"))
+                && !(mandateDto.getDelegate().getFiscalCode().matches("\\d{11}")
+                || mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}\\d{2}[A-Za-z]\\d{2}[A-Za-z]\\d{3}[A-Za-z]")))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
 
         // la delega richiede la data di fine
@@ -302,8 +308,6 @@ public class MandateService {
                     else
                         return Mono.just(ent);
                 });
-
-
     }
 
     /**

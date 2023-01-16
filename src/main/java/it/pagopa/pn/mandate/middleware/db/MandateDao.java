@@ -51,7 +51,6 @@ public class MandateDao extends BaseDao {
 
     private static final String AND = " AND ";
 
-    private final PnAuditLogBuilder auditLogBuilder;
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
     DynamoDbAsyncClient dynamoDbAsyncClient;
     DynamoDbAsyncTable<MandateEntity> mandateTable;
@@ -62,15 +61,13 @@ public class MandateDao extends BaseDao {
 
     public MandateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                        DynamoDbAsyncClient dynamoDbAsyncClient,
-                       PnMandateConfig awsConfigs,
-                       PnAuditLogBuilder pnAuditLogBuilder) {
+                       PnMandateConfig awsConfigs) {
         this.mandateTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTable(), TableSchema.fromBean(MandateEntity.class));
         this.mandateSupportTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTable(), TableSchema.fromBean(MandateSupportEntity.class));
         this.mandateHistoryTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTableHistory(), TableSchema.fromBean(MandateEntity.class));
         this.table = awsConfigs.getDynamodbTable();
         this.dynamoDbAsyncClient = dynamoDbAsyncClient;
         this.dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient;
-        this.auditLogBuilder = pnAuditLogBuilder;
     }
 
     //#region public methods
@@ -207,69 +204,77 @@ public class MandateDao extends BaseDao {
      * @param verificationCode codice di verifica della relativo all'accettazione
      * @return void
      */
-    public Mono<Void> acceptMandate(String delegateInternaluserid, String mandateId, String verificationCode,
-                                    List<String> groups, CxTypeAuthFleet cxTypeAuthFleet)
-    {
+    public Mono<MandateEntity> acceptMandate(String delegateInternaluserid,
+                                             String mandateId,
+                                             String verificationCode,
+                                             List<String> groups,
+                                             CxTypeAuthFleet cxTypeAuthFleet) {
         String logMessage = String.format("acceptMandate for delegate uid=%s mandateid=%s verificationCode=%s", delegateInternaluserid, mandateId, verificationCode); 
-        PnAuditLogEvent logEvent = auditLogBuilder
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
-                .uid(delegateInternaluserid)
                 .build();
 
         logEvent.log();
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
-                .flatMap(mandate -> {
-                    if (!mandate.getValidationcode().equals(verificationCode))
-                        throw new PnInvalidVerificationCodeException();
-
-                    log.info("retrieved mandateobj={}", mandate);
-                    if(CxTypeAuthFleet.PG.equals(cxTypeAuthFleet))
-                        mandate.setGroups(groups!=null?Set.copyOf(groups):Set.of());
-
-                    if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING))
-                    {
-                        // aggiorno lo stato, solo se era in pending. NB: non do errore
-                        mandate.setAccepted(Instant.now());
-                        mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE));
-                    }
-                    else if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
-                        log.info("mandate is already ACTIVE accepting silently");
-                    else
-                    {
-                        // non dovrebbe veramente succedere, perchè vuol dire che è rimasta una delega scaduta e che qualcuno ci ha pure chiesto l'accettazione, cmq tiro eccezione
-                        log.warn("mandate is not PENDING or ACTIVE, throw error");
-                        throw new PnInternalException("accept a expired mandate is not permitted", PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOTACCEPTABLE);
-                    }
-                    // Se la delega prevede una scadenza impostata dall'utente, creo un record di supporto con TTL
-                    // e quando questo verrà cancellato, dynamoDB invocherà la nostra logica che andrà a spostare il record principale nello storico.
-                    // Questo perchè se mettevo il TTL nel record principale e per qualche anomalia non veniva gestito l'evento di cancellazione
-                    // avrei perso definitivamente il record della delega (scaduta, ma che va mantenuta per 10 anni nello storico)
-                    TransactWriteItemsEnhancedRequest.Builder transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-                    if (mandate.getValidto() != null) {
-                        MandateSupportEntity support = new MandateSupportEntity(mandate);
-                        transactionBuilder.addPutItem(mandateSupportTable, TransactPutItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build());
-                        log.info("mandate has validto setted, creating also support entity for ttl expiration");
-                    }
-
-                    // aggiungo l'update delle deleghe e lancio la transazione
-                    TransactWriteItemsEnhancedRequest transaction = transactionBuilder
-                            .addUpdateItem(mandateTable, TransactUpdateItemEnhancedRequest.builder(MandateEntity.class).item(mandate).ignoreNulls(true).build())
-                            .build();
-                    
-                    return Mono.fromFuture(dynamoDbEnhancedAsyncClient.transactWriteItems(transaction).thenApply(x -> {
-                        String messageAction = String.format(
-                                "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
-                                mandate.getDelegator(), mandate.getDelegate(), mandate);
-                        logEvent.generateSuccess(messageAction).log();
-                        return mandate;
-                    })).then();
+                .doOnNext(mandate -> editMandateState(mandate, verificationCode, cxTypeAuthFleet, groups))
+                .flatMap(this::save)
+                .doOnSuccess(mandate -> {
+                    String messageAction = String.format(
+                            "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
+                            mandate.getDelegator(), mandate.getDelegate(), mandate);
+                    logEvent.generateSuccess(messageAction).log();
                 })
                 .onErrorResume(throwable -> {
                     logEvent.generateFailure(throwable.getMessage()).log();
                     return Mono.error(throwable);
                 });
+    }
 
+    private void editMandateState(MandateEntity mandate,
+                                  String verificationCode,
+                                  CxTypeAuthFleet cxTypeAuthFleet,
+                                  List<String> groups) {
+        if (!mandate.getValidationcode().equals(verificationCode)) {
+            throw new PnInvalidVerificationCodeException();
+        }
+        if (CxTypeAuthFleet.PG.equals(cxTypeAuthFleet)) {
+            mandate.setGroups(groups != null ? Set.copyOf(groups) : Set.of());
+        }
+        log.info("retrieved mandateobj={}", mandate);
+        if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING))
+        {
+            // aggiorno lo stato, solo se era in pending. NB: non do errore
+            mandate.setAccepted(Instant.now());
+            mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE));
+        }
+        else if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
+            log.info("mandate is already ACTIVE accepting silently");
+        else
+        {
+            // non dovrebbe veramente succedere, perchè vuol dire che è rimasta una delega scaduta e che qualcuno ci ha pure chiesto l'accettazione, cmq tiro eccezione
+            log.warn("mandate is not PENDING or ACTIVE, throw error");
+            throw new PnInternalException("accept a expired mandate is not permitted", PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOTACCEPTABLE);
+        }
+    }
+
+    private Mono<MandateEntity> save(MandateEntity mandate) {
+        // Se la delega prevede una scadenza impostata dall'utente, creo un record di supporto con TTL
+        // e quando questo verrà cancellato, dynamoDB invocherà la nostra logica che andrà a spostare il record principale nello storico.
+        // Questo perchè se mettevo il TTL nel record principale e per qualche anomalia non veniva gestito l'evento di cancellazione
+        // avrei perso definitivamente il record della delega (scaduta, ma che va mantenuta per 10 anni nello storico)
+        TransactWriteItemsEnhancedRequest.Builder transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
+        if (mandate.getValidto() != null) {
+            MandateSupportEntity support = new MandateSupportEntity(mandate);
+            transactionBuilder.addPutItem(mandateSupportTable, TransactPutItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build());
+            log.info("mandate has validto setted, creating also support entity for ttl expiration");
+        }
+
+        // aggiungo l'update delle deleghe e lancio la transazione
+        TransactWriteItemsEnhancedRequest transaction = transactionBuilder
+                .addUpdateItem(mandateTable, TransactUpdateItemEnhancedRequest.builder(MandateEntity.class).item(mandate).ignoreNulls(true).build())
+                .build();
+        return Mono.fromFuture(dynamoDbEnhancedAsyncClient.transactWriteItems(transaction)).thenReturn(mandate);
     }
 
     /**
@@ -291,9 +296,8 @@ public class MandateDao extends BaseDao {
         // si accetta la possibilità dell'improbabilità che arrivino 2 scritture contemporanee nel piccolo lasso di tempo tra query e update...
 
         String logMessage = String.format("rejectMandate for delegate uid=%s mandateid=%s", delegateInternaluserid, mandateId);
-        PnAuditLogEvent logEvent = auditLogBuilder
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REJECT, logMessage)
-                .uid(delegateInternaluserid)
                 .build();
         logEvent.log();
 
@@ -342,9 +346,8 @@ public class MandateDao extends BaseDao {
     public Mono<Object> revokeMandate(String delegatorInternaluserid, String mandateId)
     {
         String logMessage = String.format("revokeMandate for delegate uid=%s mandateid=%s", delegatorInternaluserid, mandateId);
-        PnAuditLogEvent logEvent = auditLogBuilder
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
-                .uid(delegatorInternaluserid)
                 .build();
 
         logEvent.log();
@@ -393,9 +396,8 @@ public class MandateDao extends BaseDao {
     public Mono<Object> expireMandate(String delegatorInternaluserid, String mandateId)
     {
         String logMessage = String.format("expireMandate for delegate uid=%s{} mandateid=%s", delegatorInternaluserid, mandateId);
-        PnAuditLogEvent logEvent = auditLogBuilder
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_EXPIRE, logMessage)
-                .uid(delegatorInternaluserid)
                 .build();
 
         logEvent.log();
@@ -429,9 +431,8 @@ public class MandateDao extends BaseDao {
      */
     public Mono<MandateEntity> createMandate(MandateEntity mandate){
         String logMessage = String.format("create mandate mandate=%s", mandate);
-        PnAuditLogEvent logEvent = auditLogBuilder
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
-                .uid(mandate.getDelegator())
                 .build();
 
         logEvent.log();

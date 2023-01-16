@@ -11,4 +11,5 @@ public class AwsServicesClientsConfigActivation extends AwsServicesClientsConfig
     public AwsServicesClientsConfigActivation(AwsConfigs props) {
         super(props, RuntimeMode.PROD);
     }
+
 }

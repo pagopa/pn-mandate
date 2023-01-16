@@ -29,7 +29,7 @@ public class MandatePrivateRestV1Controller implements MandatePrivateServiceApi 
                                                                                  String mandateId,
                                                                                  List<String> cxGroups,
                                                                                  ServerWebExchange exchange) {
-        return mandateService.listMandatesByDelegate(internaluserId, mandateId, xPagopaPnCxType, cxGroups)
+        return mandateService.listMandatesByDelegate(internaluserId, mandateId,xPagopaPnCxType, cxGroups)
                 .collectList()
                 .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
     }
@@ -45,6 +45,5 @@ public class MandatePrivateRestV1Controller implements MandatePrivateServiceApi 
         return mandateService.listMandatesByDelegator(internaluserId, mandateId, xPagopaPnCxType, cxGroups, cxRole, delegateType)
                 .collectList()
                 .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
-
     }
 }

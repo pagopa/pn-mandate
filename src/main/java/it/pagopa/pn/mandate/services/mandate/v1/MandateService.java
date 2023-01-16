@@ -12,6 +12,7 @@ import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
+import it.pagopa.pn.mandate.model.mandate.SqsToDeliveryMessageDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
@@ -32,6 +33,7 @@ import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.*;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyAdmin;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyGroupAdmin;
 
+
 @Service
 @Slf4j
 public class MandateService {
@@ -48,15 +50,18 @@ public class MandateService {
     private final UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper;
     private final PnInfoPaClient pnInfoPaClient;
     private final PnDataVaultClient pnDatavaultClient;
+    private final SqsService sqsService;
+
 
     public MandateService(MandateDao mandateDao, DelegateDao userDao, MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper,
-                          UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper, PnInfoPaClient pnInfoPaClient, PnDataVaultClient pnDatavaultClient) {
+                          UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper, PnInfoPaClient pnInfoPaClient, PnDataVaultClient pnDatavaultClient, SqsService sqsService) {
         this.mandateDao = mandateDao;
         this.userDao = userDao;
         this.mandateEntityMandateDtoMapper = mandateEntityMandateDtoMapper;
         this.userEntityMandateCountsDtoMapper = userEntityMandateCountsDtoMapper;
         this.pnInfoPaClient = pnInfoPaClient;
         this.pnDatavaultClient = pnDatavaultClient;
+        this.sqsService = sqsService;
     }
 
     /**
@@ -84,7 +89,9 @@ public class MandateService {
                             try {
                                 if (log.isInfoEnabled())
                                     log.info("accepting mandateobj:{} vercode:{}", mandateId, m);
-                                return mandateDao.acceptMandate(internaluserId, mandateId, m.getVerificationCode(), m.getGroups(), xPagopaPnCxType);
+                                return mandateDao
+                                        .acceptMandate(internaluserId, mandateId, m.getVerificationCode(), m.getGroups(), xPagopaPnCxType)
+                                        .then(Mono.defer(() -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.ACCEPT)));
                             } catch (Exception ex) {
                                 throw Exceptions.propagate(ex);
                             }
@@ -371,7 +378,8 @@ public class MandateService {
         }
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
                 .flatMap(o -> mandateDao.rejectMandate(internalUserId, mandateId))
-                .then(this.pnDatavaultClient.deleteMandateById(mandateId));
+                .then(this.pnDatavaultClient.deleteMandateById(mandateId))
+                .then(Mono.defer(() -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.REJECT)));
     }
 
     /**
@@ -390,7 +398,8 @@ public class MandateService {
         }
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
                 .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId))
-                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> d);
+                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> d)
+                .then(Mono.defer(() -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.REVOKE)));
     }
 
     /**
@@ -406,8 +415,8 @@ public class MandateService {
             throw new PnMandateNotFoundException();
 
         return mandateDao.expireMandate(internaluserId, mandateId)
-                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)
-                        , (r, d) -> d);
+                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> d)
+                .then(Mono.defer(() -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.EXPIRED)));
     }
 
     private void updateUserDto(UserDto user, DenominationDtoDto info) {
@@ -418,5 +427,10 @@ public class MandateService {
             user.setDisplayName(info.getDestName() + " " + info.getDestSurname());
         else
             user.setDisplayName(info.getDestBusinessName());
+    }
+
+    private Mono<Void> sendMessageToDelivery(String mandateId, SqsToDeliveryMessageDto.Action action) {
+        SqsToDeliveryMessageDto sqsToDeliveryMessageDto = SqsToDeliveryMessageDto.builder().action(action).mandateId(mandateId).build();
+        return sqsService.push(sqsToDeliveryMessageDto).then();
     }
 }

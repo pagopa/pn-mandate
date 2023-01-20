@@ -10,8 +10,7 @@ import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +24,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 
 import java.time.*;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -153,16 +153,21 @@ public class MandateDaoIT {
     void listMandatesByDelegatePG() {
         //Given
         MandateEntity mandateToInsert = newMandate(false);
+
         MandateEntity mandateToInsert1 = newMandate(false);
         mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
         mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
+        mandateToInsert1.setGroups(Set.of("RECLAMI"));
         mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+
         MandateEntity mandateToInsert2 = newMandate(false);
         mandateToInsert2.setDelegator(mandateToInsert2.getDelegator() + "_2");
         mandateToInsert2.setMandateId(mandateToInsert2.getMandateId() + "_2");
+
         MandateEntity mandateToInsert3 = newMandate(false);
         mandateToInsert3.setDelegator(mandateToInsert3.getDelegator() + "_3");
         mandateToInsert3.setMandateId(mandateToInsert3.getMandateId() + "_3");
+        mandateToInsert3.setGroups(Set.of("PIPPO"));
         mandateToInsert3.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
 
         try {
@@ -179,16 +184,18 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, null, CxTypeAuthFleet.PG,List.of("RECLAMI")).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, null, CxTypeAuthFleet.PG, List.of("RECLAMI"))
+                .collectList()
+                .block(d);
 
         //Then
         try {
             Assertions.assertNotNull(results);
-            Assertions.assertEquals(4, results.size());
-            Assertions.assertTrue(results.contains(mandateToInsert));
+            Assertions.assertEquals(1, results.size());
+            Assertions.assertFalse(results.contains(mandateToInsert));
             Assertions.assertTrue(results.contains(mandateToInsert1));
-            Assertions.assertTrue(results.contains(mandateToInsert2));
-            Assertions.assertTrue(results.contains(mandateToInsert3));
+            Assertions.assertFalse(results.contains(mandateToInsert2));
+            Assertions.assertFalse(results.contains(mandateToInsert3));
         } catch (Exception e) {
             throw new RuntimeException();
         } finally {
@@ -690,6 +697,48 @@ public class MandateDaoIT {
     }
 
     @Test
+    void listMandatesByDelegatorWithType() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        mandateToInsert.setDelegateisperson(true);
+        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        MandateEntity mandateToInsert1 = newMandate(false);
+        mandateToInsert1.setDelegateisperson(false);
+        mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        List<MandateEntity> results = mandateDao.listMandatesByDelegator(mandateToInsert.getDelegator(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null, DelegateType.PG)
+                .collectList()
+                .block(d);
+
+        //Then
+        try {
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals( 1, results.size());
+            Assertions.assertFalse(results.contains(mandateToInsert));
+            Assertions.assertTrue(results.contains(mandateToInsert1));
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
     void acceptMandateNoExpiration() {
         //Given
         MandateEntity mandateToInsert = newMandate(false);
@@ -1106,5 +1155,38 @@ public class MandateDaoIT {
         //When
         Mono<Object> mono = mandateDao.expireMandate("fake", "fake");
         assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
+    }
+
+    @Test
+    void listMandatesByDelegators() {
+        MandateEntity mandateToInsert = newMandate(true);
+        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        MandateByDelegatorRequestDto requestDto = new MandateByDelegatorRequestDto();
+        requestDto.setDelegatorId(mandateToInsert.getDelegator());
+        requestDto.setMandateId(mandateToInsert.getMandateId());
+
+        try {
+            List<MandateEntity> result = mandateDao.listMandatesByDelegators(List.of(requestDto))
+                    .collectList()
+                    .block(d);
+
+            Assertions.assertNotNull(result);
+            Assertions.assertEquals(1, result.size());
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
     }
 }

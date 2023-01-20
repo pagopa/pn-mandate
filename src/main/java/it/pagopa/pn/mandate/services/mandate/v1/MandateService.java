@@ -67,9 +67,12 @@ public class MandateService {
     /**
      * Accetta una delega
      *
-     * @param mandateId        id della delega
-     * @param acceptRequestDto dto accettazione delega
-     * @param internaluserId   iuid del delegato
+     * @param mandateId         id della delega
+     * @param acceptRequestDto  dto accettazione delega
+     * @param internaluserId    iuid del delegato
+     * @param xPagopaPnCxType   tipo dell'utente (PF, PG)
+     * @param cxGroups          gruppi a cui appartiene l'utente
+     * @param cxRole            ruolo dell'utente
      * @return void
      */
     public Mono<MandateEntity> acceptMandate(String mandateId,
@@ -78,36 +81,39 @@ public class MandateService {
                                              CxTypeAuthFleet xPagopaPnCxType,
                                              List<String> cxGroups, String cxRole) {
         return validaAccessoOnlyAdmin(xPagopaPnCxType, cxRole, cxGroups)
-                .flatMap(obj -> acceptRequestDto
-                        .map(m -> {
-                            if (m == null || m.getVerificationCode() == null)
-                                throw new PnInvalidVerificationCodeException();
+                .flatMap(obj -> acceptRequestDto)
+                .map(m -> {
+                    if (m == null || m.getVerificationCode() == null)
+                        throw new PnInvalidVerificationCodeException();
 
-                            if (mandateId == null)
-                                throw new PnMandateNotFoundException();
+                    if (mandateId == null)
+                        throw new PnMandateNotFoundException();
 
-                            return m;
-                        })
-                        .flatMap(m -> {
-                            try {
-                                if (log.isInfoEnabled())
-                                    log.info("accepting mandateobj:{} vercode:{}", mandateId, m);
-                                return mandateDao
-                                        .acceptMandate(internaluserId, mandateId, m.getVerificationCode(), m.getGroups(), xPagopaPnCxType)
-                                        .flatMap(entity -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.ACCEPT)
-                                                .then(Mono.just(entity)));
-                            } catch (Exception ex) {
-                                throw Exceptions.propagate(ex);
-                            }
-                        })
-                );
+                    return m;
+                })
+                .flatMap(m -> {
+                    try {
+                        if (log.isInfoEnabled())
+                            log.info("accepting mandateobj:{} vercode:{}", mandateId, m);
+                        return mandateDao
+                                .acceptMandate(internaluserId, mandateId, m.getVerificationCode(), m.getGroups(), xPagopaPnCxType)
+                                .flatMap(entity -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.ACCEPT)
+                                        .then(Mono.just(entity)));
+                    } catch (Exception ex) {
+                        throw Exceptions.propagate(ex);
+                    }
+                });
     }
 
     /**
      * Ritorna il numero di deleghe nello stato passato per il delegato
      *
-     * @param status         stato per il filtro
-     * @param internaluserId iuid del delegato
+     * @param status            stato per il filtro
+     * @param internaluserId    iuid del delegato
+     * @param xPagopaPnCxType   tipo dell'utente (PF, PG)
+     * @param cxGroups          gruppi a cui appartiene l'utente
+     * @param cxRole            ruolo dell'utente
+     *
      * @return Totale deleghe nello stato richiesto
      */
     public Mono<MandateCountsDto> countMandatesByDelegate(String status,
@@ -127,9 +133,12 @@ public class MandateService {
     /**
      * Crea la delega
      *
-     * @param mandateDto              oggetto delega
-     * @param requesterInternaluserId iuid del delegante
-     * @param requesterUserTypeIsPF   tipologia del delegante (PF/PG)
+     * @param mandateDto                oggetto delega
+     * @param requesterInternaluserId   iuid del delegante
+     * @param requesterUserTypeIsPF     tipologia del delegante (PF/PG)
+     * @param cxTypeAuthFleet           tipo dell'utente (PF, PG)
+     * @param groups                    gruppi a cui appartiene l'utente
+     * @param role                      ruolo dell'utente
      * @return delega creata
      */
     public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, final String requesterInternaluserId,
@@ -242,8 +251,11 @@ public class MandateService {
      * (3) risolvere internalId del delegante (il delegato sono io, e non serve popolarlo) nel relativo microservizio
      * (4) risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
      *
-     * @param status         stato per il filtro
-     * @param internaluserId iuid del delegato
+     * @param status            stato per il filtro
+     * @param internaluserId    iuid del delegato
+     * @param xPagopaPnCxType   tipo dell'utente (PF, PG)
+     * @param xPagopaPnCxGroups gruppi a cui appartiene l'utente
+     * @param xPagopaPnCxRole   ruolo dell'utente
      * @return deleghe
      */
     public Flux<MandateDto> listMandatesByDelegate(String status,

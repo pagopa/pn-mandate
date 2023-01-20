@@ -14,17 +14,16 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.DelegateType;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateByDelegatorRequestDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -36,10 +35,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
@@ -48,6 +44,8 @@ import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 @Slf4j
 @Import(PnAuditLogBuilder.class)
 public class MandateDao extends BaseDao {
+
+    private static final int MAX_DYNAMODB_BATCH_SIZE = 100;
 
     private static final String AND = " AND ";
 
@@ -104,7 +102,7 @@ public class MandateDao extends BaseDao {
             expression += AND + getMandateFilterExpression();
         }
 
-        if (CxTypeAuthFleet.PG.equals(xPagopaPnCxType) && cxGroups != null && !cxGroups.isEmpty()) {
+        if (CxTypeAuthFleet.PG == xPagopaPnCxType && !CollectionUtils.isEmpty(cxGroups)) {
             expression += AND + buildExpressionGroupFilter(cxGroups, expressionValues);
         }
 
@@ -190,6 +188,18 @@ public class MandateDao extends BaseDao {
     }
 
     /**
+     *
+     * @param mandatesByDelegators
+     * @return
+     */
+    public Flux<MandateEntity> listMandatesByDelegators(List<MandateByDelegatorRequestDto> mandatesByDelegators) {
+        return Flux.fromIterable(mandatesByDelegators)
+                .map(dto -> new MandateEntity(dto.getDelegatorId(), dto.getMandateId()))
+                .collectList()
+                .flatMapMany(this::batchGetMandate);
+    }
+
+    /**
      * Il metodo si occupa di:
      * - leggere l'item dal GSI delegato
      * - validare la richiesta
@@ -238,7 +248,7 @@ public class MandateDao extends BaseDao {
         if (!mandate.getValidationcode().equals(verificationCode)) {
             throw new PnInvalidVerificationCodeException();
         }
-        if (CxTypeAuthFleet.PG.equals(cxTypeAuthFleet)) {
+        if (CxTypeAuthFleet.PG == cxTypeAuthFleet) {
             mandate.setGroups(groups != null ? Set.copyOf(groups) : Set.of());
         }
         log.info("retrieved mandateobj={}", mandate);
@@ -593,6 +603,47 @@ public class MandateDao extends BaseDao {
 
     private String getDelegateIsPersonExpression() {
         return "(" + MandateEntity.COL_B_DELEGATEISPERSON + " = :isPerson) ";
+    }
+
+    private Flux<MandateEntity> batchGetMandate(List<MandateEntity> entities) {
+        return Flux.fromIterable(entities)
+                .window(MAX_DYNAMODB_BATCH_SIZE)
+                .flatMap(chunk -> {
+                    ReadBatch.Builder<MandateEntity> builder = ReadBatch.builder(MandateEntity.class)
+                            .mappedTableResource(mandateTable);
+                    Mono<BatchGetResultPage> deferred = Mono.defer(() ->
+                            Mono.from(dynamoDbEnhancedAsyncClient.batchGetItem(BatchGetItemEnhancedRequest.builder()
+                                    .readBatches(builder.build())
+                                    .build())));
+                    return chunk
+                            .doOnNext(item -> {
+                                Key key = Key.builder().partitionValue(item.getDelegator()).sortValue(item.getSk()).build();
+                                builder.addGetItem(key);
+                            })
+                            .then(deferred);
+                })
+                .flatMap(page -> {
+                    List<MandateEntity> results = page.resultsForTable(mandateTable);
+                    log.debug("request size: {}, query result size: {}", entities.size(), results.size());
+                    if (!page.unprocessedKeysForTable(mandateTable).isEmpty()) {
+                        List<Key> unprocessedKeys = page.unprocessedKeysForTable(mandateTable);
+                        List<MandateEntity> unprocessedEntities = filterMandateAlreadyProcessed(entities, unprocessedKeys);
+                        log.info("unprocessed entities {} over total entities {}", unprocessedEntities.size(), entities.size());
+                        return Flux.fromIterable(results)
+                                .concatWith(batchGetMandate(unprocessedEntities));
+                    }
+                    return Flux.fromIterable(results);
+                });
+    }
+
+    private List<MandateEntity> filterMandateAlreadyProcessed(List<MandateEntity> entities, List<Key> unprocessedKeys) {
+        Set<Key> setKeys = new HashSet<>(unprocessedKeys);
+        return entities.stream()
+                .filter(entity -> {
+                    Key key = Key.builder().partitionValue(entity.getDelegator()).sortValue(entity.getSk()).build();
+                    return setKeys.contains(key);
+                })
+                .toList();
     }
     //#endregion
 }

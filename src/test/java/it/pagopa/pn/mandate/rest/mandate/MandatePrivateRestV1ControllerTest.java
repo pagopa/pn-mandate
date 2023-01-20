@@ -116,4 +116,22 @@ class MandatePrivateRestV1ControllerTest {
                 .expectStatus().isOk();
     }
 
+    @Test
+    void listMandatesByDelegators() {
+        String url = "/mandate-private/api/v1/mandates-by-internaldelegators?delegateType={type}"
+                .replace("{type}", "PG");
+        List<InternalMandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
+
+        Mockito.when(mandatePrivateService.listMandatesByDelegators(Mockito.any(), Mockito.any(), Mockito.any()))
+                        .thenReturn(Flux.fromIterable(mandateDtoList));
+
+        webTestClient.post()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody();
+    }
+
 }

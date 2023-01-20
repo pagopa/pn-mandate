@@ -401,7 +401,7 @@ class MandateServiceTest {
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), false, CxTypeAuthFleet.PG, null, "AMDIN")
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), false, CxTypeAuthFleet.PG, null, "ADMIN")
                 .block(d);
 
         //Then

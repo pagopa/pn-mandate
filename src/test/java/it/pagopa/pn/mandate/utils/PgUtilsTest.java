@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.utils;
 
 import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
@@ -55,7 +56,7 @@ class PgUtilsTest {
     void testBuildExpressionGroupFilter1() {
         Map<String, AttributeValue> attributeValue = new HashMap<>();
         String result = PgUtils.buildExpressionGroupFilter(List.of("G1"), attributeValue);
-        assertEquals("( contains(groups,:group0) )", result);
+        assertEquals("( contains("+ MandateEntity.COL_A_GROUPS +",:group0) )", result);
         assertEquals(1, attributeValue.size());
     }
 
@@ -63,7 +64,7 @@ class PgUtilsTest {
     void testBuildExpressionGroupFilter2() {
         Map<String, AttributeValue> attributeValue = new HashMap<>();
         String result = PgUtils.buildExpressionGroupFilter(List.of("G1", "G2"), attributeValue);
-        assertEquals("( contains(groups,:group0) OR contains(groups,:group1) )", result);
+        assertEquals("( contains("+MandateEntity.COL_A_GROUPS+",:group0) OR contains("+MandateEntity.COL_A_GROUPS+",:group1) )", result);
         assertEquals(2, attributeValue.size());
     }
 

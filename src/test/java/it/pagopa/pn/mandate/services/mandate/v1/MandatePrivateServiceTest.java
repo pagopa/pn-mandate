@@ -2,11 +2,11 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.mapper.MandateEntityInternalMandateDtoMapper;
+import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.utils.PgUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -21,9 +21,11 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -93,5 +95,48 @@ class MandatePrivateServiceTest {
 
         //Then
         Assertions.assertThrows(PnForbiddenException.class, objectMono::block);
+    }
+
+    @Test
+    void listMandatesByDelegators() {
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+        entity.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        List<MandateEntity> list = new ArrayList<>();
+        list.add(entity);
+        when(mandateDao.listMandatesByDelegators(any()))
+                .thenReturn(Flux.fromIterable(list));
+        when(mapper.toDto(same(entity))).thenReturn(new InternalMandateDto());
+
+        List<MandateByDelegatorRequestDto> requestDto = List.of(new MandateByDelegatorRequestDto());
+        List<InternalMandateDto> result = mandatePrivateService.listMandatesByDelegators(DelegateType.PG, null, Flux.fromIterable(requestDto))
+                .collectList()
+                .block(Duration.ofMillis(3000));
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void listMandatesByDelegatorsFilter() {
+        MandateEntity mandate1 = MandateDaoIT.newMandate(true);
+        mandate1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        mandate1.setGroups(Set.of("RECLAMI"));
+        MandateEntity mandate2 = MandateDaoIT.newMandate(true);
+        mandate2.setGroups(Set.of("RECLAMI"));
+        mandate2.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING));
+        MandateEntity mandate3 = MandateDaoIT.newMandate(true);
+        mandate3.setGroups(Set.of("PIPPO"));
+        mandate3.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+
+        List<MandateEntity> list = List.of(mandate1, mandate2, mandate3);
+        when(mandateDao.listMandatesByDelegators(any()))
+                .thenReturn(Flux.fromIterable(list));
+        when(mapper.toDto(same(mandate1))).thenReturn(new InternalMandateDto());
+
+        List<MandateByDelegatorRequestDto> requestDto = List.of(new MandateByDelegatorRequestDto());
+        List<InternalMandateDto> result = mandatePrivateService.listMandatesByDelegators(DelegateType.PG, List.of("RECLAMI"), Flux.fromIterable(requestDto))
+                .collectList()
+                .block(Duration.ofMillis(3000));
+        assertNotNull(result);
+        assertEquals(1, result.size());
     }
 }

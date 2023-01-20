@@ -1,9 +1,7 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
 import it.pagopa.pn.mandate.rest.mandate.v1.api.MandatePrivateServiceApi;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.DelegateType;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.services.mandate.v1.MandatePrivateService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +41,16 @@ public class MandatePrivateRestV1Controller implements MandatePrivateServiceApi 
                                                                                   DelegateType delegateType,
                                                                                   final ServerWebExchange exchange) {
         return mandateService.listMandatesByDelegator(internaluserId, mandateId, xPagopaPnCxType, cxGroups, cxRole, delegateType)
+                .collectList()
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
+    }
+
+    @Override
+    public Mono<ResponseEntity<Flux<InternalMandateDto>>> listMandatesByDelegators(DelegateType delegateType,
+                                                                                   List<String> delegateGroups,
+                                                                                   Flux<MandateByDelegatorRequestDto> mandateByDelegatorRequestDto,
+                                                                                   final ServerWebExchange exchange) {
+        return mandateService.listMandatesByDelegators(delegateType, delegateGroups, mandateByDelegatorRequestDto)
                 .collectList()
                 .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
     }

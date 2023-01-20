@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.utils;
 
 import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -19,6 +20,8 @@ public class PgUtils {
 
     public static final Set<String> ALLOWED_ROLES = Set.of("ADMIN");
 
+    private static final String OR = "OR";
+
     /**
      * Effettua la validazione dell'accesso per le Persone Giuridiche su risorse accessibili solo dagli amministratori.
      *
@@ -27,7 +30,7 @@ public class PgUtils {
      * @param pnCxGroups gruppi
      */
     public static Mono<Object> validaAccessoOnlyAdmin(CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
-        if (CxTypeAuthFleet.PG.equals(pnCxType)
+        if (CxTypeAuthFleet.PG == pnCxType
                 && (pnCxRole == null || !ALLOWED_ROLES.contains(pnCxRole.toUpperCase()) || !CollectionUtils.isEmpty(pnCxGroups))) {
             log.warn("only a PG admin can access this resource");
             return Mono.error(new PnForbiddenException());
@@ -45,7 +48,7 @@ public class PgUtils {
      * @param pnCxGroups gruppi
      */
     public static Mono<Object> validaAccessoOnlyGroupAdmin(CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
-        if (CxTypeAuthFleet.PG.equals(pnCxType) && (pnCxRole == null || !ALLOWED_ROLES.contains(pnCxRole.toUpperCase()))) {
+        if (CxTypeAuthFleet.PG == pnCxType && (pnCxRole == null || !ALLOWED_ROLES.contains(pnCxRole.toUpperCase()))) {
             log.warn("only a PG admin / group admin can access this resource");
             return Mono.error(new PnForbiddenException());
         }
@@ -65,9 +68,9 @@ public class PgUtils {
         for (int i = 0; i < xPagopaPnCxGroups.size(); i++) {
             AttributeValue pnCxGroup = AttributeValue.builder().s(xPagopaPnCxGroups.get(i)).build();
             expressionValues.put(":group" + i, pnCxGroup);
-            expressionGroup.append(" contains(groups,:group").append(i).append(") OR");
+            expressionGroup.append(" contains(").append(MandateEntity.COL_A_GROUPS).append(",:group").append(i).append(") ").append(OR);
         }
-        expressionGroup.replace(expressionGroup.length()-2, expressionGroup.length(),")");
+        expressionGroup.replace(expressionGroup.length() - OR.length(), expressionGroup.length(),")");
         return expressionGroup.toString();
     }
 }

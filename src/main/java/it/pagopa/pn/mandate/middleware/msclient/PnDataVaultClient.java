@@ -1,7 +1,7 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
 
-import io.netty.handler.timeout.TimeoutException;
+import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.ApiClient;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.MandatesApi;
@@ -10,22 +10,18 @@ import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.Bas
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.RecipientTypeDto;
-import it.pagopa.pn.mandate.middleware.msclient.common.BaseClient;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
 import javax.annotation.PostConstruct;
-import java.net.ConnectException;
-import java.time.Duration;
 import java.util.List;
 
 /**
  * Classe wrapper di pn-data-vault, con gestione del backoff
  */
 @Component
-public class PnDataVaultClient extends BaseClient {
+public class PnDataVaultClient extends CommonBaseClient {
     
     private RecipientsApi recipientsApi;
     private MandatesApi mandatesApi;
@@ -55,11 +51,7 @@ public class PnDataVaultClient extends BaseClient {
      */
     public Flux<BaseRecipientDtoDto> getRecipientDenominationByInternalId(List<String> internalIds)
     {
-        return recipientsApi.getRecipientDenominationByInternalId(internalIds)
-            .retryWhen(
-                    Retry.backoff(2, Duration.ofMillis(25))
-                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );                             
+        return recipientsApi.getRecipientDenominationByInternalId(internalIds);
             
     }
 
@@ -71,11 +63,7 @@ public class PnDataVaultClient extends BaseClient {
      */
     public Mono<String> ensureRecipientByExternalId(boolean isPerson, String fiscalCode)
     {
-        return recipientsApi.ensureRecipientByExternalId(isPerson?RecipientTypeDto.PF:RecipientTypeDto.PG, fiscalCode)
-            .retryWhen(
-                    Retry.backoff(2, Duration.ofMillis(25))
-                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );
+        return recipientsApi.ensureRecipientByExternalId(isPerson?RecipientTypeDto.PF:RecipientTypeDto.PG, fiscalCode);
             
     }
 
@@ -95,10 +83,6 @@ public class PnDataVaultClient extends BaseClient {
         addressdto.setDestSurname(surname);
         addressdto.setDestBusinessName(businessName);
         return mandatesApi.updateMandateById(mandateId, addressdto)
-            .retryWhen(
-                    Retry.backoff(2, Duration.ofMillis(25))
-                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                )
                 .then(Mono.just("OK"));
 
     }
@@ -111,11 +95,7 @@ public class PnDataVaultClient extends BaseClient {
      */
     public Mono<Void> deleteMandateById(String mandateId)
     {
-        return mandatesApi.deleteMandateById(mandateId)
-                .retryWhen(
-                        Retry.backoff(2, Duration.ofMillis(25))
-                                .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );
+        return mandatesApi.deleteMandateById(mandateId);
     }
 
     /**
@@ -125,10 +105,7 @@ public class PnDataVaultClient extends BaseClient {
      */
     public Flux<MandateDtoDto> getMandatesByIds(List<String> mandateIds)
     {                
-        return mandatesApi.getMandatesByIds(mandateIds)
-            .retryWhen(
-                    Retry.backoff(2, Duration.ofMillis(25))
-                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );
+        return mandatesApi.getMandatesByIds(mandateIds);
     }
+
 }

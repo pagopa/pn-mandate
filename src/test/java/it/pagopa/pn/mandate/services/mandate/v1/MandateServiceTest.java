@@ -15,7 +15,6 @@ import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
-import it.pagopa.pn.mandate.model.mandate.SqsToDeliveryMessageDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
@@ -86,7 +85,7 @@ class MandateServiceTest {
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
         acceptRequestDto.setVerificationCode(mandateEntity.getValidationcode());
-        when(sqsService.push(Mockito.any(SqsToDeliveryMessageDto.class))).thenReturn(Mono.empty());
+        when(sqsService.sentToDelivery(Mockito.any(), Mockito.any())).thenReturn(Mono.empty());
         when(mandateDao.acceptMandate (Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.any())).thenReturn(Mono.empty());
 
         //When
@@ -965,7 +964,7 @@ class MandateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        when(sqsService.push(Mockito.any(SqsToDeliveryMessageDto.class))).thenReturn(Mono.empty());
+        when(sqsService.sentToDelivery(Mockito.any(), Mockito.any())).thenReturn(Mono.empty());
         when(mandateDao.rejectMandate(Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.empty());
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
@@ -1013,7 +1012,7 @@ class MandateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        when(sqsService.push(Mockito.any(SqsToDeliveryMessageDto.class))).thenReturn(Mono.empty());
+        when(sqsService.sentToDelivery(Mockito.any(), Mockito.any())).thenReturn(Mono.empty());
         when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
@@ -1061,7 +1060,7 @@ class MandateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        when(sqsService.push(Mockito.any(SqsToDeliveryMessageDto.class))).thenReturn(Mono.empty());
+        when(sqsService.sentToDelivery(Mockito.any(), Mockito.any())).thenReturn(Mono.empty());
         when(mandateDao.expireMandate (Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(new Object()));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
@@ -1087,13 +1086,5 @@ class MandateServiceTest {
 
         //Then
         // nothing, basta che non ci sia eccezione
-    }
-
-    @Test
-    void sendMessageToSQSQueue() {
-        SqsToDeliveryMessageDto sqsToDeliveryMessageDto = SqsToDeliveryMessageDto.builder().action(SqsToDeliveryMessageDto.Action.ACCEPT).mandateId(Mockito.anyString()).build();
-
-        assertDoesNotThrow(() -> sqsService.push(sqsToDeliveryMessageDto));
-
     }
 }

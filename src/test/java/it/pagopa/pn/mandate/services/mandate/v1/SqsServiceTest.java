@@ -1,7 +1,7 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.mandate.model.mandate.SqsToDeliveryMessageDto;
+import it.pagopa.pn.api.dto.events.EventType;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
@@ -23,10 +23,7 @@ class SqsServiceTest {
 
         SqsService sqsService = new SqsService("queueNameTest", amazonSQS, new ObjectMapper());
 
-        SqsToDeliveryMessageDto sqsToDeliveryMessageDto = new SqsToDeliveryMessageDto();
-        sqsToDeliveryMessageDto.setAction(SqsToDeliveryMessageDto.Action.ACCEPT);
-        sqsToDeliveryMessageDto.setMandateId("mandateId");
-        assertDoesNotThrow(() -> sqsService.push(sqsToDeliveryMessageDto));
+        assertDoesNotThrow(() -> sqsService.sentToDelivery("mandateId", EventType.MANDATE_ACCEPTED));
     }
 
 }

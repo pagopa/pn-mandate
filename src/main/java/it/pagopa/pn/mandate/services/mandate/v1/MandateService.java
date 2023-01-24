@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
+import it.pagopa.pn.api.dto.events.EventType;
 import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
@@ -12,7 +13,6 @@ import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
-import it.pagopa.pn.mandate.model.mandate.SqsToDeliveryMessageDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
@@ -97,7 +97,7 @@ public class MandateService {
                             log.info("accepting mandateobj:{} vercode:{}", mandateId, m);
                         return mandateDao
                                 .acceptMandate(internaluserId, mandateId, m.getVerificationCode(), m.getGroups(), xPagopaPnCxType)
-                                .flatMap(entity -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.ACCEPT)
+                                .flatMap(entity -> sqsService.sentToDelivery(mandateId, EventType.MANDATE_ACCEPTED)
                                         .then(Mono.just(entity)));
                     } catch (Exception ex) {
                         throw Exceptions.propagate(ex);
@@ -395,7 +395,7 @@ public class MandateService {
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
                 .flatMap(o -> mandateDao.rejectMandate(internalUserId, mandateId))
                 .then(this.pnDatavaultClient.deleteMandateById(mandateId))
-                .then(Mono.defer(() -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.REJECT)));
+                .then(Mono.defer(() -> sqsService.sentToDelivery(mandateId, EventType.MANDATE_REJECTED).then()));
     }
 
     /**
@@ -415,7 +415,7 @@ public class MandateService {
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
                 .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId))
                 .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> d)
-                .then(Mono.defer(() -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.REVOKE)));
+                .then(Mono.defer(() -> sqsService.sentToDelivery(mandateId, EventType.MANDATE_REVOKED)));
     }
 
     /**
@@ -432,7 +432,7 @@ public class MandateService {
 
         return mandateDao.expireMandate(internaluserId, mandateId)
                 .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> d)
-                .then(Mono.defer(() -> sendMessageToDelivery(mandateId, SqsToDeliveryMessageDto.Action.EXPIRED)));
+                .then(Mono.defer(() -> sqsService.sentToDelivery(mandateId, EventType.MANDATE_EXPIRED)));
     }
 
     private void updateUserDto(UserDto user, DenominationDtoDto info) {
@@ -443,10 +443,5 @@ public class MandateService {
             user.setDisplayName(info.getDestName() + " " + info.getDestSurname());
         else
             user.setDisplayName(info.getDestBusinessName());
-    }
-
-    private Mono<Void> sendMessageToDelivery(String mandateId, SqsToDeliveryMessageDto.Action action) {
-        SqsToDeliveryMessageDto sqsToDeliveryMessageDto = SqsToDeliveryMessageDto.builder().action(action).mandateId(mandateId).build();
-        return sqsService.push(sqsToDeliveryMessageDto).then();
     }
 }

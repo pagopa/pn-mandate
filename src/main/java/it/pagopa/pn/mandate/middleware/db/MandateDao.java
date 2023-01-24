@@ -298,8 +298,7 @@ public class MandateDao extends BaseDao {
      * @param mandateId id della delega
      * @return void
      */
-    public Mono<Void> rejectMandate(final String delegateInternaluserid, final String mandateId)
-    {
+    public Mono<MandateEntity> rejectMandate(final String delegateInternaluserid, final String mandateId) {
         // qui l'internaluserid è quello del DELEGATO, e quindi NON posso usare direttamente l'informazione per accedere al record.
         // devo passare quindi per l'indice sul delegato, recuperarmi la riga, aggiornare il contenuto e salvarla.
         // NB: si noti che ci può essere un problema legato alla concorrenza, ma dato che i dati sulle deleghe non cambiano così frequentemente, 
@@ -327,7 +326,7 @@ public class MandateDao extends BaseDao {
                                 .map(m -> {
                                     logEvent.generateSuccess("mandate rejected mandate={}", m).log();
                                     return m;
-                                }).then();
+                                });
                     }
                     else
                         log.warn("no mandate found in pending,active or rejected state, fail silently");
@@ -353,8 +352,7 @@ public class MandateDao extends BaseDao {
      * @param mandateId id della delega
      * @return void
      */
-    public Mono<Object> revokeMandate(String delegatorInternaluserid, String mandateId)
-    {
+    public Mono<MandateEntity> revokeMandate(String delegatorInternaluserid, String mandateId) {
         String logMessage = String.format("revokeMandate for delegate uid=%s mandateid=%s", delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
@@ -403,8 +401,7 @@ public class MandateDao extends BaseDao {
      * @param mandateId id della delega
      * @return void
      */
-    public Mono<Object> expireMandate(String delegatorInternaluserid, String mandateId)
-    {
+    public Mono<MandateEntity> expireMandate(String delegatorInternaluserid, String mandateId) {
         String logMessage = String.format("expireMandate for delegate uid=%s{} mandateid=%s", delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_EXPIRE, logMessage)

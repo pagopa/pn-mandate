@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.api.dto.events.EventType;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
@@ -23,7 +24,8 @@ class SqsServiceTest {
 
         SqsService sqsService = new SqsService("queueNameTest", amazonSQS, new ObjectMapper());
 
-        assertDoesNotThrow(() -> sqsService.sentToDelivery("mandateId", EventType.MANDATE_ACCEPTED));
+        MandateEntity mandateEntity = new MandateEntity("", "");
+        assertDoesNotThrow(() -> sqsService.sendToDelivery(mandateEntity, EventType.MANDATE_ACCEPTED));
     }
 
 }

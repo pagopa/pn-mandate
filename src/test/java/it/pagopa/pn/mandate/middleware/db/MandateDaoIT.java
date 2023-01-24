@@ -1020,7 +1020,7 @@ public class MandateDaoIT {
         }
 
         //When
-        Mono<Void> mono =  mandateDao.rejectMandate(wrongdelegate, mandateToInsert.getMandateId());
+        Mono<MandateEntity> mono =  mandateDao.rejectMandate(wrongdelegate, mandateToInsert.getMandateId());
         assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
 
 
@@ -1153,7 +1153,7 @@ public class MandateDaoIT {
         // nothing
 
         //When
-        Mono<Object> mono = mandateDao.expireMandate("fake", "fake");
+        Mono<MandateEntity> mono = mandateDao.expireMandate("fake", "fake");
         assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
     }
 

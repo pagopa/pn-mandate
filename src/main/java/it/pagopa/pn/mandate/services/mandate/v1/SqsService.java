@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.api.dto.events.*;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,8 @@ public class SqsService {
     private final ObjectMapper mapper;
     private final String toDeliveryQueueName;
 
+    private static final String STRING_TYPE = "String";
+
     public SqsService(@Value("${pn.mandate.sqs.to.pn.delivery.name}")String toDeliveryQueueName,
                       SqsClient sqsClient,
                       ObjectMapper mapper) {
@@ -37,7 +40,7 @@ public class SqsService {
         this.toDeliveryQueueName = toDeliveryQueueName;
     }
 
-    public Mono<SendMessageResponse> sentToDelivery(String mandateId, EventType eventType) {
+    public Mono<SendMessageResponse> sendToDelivery(MandateEntity entity, EventType eventType) {
         log.debug("get queue url request from queue name: {}", toDeliveryQueueName);
         GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
                 .queueName(toDeliveryQueueName)
@@ -45,9 +48,15 @@ public class SqsService {
         String queueUrl = sqsClient.getQueueUrl(getQueueRequest).queueUrl();
         log.debug("Queue name: {}; Queue URL: {}.", toDeliveryQueueName, queueUrl);
 
-        String eventId = mandateId + "_mandate_" + eventType;
+        String eventId = "mandate_"  + entity.getMandateId() + "_" + eventType;
         PnMandateEvent.Payload msg = PnMandateEvent.Payload.builder()
-                .mandateId(mandateId)
+                .mandateId(entity.getMandateId())
+                .delegateId(entity.getDelegate())
+                .delegatorId(entity.getDelegator())
+                .visibilityIds(entity.getVisibilityIds())
+                .groups(entity.getGroups())
+                .validFrom(entity.getValidfrom())
+                .validTo(entity.getValidto())
                 .build();
 
         SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
@@ -64,11 +73,15 @@ public class SqsService {
     private Map<String, MessageAttributeValue> buildMessageAttributeMap(String eventId, EventType eventType) {
         Map<String, MessageAttributeValue> attributes = new HashMap<>();
         Instant now = Instant.now();
-        attributes.put(GenericEventHeader.PN_EVENT_HEADER_EVENT_ID, MessageAttributeValue.builder().stringValue(eventId).dataType("String").build());
-        attributes.put(GenericEventHeader.PN_EVENT_HEADER_CREATED_AT, MessageAttributeValue.builder().stringValue(now.toString()).dataType("String").build());
-        attributes.put(GenericEventHeader.PN_EVENT_HEADER_PUBLISHER, MessageAttributeValue.builder().stringValue(EventPublisher.MANDATE.name()).dataType("String").build());
-        attributes.put(GenericEventHeader.PN_EVENT_HEADER_EVENT_TYPE, MessageAttributeValue.builder().stringValue(eventType.name()).dataType("String").build());
+        attributes.put(GenericEventHeader.PN_EVENT_HEADER_EVENT_ID, buildMessageAttributeValue(eventId));
+        attributes.put(GenericEventHeader.PN_EVENT_HEADER_CREATED_AT, buildMessageAttributeValue(now.toString()));
+        attributes.put(GenericEventHeader.PN_EVENT_HEADER_PUBLISHER, buildMessageAttributeValue(EventPublisher.MANDATE.name()));
+        attributes.put(GenericEventHeader.PN_EVENT_HEADER_EVENT_TYPE, buildMessageAttributeValue(eventType.name()));
         return attributes;
+    }
+
+    private MessageAttributeValue buildMessageAttributeValue(String value) {
+        return MessageAttributeValue.builder().stringValue(value).dataType(STRING_TYPE).build();
     }
 
     private String toJson(PnMandateEvent.Payload pnMandateEvent) {

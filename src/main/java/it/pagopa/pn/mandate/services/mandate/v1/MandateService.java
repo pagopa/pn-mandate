@@ -97,8 +97,12 @@ public class MandateService {
                             log.info("accepting mandateobj:{} vercode:{}", mandateId, m);
                         return mandateDao
                                 .acceptMandate(internaluserId, mandateId, m.getVerificationCode(), m.getGroups(), xPagopaPnCxType)
-                                .flatMap(entity -> sqsService.sentToDelivery(mandateId, EventType.MANDATE_ACCEPTED)
-                                        .then(Mono.just(entity)));
+                                .flatMap(entity -> {
+                                    if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
+                                        return sqsService.sendToDelivery(entity, EventType.MANDATE_ACCEPTED).then(Mono.just(entity));
+                                    }
+                                    return Mono.just(entity);
+                                });
                     } catch (Exception ex) {
                         throw Exceptions.propagate(ex);
                     }
@@ -394,8 +398,13 @@ public class MandateService {
         }
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
                 .flatMap(o -> mandateDao.rejectMandate(internalUserId, mandateId))
-                .then(this.pnDatavaultClient.deleteMandateById(mandateId))
-                .then(Mono.defer(() -> sqsService.sentToDelivery(mandateId, EventType.MANDATE_REJECTED).then()));
+                .zipWhen(r -> pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> r)
+                .flatMap(entity -> {
+                    if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
+                        return sqsService.sendToDelivery(entity, EventType.MANDATE_REJECTED).then();
+                    }
+                    return Mono.just(entity).then();
+                });
     }
 
     /**
@@ -414,8 +423,13 @@ public class MandateService {
         }
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
                 .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId))
-                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> d)
-                .then(Mono.defer(() -> sqsService.sentToDelivery(mandateId, EventType.MANDATE_REVOKED)));
+                .zipWhen(r -> pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> r)
+                .flatMap(entity -> {
+                    if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
+                        return sqsService.sendToDelivery(entity, EventType.MANDATE_REVOKED).thenReturn(entity);
+                    }
+                    return Mono.just(entity);
+                });
     }
 
     /**
@@ -431,8 +445,13 @@ public class MandateService {
             throw new PnMandateNotFoundException();
 
         return mandateDao.expireMandate(internaluserId, mandateId)
-                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> d)
-                .then(Mono.defer(() -> sqsService.sentToDelivery(mandateId, EventType.MANDATE_EXPIRED)));
+                .zipWhen(r -> pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> r)
+                .flatMap(entity -> {
+                    if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
+                        return sqsService.sendToDelivery(entity, EventType.MANDATE_EXPIRED).thenReturn(entity);
+                    }
+                    return Mono.just(entity);
+                });
     }
 
     private void updateUserDto(UserDto user, DenominationDtoDto info) {

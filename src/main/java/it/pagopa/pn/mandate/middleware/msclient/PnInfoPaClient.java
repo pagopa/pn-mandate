@@ -1,22 +1,18 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
 
-import io.netty.handler.timeout.TimeoutException;
+import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.ApiClient;
 import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.api.InfoPaApi;
 import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
-import it.pagopa.pn.mandate.middleware.msclient.common.BaseClient;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
 import javax.annotation.PostConstruct;
-import java.net.ConnectException;
-import java.time.Duration;
 
 @Component
-public class PnInfoPaClient extends BaseClient {
+public class PnInfoPaClient extends CommonBaseClient {
 
     private InfoPaApi infoPaApi;
     private final PnMandateConfig pnMandateConfig;
@@ -36,10 +32,7 @@ public class PnInfoPaClient extends BaseClient {
     public Mono<PaInfoDto> getOnePa(String id) {
 
         return this.infoPaApi                        
-                .getOnePa(id)                
-                .retryWhen(
-                    Retry.backoff(2, Duration.ofMillis(25))
-                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );
-    } 
+                .getOnePa(id);
+    }
+
 }

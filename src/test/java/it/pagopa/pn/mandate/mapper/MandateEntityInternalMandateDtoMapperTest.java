@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -55,5 +57,20 @@ class MandateEntityInternalMandateDtoMapperTest {
         } catch (Exception e) {
             fail(e);
         }
+    }
+
+    @Test
+    void toDtoVisibilityIds() {
+        //Given
+        MandateEntity mandate = MandateDaoIT.newMandate(true);
+        mandate.setVisibilityIds(Set.of("G"));
+
+        //When
+        InternalMandateDto result = mapper.toDto(mandate);
+
+        //Then
+        assertNotNull(result);
+        assertNotNull(result.getVisibilityIds());
+        assertTrue(result.getVisibilityIds().contains("G"));
     }
 }

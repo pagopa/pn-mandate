@@ -398,7 +398,7 @@ public class MandateService {
         }
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
                 .flatMap(o -> mandateDao.rejectMandate(internalUserId, mandateId))
-                .zipWhen(r -> pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> r)
+                .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
                 .flatMap(entity -> {
                     if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
                         return sqsService.sendToDelivery(entity, EventType.MANDATE_REJECTED).then();
@@ -423,7 +423,7 @@ public class MandateService {
         }
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
                 .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId))
-                .zipWhen(r -> pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> r)
+                .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
                 .flatMap(entity -> {
                     if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
                         return sqsService.sendToDelivery(entity, EventType.MANDATE_REVOKED).thenReturn(entity);
@@ -445,7 +445,7 @@ public class MandateService {
             throw new PnMandateNotFoundException();
 
         return mandateDao.expireMandate(internaluserId, mandateId)
-                .zipWhen(r -> pnDatavaultClient.deleteMandateById(mandateId), (r, d) -> r)
+                .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
                 .flatMap(entity -> {
                     if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
                         return sqsService.sendToDelivery(entity, EventType.MANDATE_EXPIRED).thenReturn(entity);

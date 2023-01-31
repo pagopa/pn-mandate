@@ -27,6 +27,11 @@
 			<artifactId>pn-commons</artifactId>
 			<version>2.0.0-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>it.pagopa.pn</groupId>
+			<artifactId>pn-model</artifactId>
+			<version>2.0.0-SNAPSHOT</version>
+		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/io.swagger/swagger-annotations -->
 		<dependency>
@@ -49,6 +54,15 @@
 		<dependency>
 			<groupId>net.logstash.logback</groupId>
 			<artifactId>logstash-logback-encoder</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-stream</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>de.idealo.spring</groupId>
+			<artifactId>spring-cloud-stream-binder-sqs</artifactId>
+			<version>1.5.0</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/junit/junit -->

@@ -75,7 +75,7 @@ Parameters:
     Type: String
     Description: 'ARN of dynamodb table containing mandates'
 
-  MandateInputsQueueURL:
+  PnMandateInputsQueueURL:
     Type: String
     Description: pn-mandate_inputs queue URL
 
@@ -365,7 +365,7 @@ Resources:
         - !Sub "arn:aws:lambda:${AWS::Region}:339249233099:layer:LambdaInsightsExtension:13"
       Environment:
         Variables:
-          QUEUE_URL: !Ref MandateInputsQueueURL
+          QUEUE_URL: !Ref PnMandateInputsQueueURL
       Code:
         ZipFile: |
               const AWS = require('aws-sdk')

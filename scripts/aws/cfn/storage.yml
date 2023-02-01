@@ -62,6 +62,9 @@ Resources:
           ProvisionedThroughput:
             ReadCapacityUnits: 5
             WriteCapacityUnits: 5
+      TimeToLiveSpecification:
+        AttributeName: "i_ttl"
+        Enabled: true
       KinesisStreamSpecification:
         StreamArn: !Ref CdcKinesisSourceStreamArn
       StreamSpecification: 
@@ -87,7 +90,10 @@ Resources:
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
       PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: true  
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: "i_ttl"
+        Enabled: true
 
   ### DLQ used by lambda for handling expired Mandates ###
   # NB: la coda stessa è di DLQ, quindi va allarmata. Non è necessario invece che sia allarmata la sua DLQ

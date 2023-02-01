@@ -199,6 +199,9 @@ Resources:
           - - !GetAtt MandateMicroservice.Outputs.FatalLogsMetricAlarmArn
             - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiErrorAlarmArn
             - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiLatencyAlarmArn
+        QueueArns: !Join
+          - ','
+          - - !Ref Mandate2DeliveryQueueARN
 
   Mandate2DeliveryQueuePolicy:
     Type: AWS::IAM::Policy

@@ -24,6 +24,10 @@ Parameters:
     Type: String
     Description: 'Where to send CDC'
 
+  AlarmSNSTopicName:
+    Type: String
+    Description: 'Topic alarm'
+
 Resources:
 
   MandatesDynamoTable:
@@ -62,6 +66,9 @@ Resources:
           ProvisionedThroughput:
             ReadCapacityUnits: 5
             WriteCapacityUnits: 5
+      TimeToLiveSpecification:
+        AttributeName: "i_ttl"
+        Enabled: true
       KinesisStreamSpecification:
         StreamArn: !Ref CdcKinesisSourceStreamArn
       StreamSpecification: 
@@ -87,7 +94,10 @@ Resources:
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
       PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: true  
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: "i_ttl"
+        Enabled: true
 
   ### DLQ used by lambda for handling expired Mandates ###
   # NB: la coda stessa è di DLQ, quindi va allarmata. Non è necessario invece che sia allarmata la sua DLQ
@@ -137,29 +147,29 @@ Outputs:
 
   # Mandate Expired Insert Trigger DLQ
   PnMandateExpiredTriggerDLQName:
-    Value: !GetAtt MandateExpiredTriggerDLQ.Outputs.QueueName
+    Value: !GetAtt PnMandateExpiredTriggerDLQ.Outputs.QueueName
     Description: pn-mandate_expired_trigger_DLQ queue name
   PnMandateExpiredTriggerDLQURL:
-    Value: !GetAtt MandateExpiredTriggerDLQ.Outputs.QueueURL
+    Value: !GetAtt PnMandateExpiredTriggerDLQ.Outputs.QueueURL
     Description: pn-mandate_expired_trigger_DLQ queue URL
   PnMandateExpiredTriggerDLQARN:
-    Value: !GetAtt MandateExpiredTriggerDLQ.Outputs.QueueARN
+    Value: !GetAtt PnMandateExpiredTriggerDLQ.Outputs.QueueARN
     Description: pn-mandate_expired_trigger_DLQ queue ARN
   PnMandateExpiredTriggerDLQAlarmARN:
-    Value: !GetAtt MandateExpiredTriggerDLQ.Outputs.SqsDLQAlarmArn
+    Value: !GetAtt PnMandateExpiredTriggerDLQ.Outputs.SqsDLQAlarmArn
     Description: pn-mandate_expired_trigger_DLQ alarm ARN
 
 
   # Mandate input DLQ
   PnMandateInputsQueueName:
-    Value: !GetAtt MandateInputsQueue.Outputs.QueueName
+    Value: !GetAtt PnMandateInputsQueue.Outputs.QueueName
     Description: pn-mandate_inputs queue name
   PnMandateInputsQueueURL:
-    Value: !GetAtt MandateInputsQueue.Outputs.QueueURL
+    Value: !GetAtt PnMandateInputsQueue.Outputs.QueueURL
     Description: pn-mandate_inputs queue URL
   PnMandateInputsQueueARN:
-    Value: !GetAtt MandateInputsQueue.Outputs.QueueARN
+    Value: !GetAtt PnMandateInputsQueue.Outputs.QueueARN
     Description: pn-mandate_inputs queue ARN
   PnMandateInputsQueueAlarmARN:
-    Value: !GetAtt MandateInputsQueue.Outputs.SqsDLQAlarmArn
+    Value: !GetAtt PnMandateInputsQueue.Outputs.SqsDLQAlarmArn
     Description: pn-mandate_inputs alarm ARN

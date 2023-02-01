@@ -13,7 +13,6 @@ public class MandateApplication {
 		SpringApplication.run(MandateApplication.class, args);
 	}
 
-
 	@RestController
 	@RequestMapping("/")
 	public static class RootController {

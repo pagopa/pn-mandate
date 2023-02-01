@@ -1,8 +1,9 @@
 package it.pagopa.pn.mandate.middleware.queue.consumer;
 
-import it.pagopa.pn.api.dto.events.PnMandateExpiredEvent;
 import it.pagopa.pn.mandate.LocalStackTestConfig;
+import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
+import it.pagopa.pn.mandate.middleware.queue.consumer.event.PnMandateExpiredEvent;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -13,9 +14,11 @@ import org.springframework.cloud.function.context.test.FunctionalSpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 @FunctionalSpringBootTest
 @Import(LocalStackTestConfig.class)
@@ -28,31 +31,39 @@ class ExpiredMandatesHandlerTest {
 
     @Test
     void consumeMessageOK() {
-        Consumer<Mono<Message<PnMandateExpiredEvent.Payload>>> consumer = functionCatalog.lookup(Consumer.class, "pnMandateExpiredMandatesConsumer");
+        Function<Flux<Message<PnMandateExpiredEvent.Payload>>, Mono<Void>> consumer = functionCatalog.lookup(Function.class, "pnMandateExpiredMandatesConsumer");
         PnMandateExpiredEvent.Payload payload = PnMandateExpiredEvent.Payload.builder()
-                .mandateId("mandateId")
-                .delegatorInternalUserid("internalUserId")
+                .mandateId("fb521b11-202d-452f-944e-88b1eb1c34bd")
+                .delegatorInternalUserid("PF-12345")
                 .build();
         Message<PnMandateExpiredEvent.Payload> message = MessageBuilder.withPayload(payload).build();
-        Mockito.when(mandateService.expireMandate("mandateId", "internalUserId"))
+        Mockito.when(mandateService.expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345"))
                         .thenReturn(Mono.just(new MandateEntity()));
-        consumer.accept(Mono.just(message));
-        Mockito.verify(mandateService).expireMandate("mandateId", "internalUserId");
+
+        Mono<Void> result = consumer.apply(Flux.just(message));
+        StepVerifier.create(result)
+                        .expectComplete()
+                                .verify();
+        Mockito.verify(mandateService).expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345");
     }
 
     @Test
     void consumeMessageKO() {
-        Consumer<Mono<Message<PnMandateExpiredEvent.Payload>>> consumer = functionCatalog.lookup(Consumer.class, "pnMandateExpiredMandatesConsumer");
+        Function<Flux<Message<PnMandateExpiredEvent.Payload>>, Mono<Void>> consumer = functionCatalog.lookup(Function.class, "pnMandateExpiredMandatesConsumer");
         PnMandateExpiredEvent.Payload payload = PnMandateExpiredEvent.Payload.builder()
-                .mandateId("mandateId")
-                .delegatorInternalUserid("internalUserId")
+                .mandateId("fb521b11-202d-452f-944e-88b1eb1c34bd")
+                .delegatorInternalUserid("PF-12345")
                 .build();
         Message<PnMandateExpiredEvent.Payload> message = MessageBuilder.withPayload(payload).build();
-        Mockito.when(mandateService.expireMandate("mandateId", "internalUserId"))
-                .thenReturn(Mono.error(new RuntimeException()));
-        consumer.accept(Mono.just(message));
-        Mockito.verify(mandateService).expireMandate("mandateId", "internalUserId");
+        Mockito.when(mandateService.expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345"))
+                .thenReturn(Mono.error(new PnMandateNotFoundException()));
 
+        Mono<Void> result = consumer.apply(Flux.just(message));
+        StepVerifier.create(result)
+                .expectError(PnMandateNotFoundException.class)
+                .verify();
+
+        Mockito.verify(mandateService).expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345");
     }
 
 }

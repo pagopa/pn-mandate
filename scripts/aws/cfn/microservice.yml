@@ -87,6 +87,10 @@ Parameters:
     Type: String
     Description: ARN of dynamodb table containing stream mandates
 
+  PnMandateExpiredTriggerDLQAlarmARN:
+    Type: String
+    Description: pn-mandate_expired_trigger_DLQ alarm ARN
+
   PnMandateExpiredTriggerDLQARN:
     Type: String
     Description: pn-mandate_expired_trigger_DLQ queue ARN
@@ -233,7 +237,7 @@ Resources:
           - - !GetAtt MandateMicroservice.Outputs.FatalLogsMetricAlarmArn
             - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiErrorAlarmArn
             - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiLatencyAlarmArn
-            - !Ref PnMandateExpiredTriggerDLQARN
+            - !Ref PnMandateExpiredTriggerDLQAlarmARN
             - !Ref PnMandateInputsQueueAlarmARN
 
   ### IAM Role used by Subscription filters to allow read logs from Cloudwatch and send logs to Kinesis Firehose

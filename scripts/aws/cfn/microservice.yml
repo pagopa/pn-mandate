@@ -91,7 +91,7 @@ Parameters:
     Type: String
     Description: pn-mandate_expired_trigger_DLQ queue ARN
 
-  MandateInputsQueueARN:
+  PnMandateInputsQueueARN:
     Type: String
     Description: pn-mandate_inputs queue ARN
 
@@ -315,7 +315,7 @@ Resources:
                   - sqs:GetQueueUrl
                   - sqs:SendMessage
                 Resource:
-                  - !Ref MandateInputsQueueARN
+                  - !Ref PnMandateInputsQueueARN
                   - !Ref PnMandateExpiredTriggerDLQARN
               - Sid: ReceiveDynamoStream
                 Effect: Allow

@@ -1,5 +1,8 @@
 {
   "Parameters" : {
-    "AtLeastOneParam" : "NotUsed"
+    "AtLeastOneParam" : "NotUsed",
+    "PnMandateExpiredTriggerLambdaEventSourceMappingBatchSize": "10",
+    "PnMandateExpiredTriggerLambdaEventSourceMappingMaximumBatchingWindowInSeconds": "20",
+    "PnMandateExpiredTriggerLambdaEventSourceMappingMaximumRetryAttempts": "20"
   }
 }

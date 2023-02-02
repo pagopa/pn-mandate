@@ -2,12 +2,8 @@ package it.pagopa.pn.mandate.middleware.queue.consumer;
 
 import it.pagopa.pn.api.dto.events.StandardEventHeader;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.mandate.middleware.queue.consumer.event.PnMandateExpiredEvent;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 
@@ -19,11 +15,12 @@ public class HandleEventUtils {
     private HandleEventUtils() {
     }
 
-    public static Mono<Void> handleException(Flux<Message<PnMandateExpiredEvent.Payload>> messageMono, Throwable t) {
-        return messageMono
-                .doOnNext(message -> handleException(message.getHeaders(), t))
-                .then(Mono.error(t));
-    }
+    //per versione asincrona
+//    public static Mono<Void> handleException(Flux<Message<PnMandateExpiredEvent.Payload>> messageMono, Throwable t) {
+//        return messageMono
+//                .doOnNext(message -> handleException(message.getHeaders(), t))
+//                .then(Mono.error(t));
+//    }
 
     public static void handleException(MessageHeaders headers, Throwable t) {
         if (headers != null) {

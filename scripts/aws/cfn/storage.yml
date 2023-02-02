@@ -24,6 +24,10 @@ Parameters:
     Type: String
     Description: 'Where to send CDC'
 
+  AlarmSNSTopicName:
+    Type: String
+    Description: 'Topic alarm'
+
 Resources:
 
   MandatesDynamoTable:
@@ -62,10 +66,13 @@ Resources:
           ProvisionedThroughput:
             ReadCapacityUnits: 5
             WriteCapacityUnits: 5
+      TimeToLiveSpecification:
+        AttributeName: "i_ttl"
+        Enabled: true
       KinesisStreamSpecification:
         StreamArn: !Ref CdcKinesisSourceStreamArn
       StreamSpecification: 
-        StreamViewType: NEW_IMAGE
+        StreamViewType: NEW_AND_OLD_IMAGES
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true       
 
@@ -87,8 +94,35 @@ Resources:
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
       PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: true  
-        
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: "i_ttl"
+        Enabled: true
+
+  ### DLQ used by lambda for handling expired Mandates ###
+  # NB: la coda stessa è di DLQ, quindi va allarmata. Non è necessario invece che sia allarmata la sua DLQ
+  PnMandateExpiredTriggerDLQ:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
+      Parameters:
+        QueueName: !Sub '${ProjectName}-mandate_expired_trigger_DLQ'
+        DelaySeconds: 1
+        AlarmSNSTopicName: !Ref AlarmSNSTopicName
+        HasDLQ:  "false"
+        QueueHasAlarm:  "true"
+
+  ### Communication for expired mandates ###
+  PnMandateInputsQueue:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
+      Parameters:
+        QueueName: !Sub '${ProjectName}-mandate_inputs'
+        DelaySeconds: 2
+        AlarmSNSTopicName: !Ref AlarmSNSTopicName
+        FifoQueue: true
+
 Outputs:
   MandatesDynamoTableName:
     Description: Name of dynamodb table containing mandates
@@ -98,6 +132,10 @@ Outputs:
     Description: Name of dynamodb table containing mandates history
     Value: !Ref MandatesDynamoTableHistory
 
+  MandatesDynamoTableNameStreamArn:
+      Description: ARN of dynamodb table containing stream mandates
+      Value: !GetAtt MandatesDynamoTable.StreamArn
+
   MandatesDynamoTableArn:
     Description: ARN of dynamodb table containing mandates
     Value: !Sub '${MandatesDynamoTable.Arn}'
@@ -105,3 +143,36 @@ Outputs:
   MandatesDynamoTableHistoryArn:
     Description: ARN of dynamodb table containing mandates history
     Value: !Sub '${MandatesDynamoTableHistory.Arn}'
+
+
+  # Mandate Expired Insert Trigger DLQ
+  PnMandateExpiredTriggerDLQName:
+    Value: !GetAtt PnMandateExpiredTriggerDLQ.Outputs.QueueName
+    Description: pn-mandate_expired_trigger_DLQ queue name
+  PnMandateExpiredTriggerDLQURL:
+    Value: !GetAtt PnMandateExpiredTriggerDLQ.Outputs.QueueURL
+    Description: pn-mandate_expired_trigger_DLQ queue URL
+  PnMandateExpiredTriggerDLQARN:
+    Value: !GetAtt PnMandateExpiredTriggerDLQ.Outputs.QueueARN
+    Description: pn-mandate_expired_trigger_DLQ queue ARN
+  PnMandateExpiredTriggerDLQAlarmARN:
+    Value: !GetAtt PnMandateExpiredTriggerDLQ.Outputs.SqsDLQAlarmArn
+    Description: pn-mandate_expired_trigger_DLQ alarm ARN
+
+
+  # Mandate input DLQ
+  PnMandateInputsQueueName:
+    Value: !GetAtt PnMandateInputsQueue.Outputs.QueueName
+    Description: pn-mandate_inputs queue name
+  PnMandateInputsQueueURL:
+    Value: !GetAtt PnMandateInputsQueue.Outputs.QueueURL
+    Description: pn-mandate_inputs queue URL
+  PnMandateInputsQueueARN:
+    Value: !GetAtt PnMandateInputsQueue.Outputs.QueueARN
+    Description: pn-mandate_inputs queue ARN
+  PnMandateInputsQueueAlarmARN:
+    Value: !GetAtt PnMandateInputsQueue.Outputs.SqsDLQAlarmArn
+    Description: pn-mandate_inputs alarm ARN
+  PnMandateInputsQueueAgeAlarmARN:
+    Value: !GetAtt PnMandateInputsQueue.Outputs.SqsAgeAlarmArn
+    Description: pn-mandate_inputs age alarm ARN

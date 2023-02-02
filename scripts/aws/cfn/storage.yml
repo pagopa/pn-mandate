@@ -173,3 +173,6 @@ Outputs:
   PnMandateInputsQueueAlarmARN:
     Value: !GetAtt PnMandateInputsQueue.Outputs.SqsDLQAlarmArn
     Description: pn-mandate_inputs alarm ARN
+  PnMandateInputsQueueAgeAlarmARN:
+    Value: !GetAtt PnMandateInputsQueue.Outputs.SqsAgeAlarmArn
+    Description: pn-mandate_inputs age alarm ARN

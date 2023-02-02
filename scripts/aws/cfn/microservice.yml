@@ -91,6 +91,10 @@ Parameters:
     Type: String
     Description: pn-mandate_expired_trigger_DLQ alarm ARN
 
+  PnMandateInputsQueueAgeAlarmARN:
+    Type: String
+    Description: pn-mandate_inputs queue age ARN DLQ
+
   PnMandateExpiredTriggerDLQARN:
     Type: String
     Description: pn-mandate_expired_trigger_DLQ queue ARN
@@ -239,6 +243,7 @@ Resources:
             - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiLatencyAlarmArn
             - !Ref PnMandateExpiredTriggerDLQAlarmARN
             - !Ref PnMandateInputsQueueAlarmARN
+            - !Ref PnMandateInputsQueueAgeAlarmARN
 
   ### IAM Role used by Subscription filters to allow read logs from Cloudwatch and send logs to Kinesis Firehose
   SubscriptionFilterServiceRole:

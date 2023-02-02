@@ -107,6 +107,10 @@ Parameters:
     Type: String
     Description: pn-mandate_inputs queue ARN DLQ
 
+  PnMandateInputsQueueName:
+    Type: String
+    Description: pn-mandate_inputs queue name
+
   LogsKinesisSourceStreamArn:
     Type: String
     Description: 'Kinesis stream that receive logs'
@@ -158,6 +162,7 @@ Resources:
         ContainerEnvEntry4: !Sub 'AWS_DYNAMODB_TABLE_HISTORY=${MandatesDynamoTableHistoryName}'
         ContainerEnvEntry5: 'PN_MANDATE_CLIENT_DATAVAULT_BASEPATH=http://alb.confidential.pn.internal:8080'
         ContainerEnvEntry6: !Sub 'PN_MANDATE_CLIENT_INFOPA_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
+        ContainerEnvEntry7: !Sub 'SPRING_CLOUD_FUNCTIONROUTER_QUEUES_LIST=${PnMandateInputsQueueName}'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds

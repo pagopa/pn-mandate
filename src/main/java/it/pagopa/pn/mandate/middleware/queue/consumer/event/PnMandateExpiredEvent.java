@@ -33,4 +33,5 @@ public class PnMandateExpiredEvent implements GenericFifoEvent<StandardEventHead
         private String delegatorInternalUserid;
     }
 
+
 }

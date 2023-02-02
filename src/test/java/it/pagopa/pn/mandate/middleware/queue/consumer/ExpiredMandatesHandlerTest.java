@@ -81,6 +81,7 @@ class ExpiredMandatesHandlerTest {
         Mockito.verify(mandateService).expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345");
     }
 
+
     @Test
     void consumeMessageKO() {
         Consumer<Message<PnMandateExpiredEvent.Payload>> consumer = functionCatalog.lookup(Function.class, "pnMandateExpiredMandatesConsumer");

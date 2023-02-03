@@ -1,3 +1,19 @@
+echo "### CREATE QUEUES FIFO ###"
+queues_fifo="local-mandate-inputs.fifo"
+
+for qn in  $( echo $queues_fifo | tr " " "\n" ) ; do
+
+    echo creating queue fifo $qn ...
+
+    aws --profile default --region us-east-1 --endpoint-url http://localstack:4566 \
+        sqs create-queue \
+        --attributes '{"DelaySeconds":"2","FifoQueue": "true","ContentBasedDeduplication": "true"}' \
+        --queue-name $qn
+
+
+done
+
+
 echo " - Create pn-mandates TABLES"
 aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     dynamodb create-table \
@@ -12,6 +28,8 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
         AttributeName=sk,KeyType=RANGE \
     --provisioned-throughput \
         ReadCapacityUnits=10,WriteCapacityUnits=5 \
+    --stream-specification \
+        StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES \
     --global-secondary-indexes \
     "[
         {
@@ -39,5 +57,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
         AttributeName=sk,KeyType=RANGE \
     --provisioned-throughput \
         ReadCapacityUnits=10,WriteCapacityUnits=5
+
+
 
 echo "Initialization terminated"

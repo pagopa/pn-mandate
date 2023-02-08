@@ -455,7 +455,7 @@ class MandateServiceTest {
         mandateDto.setVisibilityIds(new ArrayList<>());
         mandateDto.setDelegate(new UserDto());
         mandateDto.getDelegate().setCompanyName("mario srl");
-        mandateDto.getDelegate().setFiscalCode("12345678901");
+        mandateDto.getDelegate().setFiscalCode("15376371009");
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
         final MandateDto mandateDtoRes = new MandateDto();
@@ -467,7 +467,7 @@ class MandateServiceTest {
         mandateDtoRes.setVisibilityIds(new ArrayList<>());
         mandateDtoRes.setDelegate(new UserDto());
         mandateDtoRes.getDelegate().setCompanyName("mario srl");
-        mandateDtoRes.getDelegate().setFiscalCode("12345678901");
+        mandateDtoRes.getDelegate().setFiscalCode("15376371009");
         mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
 
         List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();

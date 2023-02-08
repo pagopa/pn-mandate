@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
+import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
@@ -232,12 +233,11 @@ public class MandateService {
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, VERIFICATION_CODE);
 
         if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
-                && !mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}\\d{2}[A-Za-z]\\d{2}[A-Za-z]\\d{3}[A-Za-z]"))
+                && !ValidateUtils.validate(mandateDto.getDelegate().getFiscalCode(), true))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
         // le PG possono avere p.iva o CF!
         if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
-                && !(mandateDto.getDelegate().getFiscalCode().matches("\\d{11}")
-                || mandateDto.getDelegate().getFiscalCode().matches("[A-Za-z]{6}\\d{2}[A-Za-z]\\d{2}[A-Za-z]\\d{3}[A-Za-z]")))
+                && !ValidateUtils.validate(mandateDto.getDelegate().getFiscalCode(), false))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
 
         // la delega richiede la data di fine

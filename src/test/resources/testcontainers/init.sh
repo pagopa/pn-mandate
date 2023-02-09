@@ -1,4 +1,5 @@
 echo "### CREATE QUEUES FIFO ###"
+
 queues_fifo="local-mandate-inputs.fifo"
 
 for qn in  $( echo $queues_fifo | tr " " "\n" ) ; do
@@ -15,6 +16,7 @@ done
 
 
 echo " - Create pn-mandates TABLES"
+
 aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     dynamodb create-table \
     --table-name Mandate  \
@@ -45,6 +47,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
             }
         }
     ]"
+
   
 aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     dynamodb create-table \

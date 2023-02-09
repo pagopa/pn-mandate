@@ -43,6 +43,8 @@ import java.util.concurrent.CompletableFuture;
 @Import(PnAuditLogBuilder.class)
 public class MandateDao extends BaseDao {
 
+    public static final String AUDITLOG_MANDATEID = "mandateid";
+    public static final String AUDITLOG_UID = "uid";
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
     DynamoDbAsyncClient dynamoDbAsyncClient;
     DynamoDbAsyncTable<MandateEntity> mandateTable;
@@ -192,7 +194,8 @@ public class MandateDao extends BaseDao {
     {
         String logMessage = String.format("acceptMandate for delegate uid=%s mandateid=%s verificationCode=%s", delegateInternaluserid, mandateId, verificationCode); 
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
-            .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
+                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
+                .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
                 .build();
 
         logEvent.log();
@@ -272,6 +275,7 @@ public class MandateDao extends BaseDao {
 
         String logMessage = String.format("rejectMandate for delegate uid=%s mandateid=%s", delegateInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
+                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
                 .before(PnAuditLogEventType.AUD_DL_REJECT, logMessage)
                 .build();
         logEvent.log();
@@ -322,6 +326,7 @@ public class MandateDao extends BaseDao {
     {
         String logMessage = String.format("revokeMandate for delegate uid=%s mandateid=%s", delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
+                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
                 .build();
 
@@ -372,6 +377,8 @@ public class MandateDao extends BaseDao {
     {
         String logMessage = String.format("expireMandate for delegate uid=%s{} mandateid=%s", delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
+                .mdcEntry(AUDITLOG_UID, delegatorInternaluserid)
+                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
                 .before(PnAuditLogEventType.AUD_DL_EXPIRE, logMessage)
                 .build();
 
@@ -407,6 +414,7 @@ public class MandateDao extends BaseDao {
     public Mono<MandateEntity> createMandate(MandateEntity mandate){
         String logMessage = String.format("create mandate mandate=%s", mandate);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
+                .mdcEntry(AUDITLOG_MANDATEID, mandate.getMandateId())
                 .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
                 .build();
 

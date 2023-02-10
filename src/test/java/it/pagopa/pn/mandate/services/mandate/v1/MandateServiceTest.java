@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
+import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
@@ -61,6 +62,9 @@ class MandateServiceTest {
 
     @Mock
     PnDataVaultClient pnDatavaultClient;
+
+    @Mock
+    ValidateUtils validateUtils;
 
     @Test
     void acceptMandate() {
@@ -255,6 +259,7 @@ class MandateServiceTest {
         when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
         when(mapper.toEntity(Mockito.any())).thenReturn(entity);
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+        when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true).block(d);
@@ -309,6 +314,7 @@ class MandateServiceTest {
         when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
         when(mapper.toEntity(Mockito.any())).thenReturn(entity);
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+        when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true).block(d);
@@ -364,6 +370,7 @@ class MandateServiceTest {
         when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
         when(mapper.toEntity(Mockito.any())).thenReturn(entity);
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+        when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true).block(d);
@@ -424,6 +431,7 @@ class MandateServiceTest {
         when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
         when(mapper.toEntity(Mockito.any())).thenReturn(entity);
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+        when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true).block(d);
@@ -606,6 +614,7 @@ class MandateServiceTest {
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegator()));
+        when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
         Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true);

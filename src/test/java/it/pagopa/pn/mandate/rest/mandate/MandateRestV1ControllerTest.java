@@ -90,7 +90,7 @@ class MandateRestV1ControllerTest {
         MandateDto dto = mapper.toDto(MandateDaoIT.newMandate(true));
 
         //When
-        Mockito.when( mandateService.createMandate( Mockito.any(), Mockito.any() , Mockito.anyBoolean()))
+        Mockito.when( mandateService.createMandate( Mockito.any(), Mockito.any() , Mockito.anyString(), Mockito.anyBoolean()))
                 .thenReturn(Mono.just(dto));
 
         //Then

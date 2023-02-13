@@ -31,6 +31,8 @@ public class PnMandateExpiredEvent implements GenericFifoEvent<StandardEventHead
     public static class Payload {
         private String mandateId;
         private String delegatorInternalUserid;
+        private String delegatorUserid;
+        private String delegatorCxType;
     }
 
 

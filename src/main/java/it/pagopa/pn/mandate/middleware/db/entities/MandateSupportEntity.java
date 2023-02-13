@@ -1,14 +1,12 @@
 package it.pagopa.pn.mandate.middleware.db.entities;
 
-import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
-
-import java.util.Set;
-
-import static it.pagopa.pn.mandate.middleware.db.BaseDao.GSI_INDEX_DELEGATE_STATE;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 /**
  * Entity di supporto alla delega
@@ -23,12 +21,16 @@ public class MandateSupportEntity {
 
     public static final String COL_PK = "pk";
     public static final String COL_SK = "sk";
+    public static final String COL_DELEGATOR_UID = "s_delegatoruid";
+    public static final String COL_DELEGATOR_TYPE = "s_delegatortype";
     public static final String COL_I_TTL = "i_ttl";
 
     public MandateSupportEntity(MandateEntity source)
     {
         this.setDelegator(source.getDelegator());
         this.setMandateId(source.getMandateId());
+        this.setDelegatorUid(source.getDelegatorUid());
+        this.setDelegatorType(Boolean.TRUE.equals(source.getDelegatorisperson())?"PF":"PG");
         if (source.getValidto() != null)
             this.setTtl(source.getValidto().getEpochSecond());
     }
@@ -43,6 +45,8 @@ public class MandateSupportEntity {
 
     @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute(COL_PK)})) private String delegator;
     @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_SK)}))  private String sk;
+    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_DELEGATOR_UID)}))  private String delegatorUid;
+    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_DELEGATOR_TYPE)}))  private String delegatorType;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_TTL)}))  private Long ttl;
     
 }

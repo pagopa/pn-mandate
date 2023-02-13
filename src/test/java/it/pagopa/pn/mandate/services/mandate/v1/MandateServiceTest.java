@@ -608,7 +608,7 @@ class MandateServiceTest {
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegator()));
 
         //When
-        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), true);
+        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegatorUid(), entity.getDelegator(), true);
         assertThrows(PnMandateByHimselfException.class, () -> mono.block(d));
 
         //Then

@@ -25,8 +25,9 @@ import java.util.List;
 @Import({MandateEntityMandateDtoMapper.class, UserEntityMandateCountsDtoMapper.class})
 class MandateRestV1ControllerTest {
 
-    public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-cx-id";
+    public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-uid";
     public static final String PN_PAGOPA_CX_TYPE = "x-pagopa-pn-cx-type";
+    public static final String PN_PAGOPA_CX_ID = "x-pagopa-pn-cx-id";
     @Autowired
     WebTestClient webTestClient;
 
@@ -97,8 +98,9 @@ class MandateRestV1ControllerTest {
         webTestClient.post()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header( PN_PAGOPA_CX_ID, "internaluserid1234")
                 .header( PN_PAGOPA_CX_TYPE, "PF")
+                .header( PN_PAGOPA_USER_ID, "userid")
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody();

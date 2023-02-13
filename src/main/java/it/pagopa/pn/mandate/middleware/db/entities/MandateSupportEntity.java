@@ -45,8 +45,8 @@ public class MandateSupportEntity {
 
     @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute(COL_PK)})) private String delegator;
     @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_SK)}))  private String sk;
-    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_DELEGATOR_UID)}))  private String delegatorUid;
-    @Getter(onMethod=@__({@DynamoDbSortKey, @DynamoDbAttribute(COL_DELEGATOR_TYPE)}))  private String delegatorType;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_DELEGATOR_UID)}))  private String delegatorUid;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_DELEGATOR_TYPE)}))  private String delegatorType;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_TTL)}))  private Long ttl;
     
 }

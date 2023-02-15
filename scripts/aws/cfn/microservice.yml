@@ -297,6 +297,12 @@ Resources:
               - sqs:SendMessageBatch
             Resource:
               - !Ref PnMandateInputsQueueARN
+          - Effect: Allow
+            Action:
+              - ssm:GetParameter
+              - ssm:GetParameters
+            Resource:
+              - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
 
   # Expose PN-Mandate microservice public API with API-GW for WEB usage
   MandateMicroservicePublicWebAPI:

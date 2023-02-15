@@ -507,6 +507,9 @@ Resources:
                       const delegatorInternalUserid = record.dynamodb.Keys.pk.S;
                       const mandateId = sortkey.replace("MANDATETRIGGERHELPER#","");
 
+                      const delegatorUserid = record.dynamodb.OldImage.s_delegatoruid.S;
+                      const delegatorCxType = record.dynamodb.OldImage.s_delegatortype.S;
+
                       var message = {
                         DelaySeconds: 0,
                         MessageGroupId: 'MANDATE',
@@ -529,7 +532,7 @@ Resources:
                             StringValue: "MANDATE"
                           }
                         },
-                        MessageBody: JSON.stringify({delegatorInternalUserid: delegatorInternalUserid, mandateId: mandateId}),
+                        MessageBody: JSON.stringify({delegatorInternalUserid: delegatorInternalUserid, mandateId: mandateId, delegatorUserid: delegatorUserid, delegatorCxType: delegatorCxType}),
                         QueueUrl: QUEUE_URL
                       };
 

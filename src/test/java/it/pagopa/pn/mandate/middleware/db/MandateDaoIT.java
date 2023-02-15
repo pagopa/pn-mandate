@@ -131,8 +131,9 @@ public class MandateDaoIT {
     public static MandateEntity newMandate(boolean withValidtoSetted) {
         MandateEntity m = new MandateEntity();
         m.setMandateId("f271e4bf-0d69-4ed6-a39f-4ef2f01f2fd1");
-        m.setDelegator("f271e4bf-0d69-4ed6-a39f-4efdelegator");
-        m.setDelegate("f271e4bf-0d69-4ed6-a39f-4ef2delegate");
+        m.setDelegatorUid("f271e4bf-0d69-4ed6-a39f-4efdelegator");
+        m.setDelegator("PF-f271e4bf-0d69-4ed6-a39f-4efdelegator");
+        m.setDelegate("PF-f271e4bf-0d69-4ed6-a39f-4ef2delegate");
         m.setDelegatorisperson(true);
         m.setDelegateisperson(true);
         m.setValidfrom(ZonedDateTime.of(LocalDateTime.of(2021, Month.DECEMBER, 14, 0, 0), ZoneId.of("Europe/Rome")).toInstant());
@@ -1014,7 +1015,7 @@ public class MandateDaoIT {
         }
 
         //When
-        mandateDao.expireMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(d);
+        mandateDao.expireMandate(mandateToInsert.getDelegator(), mandateToInsert.getDelegatorUid(), mandateToInsert.getDelegatorisperson()?"PF":"PG", mandateToInsert.getMandateId()).block(d);
 
 
         //Then
@@ -1044,7 +1045,7 @@ public class MandateDaoIT {
         // nothing
 
         //When
-        Mono<Object> mono = mandateDao.expireMandate("fake", "fake");
+        Mono<Object> mono = mandateDao.expireMandate("fake", "fake", "PF", "fake");
         assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
     }
 }

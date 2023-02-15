@@ -23,6 +23,7 @@ public class MandateEntity {
     public static final String COL_PK = "pk";
     public static final String COL_SK = "sk";
     public static final String COL_S_DELEGATE = "s_delegate";
+    public static final String COL_S_DELEGATORUID = "s_delegatoruid";
     public static final String COL_I_STATE = "i_state";
     public static final String COL_B_DELEGATORISPERSON = "b_delegatorisperson";
     public static final String COL_B_DELEGATEISPERSON = "b_delegateisperson";
@@ -72,6 +73,7 @@ public class MandateEntity {
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_S_VALIDATIONCODE)}))  private String validationcode;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_A_VISIBILITYIDS)}))  private Set<String> visibilityIds;
 
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_S_DELEGATORUID)}))  private String delegatorUid;
 
     // per lo storico e per la struttura dati di appoggio
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_TTL)}))  private Long ttl;

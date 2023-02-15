@@ -34,7 +34,7 @@ public class ExpiredMandatesHandler {
             try {
                 log.info("[enter] pnMandateExpiredMandatesConsumer, message {}", message);
                 PnMandateExpiredEvent.Payload payload = message.getPayload();
-                mandateService.expireMandate(payload.getMandateId(), payload.getDelegatorInternalUserid()).block();
+                mandateService.expireMandate(payload.getMandateId(), payload.getDelegatorInternalUserid(), payload.getDelegatorUserid(), payload.getDelegatorCxType()).block();
                 log.info("[exit] pnMandateExpiredMandatesConsumer");
             }
             catch (Exception ex) {

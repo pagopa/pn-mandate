@@ -119,7 +119,7 @@ public class MandateService  {
      * @param requesterUserTypeIsPF tipologia del delegante (PF/PG)
      * @return delega creata
      */
-    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, final String requesterInternaluserId, final boolean requesterUserTypeIsPF) {
+    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, final String requesterUid, final String requesterInternaluserId, final boolean requesterUserTypeIsPF) {
         final String uuid = UUID.randomUUID().toString();
         return mandateDto
                 .map(this::validate)
@@ -132,6 +132,7 @@ public class MandateService  {
 
                             MandateEntity entity = mandateEntityMandateDtoMapper.toEntity(dto);
                             entity.setDelegate(delegateInternaluserId);
+                            entity.setDelegatorUid(requesterUid);
                             entity.setMandateId(uuid);
                             entity.setDelegator(requesterInternaluserId);
                             entity.setDelegatorisperson(requesterUserTypeIsPF);
@@ -385,11 +386,11 @@ public class MandateService  {
      * @param internaluserId iuid del delegante
      * @return void
      */
-    public Mono<Object> expireMandate(String mandateId, String internaluserId) {
+    public Mono<Object> expireMandate(String mandateId, String internaluserId, String uid, String cxType) {
         if (mandateId == null)
             throw  new PnMandateNotFoundException();
 
-        return mandateDao.expireMandate(internaluserId, mandateId)
+        return mandateDao.expireMandate(internaluserId, uid, cxType, mandateId)
                 .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)
                         ,(r, d) -> d);
     }

@@ -38,13 +38,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static it.pagopa.pn.commons.log.MDCWebFilter.*;
+
 @Repository
 @Slf4j
 @Import(PnAuditLogBuilder.class)
 public class MandateDao extends BaseDao {
 
     public static final String AUDITLOG_MANDATEID = "mandateid";
-    public static final String AUDITLOG_UID = "uid";
+
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
     DynamoDbAsyncClient dynamoDbAsyncClient;
     DynamoDbAsyncTable<MandateEntity> mandateTable;
@@ -370,21 +372,26 @@ public class MandateDao extends BaseDao {
      *  - eliminare eventuale entity di supporto dalla tabella principale
      *
      * @param delegatorInternaluserid internaluserid del delegante
+     * @param delegatorUid uid del delegante
+     * @param cxType cxType del delegante
      * @param mandateId id della delega
      * @return void
      */
-    public Mono<Object> expireMandate(String delegatorInternaluserid, String mandateId)
+    public Mono<Object> expireMandate(String delegatorInternaluserid, String delegatorUid, String cxType, String mandateId)
     {
-        String logMessage = String.format("expireMandate for delegate uid=%s{} mandateid=%s", delegatorInternaluserid, mandateId);
+        String logMessage = String.format("expireMandate for delegate internalId=%s uid=%s cxType=%s mandateid=%s", delegatorInternaluserid, delegatorUid, cxType, mandateId);
+
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_EXPIRE, logMessage)
-                .mdcEntry(AUDITLOG_UID, delegatorInternaluserid)
+                .mdcEntry(MDC_CX_ID_KEY, delegatorInternaluserid)
+                .mdcEntry(MDC_PN_UID_KEY, delegatorUid)
+                .mdcEntry(MDC_PN_CX_TYPE_KEY, cxType)
                 .mdcEntry(AUDITLOG_MANDATEID, mandateId)
                 .build();
 
         logEvent.log();
         return Mono.fromFuture(retrieveMandateForDelegator(delegatorInternaluserid, mandateId)
-                .thenCompose(mandate -> {
+                        .thenCompose(mandate -> {
                             if (mandate == null) {
                                 throw new PnMandateNotFoundException();
                             }

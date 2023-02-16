@@ -329,7 +329,7 @@ class MandateServiceTest {
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
 
         //When
-        Mono<MandateDto> result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), true, CxTypeAuthFleet.PG, null, "operator");
+        Mono<MandateDto> result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(),  true, CxTypeAuthFleet.PG, null, "operator");
 
         //Then
         Assertions.assertThrows(PnForbiddenException.class, result::block);
@@ -1172,14 +1172,14 @@ class MandateServiceTest {
 
         when(sqsService.sendToDelivery(mandateEntity, EventType.MANDATE_EXPIRED))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
-        when(mandateDao.expireMandate(Mockito.anyString(), Mockito.anyString()))
+        when(mandateDao.expireMandate(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(Mono.just(mandateEntity));
         when(pnDatavaultClient.deleteMandateById(Mockito.any()))
                 .thenReturn(Mono.just("").then());
 
         //When
         assertDoesNotThrow(() -> {
-            mandateService.expireMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator())
+            mandateService.expireMandate(mandateEntity.getMandateId(), mandateEntity.getDelegatorUid(), mandateEntity.getDelegateisperson() ? "PF" : "PG", mandateEntity.getDelegator())
                     .block(d);
         });
 

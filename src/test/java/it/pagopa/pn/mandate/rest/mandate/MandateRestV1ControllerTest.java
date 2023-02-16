@@ -25,8 +25,9 @@ import java.util.List;
 @Import({MandateEntityMandateDtoMapper.class, UserEntityMandateCountsDtoMapper.class})
 class MandateRestV1ControllerTest {
 
-    public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-cx-id";
+    public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-uid";
     public static final String PN_PAGOPA_CX_TYPE = "x-pagopa-pn-cx-type";
+    public static final String PN_PAGOPA_CX_ID = "x-pagopa-pn-cx-id";
 
     @Autowired
     WebTestClient webTestClient;
@@ -56,7 +57,8 @@ class MandateRestV1ControllerTest {
         webTestClient.get()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header(PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_ID, "internaluserid1234")
+                .header(PN_PAGOPA_USER_ID, "userid")
                 .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk();
@@ -76,7 +78,8 @@ class MandateRestV1ControllerTest {
         webTestClient.patch()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header( PN_PAGOPA_CX_ID, "internaluserid1234")
+                .header( PN_PAGOPA_USER_ID, "userid")
                 .header( PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isNoContent();
@@ -91,15 +94,16 @@ class MandateRestV1ControllerTest {
         MandateDto dto = mapper.toDto(MandateDaoIT.newMandate(true));
 
         //When
-        Mockito.when( mandateService.createMandate( Mockito.any(), Mockito.any() , Mockito.anyBoolean(), Mockito.any(), Mockito.any(), Mockito.any()))
+        Mockito.when( mandateService.createMandate( Mockito.any(), Mockito.any() , Mockito.anyString(), Mockito.anyBoolean(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(Mono.just(dto));
 
         //Then
         webTestClient.post()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header( PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header( PN_PAGOPA_CX_ID, "internaluserid1234")
                 .header( PN_PAGOPA_CX_TYPE, "PF")
+                .header( PN_PAGOPA_USER_ID, "userid")
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody();
@@ -119,7 +123,8 @@ class MandateRestV1ControllerTest {
         webTestClient.get()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header(PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_ID, "internaluserid1234")
+                .header(PN_PAGOPA_USER_ID, "userid")
                 .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk().expectBodyList(MandateDto.class);
@@ -139,7 +144,8 @@ class MandateRestV1ControllerTest {
         webTestClient.get()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header(PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_ID, "internaluserid1234")
+                .header(PN_PAGOPA_USER_ID, "userid")
                 .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk().expectBodyList(MandateDto.class);
@@ -159,7 +165,8 @@ class MandateRestV1ControllerTest {
         webTestClient.patch()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header(PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_ID, "internaluserid1234")
+                .header(PN_PAGOPA_USER_ID, "userid")
                 .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isNoContent();
@@ -179,7 +186,8 @@ class MandateRestV1ControllerTest {
         webTestClient.patch()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header(PN_PAGOPA_USER_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_ID, "internaluserid1234")
+                .header(PN_PAGOPA_USER_ID, "userid")
                 .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isNoContent();

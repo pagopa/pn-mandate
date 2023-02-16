@@ -50,15 +50,16 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
     }
 
     @Override
-    public Mono<ResponseEntity<MandateDto>> createMandate(String xPagopaPnCxId,
+    public Mono<ResponseEntity<MandateDto>> createMandate(String xPagopaPnUid,
+                                                          String xPagopaPnCxId,
                                                           CxTypeAuthFleet xPagopaPnCxType,
                                                           List<String> groups,
                                                           String role,
                                                           Mono<MandateDto> mandateDto,
-                                                          ServerWebExchange exchange) {
+                                                         final ServerWebExchange exchangee) {
 
         return  mandateService
-                .createMandate(mandateDto, xPagopaPnCxId,(xPagopaPnCxType==null || xPagopaPnCxType.equals(CxTypeAuthFleet.PF)), xPagopaPnCxType, groups, role)
+                .createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId,(xPagopaPnCxType==null || xPagopaPnCxType.equals(CxTypeAuthFleet.PF)), xPagopaPnCxType, groups, role)
                 .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m));
     }
 

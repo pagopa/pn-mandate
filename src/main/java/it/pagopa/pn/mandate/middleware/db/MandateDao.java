@@ -40,10 +40,14 @@ import java.util.concurrent.CompletableFuture;
 
 import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 
+import static it.pagopa.pn.commons.log.MDCWebFilter.*;
+
 @Repository
 @Slf4j
 @Import(PnAuditLogBuilder.class)
 public class MandateDao extends BaseDao {
+
+    public static final String AUDITLOG_MANDATEID = "mandateid";
 
     private static final int MAX_DYNAMODB_BATCH_SIZE = 100;
 
@@ -106,7 +110,7 @@ public class MandateDao extends BaseDao {
             expression += AND + buildExpressionGroupFilter(cxGroups, expressionValues);
         }
 
-        log.info("expression: {}", expression);
+        log.debug("expression: {}", expression);
 
         Expression exp = Expression.builder()
             .expression(expression)
@@ -222,6 +226,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("acceptMandate for delegate uid=%s mandateid=%s verificationCode=%s", delegateInternaluserid, mandateId, verificationCode); 
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
+                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
                 .build();
 
         logEvent.log();
@@ -307,6 +312,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("rejectMandate for delegate uid=%s mandateid=%s", delegateInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REJECT, logMessage)
+                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
                 .build();
         logEvent.log();
 
@@ -356,6 +362,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("revokeMandate for delegate uid=%s mandateid=%s", delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
+                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
                 .build();
 
         logEvent.log();
@@ -398,26 +405,31 @@ public class MandateDao extends BaseDao {
      *  - eliminare eventuale entity di supporto dalla tabella principale
      *
      * @param delegatorInternaluserid internaluserid del delegante
+     * @param delegatorUid uid del delegante
+     * @param cxType cxType del delegante
      * @param mandateId id della delega
      * @return void
      */
-    public Mono<MandateEntity> expireMandate(String delegatorInternaluserid, String mandateId) {
-        String logMessage = String.format("expireMandate for delegate uid=%s{} mandateid=%s", delegatorInternaluserid, mandateId);
+    public Mono<MandateEntity> expireMandate(String delegatorInternaluserid, String delegatorUid, String cxType, String mandateId) {
+        String logMessage = String.format("expireMandate for delegate internalId=%s uid=%s cxType=%s mandateid=%s", delegatorInternaluserid, delegatorUid, cxType, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_EXPIRE, logMessage)
+                .mdcEntry(MDC_CX_ID_KEY, delegatorInternaluserid)
+                .mdcEntry(MDC_PN_UID_KEY, delegatorUid)
+                .mdcEntry(MDC_PN_CX_TYPE_KEY, cxType)
+                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
                 .build();
 
         logEvent.log();
         return Mono.fromFuture(retrieveMandateForDelegator(delegatorInternaluserid, mandateId)
-                .thenCompose(mandate -> {
+                        .thenCompose(mandate -> {
                             if (mandate == null) {
                                 throw new PnMandateNotFoundException();
                             }
                             log.info("expireMandate mandate for delegate retrieved mandateobj={}", mandate);
                             mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
                             return saveHistoryAndDeleteFromMain(mandate);
-                        })
-                )
+                        }))
                 .onErrorResume(throwable -> {
                     logEvent.generateFailure(throwable.getMessage()).log();
                     return Mono.error(throwable);
@@ -440,6 +452,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("create mandate mandate=%s", mandate);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
+                .mdcEntry(AUDITLOG_MANDATEID, mandate.getMandateId())
                 .build();
 
         logEvent.log();

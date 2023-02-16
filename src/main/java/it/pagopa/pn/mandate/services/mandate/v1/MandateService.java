@@ -52,10 +52,16 @@ public class MandateService {
     private final PnInfoPaClient pnInfoPaClient;
     private final PnDataVaultClient pnDatavaultClient;
     private final SqsService sqsService;
+    private final ValidateUtils validateUtils;
 
-
-    public MandateService(MandateDao mandateDao, DelegateDao userDao, MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper,
-                          UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper, PnInfoPaClient pnInfoPaClient, PnDataVaultClient pnDatavaultClient, SqsService sqsService) {
+    public MandateService(MandateDao mandateDao,
+                          DelegateDao userDao,
+                          MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper,
+                          UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper,
+                          PnInfoPaClient pnInfoPaClient,
+                          PnDataVaultClient pnDatavaultClient,
+                          SqsService sqsService,
+                          ValidateUtils validateUtils) {
         this.mandateDao = mandateDao;
         this.userDao = userDao;
         this.mandateEntityMandateDtoMapper = mandateEntityMandateDtoMapper;
@@ -63,6 +69,7 @@ public class MandateService {
         this.pnInfoPaClient = pnInfoPaClient;
         this.pnDatavaultClient = pnDatavaultClient;
         this.sqsService = sqsService;
+        this.validateUtils = validateUtils;
     }
 
     /**
@@ -146,11 +153,13 @@ public class MandateService {
      * @param role                      ruolo dell'utente
      * @return delega creata
      */
-    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, final String requesterInternaluserId,
-                                          final boolean requesterUserTypeIsPF, CxTypeAuthFleet cxTypeAuthFleet,
-                                          List<String> groups, String role) {
-
-
+    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto,
+                                          final String requesterUid,
+                                          final String requesterInternaluserId,
+                                          final boolean requesterUserTypeIsPF,
+                                          CxTypeAuthFleet cxTypeAuthFleet,
+                                          List<String> groups,
+                                          String role) {
         final String uuid = UUID.randomUUID().toString();
         return validaAccessoOnlyAdmin(cxTypeAuthFleet, role, groups)
                 .flatMap(obj -> mandateDto
@@ -164,6 +173,7 @@ public class MandateService {
 
                                             MandateEntity entity = mandateEntityMandateDtoMapper.toEntity(dto);
                                             entity.setDelegate(delegateInternaluserId);
+                                            entity.setDelegatorUid(requesterUid);
                                             entity.setMandateId(uuid);
                                             entity.setDelegator(requesterInternaluserId);
                                             entity.setDelegatorisperson(requesterUserTypeIsPF);
@@ -233,11 +243,11 @@ public class MandateService {
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, VERIFICATION_CODE);
 
         if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
-                && !ValidateUtils.validate(mandateDto.getDelegate().getFiscalCode(), true))
+                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), true))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
         // le PG possono avere p.iva o CF!
         if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
-                && !ValidateUtils.validate(mandateDto.getDelegate().getFiscalCode(), false))
+                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), false))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
 
         // la delega richiede la data di fine
@@ -440,11 +450,11 @@ public class MandateService {
      * @param internaluserId iuid del delegante
      * @return void
      */
-    public Mono<Object> expireMandate(String mandateId, String internaluserId) {
+    public Mono<Object> expireMandate(String mandateId, String internaluserId, String uid, String cxType) {
         if (mandateId == null)
             throw new PnMandateNotFoundException();
 
-        return mandateDao.expireMandate(internaluserId, mandateId)
+        return mandateDao.expireMandate(internaluserId, uid, cxType, mandateId)
                 .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
                 .flatMap(entity -> {
                     if (Boolean.FALSE.equals(entity.getDelegateisperson())) {

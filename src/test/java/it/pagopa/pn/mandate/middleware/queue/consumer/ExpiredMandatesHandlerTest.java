@@ -72,13 +72,15 @@ class ExpiredMandatesHandlerTest {
         PnMandateExpiredEvent.Payload payload = PnMandateExpiredEvent.Payload.builder()
                 .mandateId("fb521b11-202d-452f-944e-88b1eb1c34bd")
                 .delegatorInternalUserid("PF-12345")
+                .delegatorCxType("PF")
+                .delegatorUserid("12345")
                 .build();
         Message<PnMandateExpiredEvent.Payload> message = MessageBuilder.withPayload(payload).build();
-        Mockito.when(mandateService.expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345"))
+        Mockito.when(mandateService.expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345", "12345", "PF"))
                 .thenReturn(Mono.just(new MandateEntity()));
 
         consumer.accept(message);
-        Mockito.verify(mandateService).expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345");
+        Mockito.verify(mandateService).expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345", "12345", "PF");
     }
 
 
@@ -88,13 +90,15 @@ class ExpiredMandatesHandlerTest {
         PnMandateExpiredEvent.Payload payload = PnMandateExpiredEvent.Payload.builder()
                 .mandateId("fb521b11-202d-452f-944e-88b1eb1c34bd")
                 .delegatorInternalUserid("PF-12345")
+                .delegatorCxType("PF")
+                .delegatorUserid("12345")
                 .build();
         Message<PnMandateExpiredEvent.Payload> message = MessageBuilder.withPayload(payload).build();
-        Mockito.when(mandateService.expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345"))
+        Mockito.when(mandateService.expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345", "12345", "PF"))
                 .thenReturn(Mono.error(new PnMandateNotFoundException()));
 
         Assertions.assertThrows(PnMandateNotFoundException.class, () ->  consumer.accept(message));
-        Mockito.verify(mandateService).expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345");
+        Mockito.verify(mandateService).expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345", "12345", "PF");
     }
 
 }

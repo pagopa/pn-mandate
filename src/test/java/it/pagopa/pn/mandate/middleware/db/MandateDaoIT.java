@@ -25,7 +25,6 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import java.time.*;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -134,8 +133,10 @@ public class MandateDaoIT {
         //Given
         MandateEntity mandateToInsert1 = newMandate(false);
         mandateToInsert1.setDelegatorisperson(false);
+        mandateToInsert1.setDelegate(mandateToInsert1.getDelegator());
         MandateEntity mandateToInsert2 = newMandate(false);
         mandateToInsert2.setDelegatorisperson(false);
+        mandateToInsert2.setDelegate(mandateToInsert2.getDelegator());
         mandateToInsert2.setMandateId(mandateToInsert2.getMandateId() + "_2");
 
         try {
@@ -1202,14 +1203,12 @@ public class MandateDaoIT {
     @Test
     void listMandatesByDelegators() {
         MandateEntity mandateToInsert = newMandate(true);
-        mandateToInsert.setDelegate("PF-" + UUID.randomUUID());
         mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert);
+            mandateDao.createMandate(mandateToInsert).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
-            System.err.println("Exception: " + e.getMessage());
         }
 
         MandateByDelegatorRequestDto requestDto = new MandateByDelegatorRequestDto();

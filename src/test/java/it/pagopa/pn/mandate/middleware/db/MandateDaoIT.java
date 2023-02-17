@@ -25,6 +25,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import java.time.*;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -1201,6 +1202,7 @@ public class MandateDaoIT {
     @Test
     void listMandatesByDelegators() {
         MandateEntity mandateToInsert = newMandate(true);
+        mandateToInsert.setDelegate("PF-" + UUID.randomUUID());
         mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());

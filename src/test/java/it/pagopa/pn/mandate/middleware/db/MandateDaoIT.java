@@ -128,6 +128,46 @@ public class MandateDaoIT {
         }
     }
 
+    @Test
+    void createMandateAlreadyExistsForPG() {
+        //Given
+        MandateEntity mandateToInsert1 = newMandate(false);
+        mandateToInsert1.setDelegatorisperson(false);
+        MandateEntity mandateToInsert2 = newMandate(false);
+        mandateToInsert2.setDelegatorisperson(false);
+        mandateToInsert2.setMandateId(mandateToInsert2.getMandateId() + "_2");
+
+        try {
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        mandateDao.createMandate(mandateToInsert1).block(d);
+        mandateDao.createMandate(mandateToInsert2).block(d);
+
+        //Then
+        try {
+            MandateEntity elementFromDb1 = testDao.get(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            MandateEntity elementFromDb2 = testDao.get(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+
+            Assertions.assertNotNull(elementFromDb1);
+            Assertions.assertNotNull(elementFromDb2);
+            Assertions.assertEquals(mandateToInsert1, elementFromDb1);
+            Assertions.assertEquals(mandateToInsert2, elementFromDb2);
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            try {
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+                testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
 
     public static MandateEntity newMandate(boolean withValidtoSetted) {
         MandateEntity m = new MandateEntity();
@@ -1167,6 +1207,7 @@ public class MandateDaoIT {
             mandateDao.createMandate(mandateToInsert);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
+            System.err.println("Exception: " + e.getMessage());
         }
 
         MandateByDelegatorRequestDto requestDto = new MandateByDelegatorRequestDto();
@@ -1180,6 +1221,7 @@ public class MandateDaoIT {
 
             Assertions.assertNotNull(result);
             Assertions.assertEquals(1, result.size());
+            Assertions.assertEquals(mandateToInsert, result.get(0));
         } catch (Exception e) {
             throw new RuntimeException();
         } finally {

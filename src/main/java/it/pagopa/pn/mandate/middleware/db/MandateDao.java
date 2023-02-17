@@ -448,7 +448,7 @@ public class MandateDao extends BaseDao {
      * @param mandate oggetto delega da creare
      * @return oggetto delega creato
      */
-    public Mono<MandateEntity> createMandate(MandateEntity mandate){
+    public Mono<MandateEntity> createMandate(MandateEntity mandate) {
         String logMessage = String.format("create mandate mandate=%s", mandate);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
@@ -457,25 +457,21 @@ public class MandateDao extends BaseDao {
 
         logEvent.log();
 
-        return Mono.fromFuture(
-                        countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate())
-                .thenCompose(total -> {
-                    if (total == 0)
-                    {
-                        log.info("no current mandate for delegator-delegate pair, can proceed to create mandate");
-                        PutItemEnhancedRequest<MandateEntity> putRequest = PutItemEnhancedRequest.builder(MandateEntity.class)
-                                .item(mandate)
-                                //.conditionExpression()
-                                .build();
-                        return mandateTable.putItem(putRequest).thenApply(x -> {
-                            log.info("saved mandate mandateobj={}", mandate);
-                            return mandate;
-                        });
-                    }
-                    else {
-                        throw new PnMandateAlreadyExistsException();
-                    }
-                }))
+        return Mono.fromFuture(countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate())
+                        .thenCompose(total -> {
+                            if (total == 0 || isSelfPgMandate(mandate)) {
+                                log.info("no current mandate for delegator-delegate pair, can proceed to create mandate");
+                                PutItemEnhancedRequest<MandateEntity> putRequest = PutItemEnhancedRequest.builder(MandateEntity.class)
+                                        .item(mandate)
+                                        .build();
+                                return mandateTable.putItem(putRequest).thenApply(x -> {
+                                    log.info("saved mandate mandateobj={}", mandate);
+                                    return mandate;
+                                });
+                            } else {
+                                throw new PnMandateAlreadyExistsException();
+                            }
+                        }))
                 .onErrorResume(throwable -> {
                     logEvent.generateFailure(throwable.getMessage()).log();
                     return Mono.error(throwable);
@@ -486,6 +482,10 @@ public class MandateDao extends BaseDao {
 
                     return mandateCreated;
                 });
+    }
+
+    private boolean isSelfPgMandate(MandateEntity mandate) {
+        return Boolean.FALSE.equals(mandate.getDelegatorisperson()) && mandate.getDelegator().equals(mandate.getDelegate());
     }
 
     //#endregion

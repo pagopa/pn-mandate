@@ -306,6 +306,7 @@ Resources:
               - sqs:SendMessageBatch
             Resource:
               - !Ref PnMandateInputsQueueARN
+              - !Ref Mandate2DeliveryQueueARN
           - Effect: Allow
             Action:
               - ssm:GetParameter
@@ -368,22 +369,6 @@ Resources:
         QueueArns: !Join
           - ','
           - - !Ref Mandate2DeliveryQueueARN
-
-  Mandate2DeliveryQueuePolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub '${ProjectName}-Mandate2DeliveryQueuePolicy'
-      Roles:
-        - !GetAtt MandateMicroservice.Outputs.TaskRoleName
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-              - sqs:GetQueueUrl
-            Resource:
-              - !Ref Mandate2DeliveryQueueARN
 
   ### IAM Role used by Subscription filters to allow read logs from Cloudwatch and send logs to Kinesis Firehose
   SubscriptionFilterServiceRole:

@@ -59,7 +59,7 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
                                                           final ServerWebExchange exchange) {
 
         return  mandateService
-                .createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId,(xPagopaPnCxType==null || xPagopaPnCxType.equals(CxTypeAuthFleet.PF)), xPagopaPnCxType, groups, role)
+                .createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, groups, role)
                 .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m));
     }
 

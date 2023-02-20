@@ -286,7 +286,7 @@ class MandateServiceTest {
     void createMandatePGNotAuthorized() {
         //Given
         MandateEntity entity = MandateDaoIT.newMandate(true);
-        // MAndateDto come proviene da FE quindi senza alcune info
+        // MandateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(entity.getValidationcode());
@@ -297,39 +297,8 @@ class MandateServiceTest {
         mandateDto.getDelegate().setFiscalCode("RSSMRA85T10A562S");
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
-        final MandateDto mandateDtoRes = new MandateDto();
-        mandateDtoRes.setMandateId(entity.getMandateId());
-        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
-        mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
-        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
-        mandateDtoRes.setVerificationCode(entity.getValidationcode());
-        mandateDtoRes.setVisibilityIds(new ArrayList<>());
-        mandateDtoRes.setDelegate(new UserDto());
-        mandateDtoRes.getDelegate().setFirstName("mario");
-        mandateDtoRes.getDelegate().setLastName("rossi");
-        mandateDtoRes.getDelegate().setFiscalCode("RSSMRA85T10A562S");
-        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
-
-        List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
-        MandateDtoDto mandateDtoDto = new MandateDtoDto();
-        mandateDtoDto.mandateId(entity.getMandateId());
-        DenominationDtoDto denominationDtoDto = new DenominationDtoDto();
-        denominationDtoDto.setDestName("mario");
-        denominationDtoDto.setDestSurname("rossi");
-        mandateDtoDto.setInfo(denominationDtoDto);
-        resgetmandatesbyid.add(mandateDtoDto);
-
-
-        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
-        when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
-        when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
-        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
-        when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
-        when(mapper.toEntity(Mockito.any())).thenReturn(entity);
-        when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
-
         //When
-        Mono<MandateDto> result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(),  true, CxTypeAuthFleet.PG, null, "operator");
+        Mono<MandateDto> result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PG, null, "operator");
 
         //Then
         Assertions.assertThrows(PnForbiddenException.class, result::block);
@@ -339,7 +308,7 @@ class MandateServiceTest {
     void createMandate() {
         //Given
         MandateEntity entity = MandateDaoIT.newMandate(true);
-        // MAndateDto come proviene da FE quindi senza alcune info
+        // MandateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(entity.getValidationcode());
@@ -383,7 +352,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(),  true, CxTypeAuthFleet.PF, null, null).block(d);
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null).block(d);
 
         //Then
         assertNotNull(result);
@@ -393,11 +362,11 @@ class MandateServiceTest {
     }
 
     @Test
-    void createMandate_PG() {
+    void createMandate_DelegateIsPG() {
         //Given
         MandateEntity entity = MandateDaoIT.newMandate(true);
         entity.setDelegateisperson(false);
-        // MAndateDto come proviene da FE quindi senza alcune info
+        // MandateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(entity.getValidationcode());
@@ -427,7 +396,6 @@ class MandateServiceTest {
         mandateDtoDto.setInfo(denominationDtoDto);
         resgetmandatesbyid.add(mandateDtoDto);
 
-
         when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
         when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
@@ -438,7 +406,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(),  true, CxTypeAuthFleet.PG, null, "ADMIN")
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
                 .block(d);
 
         //Then
@@ -448,13 +416,69 @@ class MandateServiceTest {
         assertEquals(mandateDto.getVerificationCode(), result.getVerificationCode());
     }
 
+    @Test
+    void createMandate_DelegatorIsPG() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+        // MandateDto come proviene da FE quindi senza alcune info
+        final MandateDto mandateDto = new MandateDto();
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDto.setVerificationCode(entity.getValidationcode());
+        mandateDto.setVisibilityIds(new ArrayList<>());
+        mandateDto.setDelegate(new UserDto());
+        mandateDto.getDelegate().setFirstName("mario");
+        mandateDto.getDelegate().setLastName("rossi");
+        mandateDto.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
+
+        final MandateDto mandateDtoRes = new MandateDto();
+        mandateDtoRes.setMandateId(entity.getMandateId());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
+        mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRes.setVerificationCode(entity.getValidationcode());
+        mandateDtoRes.setVisibilityIds(new ArrayList<>());
+        mandateDtoRes.setDelegate(new UserDto());
+        mandateDtoRes.getDelegate().setFirstName("mario");
+        mandateDtoRes.getDelegate().setLastName("rossi");
+        mandateDtoRes.getDelegate().setFiscalCode("RSSMRA85T10A562S");
+        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
+
+        List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
+        MandateDtoDto mandateDtoDto = new MandateDtoDto();
+        mandateDtoDto.mandateId(entity.getMandateId());
+        DenominationDtoDto denominationDtoDto = new DenominationDtoDto();
+        denominationDtoDto.setDestName("mario");
+        denominationDtoDto.setDestSurname("rossi");
+        mandateDtoDto.setInfo(denominationDtoDto);
+        resgetmandatesbyid.add(mandateDtoDto);
+
+        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
+        when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
+        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
+        when(pnInfoPaClient.getOnePa(Mockito.anyString())).thenReturn(Mono.just(new PaInfoDto()));
+        when(mapper.toEntity(Mockito.any())).thenReturn(entity);
+        when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+        when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn(true);
+
+        //When
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PG, null, "admin")
+                .block(d);
+
+        //Then
+        assertNotNull(result);
+        assertNotNull(result.getMandateId());
+        assertNotNull(result.getStatus());
+        assertEquals(mandateDto.getVerificationCode(), result.getVerificationCode());
+    }
 
     @Test
     void createMandate_PG_piva() {
         //Given
         MandateEntity entity = MandateDaoIT.newMandate(true);
         entity.setDelegateisperson(false);
-        // MAndateDto come proviene da FE quindi senza alcune info
+        // MandateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(entity.getValidationcode());
@@ -495,7 +519,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(),  true, CxTypeAuthFleet.PG, null, "ADMIN")
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(),  CxTypeAuthFleet.PF, null, null)
                 .block(d);
 
         //Then
@@ -509,7 +533,7 @@ class MandateServiceTest {
     void createMandateWithList() {
         //Given
         MandateEntity entity = MandateDaoIT.newMandate(true);
-        // MAndateDto come proviene da FE quindi senza alcune info
+        // MandateDto come proviene da FE quindi senza alcune info
         final MandateDto mandateDto = new MandateDto();
         mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
         mandateDto.setVerificationCode(entity.getValidationcode());
@@ -557,7 +581,8 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), true, CxTypeAuthFleet.PF, null, null).block(d);
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
+                .block(d);
 
         //Then
         assertNotNull(result);
@@ -584,9 +609,8 @@ class MandateServiceTest {
         //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
-        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), true, CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(d));
-
 
         //Then
         //nothing
@@ -609,9 +633,8 @@ class MandateServiceTest {
         //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
-        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), true, CxTypeAuthFleet.PG, null, "ADMIN");
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(d));
-
 
         //Then
         //nothing
@@ -635,9 +658,8 @@ class MandateServiceTest {
         //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
-        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), true, CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(d));
-
 
         //Then
         //nothing
@@ -661,7 +683,7 @@ class MandateServiceTest {
         //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
-        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), true, CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(d));
 
         //Then
@@ -686,7 +708,7 @@ class MandateServiceTest {
         //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
-        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), true, CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(d));
 
         //Then
@@ -711,7 +733,7 @@ class MandateServiceTest {
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
         //When
-        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), entity.getDelegatorUid(), true, CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(d));
 
         //Then
@@ -740,7 +762,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
-        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegatorUid(), entity.getDelegator(), true, CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegatorUid(), entity.getDelegator(), CxTypeAuthFleet.PF, null, null);
         assertThrows(PnMandateByHimselfException.class, () -> mono.block(d));
 
         //Then

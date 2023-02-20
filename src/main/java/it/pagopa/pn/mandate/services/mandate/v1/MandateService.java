@@ -147,8 +147,7 @@ public class MandateService {
      *
      * @param mandateDto                oggetto delega
      * @param requesterInternaluserId   iuid del delegante
-     * @param requesterUserTypeIsPF     tipologia del delegante (PF/PG)
-     * @param cxTypeAuthFleet           tipo dell'utente (PF, PG)
+     * @param cxTypeAuthFleet           tipologia del delegante (PF/PG)
      * @param groups                    gruppi a cui appartiene l'utente
      * @param role                      ruolo dell'utente
      * @return delega creata
@@ -156,11 +155,11 @@ public class MandateService {
     public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto,
                                           final String requesterUid,
                                           final String requesterInternaluserId,
-                                          final boolean requesterUserTypeIsPF,
                                           CxTypeAuthFleet cxTypeAuthFleet,
                                           List<String> groups,
                                           String role) {
         final String uuid = UUID.randomUUID().toString();
+        final boolean requesterUserTypeIsPF = cxTypeAuthFleet == null || cxTypeAuthFleet.equals(CxTypeAuthFleet.PF);
         return validaAccessoOnlyAdmin(cxTypeAuthFleet, role, groups)
                 .flatMap(obj -> mandateDto
                         .map(this::validate)

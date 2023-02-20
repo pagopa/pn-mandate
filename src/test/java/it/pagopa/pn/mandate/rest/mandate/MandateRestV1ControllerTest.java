@@ -94,16 +94,16 @@ class MandateRestV1ControllerTest {
         MandateDto dto = mapper.toDto(MandateDaoIT.newMandate(true));
 
         //When
-        Mockito.when( mandateService.createMandate( Mockito.any(), Mockito.any() , Mockito.anyString(), Mockito.anyBoolean(), Mockito.any(), Mockito.any(), Mockito.any()))
+        Mockito.when(mandateService.createMandate(Mockito.any(), Mockito.any() , Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(Mono.just(dto));
 
         //Then
         webTestClient.post()
                 .uri(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .header( PN_PAGOPA_CX_ID, "internaluserid1234")
-                .header( PN_PAGOPA_CX_TYPE, "PF")
-                .header( PN_PAGOPA_USER_ID, "userid")
+                .header(PN_PAGOPA_CX_ID, "internaluserid1234")
+                .header(PN_PAGOPA_CX_TYPE, "PF")
+                .header(PN_PAGOPA_USER_ID, "userid")
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody();

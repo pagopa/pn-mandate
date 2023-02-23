@@ -13,6 +13,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RestController
 public class MandateRestV1Controller  implements MandateServiceApi   {
 
@@ -23,56 +25,86 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
     }
 
     @Override
-    public Mono<ResponseEntity<Void>> acceptMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
+    public Mono<ResponseEntity<Void>> acceptMandate(String xPagopaPnCxId,
+                                                    CxTypeAuthFleet xPagopaPnCxType,
+                                                    String mandateId,
+                                                    List<String> cxGroups,
+                                                    String cxRole,
+                                                    Mono<AcceptRequestDto> acceptRequestDto,
                                                     ServerWebExchange exchange) {
 
-        return  mandateService.acceptMandate(mandateId, acceptRequestDto, xPagopaPnCxId)
+        return  mandateService.acceptMandate(mandateId, acceptRequestDto, xPagopaPnCxId, xPagopaPnCxType, cxGroups, cxRole)
             .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
     @Override
-    public Mono<ResponseEntity<MandateCountsDto>> countMandatesByDelegate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String status, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<MandateCountsDto>> countMandatesByDelegate(String xPagopaPnCxId,
+                                                                          CxTypeAuthFleet xPagopaPnCxType,
+                                                                          List<String> cxGroups,
+                                                                          String cxRole,
+                                                                          String status,
+                                                                          ServerWebExchange exchange) {
 
-        return  mandateService.countMandatesByDelegate(status, xPagopaPnCxId)
+        return  mandateService.countMandatesByDelegate(status, xPagopaPnCxId, xPagopaPnCxType, cxGroups, cxRole)
             .map(m -> ResponseEntity.status(HttpStatus.OK).body(m));    
     }
 
     @Override
-    public Mono<ResponseEntity<MandateDto>> createMandate(String xPagopaPnUid, String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, Mono<MandateDto> mandateDto,  final ServerWebExchange exchangee) {
+    public Mono<ResponseEntity<MandateDto>> createMandate(String xPagopaPnUid,
+                                                          String xPagopaPnCxId,
+                                                          CxTypeAuthFleet xPagopaPnCxType,
+                                                          List<String> groups,
+                                                          String role,
+                                                          Mono<MandateDto> mandateDto,
+                                                          final ServerWebExchange exchange) {
 
         return  mandateService
-            .createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId, (xPagopaPnCxType==null || xPagopaPnCxType.equals(CxTypeAuthFleet.PF)))
-            .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m));
-         
+                .createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, groups, role)
+                .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m));
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegate1(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String status, ServerWebExchange exchange) {
-
-        return  mandateService.listMandatesByDelegate(status, xPagopaPnCxId)
-            .collectList()     
-            .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));     
+    public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegate1(String xPagopaPnCxId,
+                                                                          CxTypeAuthFleet xPagopaPnCxType,
+                                                                          List<String> xPagopaPnCxGroups,
+                                                                          String xPagopaPnCxRole,
+                                                                          String status,
+                                                                          ServerWebExchange exchange) {
+        return mandateService.listMandatesByDelegate(status, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole)
+                .collectList()
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegator1(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, ServerWebExchange exchange) {
-
-        return  mandateService.listMandatesByDelegator(xPagopaPnCxId)
-            .collectList()     
-            .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));     
+    public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegator1(String xPagopaPnCxId,
+                                                                           CxTypeAuthFleet xPagopaPnCxType,
+                                                                           List<String> xPagopaPnCxGroups,
+                                                                           String xPagopaPnCxRole,
+                                                                           ServerWebExchange exchange) {
+        return mandateService.listMandatesByDelegator(xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole)
+                .collectList()
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
     }
 
     @Override
-    public Mono<ResponseEntity<Void>> rejectMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String mandateId, ServerWebExchange exchange) {
-
-        return  mandateService.rejectMandate(mandateId, xPagopaPnCxId)
-            .then(Mono.just(ResponseEntity.noContent().build()));
+    public Mono<ResponseEntity<Void>> rejectMandate(String xPagopaPnCxId,
+                                                    CxTypeAuthFleet xPagopaPnCxType,
+                                                    String mandateId,
+                                                    List<String> xPagopaPnCxGroups,
+                                                    String xPagopaPnCxRole,
+                                                    ServerWebExchange exchange) {
+        return mandateService.rejectMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+                .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
     @Override
-    public Mono<ResponseEntity<Void>> revokeMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String mandateId, ServerWebExchange exchange) {
-
-        return  mandateService.revokeMandate(mandateId, xPagopaPnCxId)
-        .map(m -> ResponseEntity.noContent().build());
+    public Mono<ResponseEntity<Void>> revokeMandate(String xPagopaPnCxId,
+                                                    CxTypeAuthFleet xPagopaPnCxType,
+                                                    String mandateId,
+                                                    List<String> xPagopaPnCxGroups,
+                                                    String xPagopaPnCxRole,
+                                                    ServerWebExchange exchange) {
+        return mandateService.revokeMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+                .map(m -> ResponseEntity.noContent().build());
     }
 }

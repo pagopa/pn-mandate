@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
+import it.pagopa.pn.api.dto.events.EventType;
 import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
@@ -13,11 +14,8 @@ import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,10 +31,13 @@ import java.util.List;
 import java.util.UUID;
 
 import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.*;
+import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyAdmin;
+import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyGroupAdmin;
+
 
 @Service
 @Slf4j
-public class MandateService  {
+public class MandateService {
 
     private static final String DELEGATE_FISCAL_CODE = "delegate.fiscalCode";
     private static final String VERIFICATION_CODE = "verificationCode";
@@ -50,135 +51,175 @@ public class MandateService  {
     private final UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper;
     private final PnInfoPaClient pnInfoPaClient;
     private final PnDataVaultClient pnDatavaultClient;
+    private final SqsService sqsService;
     private final ValidateUtils validateUtils;
 
-    public MandateService(MandateDao mandateDao, DelegateDao userDao, MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper,
-                          UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper, PnInfoPaClient pnInfoPaClient, PnDataVaultClient pnDatavaultClient, ValidateUtils validateUtils) {
+    public MandateService(MandateDao mandateDao,
+                          DelegateDao userDao,
+                          MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper,
+                          UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper,
+                          PnInfoPaClient pnInfoPaClient,
+                          PnDataVaultClient pnDatavaultClient,
+                          SqsService sqsService,
+                          ValidateUtils validateUtils) {
         this.mandateDao = mandateDao;
-        this.userDao =userDao;
+        this.userDao = userDao;
         this.mandateEntityMandateDtoMapper = mandateEntityMandateDtoMapper;
         this.userEntityMandateCountsDtoMapper = userEntityMandateCountsDtoMapper;
         this.pnInfoPaClient = pnInfoPaClient;
-        this.pnDatavaultClient= pnDatavaultClient;
+        this.pnDatavaultClient = pnDatavaultClient;
+        this.sqsService = sqsService;
         this.validateUtils = validateUtils;
     }
 
     /**
      * Accetta una delega
      *
-     * @param mandateId id della delega
-     * @param acceptRequestDto dto accettazione delega
-     * @param internaluserId iuid del delegato
+     * @param mandateId         id della delega
+     * @param acceptRequestDto  dto accettazione delega
+     * @param internaluserId    iuid del delegato
+     * @param xPagopaPnCxType   tipo dell'utente (PF, PG)
+     * @param cxGroups          gruppi a cui appartiene l'utente
+     * @param cxRole            ruolo dell'utente
      * @return void
      */
-    public Mono<MandateEntity> acceptMandate(String mandateId, Mono<AcceptRequestDto> acceptRequestDto,
-            String internaluserId) {
-        return acceptRequestDto
-        .map(m -> {
-            if (m == null || m.getVerificationCode() == null)
-                throw new PnInvalidVerificationCodeException();
+    public Mono<MandateEntity> acceptMandate(String mandateId,
+                                             Mono<AcceptRequestDto> acceptRequestDto,
+                                             String internaluserId,
+                                             CxTypeAuthFleet xPagopaPnCxType,
+                                             List<String> cxGroups, String cxRole) {
+        return validaAccessoOnlyAdmin(xPagopaPnCxType, cxRole, cxGroups)
+                .flatMap(obj -> acceptRequestDto)
+                .map(m -> {
+                    if (m == null || m.getVerificationCode() == null)
+                        throw new PnInvalidVerificationCodeException();
 
-            if (mandateId == null)
-                throw  new PnMandateNotFoundException();
+                    if (mandateId == null)
+                        throw new PnMandateNotFoundException();
 
-            return m;
-        })
-        .flatMap(m -> {
-            try{
-                if (log.isInfoEnabled())
-                    log.info("accepting mandateobj:{} vercode:{}",  mandateId, m);
-                return mandateDao.acceptMandate(internaluserId, mandateId, m.getVerificationCode());
-            }catch(Exception ex)
-            {
-                throw Exceptions.propagate(ex);
-            }            
-        });
+                    return m;
+                })
+                .flatMap(m -> {
+                    try {
+                        if (log.isInfoEnabled())
+                            log.info("accepting mandateobj:{} vercode:{}", mandateId, m);
+                        return mandateDao
+                                .acceptMandate(internaluserId, mandateId, m.getVerificationCode(), m.getGroups(), xPagopaPnCxType)
+                                .flatMap(entity -> {
+                                    if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
+                                        return sqsService.sendToDelivery(entity, EventType.MANDATE_ACCEPTED).then(Mono.just(entity));
+                                    }
+                                    return Mono.just(entity);
+                                });
+                    } catch (Exception ex) {
+                        throw Exceptions.propagate(ex);
+                    }
+                });
     }
 
     /**
      * Ritorna il numero di deleghe nello stato passato per il delegato
      *
-     * @param status stato per il filtro
-     * @param internaluserId iuid del delegato
+     * @param status            stato per il filtro
+     * @param internaluserId    iuid del delegato
+     * @param xPagopaPnCxType   tipo dell'utente (PF, PG)
+     * @param cxGroups          gruppi a cui appartiene l'utente
+     * @param cxRole            ruolo dell'utente
+     *
      * @return Totale deleghe nello stato richiesto
      */
-    public Mono<MandateCountsDto> countMandatesByDelegate(String status, String internaluserId) {
-       // per ora l'unico stato supportato è il pending, quindi il filtro non viene passato al count
-       // Inoltre, ritorno un errore se status != pending
-       if (status == null || !status.equals(StatusEnum.PENDING.getValue()))
-           throw new PnUnsupportedFilterException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM, "status");
-       return userDao.countMandates(internaluserId)                
-                .map(userEntityMandateCountsDtoMapper::toDto);
+    public Mono<MandateCountsDto> countMandatesByDelegate(String status,
+                                                          String internaluserId,
+                                                          CxTypeAuthFleet xPagopaPnCxType,
+                                                          List<String> cxGroups,
+                                                          String cxRole) {
+        // per ora l'unico stato supportato è il pending, quindi il filtro non viene passato al count
+        // Inoltre, ritorno un errore se status != pending
+        if (status == null || !status.equals(StatusEnum.PENDING.getValue()))
+            throw new PnUnsupportedFilterException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM, "status");
+        return validaAccessoOnlyGroupAdmin(xPagopaPnCxType, cxRole, cxGroups)
+                .flatMap(obj -> userDao.countMandates(internaluserId, xPagopaPnCxType, cxGroups)
+                        .map(userEntityMandateCountsDtoMapper::toDto));
     }
 
     /**
      * Crea la delega
      *
-     * @param mandateDto oggetto delega
-     * @param requesterInternaluserId iuid del delegante
-     * @param requesterUserTypeIsPF tipologia del delegante (PF/PG)
+     * @param mandateDto                oggetto delega
+     * @param requesterInternaluserId   iuid del delegante
+     * @param cxTypeAuthFleet           tipologia del delegante (PF/PG)
+     * @param groups                    gruppi a cui appartiene l'utente
+     * @param role                      ruolo dell'utente
      * @return delega creata
      */
-    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto, final String requesterUid, final String requesterInternaluserId, final boolean requesterUserTypeIsPF) {
+    public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto,
+                                          final String requesterUid,
+                                          final String requesterInternaluserId,
+                                          CxTypeAuthFleet cxTypeAuthFleet,
+                                          List<String> groups,
+                                          String role) {
         final String uuid = UUID.randomUUID().toString();
-        return mandateDto
-                .map(this::validate)
-                .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegate().getPerson(), dto.getDelegate().getFiscalCode())
-                        .map(delegateInternaluserId -> {
+        final boolean requesterUserTypeIsPF = cxTypeAuthFleet == null || cxTypeAuthFleet.equals(CxTypeAuthFleet.PF);
+        return validaAccessoOnlyAdmin(cxTypeAuthFleet, role, groups)
+                .flatMap(obj -> mandateDto
+                        .map(this::validate)
+                        .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegate().getPerson(), dto.getDelegate().getFiscalCode())
+                                        .map(delegateInternaluserId -> {
 
-                            // qui posso controllare se delegante e delegato sono gli stessi (prima non li avevo disponibili)
-                            if (delegateInternaluserId.equals(requesterInternaluserId))
-                                throw new PnMandateByHimselfException();
+                                            // qui posso controllare se delegante e delegato sono gli stessi (prima non li avevo disponibili)
+                                            if (!CxTypeAuthFleet.PG.equals(cxTypeAuthFleet) && delegateInternaluserId.equals(requesterInternaluserId))
+                                                throw new PnMandateByHimselfException();
 
-                            MandateEntity entity = mandateEntityMandateDtoMapper.toEntity(dto);
-                            entity.setDelegate(delegateInternaluserId);
-                            entity.setDelegatorUid(requesterUid);
-                            entity.setMandateId(uuid);
-                            entity.setDelegator(requesterInternaluserId);
-                            entity.setDelegatorisperson(requesterUserTypeIsPF);
-                            entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
-                            entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
-                            if (log.isInfoEnabled())
-                                log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}",
-                                        entity.getMandateId(), requesterInternaluserId, requesterUserTypeIsPF, entity.getValidfrom());
+                                            MandateEntity entity = mandateEntityMandateDtoMapper.toEntity(dto);
+                                            entity.setDelegate(delegateInternaluserId);
+                                            entity.setDelegatorUid(requesterUid);
+                                            entity.setMandateId(uuid);
+                                            entity.setDelegator(requesterInternaluserId);
+                                            entity.setDelegatorisperson(requesterUserTypeIsPF);
+                                            entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
+                                            entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
+                                            if (log.isInfoEnabled())
+                                                log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}",
+                                                        entity.getMandateId(), requesterInternaluserId, requesterUserTypeIsPF, entity.getValidfrom());
 
-                            return  entity;
+                                            return entity;
+                                        })
+                                        .flatMap(ent -> pnDatavaultClient.updateMandateById(uuid, dto.getDelegate().getFirstName(),
+                                                        dto.getDelegate().getLastName(), dto.getDelegate().getCompanyName())
+                                                .then(Mono.just(ent)))
+                                        .flatMap(mandateDao::createMandate)
+                                , (ddto, entity) -> entity)
+                        .map(r -> {
+                            r.setDelegator(null);
+                            return mandateEntityMandateDtoMapper.toDto(r);
                         })
-                        .flatMap(ent -> pnDatavaultClient.updateMandateById(uuid, dto.getDelegate().getFirstName(),
-                                        dto.getDelegate().getLastName(), dto.getDelegate().getCompanyName())
-                                .then(Mono.just(ent)))
-                        .flatMap(mandateDao::createMandate)
-                ,(ddto, entity) -> entity)
-            .map(r -> {
-                r.setDelegator(null);
-                return mandateEntityMandateDtoMapper.toDto(r);
-            })
-            .zipWhen(dto -> {
-                            // genero la lista degli id delega
-                            List<String> mandateIds = new ArrayList<>();
-                            mandateIds.add(dto.getMandateId());
+                        .zipWhen(dto -> {
+                                    // genero la lista degli id delega
+                                    List<String> mandateIds = new ArrayList<>();
+                                    mandateIds.add(dto.getMandateId());
 
-                            // ritorno la lista
-                            return this.pnDatavaultClient.getMandatesByIds(mandateIds)
-                                    .collectMap(MandateDtoDto::getMandateId, MandateDtoDto::getInfo);
-                    },
-                    (dto, userinfosdtos) -> {
-                        if (userinfosdtos.containsKey(dto.getMandateId()))
-                            updateUserDto(dto.getDelegate(), userinfosdtos.get(dto.getMandateId()));
+                                    // ritorno la lista
+                                    return this.pnDatavaultClient.getMandatesByIds(mandateIds)
+                                            .collectMap(MandateDtoDto::getMandateId, MandateDtoDto::getInfo);
+                                },
+                                (dto, userinfosdtos) -> {
+                                    if (userinfosdtos.containsKey(dto.getMandateId()))
+                                        updateUserDto(dto.getDelegate(), userinfosdtos.get(dto.getMandateId()));
 
-                        return dto;
-                    })
-                .flatMap(ent -> {
-                    if (!ent.getVisibilityIds().isEmpty())
-                        return pnInfoPaClient
-                                .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
-                                .flatMap(pa -> {
-                                    ent.getVisibilityIds().get(0).setName(pa.getName());
-                                    return Mono.just(ent);
-                                });
-                    else
-                        return Mono.just(ent);
-                });
+                                    return dto;
+                                })
+                        .flatMap(ent -> {
+                            if (!ent.getVisibilityIds().isEmpty())
+                                return pnInfoPaClient
+                                        .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
+                                        .flatMap(pa -> {
+                                            ent.getVisibilityIds().get(0).setName(pa.getName());
+                                            return Mono.just(ent);
+                                        });
+                            else
+                                return Mono.just(ent);
+                        })
+                );
     }
 
     private MandateDto validate(MandateDto mandateDto) {
@@ -191,7 +232,7 @@ public class MandateService  {
         if ((mandateDto.getDelegate().getPerson() == null))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATE_PERSON);
 
-        if ((mandateDto.getDelegate().getPerson() && (mandateDto.getDelegate().getFirstName()==null || mandateDto.getDelegate().getLastName() == null))
+        if ((mandateDto.getDelegate().getPerson() && (mandateDto.getDelegate().getFirstName() == null || mandateDto.getDelegate().getLastName() == null))
                 || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER, DELEGATE);
         // codice verifica (5 caratteri)
@@ -201,7 +242,7 @@ public class MandateService  {
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, VERIFICATION_CODE);
 
         if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
-            && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), true))
+                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), true))
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
         // le PG possono avere p.iva o CF!
         if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
@@ -216,19 +257,25 @@ public class MandateService  {
     }
 
     /**
-     *  il metodo si occupa di tornare la lista delle deleghe per delegato.
-     *  Gli step sono:
-     *  (1) recuperare la lista delle entity da db
-     *  (2) pulisco le info provenienti da db dalle informazioni che non devo tornare (in questo caso, il validationcode)
-     *  (3) risolvere internalId del delegante (il delegato sono io, e non serve popolarlo) nel relativo microservizio
-     *  (4) risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
+     * il metodo si occupa di tornare la lista delle deleghe per delegato.
+     * Gli step sono:
+     * (1) recuperare la lista delle entity da db
+     * (2) pulisco le info provenienti da db dalle informazioni che non devo tornare (in questo caso, il validationcode)
+     * (3) risolvere internalId del delegante (il delegato sono io, e non serve popolarlo) nel relativo microservizio
+     * (4) risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
      *
-     *
-     * @param status stato per il filtro
-     * @param internaluserId iuid del delegato
+     * @param status            stato per il filtro
+     * @param internaluserId    iuid del delegato
+     * @param xPagopaPnCxType   tipo dell'utente (PF, PG)
+     * @param xPagopaPnCxGroups gruppi a cui appartiene l'utente
+     * @param xPagopaPnCxRole   ruolo dell'utente
      * @return deleghe
      */
-    public Flux<MandateDto> listMandatesByDelegate(String status, String internaluserId) {
+    public Flux<MandateDto> listMandatesByDelegate(String status,
+                                                   String internaluserId,
+                                                   CxTypeAuthFleet xPagopaPnCxType,
+                                                   List<String> xPagopaPnCxGroups,
+                                                   String xPagopaPnCxRole) {
         Integer iStatus = null;
         try {
             if (status != null && !status.equals(""))
@@ -238,165 +285,185 @@ public class MandateService  {
             throw new PnUnsupportedFilterException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM, "status");
         }
 
-        return mandateDao.listMandatesByDelegate(internaluserId, iStatus, null)   // (1)
-                .map(ent -> {         
+        Integer finalIStatus = iStatus;
+        return validaAccessoOnlyGroupAdmin(xPagopaPnCxType,xPagopaPnCxRole,xPagopaPnCxGroups)
+                .flatMapMany(obj -> mandateDao.listMandatesByDelegate(internaluserId, finalIStatus, null, xPagopaPnCxType, xPagopaPnCxGroups))   // (1)
+                .map(ent -> {
                     ent.setValidationcode(null);   // (2)
-                    return ent;        
+                    return ent;
                 })
-                .doOnNext(mand -> log.info("listMandatesByDelegate found mandate={}",mand))
+                .doOnNext(mand -> log.info("listMandatesByDelegate found mandate={}", mand))
                 .collectList()                                                        // (3)
                 .zipWhen(entities -> {
-                        if (!entities.isEmpty())
-                        {
-                            // genero la lista degli id deleganti
-                            List<String> internaluserIds = new ArrayList<>();
-                            entities.forEach(ent -> internaluserIds.add(ent.getDelegator()));
+                            if (!entities.isEmpty()) {
+                                // genero la lista degli id deleganti
+                                List<String> internaluserIds = new ArrayList<>();
+                                entities.forEach(ent -> internaluserIds.add(ent.getDelegator()));
 
-                            // ritorno la lista
-                            return this.pnDatavaultClient.getRecipientDenominationByInternalId(internaluserIds)
-                                    .collectMap(BaseRecipientDtoDto::getInternalId, baseRecipientDtoDto -> baseRecipientDtoDto);
-                        }
-                        else
-                            return Mono.just(new HashMap<String, String>());
-                    },
-                    (entities, userinfosdtos) -> {
-                        List<MandateDto> dtos = new ArrayList<>();
+                                // ritorno la lista
+                                return this.pnDatavaultClient.getRecipientDenominationByInternalId(internaluserIds)
+                                        .collectMap(BaseRecipientDtoDto::getInternalId, baseRecipientDtoDto -> baseRecipientDtoDto);
+                            } else
+                                return Mono.just(new HashMap<String, String>());
+                        },
+                        (entities, userinfosdtos) -> {
+                            List<MandateDto> dtos = new ArrayList<>();
 
-                        for(MandateEntity ent : entities)
-                        {
-                            MandateDto dto = mandateEntityMandateDtoMapper.toDto(ent);
-                            if (userinfosdtos.containsKey(ent.getDelegator()))
-                            {
-                                UserDto user = dto.getDelegator();
-                                BaseRecipientDtoDto baseRecipientDtoDto =  ((BaseRecipientDtoDto)userinfosdtos.get(ent.getDelegator()));
-                                user.setDisplayName(baseRecipientDtoDto.getDenomination());
-                                user.setFiscalCode(baseRecipientDtoDto.getTaxId());
+                            for (MandateEntity ent : entities) {
+                                MandateDto dto = mandateEntityMandateDtoMapper.toDto(ent);
+                                if (userinfosdtos.containsKey(ent.getDelegator())) {
+                                    UserDto user = dto.getDelegator();
+                                    BaseRecipientDtoDto baseRecipientDtoDto = ((BaseRecipientDtoDto) userinfosdtos.get(ent.getDelegator()));
+                                    user.setDisplayName(baseRecipientDtoDto.getDenomination());
+                                    user.setFiscalCode(baseRecipientDtoDto.getTaxId());
+                                }
+                                dtos.add(dto);
                             }
-                            dtos.add(dto);
-                        }
-                        return dtos;
-                    })
+                            return dtos;
+                        })
                 .flatMapMany(Flux::fromIterable)
                 .flatMap(ent -> {                                           // (4)
                     if (!ent.getVisibilityIds().isEmpty())
                         return pnInfoPaClient
-                            .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
-                            .flatMap(pa -> {
-                                ent.getVisibilityIds().get(0).setName(pa.getName());
-                                return Mono.just(ent);
-                                });   
+                                .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
+                                .flatMap(pa -> {
+                                    ent.getVisibilityIds().get(0).setName(pa.getName());
+                                    return Mono.just(ent);
+                                });
                     else
                         return Mono.just(ent);
-                })   ;
-
-            
+                });
     }
 
     /**
-     *  il metodo si occupa di tornare la lista delle deleghe per delegato.
-     *  Gli step sono:
-     *  (1) recuperare la lista delle entity da db
-     *  (2) converto entity in dto
-     *  (3) recupero le info dei DELEGATI, eseguendo una richiesta con la lista degli id delle deleghe
-     *  (4) risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
+     * Il metodo si occupa di tornare la lista delle deleghe per delegante.
+     * Gli step sono:
+     * (0) validazione accesso per le PG (solo gli amministratori possono visualizzare le deleghe dove la PG è delegante)
+     * (1) recuperare la lista delle entity da db
+     * (2) converto entity in dto
+     * (3) recupero le info dei DELEGATI, eseguendo una richiesta con la lista degli id delle deleghe
+     * (4) risolvere eventuali deleghe con PA impostata, andando a recuperare il nome (da db recupero solo l'id) nel relativo microservizio
      *
-     * @param internaluserId iuid del delegante
+     * @param internalUserId iuid del delegante
+     * @param pnCxType       tipo di utente
+     * @param pnCxRole       ruolo dell'utente
+     * @param pnCxGroups     gruppi a cui appartiene l'utente
      * @return deleghe
      */
-    public Flux<MandateDto> listMandatesByDelegator(String internaluserId) {
+    public Flux<MandateDto> listMandatesByDelegator(String internalUserId, CxTypeAuthFleet pnCxType, List<String> pnCxGroups, String pnCxRole) {
+        return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups) // (0)
+                .flatMapMany(o -> mandateDao.listMandatesByDelegator(internalUserId, null, null, null))    // (1)
+                .doOnNext(mand -> log.info("listMandatesByDelegator found mandate={}", mand))
+                .map(mandateEntityMandateDtoMapper::toDto)  // (2)
+                .collectList()                                                        // (3)
+                .zipWhen(dtos -> {
+                            if (!dtos.isEmpty()) {
+                                // genero la lista degli id delega
+                                List<String> mandateIds = new ArrayList<>();
+                                dtos.forEach(dto -> mandateIds.add(dto.getMandateId()));
 
-        return mandateDao.listMandatesByDelegator(internaluserId, null, null)    // (1)
-            .doOnNext(mand -> log.info("listMandatesByDelegator found mandate={}",mand))
-            .map(mandateEntityMandateDtoMapper::toDto)  // (2)
-            .collectList()                                                        // (3)
-            .zipWhen(dtos -> {
-                        if (!dtos.isEmpty())
-                        {
-                            // genero la lista degli id delega
-                            List<String> mandateIds = new ArrayList<>();
-                            dtos.forEach(dto -> mandateIds.add(dto.getMandateId()));
-
-                            // ritorno la lista
-                            return this.pnDatavaultClient.getMandatesByIds(mandateIds)
-                                    .collectMap(MandateDtoDto::getMandateId, MandateDtoDto::getInfo);
-                        }
-                        else
-                            return Mono.just(new HashMap<String, DenominationDtoDto>());
-                },
-                (dtos, userinfosdtos) -> {
-
-                    for(MandateDto dto : dtos)
-                    {
-                        if (userinfosdtos.containsKey(dto.getMandateId()))
-                            updateUserDto(dto.getDelegate(), userinfosdtos.get(dto.getMandateId()));
+                                // ritorno la lista
+                                return this.pnDatavaultClient.getMandatesByIds(mandateIds)
+                                        .collectMap(MandateDtoDto::getMandateId, MandateDtoDto::getInfo);
+                            } else {
+                                return Mono.just(new HashMap<String, DenominationDtoDto>());
+                            }
+                        },
+                        (dtos, userinfosdtos) -> {
+                            for (MandateDto dto : dtos) {
+                                if (userinfosdtos.containsKey(dto.getMandateId()))
+                                    updateUserDto(dto.getDelegate(), userinfosdtos.get(dto.getMandateId()));
+                            }
+                            return dtos;
+                        })
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(ent -> {                                           // (4)
+                    if (!ent.getVisibilityIds().isEmpty()) {
+                        return pnInfoPaClient
+                                .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
+                                .flatMap(pa -> {
+                                    ent.getVisibilityIds().get(0).setName(pa.getName());
+                                    return Mono.just(ent);
+                                });
+                    } else {
+                        return Mono.just(ent);
                     }
-                    return dtos;
-                })
-            .flatMapMany(Flux::fromIterable)
-            .flatMap(ent -> {                                           // (4)
-                if (!ent.getVisibilityIds().isEmpty())
-                    return pnInfoPaClient
-                        .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
-                        .flatMap(pa -> {
-                            ent.getVisibilityIds().get(0).setName(pa.getName());
-                            return Mono.just(ent);
-                            });   
-                else
-                    return Mono.just(ent);
-            })         
-        ;
+                });
     }
 
     /**
-     * Rifiuta una delega
+     * Rifiuta una delega. Per una PG solo l'amministratore può rifiutare una delega.
      *
-     * @param mandateId id della delega
-     * @param internaluserId iuid del delegato
+     * @param mandateId      id della delega
+     * @param internalUserId iuid del delegato
+     * @param pnCxRole       ruolo dell'utente
+     * @param pnCxGroups     gruppi a cui appartiene l'utente
+     * @param pnCxType       tipo di utente
      * @return void
      */
-    public Mono<Void> rejectMandate(String mandateId, String internaluserId) {
-        if (mandateId == null)
-            throw  new PnMandateNotFoundException();
-
-        return mandateDao.rejectMandate(internaluserId, mandateId)
-                .then(this.pnDatavaultClient.deleteMandateById(mandateId));
+    public Mono<Void> rejectMandate(String mandateId, String internalUserId, CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
+        if (mandateId == null) {
+            throw new PnMandateNotFoundException();
+        }
+        return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
+                .flatMap(o -> mandateDao.rejectMandate(internalUserId, mandateId))
+                .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
+                .flatMap(entity -> {
+                    if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
+                        return sqsService.sendToDelivery(entity, EventType.MANDATE_REJECTED).then();
+                    }
+                    return Mono.just(entity).then();
+                });
     }
 
     /**
-     * Revoca una delega
+     * Revoca una delega. Per una PG solo l'amministratore può revocare una delega.
      *
-     * @param mandateId id della delega
-     * @param internaluserId iuid del delegante
+     * @param mandateId      id della delega
+     * @param internalUserId iuid del delegante
+     * @param pnCxRole       ruolo dell'utente
+     * @param pnCxGroups     gruppi a cui appartiene l'utente
+     * @param pnCxType       tipo di utente
      * @return void
      */
-    public Mono<Object> revokeMandate(String mandateId, String internaluserId) {
-        if (mandateId == null)
-            throw  new PnMandateNotFoundException();
-
-        return mandateDao.revokeMandate(internaluserId, mandateId)
-                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)
-                ,(r, d) -> d);
+    public Mono<Object> revokeMandate(String mandateId, String internalUserId, CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
+        if (mandateId == null) {
+            throw new PnMandateNotFoundException();
+        }
+        return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
+                .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId))
+                .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
+                .flatMap(entity -> {
+                    if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
+                        return sqsService.sendToDelivery(entity, EventType.MANDATE_REVOKED).thenReturn(entity);
+                    }
+                    return Mono.just(entity);
+                });
     }
 
     /**
      * Questo metodo non è pensato per essere usato dal FE, ma dalla callback proveniente da dynamostream
      * Si occupa di spostare la delega nello storico e toglierla dalla tabella principale
      *
-     * @param mandateId id della delega
+     * @param mandateId      id della delega
      * @param internaluserId iuid del delegante
      * @return void
      */
     public Mono<Object> expireMandate(String mandateId, String internaluserId, String uid, String cxType) {
         if (mandateId == null)
-            throw  new PnMandateNotFoundException();
+            throw new PnMandateNotFoundException();
 
         return mandateDao.expireMandate(internaluserId, uid, cxType, mandateId)
-                .zipWhen(r -> this.pnDatavaultClient.deleteMandateById(mandateId)
-                        ,(r, d) -> d);
+                .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
+                .flatMap(entity -> {
+                    if (Boolean.FALSE.equals(entity.getDelegateisperson())) {
+                        return sqsService.sendToDelivery(entity, EventType.MANDATE_EXPIRED).thenReturn(entity);
+                    }
+                    return Mono.just(entity);
+                });
     }
 
-    private void updateUserDto(UserDto user, DenominationDtoDto info)
-    {
+    private void updateUserDto(UserDto user, DenominationDtoDto info) {
         user.setCompanyName(info.getDestBusinessName());
         user.setFirstName(info.getDestName());
         user.setLastName(info.getDestSurname());

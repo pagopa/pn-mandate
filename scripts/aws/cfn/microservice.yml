@@ -123,6 +123,14 @@ Parameters:
     Type: String
     Description: 'Application load balancer security group'
 
+  Mandate2DeliveryQueueName:
+    Type: String
+    Description: 'The name of the SQS queue used to communicate with pn-delivery module.'
+
+  Mandate2DeliveryQueueARN:
+    Type: String
+    Description: 'Identify the resource that the policy applies to.'
+
   PnMandateExpiredTriggerLambdaEventSourceMappingBatchSize:
     Type: String
     Description: 'BatchSize stream mapping'
@@ -250,6 +258,7 @@ Resources:
         ContainerEnvEntry5: 'PN_MANDATE_CLIENT_DATAVAULT_BASEPATH=http://alb.confidential.pn.internal:8080'
         ContainerEnvEntry6: !Sub 'PN_MANDATE_CLIENT_INFOPA_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
         ContainerEnvEntry7: !Sub 'SPRING_CLOUD_FUNCTIONROUTER_QUEUES_LIST=${PnMandateInputsQueueName}'
+        ContainerEnvEntry8: !Sub 'PN_MANDATE_SQS_TO_PN_DELIVERY_NAME=${Mandate2DeliveryQueueName}'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -297,6 +306,7 @@ Resources:
               - sqs:SendMessageBatch
             Resource:
               - !Ref PnMandateInputsQueueARN
+              - !Ref Mandate2DeliveryQueueARN
           - Effect: Allow
             Action:
               - ssm:GetParameter
@@ -356,6 +366,9 @@ Resources:
             - !Ref PnMandateExpiredTriggerDLQAlarmARN
             - !Ref PnMandateInputsQueueAlarmARN
             - !Ref PnMandateInputsQueueAgeAlarmARN
+        QueueArns: !Join
+          - ','
+          - - !Ref Mandate2DeliveryQueueARN
 
   ### IAM Role used by Subscription filters to allow read logs from Cloudwatch and send logs to Kinesis Firehose
   SubscriptionFilterServiceRole:

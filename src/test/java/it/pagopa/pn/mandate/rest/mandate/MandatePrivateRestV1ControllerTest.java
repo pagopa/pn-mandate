@@ -17,11 +17,9 @@ import reactor.core.publisher.Flux;
 import java.util.Collections;
 import java.util.List;
 
-
 @WebFluxTest(controllers = {MandatePrivateRestV1Controller.class})
 @Import(MandateEntityInternalMandateDtoMapper.class)
 class MandatePrivateRestV1ControllerTest {
-
 
     @Autowired
     WebTestClient webTestClient;
@@ -32,20 +30,17 @@ class MandatePrivateRestV1ControllerTest {
     @MockBean
     private MandatePrivateService mandatePrivateService;
 
-
-
     @Test
     void listMandatesByDelegate() {
         //Given
-        String url = "/mandate-private/api/v1/mandates-by-internaldelegate/{internaluserId}"
-                .replace("{internaluserId}", "internauserid1234");
-        List<InternalMandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoIT.newMandate(true))
-        );
+        String url = "/mandate-private/api/v1/mandates-by-internaldelegate/{internaluserId}?x-pagopa-pn-cx-type={type}"
+                .replace("{internaluserId}", "internauserid1234")
+                .replace("{type}", "PF");
+        List<InternalMandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
 
         //When
-        Mockito.when( mandatePrivateService.listMandatesByDelegate( Mockito.anyString(), Mockito.any() ))
-                .thenReturn(Flux.fromIterable(mandateDtoList ));
+        Mockito.when(mandatePrivateService.listMandatesByDelegate(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Flux.fromIterable(mandateDtoList));
 
         //Then
         webTestClient.get()
@@ -59,16 +54,15 @@ class MandatePrivateRestV1ControllerTest {
     @Test
     void listMandatesByDelegateWithMandateId() {
         //Given
-        String url = "/mandate-private/api/v1/mandates-by-internaldelegate/{internaluserId}?mandateId={mandateId}"
+        String url = "/mandate-private/api/v1/mandates-by-internaldelegate/{internaluserId}?mandateId={mandateId}&x-pagopa-pn-cx-type={type}"
                 .replace("{internaluserId}", "internauserid1234")
-                .replace("{mandateId}", "mandateId12345");
-        List<InternalMandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoIT.newMandate(true))
-        );
+                .replace("{mandateId}", "mandateId12345")
+                .replace("{type}", "PF");
+        List<InternalMandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
 
         //When
-        Mockito.when( mandatePrivateService.listMandatesByDelegate( Mockito.anyString(), Mockito.any() ))
-                .thenReturn(Flux.fromIterable(mandateDtoList ));
+        Mockito.when(mandatePrivateService.listMandatesByDelegate(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Flux.fromIterable(mandateDtoList));
 
         //Then
         webTestClient.get()
@@ -82,15 +76,14 @@ class MandatePrivateRestV1ControllerTest {
     @Test
     void listMandatesByDelegator() {
         //Given
-        String url = "/mandate-private/api/v1/mandates-by-internaldelegator/{internaluserId}"
-                .replace("{internaluserId}", "internauserid1234");
-        List<InternalMandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoIT.newMandate(true))
-        );
+        String url = "/mandate-private/api/v1/mandates-by-internaldelegator/{internaluserId}?x-pagopa-pn-cx-type={type}"
+                .replace("{internaluserId}", "internauserid1234")
+                .replace("{type}", "PF");
+        List<InternalMandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
 
         //When
-        Mockito.when( mandatePrivateService.listMandatesByDelegator( Mockito.anyString(), Mockito.any() ))
-                .thenReturn(Flux.fromIterable(mandateDtoList ));
+        Mockito.when(mandatePrivateService.listMandatesByDelegator(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Flux.fromIterable(mandateDtoList));
 
         //Then
         webTestClient.get()
@@ -101,20 +94,18 @@ class MandatePrivateRestV1ControllerTest {
                 .expectStatus().isOk();
     }
 
-
     @Test
     void listMandatesByDelegatorWithMandateId() {
         //Given
-        String url = "/mandate-private/api/v1/mandates-by-internaldelegator/{internaluserId}?mandateId={mandateId}"
+        String url = "/mandate-private/api/v1/mandates-by-internaldelegator/{internaluserId}?mandateId={mandateId}&x-pagopa-pn-cx-type={type}"
                 .replace("{internaluserId}", "internauserid1234")
-                .replace("{mandateId}", "mandateId12345");
-        List<InternalMandateDto> mandateDtoList = Collections.singletonList(
-                mapper.toDto(MandateDaoIT.newMandate(true))
-        );
+                .replace("{mandateId}", "mandateId12345")
+                .replace("{type}", "PF");
+        List<InternalMandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
 
         //When
-        Mockito.when( mandatePrivateService.listMandatesByDelegator( Mockito.anyString(), Mockito.any() ))
-                .thenReturn(Flux.fromIterable(mandateDtoList ));
+        Mockito.when(mandatePrivateService.listMandatesByDelegator(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Flux.fromIterable(mandateDtoList));
 
         //Then
         webTestClient.get()
@@ -123,6 +114,24 @@ class MandatePrivateRestV1ControllerTest {
                 //.header("pn-pagopa-user-id")
                 .exchange()
                 .expectStatus().isOk();
+    }
+
+    @Test
+    void listMandatesByDelegators() {
+        String url = "/mandate-private/api/v1/mandates-by-internaldelegators?delegateType={type}"
+                .replace("{type}", "PG");
+        List<InternalMandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
+
+        Mockito.when(mandatePrivateService.listMandatesByDelegators(Mockito.any(), Mockito.any(), Mockito.any()))
+                        .thenReturn(Flux.fromIterable(mandateDtoList));
+
+        webTestClient.post()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody();
     }
 
 }

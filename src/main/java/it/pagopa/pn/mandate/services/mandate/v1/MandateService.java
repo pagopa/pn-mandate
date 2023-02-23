@@ -1,7 +1,10 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
+import it.pagopa.pn.commons.exceptions.ExceptionHelper;
+import it.pagopa.pn.commons.exceptions.dto.ProblemError;
 import it.pagopa.pn.commons.utils.ValidateUtils;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
@@ -11,29 +14,34 @@ import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.Den
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
+import it.pagopa.pn.mandate.middleware.db.PnLastEvaluatedKey;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
+import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.PgUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.*;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyAdmin;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyGroupAdmin;
-
 
 @Service
 @Slf4j
@@ -53,6 +61,8 @@ public class MandateService {
     private final PnDataVaultClient pnDatavaultClient;
     private final SqsService sqsService;
     private final ValidateUtils validateUtils;
+    private final MandateSearchService mandateSearchService;
+    private final PnMandateConfig pnMandateConfig;
 
     public MandateService(MandateDao mandateDao,
                           DelegateDao userDao,
@@ -61,7 +71,9 @@ public class MandateService {
                           PnInfoPaClient pnInfoPaClient,
                           PnDataVaultClient pnDatavaultClient,
                           SqsService sqsService,
-                          ValidateUtils validateUtils) {
+                          ValidateUtils validateUtils,
+                          MandateSearchService mandateSearchService,
+                          PnMandateConfig pnMandateConfig) {
         this.mandateDao = mandateDao;
         this.userDao = userDao;
         this.mandateEntityMandateDtoMapper = mandateEntityMandateDtoMapper;
@@ -70,6 +82,8 @@ public class MandateService {
         this.pnDatavaultClient = pnDatavaultClient;
         this.sqsService = sqsService;
         this.validateUtils = validateUtils;
+        this.mandateSearchService = mandateSearchService;
+        this.pnMandateConfig = pnMandateConfig;
     }
 
     /**
@@ -277,12 +291,8 @@ public class MandateService {
                                                    List<String> xPagopaPnCxGroups,
                                                    String xPagopaPnCxRole) {
         Integer iStatus = null;
-        try {
-            if (status != null && !status.equals(""))
-                iStatus = StatusEnumMapper.intValfromValueConst(status);
-        } catch (Exception e) {
-            log.error("invalid state in filter");
-            throw new PnUnsupportedFilterException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM, "status");
+        if (status != null && !status.equals("")) {
+            iStatus = convertStatusStringToInteger(status);
         }
 
         Integer finalIStatus = iStatus;
@@ -332,6 +342,57 @@ public class MandateService {
                                 });
                     else
                         return Mono.just(ent);
+                });
+    }
+
+    /**
+     * Il metodo si occupa di tornare la lista delle deleghe dato il delegante. Opzionalmente, è possibile filtrare
+     * per stati, gruppi e deleganti.
+     *
+     * @param requestDto    body della richiesta
+     * @param size          dimensione della pagina
+     * @param nextPageKey   next key per la paginazione
+     * @param cxId          id del delegato
+     * @param cxType        tipo del delegato
+     * @param cxGroups      gruppi del delegato
+     * @param cxRole        ruolo del delegato
+     * @return              una lista paginata di deleghe che rispettano i filtri in ingresso
+     */
+    public Mono<SearchMandateResponseDto> searchByDelegate(Mono<SearchMandateRequestDto> requestDto,
+                                                           Integer size,
+                                                           String nextPageKey,
+                                                           String cxId,
+                                                           CxTypeAuthFleet cxType,
+                                                           List<String> cxGroups,
+                                                           String cxRole) {
+        return validaAccessoOnlyGroupAdmin(cxType, cxRole, cxGroups)
+                .flatMap(obj -> requestDto)
+                .map(request -> {
+                    List<Integer> statutes = convertStatusStringToInteger(request.getStatus());
+                    InputSearchMandateDto searchDto = InputSearchMandateDto.builder()
+                            .delegateId(cxId)
+                            .statuses(statutes)
+                            .delegatorIds(request.getDelegatorIds())
+                            .size(size)
+                            .nextPageKey(nextPageKey)
+                            .build();
+                    searchDto.setMaxPageNumber(pnMandateConfig.getMaxPageSize());
+                    searchDto.setGroups(PgUtils.getGroupsForSecureFilter(request.getGroups(), cxGroups));
+                    validateInput(searchDto);
+                    log.debug("searchByDelegate filters: {}", searchDto);
+                    return searchDto;
+                })
+                .flatMap(searchDto -> {
+                    PnLastEvaluatedKey lastEvaluatedKey = convertLastEvaluatedKey(searchDto.getNextPageKey());
+                    return mandateSearchService.searchByDelegate(searchDto, lastEvaluatedKey);
+                })
+                .map(result -> {
+                    log.info("searchByDelegate size: {}, hasMore: {}, nextPagesKey: {}", result.getPage().size(), result.isMore(), result.getNextPagesKey());
+                    SearchMandateResponseDto responseDto = new SearchMandateResponseDto();
+                    responseDto.setMoreResult(result.isMore());
+                    responseDto.setNextPagesKey(result.getNextPagesKey());
+                    responseDto.setResultsPage(result.getPage());
+                    return responseDto;
                 });
     }
 
@@ -471,5 +532,44 @@ public class MandateService {
             user.setDisplayName(info.getDestName() + " " + info.getDestSurname());
         else
             user.setDisplayName(info.getDestBusinessName());
+    }
+
+    private List<Integer> convertStatusStringToInteger(List<String> statutes) {
+        if (CollectionUtils.isEmpty(statutes)) {
+            return Collections.emptyList();
+        }
+        return statutes.stream()
+                .map(this::convertStatusStringToInteger)
+                .toList();
+    }
+
+    private Integer convertStatusStringToInteger(String status) {
+        try {
+            return StatusEnumMapper.intValfromValueConst(status);
+        } catch (Exception e) {
+            log.error("invalid status in filter", e);
+            throw new PnUnsupportedFilterException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM, "status");
+        }
+    }
+
+    private @Nullable PnLastEvaluatedKey convertLastEvaluatedKey(String nextPagesKey) {
+        if (StringUtils.hasText(nextPagesKey)) {
+            return PnLastEvaluatedKey.deserialize(nextPagesKey);
+        }
+        return null;
+    }
+
+    private void validateInput(InputSearchMandateDto searchDto) {
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            Validator validator = factory.getValidator();
+
+            Set<ConstraintViolation<InputSearchMandateDto>> errors = validator.validate(searchDto);
+            if (!errors.isEmpty()) {
+                log.warn("validation search input errors: {}", errors);
+                List<ProblemError> problems = new ExceptionHelper(Optional.empty())
+                        .generateProblemErrorsFromConstraintViolation(errors);
+                throw new PnInvalidInputException(searchDto.getDelegateId(), problems);
+            }
+        }
     }
 }

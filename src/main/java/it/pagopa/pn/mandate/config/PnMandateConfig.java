@@ -22,4 +22,6 @@ public class PnMandateConfig {
     private String dynamodbTable;
     @Value("${aws.dynamodb_table_history:}")
     private String dynamodbTableHistory;
+
+    private Integer maxPageSize;
 }

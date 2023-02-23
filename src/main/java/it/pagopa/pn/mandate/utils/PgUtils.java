@@ -10,6 +10,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,5 +73,20 @@ public class PgUtils {
         }
         expressionGroup.replace(expressionGroup.length() - OR.length(), expressionGroup.length(),")");
         return expressionGroup.toString();
+    }
+
+    public static List<String> getGroupsForSecureFilter(List<String> groups, List<String> pnCxGroups) {
+        if (CollectionUtils.isEmpty(pnCxGroups)) {
+            return groups;
+        }
+        if (CollectionUtils.isEmpty(groups)) {
+            return pnCxGroups;
+        }
+        Set<String> setOfPnCxGroups = new HashSet<>(pnCxGroups);
+        if (setOfPnCxGroups.containsAll(groups)) {
+            log.warn("groups {} must be a subset of pnCxGroups {}", groups, pnCxGroups);
+            throw new PnForbiddenException();
+        }
+        return groups;
     }
 }

@@ -1,10 +1,7 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
 import it.pagopa.pn.mandate.rest.mandate.v1.api.MandateServiceApi;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.AcceptRequestDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +13,9 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @RestController
-public class MandateRestV1Controller  implements MandateServiceApi   {
+public class MandateRestV1Controller  implements MandateServiceApi {
 
-    MandateService mandateService;
+    private final MandateService mandateService;
 
     public MandateRestV1Controller(MandateService mandateService) {
         this.mandateService = mandateService;
@@ -73,6 +70,19 @@ public class MandateRestV1Controller  implements MandateServiceApi   {
         return mandateService.listMandatesByDelegate(status, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole)
                 .collectList()
                 .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
+    }
+
+    @Override
+    public Mono<ResponseEntity<SearchMandateResponseDto>> searchMandatesByDelegate(String xPagopaPnCxId,
+                                                                                   CxTypeAuthFleet xPagopaPnCxType,
+                                                                                   Integer size,
+                                                                                   List<String> xPagopaPnCxGroups,
+                                                                                   String xPagopaPnCxRole,
+                                                                                   String nextPageKey,
+                                                                                   Mono<SearchMandateRequestDto> searchMandateRequestDto,
+                                                                                   final ServerWebExchange exchange) {
+        return mandateService.searchByDelegate(searchMandateRequestDto, size, nextPageKey, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole)
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(m));
     }
 
     @Override

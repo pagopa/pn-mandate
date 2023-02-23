@@ -19,6 +19,7 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Import;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
@@ -91,7 +92,7 @@ public class MandateDao extends BaseDao {
 
         QueryConditional queryConditional = QueryConditional.sortLessThanOrEqualTo(getKeyBuild(delegateInternaluserid, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)));
         if (status != null) {
-                queryConditional = QueryConditional.keyEqualTo(getKeyBuild(delegateInternaluserid, status));    // si noti keyEqualTo al posto di sortLessThanOrEqualTo
+            queryConditional = QueryConditional.keyEqualTo(getKeyBuild(delegateInternaluserid, status));    // si noti keyEqualTo al posto di sortLessThanOrEqualTo
         }        
 
         // devo sempre mettere un filtro di salvaguardia per quanto riguarda la scadenza della delega.
@@ -132,6 +133,86 @@ public class MandateDao extends BaseDao {
         // si suppone infatti che la lista delle deleghe non sia troppo lunga e quindi non vada a sforare il limite di 1MB di paginazione
         return Flux.from(mandateTable.index(GSI_INDEX_DELEGATE_STATE).query(qeRequest)
                 .flatMapIterable(Page::items));
+    }
+
+    public Mono<Page<MandateEntity>> searchByDelegate(String delegateId,
+                                                      @Nullable Integer status,
+                                                      List<String> groups,
+                                                      List<String> delegatorIds,
+                                                      int size,
+                                                      PnLastEvaluatedKey lastEvaluatedKey) {
+        log.debug("searchByDelegate {}, status: {}, groups: {}, delegatorIds: {}, size: {}, lek: {}",
+                delegateId, status, groups, delegatorIds, size, lastEvaluatedKey);
+
+        Key.Builder keyBuilder = Key.builder().partitionValue(delegateId);
+        if (status != null) {
+           keyBuilder.sortValue(status);
+        }
+        Key key = keyBuilder.build();
+        QueryConditional queryConditional = QueryConditional.keyEqualTo(key);
+        log.debug("query conditional PK: {}, SK: {}", key.partitionKeyValue(), key.sortKeyValue());
+
+        QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
+                .queryConditional(queryConditional)
+                .filterExpression(filterExpressionSearchByDelegate(groups, delegatorIds))
+                .scanIndexForward(true)
+                .limit(size)
+                .exclusiveStartKey(lastEvaluatedKeySearchByDelegate(lastEvaluatedKey))
+                .build();
+
+        return Mono.from(mandateTable.index(GSI_INDEX_DELEGATE_STATE).query(queryEnhancedRequest));
+    }
+
+    private Expression filterExpressionSearchByDelegate(List<String> groups, List<String> delegatorIds) {
+        Expression.Builder expressionBuilder = Expression.builder();
+        StringBuilder filterExpression = new StringBuilder();
+        if (!CollectionUtils.isEmpty(groups)) {
+            addNewFilterExpression(filterExpression);
+            addListFilterExpression(groups, MandateEntity.COL_A_GROUPS, ":g", expressionBuilder, filterExpression);
+        }
+        if (!CollectionUtils.isEmpty(delegatorIds)) {
+            addNewFilterExpression(filterExpression);
+            addListFilterExpression(delegatorIds, MandateEntity.COL_PK, ":d", expressionBuilder, filterExpression);
+        }
+        expressionBuilder.expression(filterExpression.toString());
+        Expression expression = expressionBuilder.build();
+        log.debug("filterExpression: {}, values: {}", expression.expression(), expression.expressionValues());
+        return expression;
+    }
+
+    private @Nullable Map<String, AttributeValue> lastEvaluatedKeySearchByDelegate(PnLastEvaluatedKey lastEvaluatedKey) {
+        if (lastEvaluatedKey != null && !lastEvaluatedKey.getInternalLastEvaluatedKey().isEmpty()) {
+            var map = new HashMap<>(lastEvaluatedKey.getInternalLastEvaluatedKey());
+            map.computeIfPresent(MandateEntity.COL_I_STATE, (k, v) -> AttributeValue.builder().n(v.s()).build());
+            log.debug("lastEvaluatedKey from: {}, to: {}", lastEvaluatedKey, map);
+            return map;
+        }
+        return null;
+    }
+
+    private void addListFilterExpression(List<String> values,
+                                         String field,
+                                         String prefix,
+                                         Expression.Builder expressionBuilder,
+                                         StringBuilder expression) {
+        expression.append("(");
+        for (int i = 0; i < values.size(); i++) {
+            expression.append("contains(")
+                    .append(field)
+                    .append(",")
+                    .append(prefix)
+                    .append(i)
+                    .append(")");
+            if (i < values.size() - 1) {
+                expression.append(" OR ");
+            }
+            expressionBuilder.putExpressionValue(prefix + i, AttributeValue.builder().s(values.get(i)).build());
+        }
+        expression.append(")");
+    }
+
+    private void addNewFilterExpression(StringBuilder expression) {
+        expression.append(expression.length() > 0 ? AND : "");
     }
 
     /**

@@ -174,7 +174,9 @@ public class MandateDao extends BaseDao {
             addNewFilterExpression(filterExpression);
             addListFilterExpression(delegatorIds, MandateEntity.COL_PK, ":d", expressionBuilder, filterExpression);
         }
-        expressionBuilder.expression(filterExpression.toString());
+        if (!filterExpression.isEmpty()) {
+            expressionBuilder.expression(filterExpression.toString());
+        }
         Expression expression = expressionBuilder.build();
         log.debug("filterExpression: {}, values: {}", expression.expression(), expression.expressionValues());
         return expression;
@@ -183,7 +185,9 @@ public class MandateDao extends BaseDao {
     private @Nullable Map<String, AttributeValue> lastEvaluatedKeySearchByDelegate(PnLastEvaluatedKey lastEvaluatedKey) {
         if (lastEvaluatedKey != null && !lastEvaluatedKey.getInternalLastEvaluatedKey().isEmpty()) {
             var map = new HashMap<>(lastEvaluatedKey.getInternalLastEvaluatedKey());
-            map.computeIfPresent(MandateEntity.COL_I_STATE, (k, v) -> AttributeValue.builder().n(v.s()).build());
+            map.computeIfPresent(MandateEntity.COL_I_STATE, (k, v) -> AttributeValue.builder()
+                    .n(v.s() != null ? v.s() : v.n())
+                    .build());
             log.debug("lastEvaluatedKey from: {}, to: {}", lastEvaluatedKey, map);
             return map;
         }

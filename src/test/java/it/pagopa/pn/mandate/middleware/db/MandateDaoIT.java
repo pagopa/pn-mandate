@@ -21,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.time.*;
 import java.util.List;
@@ -1228,6 +1229,108 @@ public class MandateDaoIT {
         } finally {
             try {
                 testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void searchByDelegate1() {
+        MandateEntity mandateToInsert1 = newMandate(false);
+        MandateEntity mandateToInsert2 = newMandate(false);
+        mandateToInsert2.setMandateId(mandateToInsert1.getMandateId() + "-2");
+        mandateToInsert2.setDelegator(mandateToInsert1.getDelegator() + "-2");
+        try {
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+            mandateDao.createMandate(mandateToInsert2).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        String delegateId = mandateToInsert1.getDelegate();
+        try {
+            Page<MandateEntity> result = mandateDao.searchByDelegate(delegateId, null, null, null, 1, null)
+                    .block(d);
+            Assertions.assertNotNull(result);
+            Assertions.assertEquals(1, result.items().size());
+            Assertions.assertNotNull(result.lastEvaluatedKey());
+        } finally {
+            try {
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+                testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void searchByDelegate2() {
+        MandateEntity mandateToInsert = newMandate(false);
+        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        mandateToInsert.setGroups(Set.of("G1"));
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        String delegateId = mandateToInsert.getDelegate();
+        String delegatorId = mandateToInsert.getDelegator();
+        Integer state = mandateToInsert.getState();
+        try {
+            Page<MandateEntity> result = mandateDao.searchByDelegate(delegateId, state, List.of("G1", "G2"), List.of(delegatorId, "other"), 2, null)
+                    .block(d);
+            Assertions.assertNotNull(result);
+            Assertions.assertEquals(1, result.items().size());
+            Assertions.assertNull(result.lastEvaluatedKey());
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void searchByDelegate3() {
+        MandateEntity mandateToInsert1 = newMandate(false);
+        MandateEntity mandateToInsert2 = newMandate(false);
+        mandateToInsert2.setMandateId(mandateToInsert1.getMandateId() + "-2");
+        mandateToInsert2.setDelegator(mandateToInsert1.getDelegator() + "-2");
+        try {
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+            mandateDao.createMandate(mandateToInsert2).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        String delegateId = mandateToInsert1.getDelegate();
+        try {
+            Page<MandateEntity> result1 = mandateDao.searchByDelegate(delegateId, null, null, null, 1, null)
+                    .block(d);
+            Assertions.assertNotNull(result1);
+            Assertions.assertNotNull(result1.lastEvaluatedKey());
+            Assertions.assertEquals(1, result1.items().size());
+
+            PnLastEvaluatedKey lastEvaluatedKey = new PnLastEvaluatedKey();
+            lastEvaluatedKey.setInternalLastEvaluatedKey(result1.lastEvaluatedKey());
+            Page<MandateEntity> result2 = mandateDao.searchByDelegate(delegateId, null, null, null, 2, lastEvaluatedKey)
+                    .block(d);
+            Assertions.assertNotNull(result2);
+            Assertions.assertEquals(1, result2.items().size());
+            Assertions.assertNull(result2.lastEvaluatedKey());
+        } finally {
+            try {
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+                testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
             } catch (Exception e) {
                 System.out.println("Nothing to remove");
             }

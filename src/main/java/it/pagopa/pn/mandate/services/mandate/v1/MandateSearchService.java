@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.*;
@@ -49,10 +50,11 @@ public class MandateSearchService {
     public Mono<PageResultDto<MandateDto, String>> searchByDelegate(InputSearchMandateDto searchDto,
                                                                     PnLastEvaluatedKey lastEvaluatedKey) {
         String delegateId = searchDto.getDelegateId();
-        List<Integer> partitions = generatePartitions(searchDto.getStatuses());
         List<String> delegatorIds = searchDto.getDelegatorIds();
         List<String> groups = searchDto.getGroups();
         log.info("searchByDelegate {}, delegatorIds: {}, groups: {}", delegateId, delegateId, groups);
+
+        List<Integer> partitions = generatePartitions(searchDto.getStatuses());
 
         int requiredSize = searchDto.getSize() * searchDto.getMaxPageNumber() + 1;
         int dynamoDbPageSize;
@@ -69,30 +71,44 @@ public class MandateSearchService {
 
         List<MandateEntity> cumulativeQueryResult = new ArrayList<>();
         return mandateDao.searchByDelegate(delegateId, startPartition, groups, delegatorIds, dynamoDbPageSize, lastEvaluatedKey)
-                .expand(page -> {
-                    log.trace("expanding...");
-                    if (cumulativeQueryResult.size() < requiredSize) {
-                        Integer currentPartition = getPartitionFromIdx(partitions, pIdx.get());
-                        if (page.lastEvaluatedKey() == null && pIdx.get() < partitions.size() - 1) {
-                            Integer nextPartition = partitions.get(pIdx.incrementAndGet());
-                            log.debug("no more data in partition {}, next partition is {}", currentPartition, nextPartition);
-                            return mandateDao.searchByDelegate(delegateId, nextPartition, groups, delegatorIds, dynamoDbPageSize, null);
-                        } else if (page.lastEvaluatedKey() != null) {
-                            PnLastEvaluatedKey nextPageKey = new PnLastEvaluatedKey();
-                            nextPageKey.setInternalLastEvaluatedKey(page.lastEvaluatedKey());
-                            log.debug("more data in partition {}, lek: {}", currentPartition, nextPageKey);
-                            return mandateDao.searchByDelegate(delegateId, partitions.get(pIdx.get()), groups, delegatorIds, dynamoDbPageSize, nextPageKey);
-                        }
-                        log.debug("no more data");
-                    } else {
-                        log.debug("size query results: {}, reached required size of {}", cumulativeQueryResult.size(), requiredSize);
-                    }
-                    log.trace("...stop expanding");
-                    return Mono.empty();
-                })
+                .expand(page -> readMoreData(cumulativeQueryResult.size(), requiredSize, dynamoDbPageSize, page, searchDto, partitions, pIdx))
                 .doOnNext(page -> cumulativeQueryResult.addAll(page.items()))
                 .last()
                 .flatMap(lastPage -> prepareResult(cumulativeQueryResult, searchDto, requiredSize));
+    }
+
+    private Mono<Page<MandateEntity>> readMoreData(int currentSize,
+                                                   int requiredSize,
+                                                   int dynamoDbPageSize,
+                                                   Page<MandateEntity> page,
+                                                   InputSearchMandateDto searchDto,
+                                                   List<Integer> partitions,
+                                                   AtomicInteger pIdx) {
+        log.trace("reading more data...");
+        String delegateId = searchDto.getDelegateId();
+        List<String> delegatorIds = searchDto.getDelegatorIds();
+        List<String> groups = searchDto.getGroups();
+        if (currentSize < requiredSize) {
+            Integer currentPartition = getPartitionFromIdx(partitions, pIdx.get());
+            if (page.lastEvaluatedKey() == null && pIdx.incrementAndGet() < partitions.size()) {
+                // nella partizione corrente non ci sono più dati, si prosegue leggendo dalla partizione successiva
+                Integer nextPartition = partitions.isEmpty() ? null : partitions.get(pIdx.get());
+                log.debug("no more data in partition {}, next partition is {}", currentPartition, nextPartition);
+                return mandateDao.searchByDelegate(delegateId, nextPartition, groups, delegatorIds, dynamoDbPageSize, null);
+            } else if (page.lastEvaluatedKey() != null) {
+                // nella partizione corrente ci sono ancora dati, si prosegue leggendo dalla partizione corrente
+                PnLastEvaluatedKey nextPageKey = new PnLastEvaluatedKey();
+                nextPageKey.setInternalLastEvaluatedKey(page.lastEvaluatedKey());
+                Integer partition = partitions.isEmpty() ? null : partitions.get(pIdx.get());
+                log.debug("more data in partition {}, lek: {}", currentPartition, nextPageKey);
+                return mandateDao.searchByDelegate(delegateId, partition, groups, delegatorIds, dynamoDbPageSize, nextPageKey);
+            }
+            log.debug("no more data");
+        } else {
+            log.debug("size query results: {}, reached required size of {}", currentSize, requiredSize);
+        }
+        log.trace("...stop reading more data");
+        return Mono.empty();
     }
 
     private Mono<PageResultDto<MandateDto, String>> prepareResult(List<MandateEntity> results,

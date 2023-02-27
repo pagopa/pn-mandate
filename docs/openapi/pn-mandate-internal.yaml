@@ -348,6 +348,8 @@ paths:
         - mandate-service
       summary: Return filtered mandates based on status, groups and delegators
       operationId: searchMandatesByDelegate
+#      security:                                                                # ONLY EXTERNAL
+#        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
       parameters:
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL

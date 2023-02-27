@@ -10,10 +10,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.NONE)
@@ -71,22 +68,36 @@ public class PgUtils {
             expressionValues.put(":group" + i, pnCxGroup);
             expressionGroup.append(" contains(").append(MandateEntity.COL_A_GROUPS).append(",:group").append(i).append(") ").append(OR);
         }
-        expressionGroup.replace(expressionGroup.length() - OR.length(), expressionGroup.length(),")");
+        expressionGroup.replace(expressionGroup.length() - OR.length(), expressionGroup.length(), ")");
         return expressionGroup.toString();
     }
 
+    /**
+     * Costruisce una lista di gruppi da usare in modo sicuro nei filtri.
+     * Se valorizzati entrambi, i groups devono essere un sottoinsieme dei cx-groups.
+     * Se i groups non sono valorizzati, ma i cx-groups lo sono, allora il metodo ritorna la lista dei cx-groups.
+     *
+     * @param groups     gruppi (in filtro)
+     * @param pnCxGroups gruppi (header cx-groups)
+     * @return lista di gruppi
+     * @throws PnForbiddenException in caso i groups non siano un sottoinsieme dei cx-groups
+     */
     public static List<String> getGroupsForSecureFilter(List<String> groups, List<String> pnCxGroups) {
+        List<String> secureGroups;
         if (CollectionUtils.isEmpty(pnCxGroups)) {
-            return groups;
+            secureGroups = groups;
+        } else if (CollectionUtils.isEmpty(groups)) {
+            secureGroups = pnCxGroups;
+        } else {
+            Set<String> setOfPnCxGroups = new HashSet<>(pnCxGroups);
+            if (!setOfPnCxGroups.containsAll(groups)) {
+                log.warn("groups {} must be a subset of pnCxGroups {}", groups, pnCxGroups);
+                throw new PnForbiddenException();
+            }
+            secureGroups = groups;
         }
-        if (CollectionUtils.isEmpty(groups)) {
-            return pnCxGroups;
-        }
-        Set<String> setOfPnCxGroups = new HashSet<>(pnCxGroups);
-        if (setOfPnCxGroups.containsAll(groups)) {
-            log.warn("groups {} must be a subset of pnCxGroups {}", groups, pnCxGroups);
-            throw new PnForbiddenException();
-        }
-        return groups;
+        secureGroups = secureGroups != null ? List.copyOf(secureGroups) : Collections.emptyList();
+        log.debug("groups: {}, pnCxGroups: {} - secure filter: {}", groups, pnCxGroups, secureGroups);
+        return secureGroups;
     }
 }

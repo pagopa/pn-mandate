@@ -209,7 +209,7 @@
 						</goals>
 						<phase>process-resources</phase>
 						<configuration>
-							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-external-registries/4a61b8ca6297514337a38ccde3df3f9b12f7e407/docs/openapi/pn-ipa-v1.yaml</inputSpec>
+							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-external-registries/1226ecabd5fb5d8774f36b684ec65a1ac304f411/docs/openapi/pn-selfcare-internal-v1.yaml</inputSpec>
 							<generatorName>java</generatorName>
                 			<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>

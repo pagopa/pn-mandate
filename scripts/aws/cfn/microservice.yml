@@ -383,6 +383,9 @@ Resources:
         QueueArns: !Join
           - ','
           - - !Ref Mandate2DeliveryQueueARN
+        LogGroupsNames: !Join
+          - ','
+          - - !Sub '/ecs/${ProjectName}-mandate'
 
   ### IAM Role used by Subscription filters to allow read logs from Cloudwatch and send logs to Kinesis Firehose
   SubscriptionFilterServiceRole:

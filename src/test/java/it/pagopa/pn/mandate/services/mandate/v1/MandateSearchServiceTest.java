@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.PnLastEvaluatedKey;
@@ -80,12 +80,10 @@ class MandateSearchServiceTest {
         when(pnDataVaultClient.getRecipientDenominationByInternalId(List.of(entity1.getDelegator())))
                 .thenReturn(Flux.fromIterable(List.of(recipientDto1)));
 
-        PaInfoDto paInfoDto1 = new PaInfoDto();
-        paInfoDto1.setName("paName");
-        when(pnInfoPaClient.getOnePa("paId1"))
-                .thenReturn(Mono.just(paInfoDto1));
-        when(pnInfoPaClient.getOnePa("paId2"))
-                .thenReturn(Mono.empty());
+        PaSummaryDto paSummaryDto = new PaSummaryDto();
+        paSummaryDto.setName("paName");
+        when(pnInfoPaClient.getManyPa(anyList()))
+                .thenReturn(Flux.just(paSummaryDto));
 
         MandateDto dto1 = new MandateDto();
         dto1.setDelegator(new UserDto());
@@ -138,8 +136,8 @@ class MandateSearchServiceTest {
         when(pnDataVaultClient.getRecipientDenominationByInternalId(any()))
                 .thenReturn(Flux.empty());
 
-        when(pnInfoPaClient.getOnePa(any()))
-                .thenReturn(Mono.empty());
+        when(pnInfoPaClient.getManyPa(any()))
+                .thenReturn(Flux.empty());
 
         when(mandateEntityMandateDtoMapper.toDto(any()))
                 .thenCallRealMethod();

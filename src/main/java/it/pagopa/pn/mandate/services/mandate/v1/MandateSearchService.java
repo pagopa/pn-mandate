@@ -3,6 +3,7 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.PnLastEvaluatedKey;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
@@ -16,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -139,7 +139,7 @@ public class MandateSearchService {
     private void deanonimizeResult(MandateEntity entity,
                                    MandateDto dto,
                                    Map<String, BaseRecipientDtoDto> mapUserInfo,
-                                   Map<String, PaInfoDto> mapPaInfo,
+                                   Map<String, PaSummaryDto> mapPaInfo,
                                    PaInfoDto pgInfo) {
         var recipientDto = mapUserInfo.get(entity.getDelegator());
         if (recipientDto != null) {
@@ -149,9 +149,9 @@ public class MandateSearchService {
         }
         if (dto.getVisibilityIds() != null) {
             dto.getVisibilityIds().forEach(orgId -> {
-                PaInfoDto paInfoDto = mapPaInfo.get(orgId.getUniqueIdentifier());
-                if (paInfoDto != null) {
-                    orgId.setName(paInfoDto.getName());
+                PaSummaryDto paSummaryDto = mapPaInfo.get(orgId.getUniqueIdentifier());
+                if (paSummaryDto != null) {
+                    orgId.setName(paSummaryDto.getName());
                 }
             });
         }
@@ -217,7 +217,7 @@ public class MandateSearchService {
         return Mono.just(Collections.emptyMap());
     }
 
-    private Mono<Map<String, PaInfoDto>> callExternalRegistries(List<MandateEntity> entities) {
+    private Mono<Map<String, PaSummaryDto>> callExternalRegistries(List<MandateEntity> entities) {
         Set<String> paIds = entities.stream()
                 .map(MandateEntity::getVisibilityIds)
                 .filter(Objects::nonNull)
@@ -225,9 +225,8 @@ public class MandateSearchService {
                 .collect(Collectors.toSet());
         if (!paIds.isEmpty()) {
             log.info("calling external registry for {} PA ids", paIds.size());
-            return Flux.fromIterable(paIds)
-                    .flatMap(pnInfoPaClient::getOnePa)
-                    .collectMap(PaInfoDto::getId, Function.identity());
+            return pnInfoPaClient.getManyPa(new ArrayList<>(paIds))
+                    .collectMap(PaSummaryDto::getId, Function.identity());
         }
         return Mono.just(Collections.emptyMap());
     }

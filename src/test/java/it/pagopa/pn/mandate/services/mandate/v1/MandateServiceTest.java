@@ -591,7 +591,7 @@ class MandateServiceTest {
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
-                .block(d);
+                .block(D);
 
         //Then
         assertNotNull(result);

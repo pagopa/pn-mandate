@@ -5,11 +5,12 @@ import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.ApiClient;
 import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.api.InfoPaApi;
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaSummaryDto;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
 
 @Component
 public class PnInfoPaClient extends CommonBaseClient {
@@ -29,10 +30,7 @@ public class PnInfoPaClient extends CommonBaseClient {
         this.infoPaApi = new InfoPaApi(newApiClient);
     }
 
-    public Mono<PaInfoDto> getOnePa(String id) {
-
-        return this.infoPaApi                        
-                .getOnePa(id);
+    public Flux<PaSummaryDto> getManyPa(List<String> paIds) {
+        return this.infoPaApi.getManyPa(paIds);
     }
-
 }

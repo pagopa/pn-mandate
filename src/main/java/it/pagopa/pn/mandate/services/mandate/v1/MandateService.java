@@ -12,6 +12,7 @@ import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.PnLastEvaluatedKey;
@@ -222,17 +223,7 @@ public class MandateService {
 
                                     return dto;
                                 })
-                        .flatMap(ent -> {
-                            if (!ent.getVisibilityIds().isEmpty())
-                                return pnInfoPaClient
-                                        .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
-                                        .flatMap(pa -> {
-                                            ent.getVisibilityIds().get(0).setName(pa.getName());
-                                            return Mono.just(ent);
-                                        });
-                            else
-                                return Mono.just(ent);
-                        })
+                        .flatMap(this::enrichWithPaInfos)
                 );
     }
 
@@ -332,17 +323,7 @@ public class MandateService {
                             return dtos;
                         })
                 .flatMapMany(Flux::fromIterable)
-                .flatMap(ent -> {                                           // (4)
-                    if (!ent.getVisibilityIds().isEmpty())
-                        return pnInfoPaClient
-                                .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
-                                .flatMap(pa -> {
-                                    ent.getVisibilityIds().get(0).setName(pa.getName());
-                                    return Mono.just(ent);
-                                });
-                    else
-                        return Mono.just(ent);
-                });
+                .flatMap(this::enrichWithPaInfos);
     }
 
     /**
@@ -438,18 +419,7 @@ public class MandateService {
                             return dtos;
                         })
                 .flatMapMany(Flux::fromIterable)
-                .flatMap(ent -> {                                           // (4)
-                    if (!ent.getVisibilityIds().isEmpty()) {
-                        return pnInfoPaClient
-                                .getOnePa(ent.getVisibilityIds().get(0).getUniqueIdentifier()) // per ora chiedo solo il primo...in futuro l'intera lista
-                                .flatMap(pa -> {
-                                    ent.getVisibilityIds().get(0).setName(pa.getName());
-                                    return Mono.just(ent);
-                                });
-                    } else {
-                        return Mono.just(ent);
-                    }
-                });
+                .flatMap(this::enrichWithPaInfos);
     }
 
     /**
@@ -532,6 +502,20 @@ public class MandateService {
             user.setDisplayName(info.getDestName() + " " + info.getDestSurname());
         else
             user.setDisplayName(info.getDestBusinessName());
+    }
+
+    private Mono<MandateDto> enrichWithPaInfos(MandateDto mandateDto){
+        if (!mandateDto.getVisibilityIds().isEmpty())
+            return pnInfoPaClient
+                    .getManyPa(mandateDto.getVisibilityIds().stream().map(OrganizationIdDto::getUniqueIdentifier).toList())
+                    .collectMap(PaSummaryDto::getId, PaSummaryDto::getName)
+                    .map(paMap -> {
+                        mandateDto.getVisibilityIds().forEach(organizationIdDto ->
+                                organizationIdDto.setName(paMap.getOrDefault(organizationIdDto.getUniqueIdentifier(), null)));
+                        return mandateDto;
+                    });
+        else
+            return Mono.just(mandateDto);
     }
 
     private List<Integer> convertStatusStringToInteger(List<String> statutes) {

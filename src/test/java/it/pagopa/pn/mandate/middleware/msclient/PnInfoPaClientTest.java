@@ -1,6 +1,8 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaSummaryDto;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -43,29 +47,53 @@ class PnInfoPaClientTest {
     }
 
     @Test
-    void getOnePa() {
+    void getManyPa() {
         //Given
-        String id = "12345678";
+        String id1 = "12345678";
+        String id2 = "22345678";
+        String nome1 = "nome1";
+        String nome2 = "nome2";
+        List<String> ids = List.of(id1, id2);
 
+        PaSummaryDto paSummaryDto1 = new PaSummaryDto();
+        paSummaryDto1.setId(id1);
+        paSummaryDto1.setName(nome1);
+        PaSummaryDto paSummaryDto2 = new PaSummaryDto();
+        paSummaryDto2.setId(id2);
+
+        paSummaryDto2.setName(nome2);
+
+        List<PaSummaryDto> res = List.of(paSummaryDto1, paSummaryDto2);
+        byte[] responseBodyBites = new byte[0];
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.writerFor( List.class );
+        try {
+            responseBodyBites = mapper.writeValueAsBytes( res );
+        } catch ( JsonProcessingException e ){
+            e.printStackTrace();
+        }
 
         new MockServerClient("localhost", 9999)
         .when(request()
                     .withMethod("GET")
-                    .withPath("/ext-registry-private/pa/v1/activated-on-pn/{id}".replace("{id}", id)))
+                    .withQueryStringParameters(Map.of("id", List.of(id1, id2)))
+                    .withPath("/ext-registry-private/pa/v1/activated-on-pn"))
             .respond(response()
-                    .withBody("{" +
-                            "\"" + PaInfoDto.JSON_PROPERTY_ID + "\": " + "\"" + id + "\"," +
-                            "\"" + PaInfoDto.JSON_PROPERTY_NAME + "\": " + "\"" + "prova pa" + "\"," +
-                            "\"" + PaInfoDto.JSON_PROPERTY_TAX_ID + "\": " + "\"" + id + "\"" +
-                            "}")
+                    .withContentType(MediaType.APPLICATION_JSON)
+                    .withBody(responseBodyBites)
                     .withContentType(MediaType.APPLICATION_JSON)
                     .withStatusCode(200));
 
         //When
-        PaInfoDto result = pnInfoPaClient.getOnePa(id).block(Duration.ofMillis(3000));
+        List<PaSummaryDto> result = pnInfoPaClient.getManyPa(ids).collectList().block(Duration.ofMillis(3000));
 
         //Then
         assertNotNull(result);
-        assertEquals(id, result.getTaxId());
+        assertEquals(2, result.size());
+        assertEquals(id1, result.get(0).getId());
+        assertEquals(id2, result.get(1).getId());
+        assertEquals(nome1, result.get(0).getName());
+        assertEquals(nome2, result.get(1).getName());
     }
 }

@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: '2023-02-28T16:55:27.111Z'
+  version: '2023-03-01T10:17:21.446Z'
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -27,11 +27,6 @@ paths:
           in: query
           schema:
             type: string
-        - name: proxy
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: OK
@@ -52,7 +47,6 @@ paths:
         httpMethod: ANY
         requestParameters:
           integration.request.header.x-pagopa-pn-cx-id: context.authorizer.cx_id
-          integration.request.path.proxy: method.request.path.proxy
           integration.request.header.x-pagopa-pn-cx-role: context.authorizer.cx_role
           integration.request.header.x-pagopa-pn-uid: context.authorizer.uid
           integration.request.header.x-pagopa-pn-jti: context.authorizer.cx_jti
@@ -70,6 +64,7 @@ paths:
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/count-by-delegate
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
+        requestParameters: {}
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -107,7 +102,6 @@ paths:
         httpMethod: ANY
         requestParameters:
           integration.request.header.x-pagopa-pn-cx-id: context.authorizer.cx_id
-          integration.request.path.proxy: method.request.path.proxy
           integration.request.header.x-pagopa-pn-cx-role: context.authorizer.cx_role
           integration.request.header.x-pagopa-pn-uid: context.authorizer.uid
           integration.request.header.x-pagopa-pn-jti: context.authorizer.cx_jti
@@ -118,12 +112,7 @@ paths:
         connectionType: VPC_LINK
         timeoutInMillis: 29000
         type: http_proxy
-      parameters:
-        - name: proxy
-          in: path
-          required: true
-          schema:
-            type: string
+      parameters: []
     options:
       operationId: Options for /api/v1/mandate API CORS
       x-amazon-apigateway-integration:
@@ -131,6 +120,7 @@ paths:
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandate
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
+        requestParameters: {}
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -145,11 +135,6 @@ paths:
         - pn-auth-fleet_jwtAuthorizer: []
       parameters:
         - name: mandateId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: proxy
           in: path
           required: true
           schema:
@@ -175,13 +160,13 @@ paths:
         httpMethod: ANY
         requestParameters:
           integration.request.header.x-pagopa-pn-cx-id: context.authorizer.cx_id
-          integration.request.path.proxy: method.request.path.proxy
           integration.request.header.x-pagopa-pn-cx-role: context.authorizer.cx_role
           integration.request.header.x-pagopa-pn-uid: context.authorizer.uid
           integration.request.header.x-pagopa-pn-jti: context.authorizer.cx_jti
           integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
+          integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -193,6 +178,8 @@ paths:
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandate/{mandateId}/accept
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
+        requestParameters:
+          integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -211,11 +198,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: proxy
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '204':
           description: No Content
@@ -232,13 +214,13 @@ paths:
         httpMethod: ANY
         requestParameters:
           integration.request.header.x-pagopa-pn-cx-id: context.authorizer.cx_id
-          integration.request.path.proxy: method.request.path.proxy
           integration.request.header.x-pagopa-pn-cx-role: context.authorizer.cx_role
           integration.request.header.x-pagopa-pn-uid: context.authorizer.uid
           integration.request.header.x-pagopa-pn-jti: context.authorizer.cx_jti
           integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
+          integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -250,6 +232,8 @@ paths:
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandate/{mandateId}/reject
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
+        requestParameters:
+          integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -268,11 +252,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: proxy
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '204':
           description: No Content
@@ -289,13 +268,13 @@ paths:
         httpMethod: ANY
         requestParameters:
           integration.request.header.x-pagopa-pn-cx-id: context.authorizer.cx_id
-          integration.request.path.proxy: method.request.path.proxy
           integration.request.header.x-pagopa-pn-cx-role: context.authorizer.cx_role
           integration.request.header.x-pagopa-pn-uid: context.authorizer.uid
           integration.request.header.x-pagopa-pn-jti: context.authorizer.cx_jti
           integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
+          integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -307,6 +286,8 @@ paths:
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandate/{mandateId}/revoke
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
+        requestParameters:
+          integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -325,11 +306,6 @@ paths:
         - $ref: '#/components/parameters/cxRoleAuthFleet'
         - name: status
           in: query
-          schema:
-            type: string
-        - name: proxy
-          in: path
-          required: true
           schema:
             type: string
       responses:
@@ -354,7 +330,6 @@ paths:
         httpMethod: ANY
         requestParameters:
           integration.request.header.x-pagopa-pn-cx-id: context.authorizer.cx_id
-          integration.request.path.proxy: method.request.path.proxy
           integration.request.header.x-pagopa-pn-cx-role: context.authorizer.cx_role
           integration.request.header.x-pagopa-pn-uid: context.authorizer.uid
           integration.request.header.x-pagopa-pn-jti: context.authorizer.cx_jti
@@ -372,6 +347,7 @@ paths:
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandates-by-delegate
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
+        requestParameters: {}
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -406,7 +382,6 @@ paths:
         httpMethod: ANY
         requestParameters:
           integration.request.header.x-pagopa-pn-cx-id: context.authorizer.cx_id
-          integration.request.path.proxy: method.request.path.proxy
           integration.request.header.x-pagopa-pn-cx-role: context.authorizer.cx_role
           integration.request.header.x-pagopa-pn-uid: context.authorizer.uid
           integration.request.header.x-pagopa-pn-jti: context.authorizer.cx_jti
@@ -417,12 +392,7 @@ paths:
         connectionType: VPC_LINK
         timeoutInMillis: 29000
         type: http_proxy
-      parameters:
-        - name: proxy
-          in: path
-          required: true
-          schema:
-            type: string
+      parameters: []
     options:
       operationId: Options for /api/v1/mandates-by-delegator API CORS
       x-amazon-apigateway-integration:
@@ -430,6 +400,7 @@ paths:
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandates-by-delegator
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
+        requestParameters: {}
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000

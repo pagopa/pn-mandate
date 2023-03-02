@@ -11,7 +11,11 @@ public class PnInvalidInputException extends PnValidationException {
         super("Input non valido", List.of(ProblemError.builder()
                 .code(errorCode)
                 .element(field)
-                .build()), null );
+                .build()), null);
+    }
+
+    public PnInvalidInputException(String message, List<ProblemError> errors) {
+        super(message, errors);
     }
 
 }

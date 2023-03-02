@@ -1,7 +1,7 @@
 package it.pagopa.pn.mandate.mapper;
 
-
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.GroupDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
@@ -15,7 +15,7 @@ import java.util.*;
 public class MandateEntityMandateDtoMapper implements BaseMapperInterface<MandateDto, MandateEntity> {
 
 
-    private MandateEntityMandateDtoMapper(){
+    private MandateEntityMandateDtoMapper() {
         super();
     }     
 
@@ -40,12 +40,14 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
     @Override
     public MandateDto toDto(MandateEntity entity) {
         final MandateDto target = new MandateDto();
+
         target.setMandateId(entity.getMandateId());
         target.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
         target.setDateto(DateUtils.formatDate(entity.getValidto()));
         target.setStatus(StatusEnumMapper.fromValue(entity.getState()));
         target.setVerificationCode(entity.getValidationcode());
         target.setVisibilityIds(getOrgidsDtos(entity.getVisibilityIds()));
+        target.setGroups(getGroupDto(entity.getGroups()));
         // popolo delegato e delegante, con l'unica informazioni che conosco (il fatto se è PF/PG)
         target.setDelegate(new UserDto());
         target.getDelegate().setPerson(entity.getDelegateisperson());
@@ -88,6 +90,16 @@ public class MandateEntityMandateDtoMapper implements BaseMapperInterface<Mandat
         return r;
     }
 
-
-
+    private List<GroupDto> getGroupDto(Set<String> groups) {
+        if (groups != null) {
+            return groups.stream()
+                    .map(g -> {
+                        GroupDto groupDto = new GroupDto();
+                        groupDto.setId(g);
+                        return groupDto;
+                    })
+                    .toList();
+        }
+        return Collections.emptyList();
+    }
 }

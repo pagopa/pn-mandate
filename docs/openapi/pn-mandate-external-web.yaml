@@ -183,6 +183,43 @@ paths:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
+    post:
+      tags:
+        - mandate-service
+      summary: Return filtered mandates based on status, groups and delegators
+      operationId: searchMandatesByDelegate
+      security:                                                                # ONLY EXTERNAL
+        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
+      parameters:
+        - name: size
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            maximum: 50
+        - name: nextPageKey
+          in: query
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchMandateRequestDto'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchMandateResponseDto'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
   /mandate/api/v1/mandates-by-delegator:
     get:
       tags:
@@ -251,6 +288,10 @@ components:
         dateto:
           type: string
           description: ISO 8601 format
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupDto'
     OrganizationIdDto:
       type: object
       properties:
@@ -277,10 +318,64 @@ components:
           type: boolean
       description: Available only for request where requesting user is the delegator
       nullable: true
+    GroupDto:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
     AcceptRequestDto:
       type: object
       properties:
         verificationCode:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+    SearchMandateRequestDto:
+      type: object
+      properties:
+        delegatorIds:
+          type: array
+          items:
+            type: string
+        groups:
+          type: array
+          items:
+            type: string
+        status:
+          type: array
+          items:
+            type: string
+    SearchMandateResponseDto:
+      type: object
+      properties:
+        resultsPage:
+          type: array
+          items:
+            $ref: '#/components/schemas/MandateDto'
+        moreResult:
+          description: Indica se sono presenti ulteriori pagine di risultati
+          type: boolean
+        nextPagesKey:
+          description: >-
+            Elenco, non esaustivo, delle chiavi da usare per richiedere le 
+            pagine di risultati successive a quella corrente. <br/>
+            Valorizzato solo se il campo __moreResult__ ha valore __true__.
+          type: array
+          items:
+            type: string
+    MandateByDelegatorRequestDto:
+      type: object
+      required:
+        - mandateId
+        - delegatorId
+      properties:
+        mandateId:
+          type: string
+        delegatorId:
           type: string
   securitySchemes:                                      # ONLY EXTERNAL
     bearerAuth:                                         # ONLY EXTERNAL
@@ -289,4 +384,3 @@ components:
       bearerFormat: JWT                                 # ONLY EXTERNAL
 security:                                               # ONLY EXTERNAL
  - bearerAuth: []                                       # ONLY EXTERNAL
-              

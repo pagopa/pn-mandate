@@ -3,6 +3,7 @@ package it.pagopa.pn.mandate.utils;
 import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -12,7 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class PgUtilsTest {
 
@@ -68,4 +69,42 @@ class PgUtilsTest {
         assertEquals(2, attributeValue.size());
     }
 
+    @Test
+    @DisplayName("Test groups empty")
+    void testGetGroupsForSecureFilter1() {
+        List<String> cxGroups = List.of("G");
+        assertEquals(cxGroups, PgUtils.getGroupsForSecureFilter(null, cxGroups));
+        assertEquals(cxGroups, PgUtils.getGroupsForSecureFilter(Collections.emptyList(), cxGroups));
+    }
+
+    @Test
+    @DisplayName("Test cx-groups empty")
+    void testGetGroupsForSecureFilter2() {
+        List<String> groups = List.of("G");
+        assertEquals(groups, PgUtils.getGroupsForSecureFilter(groups, null));
+        assertEquals(groups, PgUtils.getGroupsForSecureFilter(groups, Collections.emptyList()));
+    }
+
+    @Test
+    @DisplayName("Test both empty")
+    void testGetGroupsForSecureFilter3() {
+        assertTrue(PgUtils.getGroupsForSecureFilter(null, null).isEmpty());
+        assertTrue(PgUtils.getGroupsForSecureFilter(Collections.emptyList(), Collections.emptyList()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Test groups and cx-groups")
+    void testGetGroupsForSecureFilter4() {
+        List<String> groups = List.of("G1");
+        List<String> cxGroups = List.of("G1", "G2");
+        assertEquals(groups, PgUtils.getGroupsForSecureFilter(groups, cxGroups));
+    }
+
+    @Test
+    @DisplayName("Test groups and cx-groups")
+    void testGetGroupsForSecureFilter5() {
+        List<String> groups = List.of("G3");
+        List<String> cxGroups = List.of("G1", "G2");
+        assertThrows(PnForbiddenException.class, () -> PgUtils.getGroupsForSecureFilter(groups, cxGroups));
+    }
 }

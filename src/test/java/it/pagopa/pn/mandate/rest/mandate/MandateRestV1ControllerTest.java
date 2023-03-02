@@ -4,8 +4,7 @@ import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -21,6 +20,9 @@ import reactor.core.publisher.Mono;
 import java.util.Collections;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+
 @WebFluxTest(controllers = {MandateRestV1Controller.class})
 @Import({MandateEntityMandateDtoMapper.class, UserEntityMandateCountsDtoMapper.class})
 class MandateRestV1ControllerTest {
@@ -28,19 +30,16 @@ class MandateRestV1ControllerTest {
     public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-uid";
     public static final String PN_PAGOPA_CX_TYPE = "x-pagopa-pn-cx-type";
     public static final String PN_PAGOPA_CX_ID = "x-pagopa-pn-cx-id";
+    public static final String PN_PAGOPA_CX_ROLE = "x-pagopa-pn-cx-role";
 
     @Autowired
-    WebTestClient webTestClient;
+    private WebTestClient webTestClient;
 
     @Autowired
-    MandateEntityMandateDtoMapper mapper;
-
-    @Autowired
-    UserEntityMandateCountsDtoMapper mappercount;
+    private MandateEntityMandateDtoMapper mapper;
 
     @MockBean
     private MandateService mandateService;
-
 
     @Test
     void countMandatesByDelegate() {
@@ -191,5 +190,31 @@ class MandateRestV1ControllerTest {
                 .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isNoContent();
+    }
+
+    @Test
+    void searchMandatesByDelegate() {
+        //Given
+        String url = "/mandate/api/v1/mandates-by-delegate?size={size}"
+                .replace("{size}", "1");
+
+        SearchMandateResponseDto responseDto = new SearchMandateResponseDto();
+
+        //When
+        Mockito.when(mandateService.searchByDelegate(Mockito.any(), eq(1), isNull(), eq("cx-id"), eq(CxTypeAuthFleet.PG), isNull(), eq("admin")))
+                .thenReturn(Mono.just(responseDto));
+
+        //Then
+        webTestClient.post()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                .header(PN_PAGOPA_CX_ID, "cx-id")
+                .header(PN_PAGOPA_USER_ID, "userid")
+                .header(PN_PAGOPA_CX_TYPE, "PG")
+                .header(PN_PAGOPA_CX_ROLE, "admin")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(SearchMandateResponseDto.class);
     }
 }

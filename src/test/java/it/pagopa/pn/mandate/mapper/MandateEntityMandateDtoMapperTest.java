@@ -142,6 +142,7 @@ class MandateEntityMandateDtoMapperTest {
     void toDto() {
         //Given
         MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
+        mandateToInsert.setGroups(Set.of("G"));
 
         //When
         MandateDto result = mapper.toDto(mandateToInsert);
@@ -156,6 +157,7 @@ class MandateEntityMandateDtoMapperTest {
             Assertions.assertNotNull(result.getDelegate());
             Assertions.assertNotNull(result.getStatus());
             Assertions.assertNotNull(result.getVerificationCode());
+            Assertions.assertNotNull(result.getGroups());
 
 
             Assertions.assertEquals(mandateToInsert.getMandateId(),  result.getMandateId());
@@ -166,6 +168,7 @@ class MandateEntityMandateDtoMapperTest {
             Assertions.assertEquals(mandateToInsert.getDelegateisperson(),  result.getDelegate().getPerson());
             Assertions.assertEquals(mandateToInsert.getDelegatorisperson(),  result.getDelegator().getPerson());
             Assertions.assertEquals(mandateToInsert.getVisibilityIds()==null?0:mandateToInsert.getVisibilityIds().size(),  result.getVisibilityIds().size());
+            Assertions.assertEquals(mandateToInsert.getGroups() == null ? 0 : mandateToInsert.getGroups().size(), result.getGroups().size());
 
         } catch (Exception e) {
             fail(e);

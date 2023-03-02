@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
 import it.pagopa.pn.commons.utils.ValidateUtils;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
@@ -17,6 +18,7 @@ import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
+import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
@@ -45,7 +47,7 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("test")
 class MandateServiceTest {
 
-    private final Duration d = Duration.ofMillis(3000);
+    private static final Duration D = Duration.ofMillis(3000);
 
     private static final String PG_ADMIN_ROLE = "admin";
 
@@ -62,19 +64,25 @@ class MandateServiceTest {
     private DelegateDao delegateDao;
 
     @Mock
-    UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper;
+    private UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper;
 
     @Mock
-    PnInfoPaClient pnInfoPaClient;
+    private PnInfoPaClient pnInfoPaClient;
 
     @Mock
-    PnDataVaultClient pnDatavaultClient;
+    private PnDataVaultClient pnDatavaultClient;
 
     @Mock
-    ValidateUtils validateUtils;
+    private ValidateUtils validateUtils;
 
     @Mock
-    SqsService sqsService;
+    private SqsService sqsService;
+
+    @Mock
+    private PnMandateConfig pnMandateConfig;
+
+    @Mock
+    private MandateSearchService mandateSearchService;
 
     @Test
     void acceptMandatePGNotAuthorized() {
@@ -103,7 +111,7 @@ class MandateServiceTest {
         assertDoesNotThrow(() -> {
             mandateService.acceptMandate(mandateEntity.getMandateId(),
                             Mono.just(acceptRequestDto), mandateEntity.getDelegate(), CxTypeAuthFleet.PF, null, null)
-                    .block(d);
+                    .block(D);
         });
 
         //Then
@@ -126,7 +134,7 @@ class MandateServiceTest {
         assertDoesNotThrow(() -> {
             mandateService.acceptMandate(mandateEntity.getMandateId(),
                             Mono.just(acceptRequestDto), mandateEntity.getDelegate(), CxTypeAuthFleet.PG, null, PG_ADMIN_ROLE)
-                    .block(d);
+                    .block(D);
         });
 
         //Then
@@ -145,7 +153,7 @@ class MandateServiceTest {
         //When
         Mono<MandateEntity> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate(), CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(d));
+        assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(D));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -164,7 +172,7 @@ class MandateServiceTest {
         //When
         Mono<MandateEntity> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate(), CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(d));
+        assertThrows(PnInvalidVerificationCodeException.class, () -> mono.block(D));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -183,7 +191,7 @@ class MandateServiceTest {
         //When
         Mono<MandateEntity> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
                 Mono.just(acceptRequestDto), mandateEntity.getDelegate(), CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
+        assertThrows(PnMandateNotFoundException.class, () -> mono.block(D));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -203,7 +211,7 @@ class MandateServiceTest {
         Mono<AcceptRequestDto> monodto = Mono.just(acceptRequestDto);
         String delegate = mandateEntity.getDelegate();
         Mono<MandateEntity> mono = mandateService.acceptMandate(null, monodto, delegate, CxTypeAuthFleet.PF, null, null);
-        Assertions.assertThrows(PnMandateNotFoundException.class, () -> mono.block(d));
+        Assertions.assertThrows(PnMandateNotFoundException.class, () -> mono.block(D));
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -239,7 +247,7 @@ class MandateServiceTest {
         when(userEntityMandateCountsDtoMapper.toDto(Mockito.same(delegateEntity))).thenReturn(dto);
 
         //When
-        MandateCountsDto result = mandateService.countMandatesByDelegate(MandateDto.StatusEnum.PENDING.getValue(), "fake", CxTypeAuthFleet.PF, null, null).block(d);
+        MandateCountsDto result = mandateService.countMandatesByDelegate(MandateDto.StatusEnum.PENDING.getValue(), "fake", CxTypeAuthFleet.PF, null, null).block(D);
 
         //Then
         assertNotNull(result);
@@ -349,7 +357,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean())).thenReturn( true );
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null).block(d);
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null).block(D);
 
         //Then
         assertNotNull(result);
@@ -404,7 +412,7 @@ class MandateServiceTest {
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
-                .block(d);
+                .block(D);
 
         //Then
         assertNotNull(result);
@@ -461,7 +469,7 @@ class MandateServiceTest {
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PG, null, "admin")
-                .block(d);
+                .block(D);
 
         //Then
         assertNotNull(result);
@@ -517,7 +525,7 @@ class MandateServiceTest {
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(),  CxTypeAuthFleet.PF, null, null)
-                .block(d);
+                .block(D);
 
         //Then
         assertNotNull(result);
@@ -583,7 +591,7 @@ class MandateServiceTest {
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
-                .block(d);
+                .block(D);
 
         //Then
         assertNotNull(result);
@@ -659,7 +667,7 @@ class MandateServiceTest {
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
-                .block(d);
+                .block(D);
 
         //Then
         assertNotNull(result);
@@ -689,7 +697,7 @@ class MandateServiceTest {
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
         Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
+        assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
         //nothing
@@ -713,7 +721,7 @@ class MandateServiceTest {
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
         Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
+        assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
         //nothing
@@ -738,7 +746,7 @@ class MandateServiceTest {
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
         Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
+        assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
         //nothing
@@ -763,7 +771,7 @@ class MandateServiceTest {
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
         Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
+        assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
         //nothing
@@ -788,7 +796,7 @@ class MandateServiceTest {
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
         Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
+        assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
         //nothing
@@ -813,7 +821,7 @@ class MandateServiceTest {
 
         //When
         Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnInvalidInputException.class, () -> mono.block(d));
+        assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
         //nothing
@@ -842,7 +850,7 @@ class MandateServiceTest {
 
         //When
         Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegatorUid(), entity.getDelegator(), CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnMandateByHimselfException.class, () -> mono.block(d));
+        assertThrows(PnMandateByHimselfException.class, () -> mono.block(D));
 
         //Then
         //nothing
@@ -888,7 +896,7 @@ class MandateServiceTest {
 
         //When
         List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null)
-                .collectList().block(d);
+                .collectList().block(D);
 
         //Then
         assertNotNull(result);
@@ -940,7 +948,7 @@ class MandateServiceTest {
 
         //When
         List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null)
-                .collectList().block(d);
+                .collectList().block(D);
 
         //Then
         assertNotNull(result);
@@ -1001,7 +1009,7 @@ class MandateServiceTest {
 
         //When
         List<MandateDto> result = mandateService.listMandatesByDelegate(null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null)
-                .collectList().block(d);
+                .collectList().block(D);
 
         //Then
         assertNotNull(result);
@@ -1093,7 +1101,7 @@ class MandateServiceTest {
 
         //When
         List<MandateDto> result = mandateService.listMandatesByDelegator(entity.getDelegate(), CxTypeAuthFleet.PF, null, null)
-                .collectList().block(d);
+                .collectList().block(D);
 
         //Then
         assertNotNull(result);
@@ -1114,7 +1122,7 @@ class MandateServiceTest {
         //When
         assertDoesNotThrow(() -> {
             mandateService.rejectMandate(mandateEntity.getMandateId(), mandateEntity.getDelegate(), CxTypeAuthFleet.PF, null, null)
-                    .block(d);
+                    .block(D);
         });
 
         //Then
@@ -1131,7 +1139,7 @@ class MandateServiceTest {
 
         Mono<Void> resp = mandateService.rejectMandate(mandateEntity.getMandateId(), mandateEntity.getDelegate(), CxTypeAuthFleet.PG, "operator", new ArrayList<>());
         //When
-        Assertions.assertThrows(PnForbiddenException.class, () -> resp.block(d));
+        Assertions.assertThrows(PnForbiddenException.class, () -> resp.block(D));
     }
 
     @Test
@@ -1150,7 +1158,7 @@ class MandateServiceTest {
         //When
         assertDoesNotThrow(() -> {
             mandateService.rejectMandate(mandateEntity.getMandateId(), mandateEntity.getDelegate(), CxTypeAuthFleet.PG, PG_ADMIN_ROLE, null)
-                    .block(d);
+                    .block(D);
         });
 
         //Then
@@ -1186,7 +1194,7 @@ class MandateServiceTest {
         //When
         assertDoesNotThrow(() -> {
             mandateService.revokeMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator(), CxTypeAuthFleet.PF, null, null)
-                    .block(d);
+                    .block(D);
         });
 
         //Then
@@ -1203,7 +1211,7 @@ class MandateServiceTest {
 
         Mono<Object> resp = mandateService.revokeMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator(), CxTypeAuthFleet.PG, null, null);
         //When
-        assertThrows(PnForbiddenException.class, () -> resp.block(d));
+        assertThrows(PnForbiddenException.class, () -> resp.block(D));
     }
 
     @Test
@@ -1222,7 +1230,7 @@ class MandateServiceTest {
         //When
         assertDoesNotThrow(() -> {
             mandateService.revokeMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator(), CxTypeAuthFleet.PG, PG_ADMIN_ROLE, null)
-                    .block(d);
+                    .block(D);
         });
 
         //Then
@@ -1258,7 +1266,7 @@ class MandateServiceTest {
         //When
         assertDoesNotThrow(() -> {
             mandateService.expireMandate(mandateEntity.getMandateId(), mandateEntity.getDelegatorUid(), mandateEntity.getDelegatorisperson() ? "PF" : "PG", mandateEntity.getDelegator())
-                    .block(d);
+                    .block(D);
         });
 
         //Then
@@ -1281,7 +1289,7 @@ class MandateServiceTest {
         //When
         assertDoesNotThrow(() -> {
             mandateService.expireMandate(mandateEntity.getMandateId(), mandateEntity.getDelegatorUid(), mandateEntity.getDelegateisperson() ? "PF" : "PG", mandateEntity.getDelegator())
-                    .block(d);
+                    .block(D);
         });
 
         //Then
@@ -1302,5 +1310,32 @@ class MandateServiceTest {
 
         //Then
         // nothing, basta che non ci sia eccezione
+    }
+
+    @Test
+    void searchByDelegate() {
+        //Given
+        List<MandateDto> page = List.of(new MandateDto());
+        List<String> lek = List.of("");
+        PageResultDto<MandateDto, String> pageResultDto = PageResultDto.<MandateDto, String>builder()
+                .page(page)
+                .more(true)
+                .nextPagesKey(lek)
+                .build();
+
+        when(pnMandateConfig.getMaxPageSize()).thenReturn(1);
+        when(mandateSearchService.searchByDelegate(any(), any()))
+                .thenReturn(Mono.just(pageResultDto));
+
+        //When
+        SearchMandateRequestDto requestDto = new SearchMandateRequestDto();
+        SearchMandateResponseDto responseDto = mandateService.searchByDelegate(Mono.just(requestDto), 1, null, "cx-id", CxTypeAuthFleet.PG, null, PG_ADMIN_ROLE)
+                .block(D);
+
+        //Then
+        assertNotNull(responseDto);
+        assertTrue(responseDto.getMoreResult());
+        assertSame(page, responseDto.getResultsPage());
+        assertSame(lek, responseDto.getNextPagesKey());
     }
 }

@@ -478,17 +478,15 @@ components:
       type: object
       properties:
         mandateId:
-          type: string
+          type: [string, 'null']
           description: Available always, not required on mandate creation.
-          nullable: true
         delegator:
           $ref: '#/components/schemas/UserDto'
         delegate:
           $ref: '#/components/schemas/UserDto'
         status:
-          type: string
+          type: [string, 'null']
           description: Available always, not required on mandate creation.
-          nullable: true
           enum:
             - pending
             - active
@@ -496,15 +494,13 @@ components:
             - rejected
             - expired
         visibilityIds:
-          type: array
+          type: [array, 'null']
           description: Available always, not required on mandate creation.
-          nullable: true
           items:
             $ref: '#/components/schemas/OrganizationIdDto'
         verificationCode:
-          type: string
+          type: [string, 'null']
           description: Available only for request where requesting user is the delegator
-          nullable: true
         datefrom:
           type: string
           description: ISO 8601 format
@@ -516,16 +512,15 @@ components:
           items:
             $ref: '#/components/schemas/GroupDto'
     OrganizationIdDto:
-      type: object
+      type: [object, 'null']
       properties:
         name:
           type: string
         uniqueIdentifier:
           type: string
       description: Available always, not required on mandate creation.
-      nullable: true
     UserDto:
-      type: object
+      type: [object, 'null']
       properties:
         displayName:
           type: string
@@ -540,7 +535,6 @@ components:
         person:
           type: boolean
       description: Available only for request where requesting user is the delegator
-      nullable: true
     GroupDto:
       type: object
       properties:

@@ -1,0 +1,11 @@
+{
+    "openapi": [
+        {
+            "intendedUsage": "WEB",
+            "openapiFiles": [
+                "pn-mandate-internal.yaml"
+            ],
+            "servicePath": "mandate"
+        }
+    ]
+}

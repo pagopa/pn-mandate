@@ -489,21 +489,21 @@ components:
         status:
           oneOf:
             - type: string
+              enum:
+                - pending
+                - active
+                - revoked
+                - rejected
+                - expired
             - type: 'null'
           description: Available always, not required on mandate creation.
-          enum:
-            - pending
-            - active
-            - revoked
-            - rejected
-            - expired
         visibilityIds:
           oneOf:
             - type: array
+              items:
+                $ref: '#/components/schemas/OrganizationIdDto'
             - type: 'null'
           description: Available always, not required on mandate creation.
-          items:
-            $ref: '#/components/schemas/OrganizationIdDto'
         verificationCode:
           oneOf:
             - type: string

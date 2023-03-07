@@ -326,7 +326,10 @@ public class MandateDao extends BaseDao {
                     logEvent.generateSuccess(messageAction).log();
                 })
                 .onErrorResume(throwable -> {
-                    logEvent.generateFailure(throwable.getMessage()).log();
+                    if (throwable instanceof PnInvalidVerificationCodeException)
+                        logEvent.generateSuccess("FAILURE {}",throwable.getMessage()).log();
+                    else
+                        logEvent.generateFailure(throwable.getMessage()).log();
                     return Mono.error(throwable);
                 });
     }
@@ -535,35 +538,43 @@ public class MandateDao extends BaseDao {
      */
     public Mono<MandateEntity> createMandate(MandateEntity mandate) {
         String logMessage = String.format("create mandate mandate=%s", mandate);
-        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
-                .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
-                .mdcEntry(AUDITLOG_MANDATEID, mandate.getMandateId())
-                .build();
-
-        logEvent.log();
 
         return Mono.fromFuture(countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate())
                         .thenCompose(total -> {
                             if (total == 0 || isSelfPgMandate(mandate)) {
                                 log.info("no current mandate for delegator-delegate pair, can proceed to create mandate");
+                                PnAuditLogEvent logEvent = new PnAuditLogBuilder()
+                                        .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
+                                        .mdcEntry(AUDITLOG_MANDATEID, mandate.getMandateId())
+                                        .build();
+
+                                logEvent.log();
+
                                 PutItemEnhancedRequest<MandateEntity> putRequest = PutItemEnhancedRequest.builder(MandateEntity.class)
                                         .item(mandate)
                                         .build();
-                                return mandateTable.putItem(putRequest).thenApply(x -> {
-                                    log.info("saved mandate mandateobj={}", mandate);
-                                    return mandate;
-                                });
+                                return mandateTable.putItem(putRequest)
+                                        .exceptionally(throwable -> {
+                                            logEvent.generateFailure(throwable.getMessage()).log();
+                                            if (throwable instanceof RuntimeException runtimeException) {
+                                                throw runtimeException;
+                                            }
+                                            if(throwable instanceof Error error) throw error;
+                                            throw new AssertionError(throwable);
+                                        })
+                                        .thenApply(x -> {
+                                            log.info("saved mandate mandateobj={}", mandate);
+                                            logEvent.generateSuccess(String.format("created mandate mandateobj=%s", mandate)).log();
+                                            return mandate;
+                                        });
                             } else {
                                 throw new PnMandateAlreadyExistsException();
                             }
                         }))
-                .onErrorResume(throwable -> {
-                    logEvent.generateFailure(throwable.getMessage()).log();
-                    return Mono.error(throwable);
-                })
+                .onErrorResume(Mono::error)
                 .map(mandateCreated -> {
                     log.info("created mandate mandateobj={}", mandateCreated);
-                    logEvent.generateSuccess(String.format("created mandate mandateobj=%s", mandateCreated)).log();
+
 
                     return mandateCreated;
                 });

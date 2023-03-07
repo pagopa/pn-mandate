@@ -517,6 +517,11 @@ Resources:
       Environment:
         Variables:
           QUEUE_URL: !Ref PnMandateInputsQueueURL
+      Tags:
+        - Key: pnInfraFeature
+          Value: pnLambdas
+        - Key: pnMicroservice
+          Value: PnMandateExpiredTriggerLambda
       Code:
         ZipFile: |
               const AWS = require('aws-sdk')
@@ -590,4 +595,3 @@ Resources:
               };
       #ENDpnmandateexpiredtrigger
       #Non rimuovere o modificare il commento sopra, è usato come placeholder negli script
-

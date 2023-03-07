@@ -74,7 +74,12 @@ Resources:
       StreamSpecification: 
         StreamViewType: NEW_AND_OLD_IMAGES
       PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: true       
+        PointInTimeRecoveryEnabled: true    
+      Tags:
+        - Key: pnInfraFeature
+          Value: pnStorage
+        - Key: pnMicroservice
+          Value: !Sub '${ProjectName}-Mandate'   
 
   MandatesDynamoTableHistory:
     Type: AWS::DynamoDB::Table
@@ -98,6 +103,11 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: "i_ttl"
         Enabled: true
+      Tags:
+        - Key: pnInfraFeature
+          Value: pnStorage
+        - Key: pnMicroservice
+          Value: !Sub '${ProjectName}-MandateHistory'
 
   ### DLQ used by lambda for handling expired Mandates ###
   # NB: la coda stessa è di DLQ, quindi va allarmata. Non è necessario invece che sia allarmata la sua DLQ

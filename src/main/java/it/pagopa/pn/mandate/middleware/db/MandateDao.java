@@ -326,7 +326,10 @@ public class MandateDao extends BaseDao {
                     logEvent.generateSuccess(messageAction).log();
                 })
                 .onErrorResume(throwable -> {
-                    logEvent.generateFailure(throwable.getMessage()).log();
+                    if (throwable instanceof PnInvalidVerificationCodeException)
+                        logEvent.generateSuccess("FAILURE {}",throwable.getMessage()).log();
+                    else
+                        logEvent.generateFailure(throwable.getMessage()).log();
                     return Mono.error(throwable);
                 });
     }

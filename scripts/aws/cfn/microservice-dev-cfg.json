@@ -3,6 +3,6 @@
     "PnMandateExpiredTriggerLambdaEventSourceMappingBatchSize": "10",
     "PnMandateExpiredTriggerLambdaEventSourceMappingMaximumBatchingWindowInSeconds": "20",
     "PnMandateExpiredTriggerLambdaEventSourceMappingMaximumRetryAttempts": "20",
-    "MaxTasksNumber": 1
+    "MaxTasksNumber": "1"
   }
 }

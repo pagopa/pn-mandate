@@ -2,22 +2,21 @@ package it.pagopa.pn.mandate.middleware.msclient;
 
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.ApiClient;
-import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.api.InfoPaApi;
-import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto.PaSummaryDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.prvt.v1.ApiClient;
+import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.prvt.v1.api.InternalOnlyApi;
+import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.prvt.v1.dto.PgGroupDto;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import javax.annotation.PostConstruct;
-import java.util.List;
 
 @Component
-public class PnInfoPaClient extends CommonBaseClient {
+public class PnExtRegPrvtClient extends CommonBaseClient {
 
-    private InfoPaApi infoPaApi;
+    private InternalOnlyApi internalApi;
     private final PnMandateConfig pnMandateConfig;
 
-    public PnInfoPaClient(PnMandateConfig pnMandateConfig) {
+    public PnExtRegPrvtClient(PnMandateConfig pnMandateConfig) {
         this.pnMandateConfig = pnMandateConfig;
     }
 
@@ -25,10 +24,10 @@ public class PnInfoPaClient extends CommonBaseClient {
     public void init() {
         ApiClient apiClient = new ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
         apiClient.setBasePath(pnMandateConfig.getClientExtregBasepath());
-        infoPaApi = new InfoPaApi(apiClient);
+        internalApi = new InternalOnlyApi(apiClient);
     }
 
-    public Flux<PaSummaryDto> getManyPa(List<String> paIds) {
-        return infoPaApi.getManyPa(paIds);
+    public Flux<PgGroupDto> getGroups(String id) {
+        return internalApi.getAllPgGroupsPrivate(id, null);
     }
 }

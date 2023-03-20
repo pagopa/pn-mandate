@@ -10,7 +10,7 @@ import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.Bas
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.RecipientTypeDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaSummaryDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;

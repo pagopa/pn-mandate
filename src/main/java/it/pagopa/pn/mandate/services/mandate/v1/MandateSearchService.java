@@ -2,12 +2,13 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaSummaryDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.prvt.v1.dto.PgGroupDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.PnLastEvaluatedKey;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
+import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.PageResultDto;
@@ -36,15 +37,18 @@ public class MandateSearchService {
     private final MandateEntityMandateDtoMapper entityMandateDtoMapper;
     private final PnDataVaultClient pnDataVaultClient;
     private final PnInfoPaClient pnInfoPaClient;
+    private final PnExtRegPrvtClient pnExtRegPrvtClient;
 
     public MandateSearchService(MandateDao mandateDao,
                                 MandateEntityMandateDtoMapper entityMandateDtoMapper,
                                 PnDataVaultClient pnDataVaultClient,
-                                PnInfoPaClient pnInfoPaClient) {
+                                PnInfoPaClient pnInfoPaClient,
+                                PnExtRegPrvtClient pnExtRegPrvtClient) {
         this.mandateDao = mandateDao;
         this.entityMandateDtoMapper = entityMandateDtoMapper;
         this.pnDataVaultClient = pnDataVaultClient;
         this.pnInfoPaClient = pnInfoPaClient;
+        this.pnExtRegPrvtClient = pnExtRegPrvtClient;
     }
 
     public Mono<PageResultDto<MandateDto, String>> searchByDelegate(InputSearchMandateDto searchDto,
@@ -140,14 +144,14 @@ public class MandateSearchService {
                                    MandateDto dto,
                                    Map<String, BaseRecipientDtoDto> mapUserInfo,
                                    Map<String, PaSummaryDto> mapPaInfo,
-                                   PaInfoDto pgInfo) {
+                                   Map<String, PgGroupDto> mapPgGroup) {
         var recipientDto = mapUserInfo.get(entity.getDelegator());
-        if (recipientDto != null) {
+        if (recipientDto != null && dto.getDelegator() != null) {
             UserDto user = dto.getDelegator();
             user.setDisplayName(recipientDto.getDenomination());
             user.setFiscalCode(recipientDto.getTaxId());
         }
-        if (dto.getVisibilityIds() != null) {
+        if (!mapPaInfo.isEmpty() && dto.getVisibilityIds() != null) {
             dto.getVisibilityIds().forEach(orgId -> {
                 PaSummaryDto paSummaryDto = mapPaInfo.get(orgId.getUniqueIdentifier());
                 if (paSummaryDto != null) {
@@ -155,8 +159,13 @@ public class MandateSearchService {
                 }
             });
         }
-        if (pgInfo != null && dto.getGroups() != null) {
-            // TODO
+        if (!mapPgGroup.isEmpty() && dto.getGroups() != null) {
+            dto.getGroups().forEach(group -> {
+                PgGroupDto pgGroupDto = mapPgGroup.get(group.getId());
+                if (pgGroupDto != null) {
+                    group.setName(pgGroupDto.getName());
+                }
+            });
         }
     }
 
@@ -231,8 +240,9 @@ public class MandateSearchService {
         return Mono.just(Collections.emptyMap());
     }
 
-    private Mono<PaInfoDto> callExternalRegistries(String delegateId) {
-        return Mono.just(new PaInfoDto()); // TODO
+    private Mono<Map<String, PgGroupDto>> callExternalRegistries(String delegateId) {
+        return pnExtRegPrvtClient.getGroups(delegateId)
+                .collectMap(PgGroupDto::getId, Function.identity());
     }
 
     private List<Integer> generatePartitions(List<Integer> statuses) {

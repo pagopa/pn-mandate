@@ -6,12 +6,14 @@ import static org.mockito.Mockito.*;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaSummaryDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.prvt.v1.dto.PgGroupDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.PnLastEvaluatedKey;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
+import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 
@@ -22,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import it.pagopa.pn.mandate.model.PageResultDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.GroupDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
@@ -50,6 +53,8 @@ class MandateSearchServiceTest {
     private PnDataVaultClient pnDataVaultClient;
     @MockBean
     private PnInfoPaClient pnInfoPaClient;
+    @MockBean
+    private PnExtRegPrvtClient pnExtRegPrvtClient;
 
     @Autowired
     private MandateSearchService mandateSearchService;
@@ -81,17 +86,27 @@ class MandateSearchServiceTest {
                 .thenReturn(Flux.fromIterable(List.of(recipientDto1)));
 
         PaSummaryDto paSummaryDto = new PaSummaryDto();
+        paSummaryDto.setId("paId1");
         paSummaryDto.setName("paName");
         when(pnInfoPaClient.getManyPa(anyList()))
                 .thenReturn(Flux.just(paSummaryDto));
+
+        PgGroupDto pgGroupDto = new PgGroupDto();
+        pgGroupDto.setId("pgGroupId");
+        pgGroupDto.setName("pgGroupName");
+        when(pnExtRegPrvtClient.getGroups("delegateId"))
+                .thenReturn(Flux.just(pgGroupDto));
 
         MandateDto dto1 = new MandateDto();
         dto1.setDelegator(new UserDto());
         OrganizationIdDto org1 = new OrganizationIdDto();
         org1.setUniqueIdentifier("paId1");
         OrganizationIdDto org2 = new OrganizationIdDto();
-        org1.setUniqueIdentifier("paId2");
+        org2.setUniqueIdentifier("paId2");
         dto1.setVisibilityIds(List.of(org1, org2));
+        GroupDto groupDto = new GroupDto();
+        groupDto.setId("pgGroupId");
+        dto1.setGroups(List.of(groupDto));
         MandateDto dto2 = new MandateDto();
         dto2.setDelegator(new UserDto());
         when(mandateEntityMandateDtoMapper.toDto(entity1))
@@ -107,6 +122,8 @@ class MandateSearchServiceTest {
         assertTrue(resultDto.getNextPagesKey().isEmpty());
         assertEquals("denomination", resultDto.getPage().get(0).getDelegator().getDisplayName());
         assertEquals("taxId", resultDto.getPage().get(0).getDelegator().getFiscalCode());
+        assertEquals("paName", resultDto.getPage().get(0).getVisibilityIds().get(0).getName());
+        assertEquals("pgGroupName", resultDto.getPage().get(0).getGroups().get(0).getName());
     }
 
     @Test
@@ -139,6 +156,9 @@ class MandateSearchServiceTest {
         when(pnInfoPaClient.getManyPa(any()))
                 .thenReturn(Flux.empty());
 
+        when(pnExtRegPrvtClient.getGroups(any()))
+                .thenReturn(Flux.empty());
+
         when(mandateEntityMandateDtoMapper.toDto(any()))
                 .thenCallRealMethod();
 
@@ -166,6 +186,9 @@ class MandateSearchServiceTest {
         Page<MandateEntity> page = Page.create(Collections.emptyList());
         when(mandateDao.searchByDelegate(anyString(), isNull(), any(), any(), anyInt(), any()))
                 .thenReturn(Mono.just(page));
+
+        when(pnExtRegPrvtClient.getGroups(any()))
+                .thenReturn(Flux.empty());
 
         PageResultDto<MandateDto, String> resultDto = mandateSearchService.searchByDelegate(searchDto, lastEvaluatedKey)
                 .block(D);

@@ -67,7 +67,7 @@ class MandateRestV1ControllerTest {
     void acceptMandate() {
         //Given
         String url = "/mandate/api/v1/mandate/{mandateId}/accept"
-                .replace("{mandateId}", "mandateId12345");
+                .replace("{mandateId}", "123e4567-e89b-12d3-a456-426614174000");
 
         //When
         Mockito.when( mandateService.acceptMandate( Mockito.any(), Mockito.any() , Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
@@ -154,7 +154,7 @@ class MandateRestV1ControllerTest {
     void rejectMandate() {
         //Given
         String url = "/mandate/api/v1/mandate/{mandateId}/reject"
-                .replace("{mandateId}", "mandateId12345");
+                .replace("{mandateId}", "123e4567-e89b-12d3-a456-426614174000");
 
         //When
         Mockito.when(mandateService.rejectMandate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
@@ -175,7 +175,7 @@ class MandateRestV1ControllerTest {
     void revokeMandate() {
         //Given
         String url = "/mandate/api/v1/mandate/{mandateId}/revoke"
-                .replace("{mandateId}", "mandateId12345");
+                .replace("{mandateId}", "123e4567-e89b-12d3-a456-426614174000");
 
         //When
         Mockito.when(mandateService.revokeMandate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))

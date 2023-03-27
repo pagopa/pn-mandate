@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: jM8CqEzIHStmrJmOrtJm3Qz46bhxsUSvbqggcvTCO5E=
+  version: wuDvgrPc8pNUT500tJM1MXweq1dE/8Abg67wxf5qPxw=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -558,8 +558,8 @@ components:
           properties:
             name:
               type: string
-              maxLength: 140
-              pattern: ^([\x20-\xFF]{1,140})$
+              maxLength: 250
+              pattern: ^([\x20-\xFF]{1,250})$
             uniqueIdentifier:
               type: string
               maxLength: 50
@@ -584,8 +584,8 @@ components:
               pattern: ^([\x20-\xFF]{1,80})$
             companyName:
               type: string
-              maxLength: 80
-              pattern: ^([\x20-\xFF]{1,80})$
+              maxLength: 250
+              pattern: ^([\x20-\xFF]{1,250})$
             fiscalCode:
               type: string
               maxLength: 16

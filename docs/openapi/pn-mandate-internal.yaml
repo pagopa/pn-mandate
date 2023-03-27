@@ -562,8 +562,8 @@ components:
       properties:
         name:
           type: string
-          maxLength: 140
-          pattern: ^([\x20-\xFF]{1,140})$
+          maxLength: 250
+          pattern: ^([\x20-\xFF]{1,250})$
         uniqueIdentifier:
           type: string
           maxLength: 50
@@ -588,8 +588,8 @@ components:
           pattern: '^([\x20-\xFF]{1,80})$'
         companyName:
           type: string
-          maxLength: 80
-          pattern: '^([\x20-\xFF]{1,80})$'
+          maxLength: 250
+          pattern: '^([\x20-\xFF]{1,250})$'
         fiscalCode:
           type: string
           maxLength: 16

@@ -65,3 +65,5 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
 
 echo "Initialization terminated"
 
+
+

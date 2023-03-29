@@ -28,10 +28,15 @@ Parameters:
     Type: String
     Description: 'Topic alarm'
 
+  LogsKinesisSourceStreamArn:
+    Type: String
+    Description: 'Where to send Logs'
 Resources:
 
   MandatesDynamoTable:
     Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain    
     Properties:
       TableName: !Sub '${ProjectName}-Mandate'
       AttributeDefinitions:
@@ -78,6 +83,8 @@ Resources:
 
   MandatesDynamoTableHistory:
     Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain    
     Properties:
       TableName: !Sub '${ProjectName}-MandateHistory'
       AttributeDefinitions:
@@ -103,6 +110,8 @@ Resources:
   # NB: la coda stessa è di DLQ, quindi va allarmata. Non è necessario invece che sia allarmata la sua DLQ
   PnMandateExpiredTriggerDLQ:
     Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain    
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
       Parameters:
@@ -115,6 +124,8 @@ Resources:
   ### Communication for expired mandates ###
   PnMandateInputsQueue:
     Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain    
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
       Parameters:
@@ -122,6 +133,26 @@ Resources:
         DelaySeconds: 2
         AlarmSNSTopicName: !Ref AlarmSNSTopicName
         FifoQueue: true
+
+  PnMandateLogGroup:
+    Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain    
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/log-group.yaml"
+      Parameters:
+        LogGroupName: !Sub '${ProjectName}-mandate'
+        LogsKinesisSourceStreamArn: !Ref LogsKinesisSourceStreamArn
+
+  PnMandateExpiredTriggerLogGroup:
+    Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain    
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/log-group.yaml"
+      Parameters:
+        LogGroupName: !Sub "${ProjectName}-mandate-expired-trigger-lambda"
+        LogGroupPrefix: '/aws/lambda'
 
 Outputs:
   MandatesDynamoTableName:
@@ -176,3 +207,9 @@ Outputs:
   PnMandateInputsQueueAgeAlarmARN:
     Value: !GetAtt PnMandateInputsQueue.Outputs.SqsAgeAlarmArn
     Description: pn-mandate_inputs age alarm ARN
+
+  # Log group exports
+  EcsLogGroup:
+    Value: !GetAtt PnMandateLogGroup.Outputs.LogGroupName
+  PnMandateExpiredTriggerLambdaName:
+    Value: !Sub "${ProjectName}-mandate-expired-trigger-lambda"

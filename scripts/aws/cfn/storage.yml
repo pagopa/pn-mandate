@@ -53,9 +53,6 @@ Resources:
           KeyType: "HASH"
         - AttributeName: "sk"
           KeyType: "RANGE"
-      ProvisionedThroughput:
-        ReadCapacityUnits: "5"
-        WriteCapacityUnits: "5" 
       GlobalSecondaryIndexes:
         -
           IndexName: "delegate-state-gsi"
@@ -68,9 +65,7 @@ Resources:
               KeyType: "RANGE"
           Projection:
             ProjectionType: "ALL"
-          ProvisionedThroughput:
-            ReadCapacityUnits: 5
-            WriteCapacityUnits: 5
+      BillingMode: "PAY_PER_REQUEST"            
       TimeToLiveSpecification:
         AttributeName: "i_ttl"
         Enabled: true
@@ -97,9 +92,7 @@ Resources:
           KeyType: "HASH"
         - AttributeName: "sk"
           KeyType: "RANGE"
-      ProvisionedThroughput:
-        ReadCapacityUnits: "5"
-        WriteCapacityUnits: "5"
+      BillingMode: "PAY_PER_REQUEST"
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
       TimeToLiveSpecification:

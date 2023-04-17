@@ -56,7 +56,7 @@ class MandatePrivateRestV1ControllerTest {
         //Given
         String url = "/mandate-private/api/v1/mandates-by-internaldelegate/{internaluserId}?mandateId={mandateId}&x-pagopa-pn-cx-type={type}"
                 .replace("{internaluserId}", "internauserid1234")
-                .replace("{mandateId}", "mandateId12345")
+                .replace("{mandateId}", "123e4567-e89b-12d3-a456-426614174000")
                 .replace("{type}", "PF");
         List<InternalMandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
 
@@ -99,7 +99,7 @@ class MandatePrivateRestV1ControllerTest {
         //Given
         String url = "/mandate-private/api/v1/mandates-by-internaldelegator/{internaluserId}?mandateId={mandateId}&x-pagopa-pn-cx-type={type}"
                 .replace("{internaluserId}", "internauserid1234")
-                .replace("{mandateId}", "mandateId12345")
+                .replace("{mandateId}", "123e4567-e89b-12d3-a456-426614174000")
                 .replace("{type}", "PF");
         List<InternalMandateDto> mandateDtoList = Collections.singletonList(mapper.toDto(MandateDaoIT.newMandate(true)));
 

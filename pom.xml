@@ -203,7 +203,7 @@
 						</configuration>
 					</execution>
 					<execution>
-						<id>generate-client-ipa</id>
+						<id>generate-client-extreg-selfcare</id>
 						<goals>
 							<goal>generate</goal> 
 						</goals>
@@ -220,8 +220,31 @@
                                 <swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
-							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.infopa.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.infopa.v1.api</apiPackage>
+							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.selfcare.v1.api</apiPackage>
+							<modelNameSuffix>Dto</modelNameSuffix>
+						</configuration>
+					</execution>
+					<execution>
+						<id>generate-client-extreg-prvt</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<phase>process-resources</phase>
+						<configuration>
+							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-external-registries/faf040a52351a0208340b8ed0188e3727d7beb3a/docs/openapi/api-private-v1.yaml</inputSpec>
+							<generatorName>java</generatorName>
+							<library>webclient</library>
+							<generateApiDocumentation>false</generateApiDocumentation>
+							<generateApiTests>false</generateApiTests>
+							<generateModelTests>false</generateModelTests>
+							<generateSupportingFiles>true</generateSupportingFiles>
+							<configOptions>
+								<swaggerAnnotations>false</swaggerAnnotations>
+								<openApiNullable>false</openApiNullable>
+							</configOptions>
+							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.prvt.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.prvt.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
 					</execution>

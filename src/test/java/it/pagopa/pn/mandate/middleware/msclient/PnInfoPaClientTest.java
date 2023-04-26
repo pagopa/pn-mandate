@@ -2,7 +2,7 @@ package it.pagopa.pn.mandate.middleware.msclient;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaSummaryDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto.PaSummaryDto;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ import static org.mockserver.model.HttpResponse.response;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-    "pn.mandate.client_infopa_basepath=http://localhost:9999"
+    "pn.mandate.client_extreg_basepath=http://localhost:9999"
 })
 class PnInfoPaClientTest {
 
@@ -67,33 +67,34 @@ class PnInfoPaClientTest {
         byte[] responseBodyBites = new byte[0];
 
         ObjectMapper mapper = new ObjectMapper();
-        mapper.writerFor( List.class );
+        mapper.writerFor(List.class);
         try {
-            responseBodyBites = mapper.writeValueAsBytes( res );
-        } catch ( JsonProcessingException e ){
+            responseBodyBites = mapper.writeValueAsBytes(res);
+        } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
 
-        new MockServerClient("localhost", 9999)
-        .when(request()
-                    .withMethod("GET")
-                    .withQueryStringParameters(Map.of("id", List.of(id1, id2)))
-                    .withPath("/ext-registry-private/pa/v1/activated-on-pn"))
-            .respond(response()
-                    .withContentType(MediaType.APPLICATION_JSON)
-                    .withBody(responseBodyBites)
-                    .withContentType(MediaType.APPLICATION_JSON)
-                    .withStatusCode(200));
+        try (MockServerClient client = new MockServerClient("localhost", 9999)) {
+            client.when(request()
+                            .withMethod("GET")
+                            .withQueryStringParameters(Map.of("id", List.of(id1, id2)))
+                            .withPath("/ext-registry-private/pa/v1/activated-on-pn"))
+                    .respond(response()
+                            .withContentType(MediaType.APPLICATION_JSON)
+                            .withBody(responseBodyBites)
+                            .withContentType(MediaType.APPLICATION_JSON)
+                            .withStatusCode(200));
 
-        //When
-        List<PaSummaryDto> result = pnInfoPaClient.getManyPa(ids).collectList().block(Duration.ofMillis(3000));
+            //When
+            List<PaSummaryDto> result = pnInfoPaClient.getManyPa(ids).collectList().block(Duration.ofMillis(3000));
 
-        //Then
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals(id1, result.get(0).getId());
-        assertEquals(id2, result.get(1).getId());
-        assertEquals(nome1, result.get(0).getName());
-        assertEquals(nome2, result.get(1).getName());
+            //Then
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertEquals(id1, result.get(0).getId());
+            assertEquals(id2, result.get(1).getId());
+            assertEquals(nome1, result.get(0).getName());
+            assertEquals(nome2, result.get(1).getName());
+        }
     }
 }

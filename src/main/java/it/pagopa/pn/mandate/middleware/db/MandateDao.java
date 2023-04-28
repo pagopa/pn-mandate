@@ -341,8 +341,8 @@ public class MandateDao extends BaseDao {
         if (!mandate.getValidationcode().equals(verificationCode)) {
             throw new PnInvalidVerificationCodeException();
         }
-        if (CxTypeAuthFleet.PG == cxTypeAuthFleet) {
-            mandate.setGroups(groups != null ? Set.copyOf(groups) : Set.of());
+        if (CxTypeAuthFleet.PG == cxTypeAuthFleet && !CollectionUtils.isEmpty(groups)) {
+            mandate.setGroups(Set.copyOf(groups));
         }
         log.info("retrieved mandateobj={}", mandate);
         if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING))

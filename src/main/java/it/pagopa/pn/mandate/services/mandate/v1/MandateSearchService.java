@@ -129,6 +129,7 @@ public class MandateSearchService {
                 .map(tuple -> {
                     List<MandateDto> dtoList = entityToConvert.stream().map(entity -> {
                         MandateDto dto = entityMandateDtoMapper.toDto(entity);
+                        dto.setVerificationCode(null);
                         deanonimizeResult(entity, dto, tuple.getT1(), tuple.getT2(), tuple.getT3());
                         return dto;
                     }).toList();

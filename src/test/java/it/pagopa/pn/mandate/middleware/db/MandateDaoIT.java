@@ -972,6 +972,45 @@ public class MandateDaoIT {
         }
     }
 
+    @Test
+    void acceptMandatePgEmptyGroup() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(true);
+        MandateSupportEntity mandateSupport = newMandateSupport(mandateToInsert);
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(), null, CxTypeAuthFleet.PG).block(d);
+
+        //Then
+        try {
+            MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            MandateSupportEntity elementSupportFromDb = testDao.getSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+
+            Assertions.assertNotNull(elementFromDb);
+            Assertions.assertEquals( StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), elementFromDb.getState());
+            Assertions.assertNotNull(elementFromDb.getAccepted());
+            Assertions.assertNotNull(elementSupportFromDb);
+            Assertions.assertEquals( mandateSupport, elementSupportFromDb);
+
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
 
     @Test
     void rejectMandate() {

@@ -17,7 +17,7 @@ public class InputSearchMandateDto {
 
     private List<Integer> statuses;
 
-    private List<String> delegatorIds;
+    private List<String> mandateIds;
 
     private List<String> groups;
 

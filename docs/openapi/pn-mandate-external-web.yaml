@@ -186,7 +186,7 @@ paths:
     post:
       tags:
         - mandate-service
-      summary: Return filtered mandates based on status, groups and delegators
+      summary: Return filtered mandates based on status, groups and delegators (mandateIds)
       operationId: searchMandatesByDelegate
       security:                                                                # ONLY EXTERNAL
         - bearerAuth: [ ]                                                      # ONLY EXTERNAL
@@ -337,7 +337,7 @@ components:
     SearchMandateRequestDto:
       type: object
       properties:
-        delegatorIds:
+        mandateIds:
           type: array
           items:
             type: string

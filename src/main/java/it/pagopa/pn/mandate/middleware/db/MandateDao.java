@@ -53,6 +53,8 @@ public class MandateDao extends BaseDao {
     private static final int MAX_DYNAMODB_BATCH_SIZE = 100;
 
     private static final String AND = " AND ";
+    private static final String CONTAINS = "contains";
+    private static final String EQ = "=";
 
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
     DynamoDbAsyncClient dynamoDbAsyncClient;
@@ -138,11 +140,11 @@ public class MandateDao extends BaseDao {
     public Mono<Page<MandateEntity>> searchByDelegate(String delegateId,
                                                       @Nullable Integer status,
                                                       List<String> groups,
-                                                      List<String> delegatorIds,
+                                                      List<String> mandateIds,
                                                       int size,
                                                       PnLastEvaluatedKey lastEvaluatedKey) {
-        log.debug("searchByDelegate {}, status: {}, groups: {}, delegatorIds: {}, size: {}, lek: {}",
-                delegateId, status, groups, delegatorIds, size, lastEvaluatedKey);
+        log.debug("searchByDelegate {}, status: {}, groups: {}, mandateIds: {}, size: {}, lek: {}",
+                delegateId, status, groups, mandateIds, size, lastEvaluatedKey);
 
         Key.Builder keyBuilder = Key.builder().partitionValue(delegateId);
         if (status != null) {
@@ -154,7 +156,7 @@ public class MandateDao extends BaseDao {
 
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)
-                .filterExpression(filterExpressionSearchByDelegate(groups, delegatorIds))
+                .filterExpression(filterExpressionSearchByDelegate(groups, mandateIds))
                 .scanIndexForward(true)
                 .limit(size)
                 .exclusiveStartKey(lastEvaluatedKeySearchByDelegate(lastEvaluatedKey))
@@ -163,16 +165,16 @@ public class MandateDao extends BaseDao {
         return Mono.from(mandateTable.index(GSI_INDEX_DELEGATE_STATE).query(queryEnhancedRequest));
     }
 
-    private Expression filterExpressionSearchByDelegate(List<String> groups, List<String> delegatorIds) {
+    private Expression filterExpressionSearchByDelegate(List<String> groups, List<String> mandateIds) {
         Expression.Builder expressionBuilder = Expression.builder();
         StringBuilder filterExpression = new StringBuilder();
         if (!CollectionUtils.isEmpty(groups)) {
             addNewFilterExpression(filterExpression);
-            addListFilterExpression(groups, MandateEntity.COL_A_GROUPS, ":g", expressionBuilder, filterExpression);
+            addFilterExpression(groups, MandateEntity.COL_A_GROUPS, ":g", CONTAINS, expressionBuilder, filterExpression);
         }
-        if (!CollectionUtils.isEmpty(delegatorIds)) {
+        if (!CollectionUtils.isEmpty(mandateIds)) {
             addNewFilterExpression(filterExpression);
-            addListFilterExpression(delegatorIds, MandateEntity.COL_PK, ":d", expressionBuilder, filterExpression);
+            addFilterExpression(mandateIds, MandateEntity.COL_S_MANDATEID, ":m", EQ, expressionBuilder, filterExpression);
         }
         if (!filterExpression.isEmpty()) {
             expressionBuilder.expression(filterExpression.toString());
@@ -194,25 +196,29 @@ public class MandateDao extends BaseDao {
         return null;
     }
 
-    private void addListFilterExpression(List<String> values,
-                                         String field,
-                                         String prefix,
-                                         Expression.Builder expressionBuilder,
-                                         StringBuilder expression) {
+    private void addFilterExpression(List<String> values, String field, String prefix, String operator,
+                                     Expression.Builder expressionBuilder, StringBuilder expression) {
         expression.append("(");
         for (int i = 0; i < values.size(); i++) {
-            expression.append("contains(")
-                    .append(field)
-                    .append(",")
-                    .append(prefix)
-                    .append(i)
-                    .append(")");
+            switch (operator) {
+                case CONTAINS -> addContainsFilterExpression(field, prefix, i, expression);
+                case EQ -> addEqFilterExpression(field, prefix, i, expression);
+                default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
+            }
             if (i < values.size() - 1) {
                 expression.append(" OR ");
             }
             expressionBuilder.putExpressionValue(prefix + i, AttributeValue.builder().s(values.get(i)).build());
         }
         expression.append(")");
+    }
+
+    private void addContainsFilterExpression(String field, String prefix, int idx, StringBuilder expression) {
+        expression.append(CONTAINS).append("(").append(field).append(",").append(prefix).append(idx).append(")");
+    }
+
+    private void addEqFilterExpression(String field, String prefix, int idx, StringBuilder expression) {
+        expression.append(field).append(EQ).append(prefix).append(idx);
     }
 
     private void addNewFilterExpression(StringBuilder expression) {

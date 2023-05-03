@@ -131,7 +131,7 @@ class MandateSearchServiceTest {
         InputSearchMandateDto searchDto = InputSearchMandateDto.builder()
                 .delegateId("delegateId")
                 .groups(List.of("G"))
-                .delegatorIds(List.of("delegator"))
+                .mandateIds(List.of("mandateId"))
                 .statuses(List.of(10, 20, 30))
                 .size(1)
                 .maxPageNumber(2)

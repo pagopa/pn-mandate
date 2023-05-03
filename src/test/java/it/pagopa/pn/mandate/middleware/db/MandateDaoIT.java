@@ -1389,28 +1389,33 @@ public class MandateDaoIT {
 
     @Test
     void searchByDelegate2() {
-        MandateEntity mandateToInsert = newMandate(false);
-        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
-        mandateToInsert.setGroups(Set.of("G1"));
+        MandateEntity mandateToInsert1 = newMandate(false);
+        mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        mandateToInsert1.setGroups(Set.of("G1"));
+        MandateEntity mandateToInsert2 = newMandate(false);
         try {
-            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
-            mandateDao.createMandate(mandateToInsert).block(d);
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+            mandateDao.createMandate(mandateToInsert2).block(d);
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
 
-        String delegateId = mandateToInsert.getDelegate();
-        String delegatorId = mandateToInsert.getDelegator();
-        Integer state = mandateToInsert.getState();
+        String delegateId = mandateToInsert1.getDelegate();
+        String mandateId = mandateToInsert1.getMandateId();
+        Integer state = mandateToInsert1.getState();
         try {
-            Page<MandateEntity> result = mandateDao.searchByDelegate(delegateId, state, List.of("G1", "G2"), List.of(delegatorId, "other"), 2, null)
+            Page<MandateEntity> result = mandateDao.searchByDelegate(delegateId, state, List.of("G1", "G2"), List.of(mandateId, "other"), 2, null)
                     .block(d);
             Assertions.assertNotNull(result);
             Assertions.assertEquals(1, result.items().size());
+            Assertions.assertEquals(mandateId, result.items().get(0).getMandateId());
             Assertions.assertNull(result.lastEvaluatedKey());
         } finally {
             try {
-                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+                testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
             } catch (Exception e) {
                 System.out.println("Nothing to remove");
             }

@@ -353,7 +353,7 @@ public class MandateService {
                     InputSearchMandateDto searchDto = InputSearchMandateDto.builder()
                             .delegateId(cxId)
                             .statuses(statutes)
-                            .delegatorIds(request.getDelegatorIds())
+                            .mandateIds(request.getMandateIds())
                             .size(size)
                             .nextPageKey(nextPageKey)
                             .build();

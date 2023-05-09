@@ -31,6 +31,11 @@ Parameters:
   LogsKinesisSourceStreamArn:
     Type: String
     Description: 'Where to send Logs'
+  
+  LogRetention:
+    Type: Number
+    Default: 14
+
 Resources:
 
   MandatesDynamoTable:
@@ -135,6 +140,7 @@ Resources:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/log-group.yaml"
       Parameters:
         LogGroupName: !Sub '${ProjectName}-mandate'
+        LogGroupRetention: !Ref LogRetention
         LogsKinesisSourceStreamArn: !Ref LogsKinesisSourceStreamArn
 
   PnMandateExpiredTriggerLogGroup:
@@ -145,6 +151,7 @@ Resources:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/log-group.yaml"
       Parameters:
         LogGroupName: !Sub "${ProjectName}-mandate-expired-trigger-lambda"
+        LogGroupRetention: !Ref LogRetention
         LogGroupPrefix: '/aws/lambda'
 
 Outputs:

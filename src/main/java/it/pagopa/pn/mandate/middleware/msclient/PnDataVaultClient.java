@@ -1,16 +1,13 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
-
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.ApiClient;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.MandatesApi;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.RecipientsApi;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.RecipientTypeDto;
+import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -52,7 +49,18 @@ public class PnDataVaultClient extends CommonBaseClient {
     public Flux<BaseRecipientDtoDto> getRecipientDenominationByInternalId(List<String> internalIds)
     {
         return recipientsApi.getRecipientDenominationByInternalId(internalIds);
-            
+    }
+
+    /**
+     * Ricerca un id opaco
+     * Ricerca un id opaco a partire da un codice fiscale, sia esso di PF o di PG.
+     *
+     * @param taxId fiscalCode
+     * @return lista degli internalId
+     * @throws WebClientResponseException if an error occurs while attempting to invoke the API
+     */
+    public Flux<RecipientInternalIdDtoDto> getRecipientInternalIdByTaxId(String taxId) {
+        return recipientsApi.getRecipientInternalIdByExternalId(taxId);
     }
 
     /**
@@ -64,7 +72,6 @@ public class PnDataVaultClient extends CommonBaseClient {
     public Mono<String> ensureRecipientByExternalId(boolean isPerson, String fiscalCode)
     {
         return recipientsApi.ensureRecipientByExternalId(isPerson?RecipientTypeDto.PF:RecipientTypeDto.PG, fiscalCode);
-            
     }
 
     /**
@@ -84,7 +91,6 @@ public class PnDataVaultClient extends CommonBaseClient {
         addressdto.setDestBusinessName(businessName);
         return mandatesApi.updateMandateById(mandateId, addressdto)
                 .then(Mono.just("OK"));
-
     }
 
     /**

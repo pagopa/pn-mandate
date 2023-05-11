@@ -24,6 +24,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
@@ -336,6 +338,31 @@ public class MandateDao extends BaseDao {
                         logEvent.generateSuccess("FAILURE {}",throwable.getMessage()).log();
                     else
                         logEvent.generateFailure(throwable.getMessage()).log();
+                    return Mono.error(throwable);
+                });
+    }
+
+    public Mono<Tuple2<MandateEntity, MandateEntity>> updateMandate(String delegateId, String mandateId, Set<String> groups) {
+        String logMessage = String.format("updateMandate for delegate uid=%s mandateId=%s", delegateId, mandateId);
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
+                .before(PnAuditLogEventType.AUD_DL_UPDATE, logMessage)
+                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
+                .build();
+        logEvent.log();
+        return retrieveMandateForDelegate(delegateId, mandateId)
+                .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
+                .flatMap(mandate -> {
+                    MandateEntity oldCopyOfMandate = new MandateEntity(mandate);
+                    mandate.setGroups(groups);
+                    return save(mandate)
+                            .map(newCopyOfMandate -> Tuples.of(oldCopyOfMandate, newCopyOfMandate));
+                })
+                .doOnSuccess(t -> {
+                    String msg = String.format("mandate updated delegator uid=%s delegate uid=%s mandateObj=%S", t.getT2().getDelegator(), t.getT2().getDelegate(), t.getT2());
+                    logEvent.generateSuccess(msg).log();
+                })
+                .onErrorResume(throwable -> {
+                    logEvent.generateFailure(throwable.getMessage()).log();
                     return Mono.error(throwable);
                 });
     }

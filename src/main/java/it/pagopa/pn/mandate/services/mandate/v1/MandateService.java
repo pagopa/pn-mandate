@@ -132,6 +132,30 @@ public class MandateService {
                 });
     }
 
+    public Mono<Void> updateMandate(String xPagopaPnCxId,
+                                             CxTypeAuthFleet xPagopaPnCxType,
+                                             String mandateId,
+                                             List<String> xPagopaPnCxGroups,
+                                             String xPagopaPnCxRole,
+                                             Mono<UpdateRequestDto> updateRequestDto) {
+        return validaAccessoOnlyAdmin(xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+                .flatMap(obj -> updateRequestDto)
+                .flatMap(request -> {
+                    log.info("updating mandate {}", mandateId);
+                    Set<String> groups = Collections.emptySet();
+                    if (request.getGroups() != null) {
+                        groups = new HashSet<>(request.getGroups());
+                    }
+                    return mandateDao.updateMandate(xPagopaPnCxId, mandateId, groups)
+                            .flatMap(tuple -> {
+                                if (Boolean.FALSE.equals(tuple.getT2().getDelegateisperson())) {
+                                    return sqsService.sendToDelivery(tuple.getT1(), tuple.getT2(), EventType.MANDATE_UPDATED).then();
+                                }
+                                return Mono.just(tuple.getT2()).then();
+                            });
+                });
+    }
+
     /**
      * Ritorna il numero di deleghe nello stato passato per il delegato
      *

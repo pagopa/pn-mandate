@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Set;
 
 import static it.pagopa.pn.mandate.middleware.db.BaseDao.GSI_INDEX_DELEGATE_STATE;
@@ -42,6 +43,30 @@ public class MandateEntity {
     public MandateEntity(String delegator, String mandateId) {
         this.setDelegator(delegator);
         this.setMandateId(mandateId);
+    }
+
+    public MandateEntity(MandateEntity mandateEntity) {
+        this.setDelegator(mandateEntity.getDelegator());
+        this.setMandateId(mandateEntity.getMandateId());
+        this.setDelegate(mandateEntity.getDelegate());
+        this.setState(mandateEntity.getState());
+        this.setDelegatorisperson(mandateEntity.getDelegatorisperson());
+        this.setDelegateisperson(mandateEntity.getDelegateisperson());
+        this.setValidfrom(mandateEntity.getValidfrom());
+        this.setValidto(mandateEntity.getValidto());
+        this.setCreated(mandateEntity.getCreated());
+        this.setAccepted(mandateEntity.getAccepted());
+        this.setRejected(mandateEntity.getRejected());
+        this.setRevoked(mandateEntity.getRevoked());
+        this.setValidationcode(mandateEntity.getValidationcode());
+        if (mandateEntity.getVisibilityIds() != null) {
+            this.setVisibilityIds(new HashSet<>(mandateEntity.getVisibilityIds()));
+        }
+        this.setDelegatorUid(mandateEntity.getDelegatorUid());
+        if (mandateEntity.getGroups() != null) {
+            this.setGroups(new HashSet<>(mandateEntity.getGroups()));
+        }
+        this.setTtl(mandateEntity.getTtl());
     }
 
     @DynamoDbAttribute(COL_S_MANDATEID)

@@ -3,7 +3,6 @@ package it.pagopa.pn.mandate.middleware.queue.consumer;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.MDCWebFilter;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.cloud.function.context.MessageRoutingCallback;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +17,7 @@ import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_INVALID_MESSAGE_HEADERS;
 
 @Configuration
-@Slf4j
+@lombok.CustomLog
 @RequiredArgsConstructor
 public class PnEventInboundService {
 
@@ -29,7 +28,7 @@ public class PnEventInboundService {
             @Override
             public FunctionRoutingResult routingResult(Message<?> message) {
                 MessageHeaders messageHeaders = message.getHeaders();
-                String traceId = "";
+                String traceId;
 
                 if (messageHeaders.containsKey("aws_messageId"))
                     traceId = messageHeaders.get("aws_messageId", String.class);

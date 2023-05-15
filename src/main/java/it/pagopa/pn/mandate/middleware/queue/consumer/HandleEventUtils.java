@@ -10,7 +10,7 @@ import java.time.Instant;
 import static it.pagopa.pn.api.dto.events.StandardEventHeader.*;
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_INVALID_MESSAGE_HEADERS;
 
-@Slf4j
+@lombok.CustomLog
 public class HandleEventUtils {
     private HandleEventUtils() {
     }

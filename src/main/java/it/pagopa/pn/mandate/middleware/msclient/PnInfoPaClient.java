@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
+import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.ApiClient;
@@ -12,6 +13,7 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Component
+@lombok.CustomLog
 public class PnInfoPaClient extends CommonBaseClient {
 
     private InfoPaApi infoPaApi;
@@ -29,6 +31,7 @@ public class PnInfoPaClient extends CommonBaseClient {
     }
 
     public Flux<PaSummaryDto> getManyPa(List<String> paIds) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_EXTERNAL_REGISTRIES, "Retrieving PAs summary infos");
         return infoPaApi.getManyPa(paIds);
     }
 }

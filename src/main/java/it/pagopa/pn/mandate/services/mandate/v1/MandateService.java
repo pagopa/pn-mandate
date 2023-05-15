@@ -1,11 +1,9 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
-import it.pagopa.pn.commons.exceptions.ExceptionHelper;
-import it.pagopa.pn.commons.exceptions.dto.ProblemError;
-import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.exceptions.*;
+import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
+import it.pagopa.pn.mandate.exceptions.PnUnsupportedFilterException;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
@@ -22,9 +20,9 @@ import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
+import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import it.pagopa.pn.mandate.utils.PgUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -33,26 +31,17 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.*;
+import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyAdmin;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyGroupAdmin;
 
 @Service
-@Slf4j
+@lombok.CustomLog
 public class MandateService {
 
-    private static final String DELEGATE_FISCAL_CODE = "delegate.fiscalCode";
-    private static final String VERIFICATION_CODE = "verificationCode";
-    private static final String DELEGATE_PERSON = "delegate.person";
-    private static final String DELEGATE = "delegate";
-    private static final String DATE_TO = "dateTo";
 
     private final MandateDao mandateDao;
     private final DelegateDao userDao;
@@ -61,7 +50,7 @@ public class MandateService {
     private final PnInfoPaClient pnInfoPaClient;
     private final PnDataVaultClient pnDatavaultClient;
     private final SqsService sqsService;
-    private final ValidateUtils validateUtils;
+    private final MandateValidationUtils validateUtils;
     private final MandateSearchService mandateSearchService;
     private final PnMandateConfig pnMandateConfig;
 
@@ -72,7 +61,7 @@ public class MandateService {
                           PnInfoPaClient pnInfoPaClient,
                           PnDataVaultClient pnDatavaultClient,
                           SqsService sqsService,
-                          ValidateUtils validateUtils,
+                          MandateValidationUtils validateUtils,
                           MandateSearchService mandateSearchService,
                           PnMandateConfig pnMandateConfig) {
         this.mandateDao = mandateDao;
@@ -105,15 +94,7 @@ public class MandateService {
                                              List<String> cxGroups, String cxRole) {
         return validaAccessoOnlyAdmin(xPagopaPnCxType, cxRole, cxGroups)
                 .flatMap(obj -> acceptRequestDto)
-                .map(m -> {
-                    if (m == null || m.getVerificationCode() == null)
-                        throw new PnInvalidVerificationCodeException();
-
-                    if (mandateId == null)
-                        throw new PnMandateNotFoundException();
-
-                    return m;
-                })
+                .map(m -> validateUtils.validateAcceptMandateRequest(mandateId, m))
                 .flatMap(m -> {
                     try {
                         if (log.isInfoEnabled())
@@ -132,6 +113,7 @@ public class MandateService {
                 });
     }
 
+
     /**
      * Ritorna il numero di deleghe nello stato passato per il delegato
      *
@@ -148,14 +130,13 @@ public class MandateService {
                                                           CxTypeAuthFleet xPagopaPnCxType,
                                                           List<String> cxGroups,
                                                           String cxRole) {
-        // per ora l'unico stato supportato è il pending, quindi il filtro non viene passato al count
-        // Inoltre, ritorno un errore se status != pending
-        if (status == null || !status.equals(StatusEnum.PENDING.getValue()))
-            throw new PnUnsupportedFilterException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM, "status");
+        validateUtils.validateCountRequest(status);
+
         return validaAccessoOnlyGroupAdmin(xPagopaPnCxType, cxRole, cxGroups)
                 .flatMap(obj -> userDao.countMandates(internaluserId, xPagopaPnCxType, cxGroups)
                         .map(userEntityMandateCountsDtoMapper::toDto));
     }
+
 
     /**
      * Crea la delega
@@ -177,13 +158,12 @@ public class MandateService {
         final boolean requesterUserTypeIsPF = cxTypeAuthFleet == null || cxTypeAuthFleet.equals(CxTypeAuthFleet.PF);
         return validaAccessoOnlyAdmin(cxTypeAuthFleet, role, groups)
                 .flatMap(obj -> mandateDto
-                        .map(this::validate)
+                        .map(validateUtils::validateCreationRequest)
                         .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegate().getPerson(), dto.getDelegate().getFiscalCode())
                                         .map(delegateInternaluserId -> {
 
                                             // qui posso controllare se delegante e delegato sono gli stessi (prima non li avevo disponibili)
-                                            if (!CxTypeAuthFleet.PG.equals(cxTypeAuthFleet) && delegateInternaluserId.equals(requesterInternaluserId))
-                                                throw new PnMandateByHimselfException();
+                                            validateUtils.validateCreationRequestHimself(cxTypeAuthFleet, requesterInternaluserId, delegateInternaluserId);
 
                                             MandateEntity entity = mandateEntityMandateDtoMapper.toEntity(dto);
                                             entity.setDelegate(delegateInternaluserId);
@@ -227,39 +207,6 @@ public class MandateService {
                 );
     }
 
-    private MandateDto validate(MandateDto mandateDto) {
-        // valida delegato
-        if (mandateDto.getDelegate() == null)
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATE);
-        if ((mandateDto.getDelegate().getFiscalCode() == null))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATE_FISCAL_CODE);
-
-        if ((mandateDto.getDelegate().getPerson() == null))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATE_PERSON);
-
-        if ((mandateDto.getDelegate().getPerson() && (mandateDto.getDelegate().getFirstName() == null || mandateDto.getDelegate().getLastName() == null))
-                || (!mandateDto.getDelegate().getPerson() && mandateDto.getDelegate().getCompanyName() == null))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER, DELEGATE);
-        // codice verifica (5 caratteri)
-        if (mandateDto.getVerificationCode() == null)
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, VERIFICATION_CODE);
-        if (!mandateDto.getVerificationCode().matches("\\d\\d\\d\\d\\d"))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, VERIFICATION_CODE);
-
-        if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
-                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), true))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
-        // le PG possono avere p.iva o CF!
-        if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
-                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), false))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
-
-        // la delega richiede la data di fine
-        if (!StringUtils.hasText(mandateDto.getDateto()))
-            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DATE_TO);
-
-        return mandateDto;
-    }
 
     /**
      * il metodo si occupa di tornare la lista delle deleghe per delegato.
@@ -359,7 +306,7 @@ public class MandateService {
                             .build();
                     searchDto.setMaxPageNumber(pnMandateConfig.getMaxPageSize());
                     searchDto.setGroups(PgUtils.getGroupsForSecureFilter(request.getGroups(), cxGroups));
-                    validateInput(searchDto);
+                    validateUtils.validateSearchRequest(searchDto);
                     log.debug("searchByDelegate filters: {}", searchDto);
                     return searchDto;
                 })
@@ -543,17 +490,4 @@ public class MandateService {
         return null;
     }
 
-    private void validateInput(InputSearchMandateDto searchDto) {
-        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
-            Validator validator = factory.getValidator();
-
-            Set<ConstraintViolation<InputSearchMandateDto>> errors = validator.validate(searchDto);
-            if (!errors.isEmpty()) {
-                log.warn("validation search input errors: {}", errors);
-                List<ProblemError> problems = new ExceptionHelper(Optional.empty())
-                        .generateProblemErrorsFromConstraintViolation(errors);
-                throw new PnInvalidInputException(searchDto.getDelegateId(), problems);
-            }
-        }
-    }
 }

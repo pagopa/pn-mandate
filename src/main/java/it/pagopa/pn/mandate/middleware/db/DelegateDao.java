@@ -24,7 +24,7 @@ import java.util.Map;
 import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 
 @Repository
-@Slf4j
+@lombok.CustomLog
 public class DelegateDao extends BaseDao {
 
     DynamoDbAsyncTable<DelegateEntity> userTable;

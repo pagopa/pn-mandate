@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @RestController
+@lombok.CustomLog
 public class MandateRestV1Controller  implements MandateServiceApi {
 
     private final MandateService mandateService;
@@ -30,8 +31,11 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                     Mono<AcceptRequestDto> acceptRequestDto,
                                                     ServerWebExchange exchange) {
 
+        log.logStartingProcess("accepting mandate");
         return  mandateService.acceptMandate(mandateId, acceptRequestDto, xPagopaPnCxId, xPagopaPnCxType, cxGroups, cxRole)
-            .then(Mono.just(ResponseEntity.noContent().build()));
+                .doOnNext(m -> log.logEndingProcess("accepting mandate"))
+                .then(Mono.just(ResponseEntity.noContent().build()));
+
     }
 
     @Override
@@ -42,8 +46,10 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                                           String status,
                                                                           ServerWebExchange exchange) {
 
+        log.logStartingProcess("counting mandates by delegate");
         return  mandateService.countMandatesByDelegate(status, xPagopaPnCxId, xPagopaPnCxType, cxGroups, cxRole)
-            .map(m -> ResponseEntity.status(HttpStatus.OK).body(m));    
+            .map(m -> ResponseEntity.status(HttpStatus.OK).body(m))
+            .doOnNext(m -> log.logEndingProcess("counting mandates by delegate"));
     }
 
     @Override
@@ -55,9 +61,11 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                           Mono<MandateDto> mandateDto,
                                                           final ServerWebExchange exchange) {
 
+        log.logStartingProcess("creating new mandate");
         return  mandateService
                 .createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, groups, role)
-                .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m));
+                .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m))
+                .doOnNext(m -> log.logEndingProcess("creating new mandate"));
     }
 
     @Override
@@ -67,9 +75,11 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                                           String xPagopaPnCxRole,
                                                                           String status,
                                                                           ServerWebExchange exchange) {
+        log.logStartingProcess("listing mandates by delegate");
         return mandateService.listMandatesByDelegate(status, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole)
                 .collectList()
-                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)))
+                .doOnNext(m -> log.logEndingProcess("listing mandates by delegate"));
     }
 
     @Override
@@ -81,8 +91,10 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                                                    String nextPageKey,
                                                                                    Mono<SearchMandateRequestDto> searchMandateRequestDto,
                                                                                    final ServerWebExchange exchange) {
+        log.logStartingProcess("search mandates by delegate");
         return mandateService.searchByDelegate(searchMandateRequestDto, size, nextPageKey, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole)
-                .map(m -> ResponseEntity.status(HttpStatus.OK).body(m));
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(m))
+                .doOnNext(m -> log.logEndingProcess("search mandates by delegate"));
     }
 
     @Override
@@ -91,9 +103,11 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                                            List<String> xPagopaPnCxGroups,
                                                                            String xPagopaPnCxRole,
                                                                            ServerWebExchange exchange) {
+        log.logStartingProcess("listing mandates by delegator");
         return mandateService.listMandatesByDelegator(xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole)
                 .collectList()
-                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)))
+                .doOnNext(m -> log.logEndingProcess("listing mandates by delegator"));
     }
 
     @Override
@@ -103,7 +117,9 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                     List<String> xPagopaPnCxGroups,
                                                     String xPagopaPnCxRole,
                                                     ServerWebExchange exchange) {
+        log.logStartingProcess("rejecting mandate");
         return mandateService.rejectMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+                .doOnNext(m -> log.logEndingProcess("rejecting mandate"))
                 .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
@@ -114,7 +130,9 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                     List<String> xPagopaPnCxGroups,
                                                     String xPagopaPnCxRole,
                                                     ServerWebExchange exchange) {
+        log.logStartingProcess("revoking mandate");
         return mandateService.revokeMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+                .doOnNext(m -> log.logEndingProcess("revoking mandate"))
                 .map(m -> ResponseEntity.noContent().build());
     }
 }

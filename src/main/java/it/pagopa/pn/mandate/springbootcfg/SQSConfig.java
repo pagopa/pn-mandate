@@ -47,7 +47,7 @@ public class SQSConfig {
      *             .build();
      *
      */
-    @Slf4j
+    @lombok.CustomLog
     static class CustomAWSRequestHandler extends RequestHandler2 {
 
         @Override

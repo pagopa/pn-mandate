@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.*;
 
-@Slf4j
+@lombok.CustomLog
 @NoArgsConstructor(access = AccessLevel.NONE)
 public class PgUtils {
 
@@ -28,12 +28,16 @@ public class PgUtils {
      * @param pnCxGroups gruppi
      */
     public static Mono<Object> validaAccessoOnlyAdmin(CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
+        String process = "validating access admin only";
+        log.logChecking(process);
         if (CxTypeAuthFleet.PG == pnCxType
                 && (pnCxRole == null || !ALLOWED_ROLES.contains(pnCxRole.toUpperCase()) || !CollectionUtils.isEmpty(pnCxGroups))) {
-            log.warn("only a PG admin can access this resource");
+
+            log.logCheckingOutcome(process, false, "only a PG admin can access this resource");
             return Mono.error(new PnForbiddenException());
         }
         log.debug("access granted for {}, role: {}, groups: {}", pnCxType, pnCxRole, pnCxGroups);
+        log.logCheckingOutcome(process, true);
         return Mono.just(new Object());
     }
 
@@ -46,11 +50,14 @@ public class PgUtils {
      * @param pnCxGroups gruppi
      */
     public static Mono<Object> validaAccessoOnlyGroupAdmin(CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
+        String process = "validating access admin only";
+        log.logChecking(process);
         if (CxTypeAuthFleet.PG == pnCxType && (pnCxRole == null || !ALLOWED_ROLES.contains(pnCxRole.toUpperCase()))) {
-            log.warn("only a PG admin / group admin can access this resource");
+            log.logCheckingOutcome(process, false, "only a PG admin / group admin can access this resource");
             return Mono.error(new PnForbiddenException());
         }
         log.debug("access granted for {}, role: {}, groups: {}", pnCxType, pnCxRole, pnCxGroups);
+        log.logCheckingOutcome(process, true);
         return Mono.just(new Object());
     }
 

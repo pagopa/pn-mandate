@@ -11,7 +11,7 @@ import org.springframework.messaging.Message;
 import java.util.function.Consumer;
 
 @Configuration
-@Slf4j
+@lombok.CustomLog
 @RequiredArgsConstructor
 public class ExpiredMandatesHandler {
     private final MandateService mandateService;

@@ -18,7 +18,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 
 @Service
-@Slf4j
+@lombok.CustomLog
 public class MandatePrivateService {
 
 

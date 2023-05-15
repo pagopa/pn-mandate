@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @RestController
+@lombok.CustomLog
 public class MandatePrivateRestV1Controller implements MandatePrivateServiceApi {
 
     MandatePrivateService mandateService;
@@ -27,9 +28,11 @@ public class MandatePrivateRestV1Controller implements MandatePrivateServiceApi 
                                                                                  String mandateId,
                                                                                  List<String> cxGroups,
                                                                                  ServerWebExchange exchange) {
+        log.logStartingProcess("listing mandates by delegate");
         return mandateService.listMandatesByDelegate(internaluserId, mandateId,xPagopaPnCxType, cxGroups)
                 .collectList()
-                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)))
+                .doOnNext(m -> log.logEndingProcess("private listing mandates by delegate"));
     }
 
     @Override
@@ -40,9 +43,11 @@ public class MandatePrivateRestV1Controller implements MandatePrivateServiceApi 
                                                                                   String cxRole,
                                                                                   DelegateType delegateType,
                                                                                   final ServerWebExchange exchange) {
+        log.logStartingProcess("private listing mandates by delegator");
         return mandateService.listMandatesByDelegator(internaluserId, mandateId, xPagopaPnCxType, cxGroups, cxRole, delegateType)
                 .collectList()
-                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)))
+                .doOnNext(m -> log.logEndingProcess("private listing mandates by delegator"));
     }
 
     @Override
@@ -50,8 +55,10 @@ public class MandatePrivateRestV1Controller implements MandatePrivateServiceApi 
                                                                                    List<String> delegateGroups,
                                                                                    Flux<MandateByDelegatorRequestDto> mandateByDelegatorRequestDto,
                                                                                    final ServerWebExchange exchange) {
+        log.logStartingProcess("private listing mandates by delegators");
         return mandateService.listMandatesByDelegators(delegateType, delegateGroups, mandateByDelegatorRequestDto)
                 .collectList()
-                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)));
+                .map(m -> ResponseEntity.status(HttpStatus.OK).body(Flux.fromIterable(m)))
+                .doOnNext(m -> log.logEndingProcess("private listing mandates by delegators"));
     }
 }

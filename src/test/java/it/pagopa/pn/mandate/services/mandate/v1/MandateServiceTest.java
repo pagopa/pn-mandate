@@ -20,13 +20,15 @@ import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
+import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -51,7 +53,6 @@ class MandateServiceTest {
 
     private static final String PG_ADMIN_ROLE = "admin";
 
-    @InjectMocks
     private MandateService mandateService;
 
     @Mock
@@ -75,6 +76,7 @@ class MandateServiceTest {
     @Mock
     private ValidateUtils validateUtils;
 
+
     @Mock
     private SqsService sqsService;
 
@@ -83,6 +85,13 @@ class MandateServiceTest {
 
     @Mock
     private MandateSearchService mandateSearchService;
+
+    @BeforeEach
+    public void init() {
+        MockitoAnnotations.openMocks(this);
+        MandateValidationUtils mandateValidationUtils = Mockito.spy(new MandateValidationUtils(validateUtils));
+        mandateService = new MandateService(mandateDao, delegateDao, mapper, userEntityMandateCountsDtoMapper, pnInfoPaClient, pnDatavaultClient, sqsService, mandateValidationUtils, mandateSearchService, pnMandateConfig);
+    }
 
     @Test
     void acceptMandatePGNotAuthorized() {

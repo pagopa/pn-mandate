@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
 
+import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.ApiClient;
@@ -21,6 +22,7 @@ import java.util.List;
  * Classe wrapper di pn-data-vault, con gestione del backoff
  */
 @Component
+@lombok.CustomLog
 public class PnDataVaultClient extends CommonBaseClient {
     
     private RecipientsApi recipientsApi;
@@ -51,6 +53,7 @@ public class PnDataVaultClient extends CommonBaseClient {
      */
     public Flux<BaseRecipientDtoDto> getRecipientDenominationByInternalId(List<String> internalIds)
     {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Opaque Ids Resolution");
         return recipientsApi.getRecipientDenominationByInternalId(internalIds);
             
     }
@@ -63,6 +66,7 @@ public class PnDataVaultClient extends CommonBaseClient {
      */
     public Mono<String> ensureRecipientByExternalId(boolean isPerson, String fiscalCode)
     {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Opaque Id Creation");
         return recipientsApi.ensureRecipientByExternalId(isPerson?RecipientTypeDto.PF:RecipientTypeDto.PG, fiscalCode);
             
     }
@@ -78,6 +82,8 @@ public class PnDataVaultClient extends CommonBaseClient {
      */
     public Mono<String> updateMandateById(String mandateId, String name, String surname, String businessName)
     {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Securing mandate info");
+
         DenominationDtoDto addressdto = new DenominationDtoDto();
         addressdto.setDestName(name);
         addressdto.setDestSurname(surname);
@@ -95,6 +101,7 @@ public class PnDataVaultClient extends CommonBaseClient {
      */
     public Mono<Void> deleteMandateById(String mandateId)
     {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Removing mandate info");
         return mandatesApi.deleteMandateById(mandateId);
     }
 
@@ -104,7 +111,8 @@ public class PnDataVaultClient extends CommonBaseClient {
      * @return lista userinfo deleghe
      */
     public Flux<MandateDtoDto> getMandatesByIds(List<String> mandateIds)
-    {                
+    {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Retrieving mandate info");
         return mandatesApi.getMandatesByIds(mandateIds);
     }
 

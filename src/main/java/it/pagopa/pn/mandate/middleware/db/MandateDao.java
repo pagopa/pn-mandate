@@ -17,7 +17,6 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.DelegateType;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateByDelegatorRequestDto;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
@@ -39,12 +38,11 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+import static it.pagopa.pn.commons.log.MDCWebFilter.*;
 import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 
-import static it.pagopa.pn.commons.log.MDCWebFilter.*;
-
 @Repository
-@Slf4j
+@lombok.CustomLog
 @Import(PnAuditLogBuilder.class)
 public class MandateDao extends BaseDao {
 
@@ -283,9 +281,9 @@ public class MandateDao extends BaseDao {
     }
 
     /**
-     *
-     * @param mandatesByDelegators
-     * @return
+     * Ritorna la lista dei delegati
+     * @param mandatesByDelegators lista dei deleganti
+     * @return lista deleghe
      */
     public Flux<MandateEntity> listMandatesByDelegators(List<MandateByDelegatorRequestDto> mandatesByDelegators) {
         return Flux.fromIterable(mandatesByDelegators)

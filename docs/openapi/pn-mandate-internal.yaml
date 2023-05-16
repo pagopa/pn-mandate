@@ -628,18 +628,11 @@ components:
     SearchMandateRequestDto:
       type: object
       properties:
-        mandateIds:
-          type: array
-          items:
-            type: string
-    SearchMandateRequestDto:
-      type: object
-      properties:
         taxId:
           type: string
           minLength: 11
           maxLength: 16
-          pattern: "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1}$"
+          pattern: "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1}$|^(IT)?[0-9]{11}$"
         groups:
           type: array
           items:

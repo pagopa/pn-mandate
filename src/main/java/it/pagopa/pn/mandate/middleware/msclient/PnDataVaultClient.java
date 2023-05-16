@@ -7,7 +7,6 @@ import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.Man
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.RecipientsApi;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.*;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -49,18 +48,6 @@ public class PnDataVaultClient extends CommonBaseClient {
     public Flux<BaseRecipientDtoDto> getRecipientDenominationByInternalId(List<String> internalIds)
     {
         return recipientsApi.getRecipientDenominationByInternalId(internalIds);
-    }
-
-    /**
-     * Ricerca un id opaco
-     * Ricerca un id opaco a partire da un codice fiscale, sia esso di PF o di PG.
-     *
-     * @param taxId fiscalCode
-     * @return lista degli internalId
-     * @throws WebClientResponseException if an error occurs while attempting to invoke the API
-     */
-    public Flux<RecipientInternalIdDtoDto> getRecipientInternalIdByTaxId(String taxId) {
-        return recipientsApi.getRecipientInternalIdByExternalId(taxId);
     }
 
     /**

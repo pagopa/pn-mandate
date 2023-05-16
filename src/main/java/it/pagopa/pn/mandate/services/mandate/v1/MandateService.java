@@ -12,7 +12,6 @@ import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.RecipientInternalIdDtoDto;
 import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
@@ -353,11 +352,10 @@ public class MandateService {
                 .flatMap(request -> getInternalIdFromTaxId(request.getTaxId())
                         .map(internalIds -> {
                             List<Integer> statutes = convertStatusStringToInteger(request.getStatus());
-                            List<String> delegatorIds = internalIds.stream().map(RecipientInternalIdDtoDto::getInternalId).toList();
                             InputSearchMandateDto searchDto = InputSearchMandateDto.builder()
                                     .delegateId(cxId)
                                     .statuses(statutes)
-                                    .delegatorIds(delegatorIds)
+                                    .delegatorIds(internalIds)
                                     .size(size)
                                     .nextPageKey(nextPageKey)
                                     .build();
@@ -569,13 +567,18 @@ public class MandateService {
         }
     }
 
-    private Mono<List<RecipientInternalIdDtoDto>> getInternalIdFromTaxId(String taxId) {
+    private Mono<List<String>> getInternalIdFromTaxId(String taxId) {
         if (StringUtils.hasText(taxId)) {
-            // TODO aggiungere validazione del taxId
-            return this.pnDatavaultClient.getRecipientInternalIdByTaxId(taxId).collectList();
+            if(taxId.length() == 11){
+                return this.pnDatavaultClient.ensureRecipientByExternalId(false, taxId)
+                        .map(Collections::singletonList);
+            }else{
+                return this.pnDatavaultClient.ensureRecipientByExternalId(true, taxId)
+                        .concatWith(this.pnDatavaultClient.ensureRecipientByExternalId(false, taxId))
+                        .collectList();
+            }
         } else {
-            List<RecipientInternalIdDtoDto> emptyList = Collections.emptyList();
-            return Mono.just(emptyList);
+            return Mono.just(Collections.emptyList());
         }
     }
 }

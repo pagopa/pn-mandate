@@ -32,6 +32,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.time.Duration;
@@ -83,6 +85,66 @@ class MandateServiceTest {
 
     @Mock
     private MandateSearchService mandateSearchService;
+
+    @Test
+    void updateMandatePGNotAuthorized() {
+        //Given
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
+        UpdateRequestDto updateRequestDto = new UpdateRequestDto();
+        updateRequestDto.setGroups(new ArrayList<>());
+
+        Mono<Void> objectMono = mandateService.updateMandate("cyId", CxTypeAuthFleet.PG,
+                mandateEntity.getMandateId(), new ArrayList<>(), "OPERATOR", Mono.just(updateRequestDto));
+
+        //When
+        Assertions.assertThrows(PnForbiddenException.class, objectMono::block);
+    }
+
+    @Test
+    void updateMandateWhereDelegateIsPerson() {
+        //Given
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
+        UpdateRequestDto updateRequestDto = new UpdateRequestDto();
+        updateRequestDto.setGroups(new ArrayList<>());
+        Tuple2<MandateEntity, MandateEntity> tuple2 = Tuples.of(mandateEntity, mandateEntity);
+        Mono<Tuple2<MandateEntity, MandateEntity>> tuple2Mono = Mono.just(tuple2);
+        when(mandateDao.updateMandate(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
+                .thenReturn(tuple2Mono);
+
+        //When
+        assertDoesNotThrow(() -> {
+            mandateService.updateMandate("cyId", CxTypeAuthFleet.PG,
+                    mandateEntity.getMandateId(), new ArrayList<>(), "ADMIN", Mono.just(updateRequestDto))
+                    .block(D);
+
+        });
+
+        //Then
+        verifyNoInteractions(sqsService);
+    }
+
+    @Test
+    void updateMandateWhereDelegateIsNotPerson() {
+        //Given
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
+        mandateEntity.setDelegateisperson(false);
+        UpdateRequestDto updateRequestDto = new UpdateRequestDto();
+        updateRequestDto.setGroups(new ArrayList<>());
+        Tuple2<MandateEntity, MandateEntity> tuple2 = Tuples.of(mandateEntity, mandateEntity);
+        Mono<Tuple2<MandateEntity, MandateEntity>> tuple2Mono = Mono.just(tuple2);
+        when(mandateDao.updateMandate(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
+                .thenReturn(tuple2Mono);
+        when(sqsService.sendToDelivery(Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.empty());
+
+        //When
+        assertDoesNotThrow(() -> {
+            mandateService.updateMandate("cyId", CxTypeAuthFleet.PG,
+                            mandateEntity.getMandateId(), new ArrayList<>(), "ADMIN", Mono.just(updateRequestDto))
+                    .block(D);
+
+        });
+    }
 
     @Test
     void acceptMandatePGNotAuthorized() {

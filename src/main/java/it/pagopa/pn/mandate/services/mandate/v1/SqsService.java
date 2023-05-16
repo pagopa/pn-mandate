@@ -63,7 +63,6 @@ public class SqsService {
                 .validFrom(newEntity.getValidfrom())
                 .validTo(newEntity.getValidto());
         if (oldEntity != null && eventType == EventType.MANDATE_UPDATED) {
-            newEntity.getGroups().removeAll(oldEntity.getGroups());
             msg.addedGroups(SetUtils.getDiffFromSet1ToSet2(newEntity.getGroups(), oldEntity.getGroups()));
             msg.removedGroups(SetUtils.getDiffFromSet1ToSet2(oldEntity.getGroups(), newEntity.getGroups()));
         }
@@ -76,7 +75,8 @@ public class SqsService {
 
         log.debug("SendMessageRequest: {}", sendMsgRequest);
 
-        return Mono.fromCallable(() -> sqsClient.sendMessage(sendMsgRequest));
+        return Mono.fromCallable(() -> sqsClient.sendMessage(sendMsgRequest))
+                .doOnNext(s -> log.info("Sent message to queue for update groups of Mandate: {}", newEntity.getMandateId()));
     }
 
     private Map<String, MessageAttributeValue> buildMessageAttributeMap(String eventId, EventType eventType) {

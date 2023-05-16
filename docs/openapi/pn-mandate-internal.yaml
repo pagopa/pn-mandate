@@ -287,7 +287,7 @@ paths:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
-  /mandate/api/v1/mandate/{mandateId/update:
+  /mandate/api/v1/mandate/{mandateId}/update:
     patch:
       tags:
         - mandate-service
@@ -662,6 +662,7 @@ components:
       properties:
         groups:
           type: array
+          maxItems: 10
           items:
             type: string
             # ASCII printable characters

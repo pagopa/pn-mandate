@@ -142,8 +142,8 @@ public class MandateService {
                 .flatMap(obj -> updateRequestDto)
                 .flatMap(request -> {
                     log.info("updating mandate {}", mandateId);
-                    Set<String> groups = Collections.emptySet();
-                    if (request.getGroups() != null) {
+                    Set<String> groups = null;
+                    if (request.getGroups() != null && !request.getGroups().isEmpty()) {
                         groups = new HashSet<>(request.getGroups());
                     }
                     return mandateDao.updateMandate(xPagopaPnCxId, mandateId, groups)

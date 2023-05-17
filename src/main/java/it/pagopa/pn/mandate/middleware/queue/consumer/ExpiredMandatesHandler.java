@@ -3,7 +3,6 @@ package it.pagopa.pn.mandate.middleware.queue.consumer;
 import it.pagopa.pn.mandate.middleware.queue.consumer.event.PnMandateExpiredEvent;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -31,11 +30,13 @@ public class ExpiredMandatesHandler {
     @Bean
     public Consumer<Message<PnMandateExpiredEvent.Payload>> pnMandateExpiredMandatesConsumer() {
         return message -> {
+            String process = "expired mandate cleanup";
             try {
-                log.info("[enter] pnMandateExpiredMandatesConsumer, message {}", message);
+                log.logStartingProcess(process);
+                log.debug("pnMandateExpiredMandatesConsumer, message {}", message);
                 PnMandateExpiredEvent.Payload payload = message.getPayload();
                 mandateService.expireMandate(payload.getMandateId(), payload.getDelegatorInternalUserid(), payload.getDelegatorUserid(), payload.getDelegatorCxType()).block();
-                log.info("[exit] pnMandateExpiredMandatesConsumer");
+                log.logEndingProcess(process);
             }
             catch (Exception ex) {
                 HandleEventUtils.handleException(message.getHeaders(), ex);

@@ -136,6 +136,24 @@
 				</configuration>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.1.2</version>
+				<executions>
+					<execution>
+						<id>unpack-dependencies</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>unpack-dependencies</goal>
+						</goals>
+						<configuration>
+							<includeArtifactIds>pn-commons</includeArtifactIds>
+							<outputDirectory>${project.build.directory}/dependency-resources</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>3.1.0</version>
 				<executions>
@@ -177,11 +195,12 @@
 						<goals>
 							<goal>generate</goal>
 						</goals>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<inputSpec>${project.basedir}/docs/openapi/pn-mandate-internal.yaml</inputSpec>
 							<generatorName>spring</generatorName>
               				<library>spring-boot</library>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates</templateDirectory>
 							<generateApiDocumentation>false</generateApiDocumentation>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
@@ -207,12 +226,13 @@
 						<goals>
 							<goal>generate</goal> 
 						</goals>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-external-registries/5f6f31f804acdbec1a050d0462ae54d55dd6f974/docs/openapi/pn-selfcare-internal-v1.yaml</inputSpec>
 							<generatorName>java</generatorName>
                 			<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>
@@ -230,12 +250,13 @@
 						<goals>
 							<goal>generate</goal>
 						</goals>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-external-registries/faf040a52351a0208340b8ed0188e3727d7beb3a/docs/openapi/api-private-v1.yaml</inputSpec>
 							<generatorName>java</generatorName>
 							<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>
@@ -253,12 +274,13 @@
 						<goals>
 							<goal>generate</goal> 
 						</goals>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-data-vault/647830b82cd7ee9f43dd5b4f6b10a17e50d6da12/docs/openapi/pn-datavault-api-v1.yaml</inputSpec>
 							<generatorName>java</generatorName>
                 			<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>

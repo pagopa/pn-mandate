@@ -275,7 +275,8 @@ class MandateServiceTest {
         when(userEntityMandateCountsDtoMapper.toDto(Mockito.same(delegateEntity))).thenReturn(dto);
 
         //When
-        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mandateService.countMandatesByDelegate(null, "fake", CxTypeAuthFleet.PF, null, null));
+        Mono<MandateCountsDto> mono = mandateService.countMandatesByDelegate(null, "fake", CxTypeAuthFleet.PF, null, null);
+        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mono.block());
 
     }
 
@@ -292,7 +293,8 @@ class MandateServiceTest {
 
         //When
         String status = MandateDto.StatusEnum.ACTIVE.getValue();
-        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mandateService.countMandatesByDelegate(status, "fake", CxTypeAuthFleet.PF, null, null));
+        Mono<MandateCountsDto> mono = mandateService.countMandatesByDelegate(status, "fake", CxTypeAuthFleet.PF, null, null);
+        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mono.block());
 
     }
 
@@ -1184,7 +1186,8 @@ class MandateServiceTest {
 
         //When
         String delegate = mandateEntity.getDelegate();
-        assertThrows(PnMandateNotFoundException.class, () -> mandateService.rejectMandate(null, delegate, CxTypeAuthFleet.PF, null, null));
+        Mono<Void> mono = mandateService.rejectMandate(null, delegate, CxTypeAuthFleet.PF, null, null);
+        assertThrows(PnMandateNotFoundException.class, () -> mono.block());
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -1256,7 +1259,8 @@ class MandateServiceTest {
 
         //When
         String delegator = mandateEntity.getDelegator();
-        assertThrows(PnMandateNotFoundException.class, () -> mandateService.revokeMandate(null, delegator, CxTypeAuthFleet.PF, null, null));
+        Mono<Object> mono = mandateService.revokeMandate(null, delegator, CxTypeAuthFleet.PF, null, null);
+        assertThrows(PnMandateNotFoundException.class, () -> mono.block());
 
         //Then
         // nothing, basta che non ci sia eccezione

@@ -92,7 +92,7 @@ public class MandateService {
                                              String internaluserId,
                                              CxTypeAuthFleet xPagopaPnCxType,
                                              List<String> cxGroups, String cxRole) {
-        return validaAccessoOnlyAdmin(xPagopaPnCxType, cxRole, cxGroups)
+        return Mono.defer(() -> validaAccessoOnlyAdmin(xPagopaPnCxType, cxRole, cxGroups))
                 .flatMap(obj -> acceptRequestDto)
                 .map(m -> validateUtils.validateAcceptMandateRequest(mandateId, m))
                 .flatMap(m -> {
@@ -130,9 +130,9 @@ public class MandateService {
                                                           CxTypeAuthFleet xPagopaPnCxType,
                                                           List<String> cxGroups,
                                                           String cxRole) {
-        validateUtils.validateCountRequest(status);
 
-        return validaAccessoOnlyGroupAdmin(xPagopaPnCxType, cxRole, cxGroups)
+        return validateUtils.validateCountRequest(status)
+                .then(Mono.defer(() -> validaAccessoOnlyGroupAdmin(xPagopaPnCxType, cxRole, cxGroups)))
                 .flatMap(obj -> userDao.countMandates(internaluserId, xPagopaPnCxType, cxGroups)
                         .map(userEntityMandateCountsDtoMapper::toDto));
     }
@@ -156,7 +156,7 @@ public class MandateService {
                                           String role) {
         final String uuid = UUID.randomUUID().toString();
         final boolean requesterUserTypeIsPF = cxTypeAuthFleet == null || cxTypeAuthFleet.equals(CxTypeAuthFleet.PF);
-        return validaAccessoOnlyAdmin(cxTypeAuthFleet, role, groups)
+        return Mono.defer(() -> validaAccessoOnlyAdmin(cxTypeAuthFleet, role, groups))
                 .flatMap(obj -> mandateDto
                         .map(validateUtils::validateCreationRequest)
                         .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegate().getPerson(), dto.getDelegate().getFiscalCode())
@@ -340,7 +340,7 @@ public class MandateService {
      * @return deleghe
      */
     public Flux<MandateDto> listMandatesByDelegator(String internalUserId, CxTypeAuthFleet pnCxType, List<String> pnCxGroups, String pnCxRole) {
-        return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups) // (0)
+        return Mono.defer(() -> validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)) // (0)
                 .flatMapMany(o -> mandateDao.listMandatesByDelegator(internalUserId, null, null, null))    // (1)
                 .doOnNext(mand -> log.info("listMandatesByDelegator found mandate={}", mand))
                 .map(mandateEntityMandateDtoMapper::toDto)  // (2)
@@ -381,9 +381,10 @@ public class MandateService {
      */
     public Mono<Void> rejectMandate(String mandateId, String internalUserId, CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
         if (mandateId == null) {
-            throw new PnMandateNotFoundException();
+            return Mono.error(new PnMandateNotFoundException());
         }
-        return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
+
+        return Mono.defer(() -> validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups))
                 .flatMap(o -> mandateDao.rejectMandate(internalUserId, mandateId))
                 .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
                 .flatMap(entity -> {
@@ -406,9 +407,9 @@ public class MandateService {
      */
     public Mono<Object> revokeMandate(String mandateId, String internalUserId, CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
         if (mandateId == null) {
-            throw new PnMandateNotFoundException();
+            return Mono.error(new PnMandateNotFoundException());
         }
-        return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
+        return Mono.defer(() -> validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups))
                 .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId))
                 .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
                 .flatMap(entity -> {

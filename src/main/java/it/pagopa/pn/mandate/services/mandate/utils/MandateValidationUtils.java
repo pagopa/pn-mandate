@@ -11,6 +11,7 @@ import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Mono;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
@@ -39,17 +40,18 @@ public class MandateValidationUtils {
     }
 
 
-    public void validateCountRequest(String status) {
+    public Mono<Void> validateCountRequest(String status) {
         String process = "validating count request";
         log.logChecking(process);
         // per ora l'unico stato supportato è il pending, quindi il filtro non viene passato al count
         // Inoltre, ritorno un errore se status != pending
         if (status == null || !status.equals(MandateDto.StatusEnum.PENDING.getValue())) {
             log.logCheckingOutcome(process, false, "invalid status requested");
-            throw new PnUnsupportedFilterException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM, "status");
+            return Mono.error(new PnUnsupportedFilterException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM, "status"));
         }
 
         log.logCheckingOutcome(process, true);
+        return Mono.empty();
     }
 
     @NotNull

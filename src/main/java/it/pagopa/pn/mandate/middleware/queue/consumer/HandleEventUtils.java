@@ -2,7 +2,6 @@ package it.pagopa.pn.mandate.middleware.queue.consumer;
 
 import it.pagopa.pn.api.dto.events.StandardEventHeader;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.MessageHeaders;
 
 import java.time.Instant;

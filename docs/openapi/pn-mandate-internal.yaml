@@ -576,22 +576,27 @@ components:
       properties:
         displayName:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"                                             # NO EXTERNAL
           maxLength: 80
           pattern: '^([\x20-\xFF]{1,80})$'
         firstName:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"                                             # NO EXTERNAL
           maxLength: 80
           pattern: '^([\x20-\xFF]{1,80})$'
         lastName:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"                                             # NO EXTERNAL
           maxLength: 80
           pattern: '^([\x20-\xFF]{1,80})$'
         companyName:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"                                             # NO EXTERNAL
           maxLength: 250
           pattern: '^([\x20-\xFF]{1,250})$'
         fiscalCode:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"                                             # NO EXTERNAL
           maxLength: 16
           pattern: '^([A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1})|([0-9]{11})$'
         person:

@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: Vc58soiAE7khfwZab3kfhGaZy6UKEMigSZxRcEowXco=
+  version: ZAmhBq2/hWvXaFyutXzdpkVtT7tzu09vQwshuQG8sFA=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -363,7 +363,9 @@ paths:
     post:
       tags:
         - mandate-service
-      summary: Return filtered mandates based on status, groups and delegators (mandateIds)
+      summary: >-
+        Return filtered mandates based on status, groups and delegators
+        (mandateIds)
       operationId: searchMandatesByDelegate
       security:
         - pn-auth-fleet_jwtAuthorizer_openapi: []

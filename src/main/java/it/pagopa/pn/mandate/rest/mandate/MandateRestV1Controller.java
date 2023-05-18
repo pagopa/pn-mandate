@@ -1,8 +1,10 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.mandate.rest.mandate.v1.api.MandateServiceApi;
 import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,8 +34,10 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                     ServerWebExchange exchange) {
 
 
-        return  mandateService.acceptMandate(mandateId, acceptRequestDto, xPagopaPnCxId, xPagopaPnCxType, cxGroups, cxRole)
-                    .then(Mono.just(ResponseEntity.noContent().build()));
+        MDC.put(MDCUtils.MDC_PN_CTX_MANDATEID, mandateId);
+
+        return  MDCUtils.addMDCToContextAndExecute(mandateService.acceptMandate(mandateId, acceptRequestDto, xPagopaPnCxId, xPagopaPnCxType, cxGroups, cxRole)
+                    .then(Mono.just(ResponseEntity.noContent().build())));
 
     }
 
@@ -111,8 +115,10 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                     String xPagopaPnCxRole,
                                                     ServerWebExchange exchange) {
 
-       return mandateService.rejectMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
-                .then(Mono.just(ResponseEntity.noContent().build()));
+        MDC.put(MDCUtils.MDC_PN_CTX_MANDATEID, mandateId);
+
+        return MDCUtils.addMDCToContextAndExecute(mandateService.rejectMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+                .then(Mono.just(ResponseEntity.noContent().build())));
     }
 
     @Override
@@ -123,8 +129,11 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                     String xPagopaPnCxRole,
                                                     ServerWebExchange exchange) {
 
-        return mandateService.revokeMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
-                .map(m -> ResponseEntity.noContent().build());
+        MDC.put(MDCUtils.MDC_PN_CTX_MANDATEID, mandateId);
+
+        return MDCUtils.addMDCToContextAndExecute(mandateService.revokeMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+                        .map(m -> ResponseEntity.noContent().build()));
     }
+
 
 }

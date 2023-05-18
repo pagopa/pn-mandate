@@ -1,8 +1,10 @@
 package it.pagopa.pn.mandate.middleware.queue.consumer;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.mandate.middleware.queue.consumer.event.PnMandateExpiredEvent;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -35,7 +37,10 @@ public class ExpiredMandatesHandler {
                 log.logStartingProcess(process);
                 log.debug("pnMandateExpiredMandatesConsumer, message {}", message);
                 PnMandateExpiredEvent.Payload payload = message.getPayload();
-                mandateService.expireMandate(payload.getMandateId(), payload.getDelegatorInternalUserid(), payload.getDelegatorUserid(), payload.getDelegatorCxType()).block();
+
+                MDC.put(MDCUtils.MDC_PN_CTX_MANDATEID, payload.getMandateId());
+
+                MDCUtils.addMDCToContextAndExecute(mandateService.expireMandate(payload.getMandateId(), payload.getDelegatorInternalUserid(), payload.getDelegatorUserid(), payload.getDelegatorCxType())).block();
                 log.logEndingProcess(process);
             }
             catch (Exception ex) {

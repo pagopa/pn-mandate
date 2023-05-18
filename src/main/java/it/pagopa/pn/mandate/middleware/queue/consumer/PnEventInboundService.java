@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.middleware.queue.consumer;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.MDCWebFilter;
+import it.pagopa.pn.commons.utils.MDCUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.cloud.function.context.MessageRoutingCallback;
@@ -11,6 +12,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.util.StringUtils;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_HANDLER_NOT_PRESENT;
@@ -29,13 +31,15 @@ public class PnEventInboundService {
             public FunctionRoutingResult routingResult(Message<?> message) {
                 MessageHeaders messageHeaders = message.getHeaders();
                 String traceId;
+                String messageId = null;
 
                 if (messageHeaders.containsKey("aws_messageId"))
-                    traceId = messageHeaders.get("aws_messageId", String.class);
-                else
-                    traceId = "traceId:" + UUID.randomUUID();
+                    messageId = messageHeaders.get("aws_messageId", String.class);
+
+                traceId = Objects.requireNonNullElseGet(messageId, () -> "traceId:" + UUID.randomUUID());
 
                 MDC.put(MDCWebFilter.MDC_TRACE_ID_KEY, traceId);
+                MDC.put(MDCUtils.MDC_PN_CTX_MESSAGE_ID, messageId);
                 return new FunctionRoutingResult(handleMessage(message));
             }
         };

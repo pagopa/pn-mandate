@@ -54,15 +54,15 @@ public class MandateSearchService {
     public Mono<PageResultDto<MandateDto, String>> searchByDelegate(InputSearchMandateDto searchDto,
                                                                     PnLastEvaluatedKey lastEvaluatedKey) {
         String delegateId = searchDto.getDelegateId();
-        List<String> mandateIds = searchDto.getMandateIds();
+        List<String> delegatorIds = searchDto.getDelegatorIds();
         List<String> groups = searchDto.getGroups();
-        log.info("searchByDelegate {}, delegatorIds: {}, groups: {}", delegateId, delegateId, groups);
+        log.info("searchByDelegate {}, delegatorIds: {}, groups: {}", delegateId, delegatorIds, groups);
 
         List<Integer> partitions = generatePartitions(searchDto.getStatuses());
 
         int requiredSize = searchDto.getSize() * searchDto.getMaxPageNumber() + 1;
         int dynamoDbPageSize;
-        if (!CollectionUtils.isEmpty(mandateIds) || !CollectionUtils.isEmpty(groups)) {
+        if (!CollectionUtils.isEmpty(delegatorIds) || !CollectionUtils.isEmpty(groups)) {
             dynamoDbPageSize = requiredSize * FILTER_EXPRESSION_MULTIPLIER;
         } else {
             dynamoDbPageSize = requiredSize;
@@ -74,7 +74,7 @@ public class MandateSearchService {
         log.debug("searchByDelegate {}, partition: {}, idx: {}", delegateId, startPartition, pIdx);
 
         List<MandateEntity> cumulativeQueryResult = new ArrayList<>();
-        return mandateDao.searchByDelegate(delegateId, startPartition, groups, mandateIds, dynamoDbPageSize, lastEvaluatedKey)
+        return mandateDao.searchByDelegate(delegateId, startPartition, groups, delegatorIds, dynamoDbPageSize, lastEvaluatedKey)
                 .expand(page -> readMoreData(cumulativeQueryResult.size(), requiredSize, dynamoDbPageSize, page, searchDto, partitions, pIdx))
                 .doOnNext(page -> cumulativeQueryResult.addAll(page.items()))
                 .last()
@@ -90,7 +90,7 @@ public class MandateSearchService {
                                                    AtomicInteger pIdx) {
         log.trace("reading more data...");
         String delegateId = searchDto.getDelegateId();
-        List<String> mandateIds = searchDto.getMandateIds();
+        List<String> delegatorIds = searchDto.getDelegatorIds();
         List<String> groups = searchDto.getGroups();
         if (currentSize < requiredSize) {
             Integer currentPartition = getPartitionFromIdx(partitions, pIdx.get());
@@ -98,14 +98,14 @@ public class MandateSearchService {
                 // nella partizione corrente non ci sono più dati, si prosegue leggendo dalla partizione successiva
                 Integer nextPartition = partitions.isEmpty() ? null : partitions.get(pIdx.get());
                 log.debug("no more data in partition {}, next partition is {}", currentPartition, nextPartition);
-                return mandateDao.searchByDelegate(delegateId, nextPartition, groups, mandateIds, dynamoDbPageSize, null);
+                return mandateDao.searchByDelegate(delegateId, nextPartition, groups, delegatorIds, dynamoDbPageSize, null);
             } else if (page.lastEvaluatedKey() != null) {
                 // nella partizione corrente ci sono ancora dati, si prosegue leggendo dalla partizione corrente
                 PnLastEvaluatedKey nextPageKey = new PnLastEvaluatedKey();
                 nextPageKey.setInternalLastEvaluatedKey(page.lastEvaluatedKey());
                 Integer partition = partitions.isEmpty() ? null : partitions.get(pIdx.get());
                 log.debug("more data in partition {}, lek: {}", currentPartition, nextPageKey);
-                return mandateDao.searchByDelegate(delegateId, partition, groups, mandateIds, dynamoDbPageSize, nextPageKey);
+                return mandateDao.searchByDelegate(delegateId, partition, groups, delegatorIds, dynamoDbPageSize, nextPageKey);
             }
             log.debug("no more data");
         } else {

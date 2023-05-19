@@ -140,11 +140,11 @@ public class MandateDao extends BaseDao {
     public Mono<Page<MandateEntity>> searchByDelegate(String delegateId,
                                                       @Nullable Integer status,
                                                       List<String> groups,
-                                                      List<String> mandateIds,
+                                                      List<String> delegatorIds,
                                                       int size,
                                                       PnLastEvaluatedKey lastEvaluatedKey) {
-        log.debug("searchByDelegate {}, status: {}, groups: {}, mandateIds: {}, size: {}, lek: {}",
-                delegateId, status, groups, mandateIds, size, lastEvaluatedKey);
+        log.debug("searchByDelegate {}, status: {}, groups: {}, delegatorIds: {}, size: {}, lek: {}",
+                delegateId, status, groups, delegatorIds, size, lastEvaluatedKey);
 
         Key.Builder keyBuilder = Key.builder().partitionValue(delegateId);
         if (status != null) {
@@ -156,7 +156,7 @@ public class MandateDao extends BaseDao {
 
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)
-                .filterExpression(filterExpressionSearchByDelegate(groups, mandateIds))
+                .filterExpression(filterExpressionSearchByDelegate(groups, delegatorIds))
                 .scanIndexForward(true)
                 .limit(size)
                 .exclusiveStartKey(lastEvaluatedKeySearchByDelegate(lastEvaluatedKey))
@@ -165,16 +165,16 @@ public class MandateDao extends BaseDao {
         return Mono.from(mandateTable.index(GSI_INDEX_DELEGATE_STATE).query(queryEnhancedRequest));
     }
 
-    private Expression filterExpressionSearchByDelegate(List<String> groups, List<String> mandateIds) {
+    private Expression filterExpressionSearchByDelegate(List<String> groups, List<String> delegatorIds) {
         Expression.Builder expressionBuilder = Expression.builder();
         StringBuilder filterExpression = new StringBuilder();
         if (!CollectionUtils.isEmpty(groups)) {
             addNewFilterExpression(filterExpression);
             addFilterExpression(groups, MandateEntity.COL_A_GROUPS, ":g", CONTAINS, expressionBuilder, filterExpression);
         }
-        if (!CollectionUtils.isEmpty(mandateIds)) {
+        if (!CollectionUtils.isEmpty(delegatorIds)) {
             addNewFilterExpression(filterExpression);
-            addFilterExpression(mandateIds, MandateEntity.COL_S_MANDATEID, ":m", EQ, expressionBuilder, filterExpression);
+            addFilterExpression(delegatorIds, MandateEntity.COL_PK, ":d", EQ, expressionBuilder, filterExpression);
         }
         if (!filterExpression.isEmpty()) {
             expressionBuilder.expression(filterExpression.toString());

@@ -1406,7 +1406,7 @@ public class MandateDaoIT {
         String mandateId = mandateToInsert1.getMandateId();
         Integer state = mandateToInsert1.getState();
         try {
-            Page<MandateEntity> result = mandateDao.searchByDelegate(delegateId, state, List.of("G1", "G2"), List.of(mandateId, "other"), 2, null)
+            Page<MandateEntity> result = mandateDao.searchByDelegate(delegateId, state, List.of("G1", "G2"), List.of("PF-f271e4bf-0d69-4ed6-a39f-4efdelegator","other"), 2, null)
                     .block(d);
             Assertions.assertNotNull(result);
             Assertions.assertEquals(1, result.items().size());

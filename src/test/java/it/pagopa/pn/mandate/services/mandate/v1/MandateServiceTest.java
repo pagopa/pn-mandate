@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -1313,7 +1314,97 @@ class MandateServiceTest {
     }
 
     @Test
-    void searchByDelegate() {
+    void searchByDelegateWithCF() {
+        //Given
+        List<MandateDto> page = List.of(new MandateDto());
+        List<String> lek = List.of("");
+        PageResultDto<MandateDto, String> pageResultDto = PageResultDto.<MandateDto, String>builder()
+                .page(page)
+                .more(true)
+                .nextPagesKey(lek)
+                .build();
+
+        when(pnMandateConfig.getMaxPageSize()).thenReturn(1);
+        when(mandateSearchService.searchByDelegate(any(), any()))
+                .thenReturn(Mono.just(pageResultDto));
+        when(pnDatavaultClient.ensureRecipientByExternalId(anyBoolean(), any()))
+                .thenReturn(Mono.just(UUID.randomUUID().toString()));
+
+        //When
+        SearchMandateRequestDto requestDto = new SearchMandateRequestDto();
+        requestDto.setTaxId("BBBCCC87D22E111A");
+        SearchMandateResponseDto responseDto = mandateService.searchByDelegate(Mono.just(requestDto), 1, null, "cx-id", CxTypeAuthFleet.PG, null, PG_ADMIN_ROLE)
+                .block(D);
+
+        //Then
+        assertNotNull(responseDto);
+        assertTrue(responseDto.getMoreResult());
+        assertSame(page, responseDto.getResultsPage());
+        assertSame(lek, responseDto.getNextPagesKey());
+    }
+
+    @Test
+    void searchByDelegateWithNotFoundCF() {
+        //Given
+        List<MandateDto> page = List.of(new MandateDto());
+        List<String> lek = List.of("");
+        PageResultDto<MandateDto, String> pageResultDto = PageResultDto.<MandateDto, String>builder()
+                .page(page)
+                .more(true)
+                .nextPagesKey(lek)
+                .build();
+
+        when(pnMandateConfig.getMaxPageSize()).thenReturn(1);
+        when(mandateSearchService.searchByDelegate(any(), any()))
+                .thenReturn(Mono.just(pageResultDto));
+        when(pnDatavaultClient.ensureRecipientByExternalId(anyBoolean(), any()))
+                .thenReturn(Mono.empty());
+
+        //When
+        SearchMandateRequestDto requestDto = new SearchMandateRequestDto();
+        requestDto.setTaxId("BBBCCC87D22E111A");
+        SearchMandateResponseDto responseDto = mandateService.searchByDelegate(Mono.just(requestDto), 1, null, "cx-id", CxTypeAuthFleet.PG, null, PG_ADMIN_ROLE)
+                .block(D);
+
+        //Then
+        assertNotNull(responseDto);
+        assertFalse(responseDto.getMoreResult());
+        assertSame(0, responseDto.getResultsPage().size());
+        assertSame(0, responseDto.getNextPagesKey().size());
+    }
+
+    @Test
+    void searchByDelegateWithVatNumber() {
+        //Given
+        List<MandateDto> page = List.of(new MandateDto());
+        List<String> lek = List.of("");
+        PageResultDto<MandateDto, String> pageResultDto = PageResultDto.<MandateDto, String>builder()
+                .page(page)
+                .more(true)
+                .nextPagesKey(lek)
+                .build();
+
+        when(pnMandateConfig.getMaxPageSize()).thenReturn(1);
+        when(mandateSearchService.searchByDelegate(any(), any()))
+                .thenReturn(Mono.just(pageResultDto));
+        when(pnDatavaultClient.ensureRecipientByExternalId(anyBoolean(), any()))
+                .thenReturn(Mono.just(UUID.randomUUID().toString()));
+
+        //When
+        SearchMandateRequestDto requestDto = new SearchMandateRequestDto();
+        requestDto.setTaxId("12345678912");
+        SearchMandateResponseDto responseDto = mandateService.searchByDelegate(Mono.just(requestDto), 1, null, "cx-id", CxTypeAuthFleet.PG, null, PG_ADMIN_ROLE)
+                .block(D);
+
+        //Then
+        assertNotNull(responseDto);
+        assertTrue(responseDto.getMoreResult());
+        assertSame(page, responseDto.getResultsPage());
+        assertSame(lek, responseDto.getNextPagesKey());
+    }
+
+    @Test
+    void searchByDelegateWithoutTaxId() {
         //Given
         List<MandateDto> page = List.of(new MandateDto());
         List<String> lek = List.of("");

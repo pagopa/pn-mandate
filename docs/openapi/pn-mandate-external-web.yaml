@@ -186,7 +186,7 @@ paths:
     post:
       tags:
         - mandate-service
-      summary: Return filtered mandates based on status, groups and delegators (mandateIds)
+      summary: Return filtered mandates based on status, groups and delegators (taxId)
       operationId: searchMandatesByDelegate
       security:                                                                # ONLY EXTERNAL
         - bearerAuth: [ ]                                                      # ONLY EXTERNAL
@@ -337,18 +337,24 @@ components:
     SearchMandateRequestDto:
       type: object
       properties:
-        mandateIds:
-          type: array
-          items:
-            type: string
+        taxId:
+          type: string
+          minLength: 11
+          maxLength: 16
+          pattern: "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1}$|^(IT)?[0-9]{11}$"
         groups:
           type: array
           items:
             type: string
+            # ASCII printable characters
+            maxLength: 80
+            pattern: ^[ -~ ]*$
         status:
           type: array
           items:
             type: string
+            maxLength: 10
+            pattern: ^[A-Za-z]+$
     SearchMandateResponseDto:
       type: object
       properties:

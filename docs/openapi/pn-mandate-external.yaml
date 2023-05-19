@@ -204,7 +204,7 @@ paths:
     post:
       tags:
         - mandate-service
-      summary: Return filtered mandates based on status, groups and delegators
+      summary: Return filtered mandates based on status, groups and delegators (taxId)
       operationId: searchMandatesByDelegate
       security:                                                                # ONLY EXTERNAL
         - bearerAuth: [ ]                                                      # ONLY EXTERNAL

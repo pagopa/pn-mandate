@@ -3,8 +3,6 @@ package it.pagopa.pn.mandate.middleware.msclient;
 
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.ApiClient;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.api.MandatesApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.api.RecipientsApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
@@ -15,7 +13,6 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 /**
@@ -25,25 +22,14 @@ import java.util.List;
 @lombok.CustomLog
 public class PnDataVaultClient extends CommonBaseClient {
     
-    private RecipientsApi recipientsApi;
-    private MandatesApi mandatesApi;
-    private final PnMandateConfig pnMandateConfig;
+    private final RecipientsApi recipientsApi;
+    private final MandatesApi mandatesApi;
 
-    public PnDataVaultClient(PnMandateConfig pnMandateConfig) {
-        this.pnMandateConfig = pnMandateConfig;
+    public PnDataVaultClient(RecipientsApi recipientsApi, MandatesApi mandatesApi) {
+        this.recipientsApi = recipientsApi;
+        this.mandatesApi = mandatesApi;
     }
 
-    @PostConstruct
-    public void init(){
-
-        ApiClient newApiClient = new ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
-        newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
-        this.recipientsApi = new RecipientsApi(newApiClient);
-
-        newApiClient = new ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
-        newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
-        this.mandatesApi = new MandatesApi(newApiClient);
-    }
 
     /**
      * Ritorna una lista di nominativi in base alla lista di iuid passati

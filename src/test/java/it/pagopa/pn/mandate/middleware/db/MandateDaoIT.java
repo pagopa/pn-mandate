@@ -25,6 +25,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.time.*;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -186,6 +187,24 @@ public class MandateDaoIT {
         m.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING));
         m.setValidationcode("12345");
         m.setVisibilityIds(null);
+        return m;
+    }
+
+    public static MandateEntity newMandateWithGroups(boolean withValidtoSetted) {
+        MandateEntity m = new MandateEntity();
+        m.setMandateId("f271e4bf-0d69-4ed6-a39f-4ef2f01f2fd1");
+        m.setDelegatorUid("f271e4bf-0d69-4ed6-a39f-4efdelegator");
+        m.setDelegator("PF-f271e4bf-0d69-4ed6-a39f-4efdelegator");
+        m.setDelegate("PF-f271e4bf-0d69-4ed6-a39f-4ef2delegate");
+        m.setDelegatorisperson(true);
+        m.setDelegateisperson(true);
+        m.setGroups(new HashSet<>(List.of("f271e4bf-0d69-4ed6-a39f", "f271e4bf-0d69-4ed6-a50f")));
+        m.setValidfrom(ZonedDateTime.of(LocalDateTime.of(2021, Month.DECEMBER, 14, 0, 0), ZoneId.of("Europe/Rome")).toInstant());
+        m.setValidto(withValidtoSetted?Instant.now().plus(Duration.ofDays(5)):null);
+        m.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        m.setValidationcode("12345");
+        m.setVisibilityIds(null);
+        m.setAccepted(Instant.now().minus(Duration.ofDays(5)));
         return m;
     }
 
@@ -1081,6 +1100,43 @@ public class MandateDaoIT {
             Assertions.assertNotNull(elementSupportFromDb);
             Assertions.assertEquals(mandateSupport, elementSupportFromDb);
             Assertions.assertTrue(elementFromDb.getGroups().contains("G1"));
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void updateMandate(){
+        //Given
+        MandateEntity mandateToInsert = newMandateWithGroups(true);
+        MandateSupportEntity mandateSupport = newMandateSupport(mandateToInsert);
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        mandateDao.updateMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getGroups()).block(d);
+
+        //Then
+        try {
+            MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            MandateSupportEntity elementSupportFromDb = testDao.getSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+
+            Assertions.assertNotNull(elementFromDb);
+            Assertions.assertNotNull(elementFromDb.getAccepted());
+            Assertions.assertNotNull(elementSupportFromDb);
         } catch (Exception e) {
             throw new RuntimeException();
         } finally {

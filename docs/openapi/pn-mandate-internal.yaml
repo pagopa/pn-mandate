@@ -287,6 +287,38 @@ paths:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
+  /mandate/api/v1/mandate/{mandateId}/update:
+    patch:
+      tags:
+        - mandate-service
+      summary: Update a mandate
+      operationId: updateMandate
+#      security:                                                                # ONLY EXTERNAL
+#        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
+      parameters:
+        - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
+        - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
+        - name: mandateId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRequestDto'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
   /mandate/api/v1/mandate/{mandateId}/reject:
     patch:
       tags:
@@ -624,6 +656,17 @@ components:
             type: string
             # ASCII printable characters
             maxLength: 80
+            pattern: ^[ -~ ]*$
+    UpdateRequestDto:
+      type: object
+      properties:
+        groups:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            # ASCII printable characters
+            maxLength: 39
             pattern: ^[ -~ ]*$
     SearchMandateRequestDto:
       type: object

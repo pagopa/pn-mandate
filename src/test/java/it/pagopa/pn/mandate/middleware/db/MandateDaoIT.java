@@ -204,6 +204,7 @@ public class MandateDaoIT {
         m.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
         m.setValidationcode("12345");
         m.setVisibilityIds(null);
+        m.setAccepted(Instant.now().minus(Duration.ofDays(5)));
         return m;
     }
 

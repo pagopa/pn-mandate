@@ -3,9 +3,9 @@ package it.pagopa.pn.mandate.middleware.msclient;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.ApiClient;
-import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.api.InfoPaApi;
-import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto.PaSummaryDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.api.InfoPaApi;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.ApiClient;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 

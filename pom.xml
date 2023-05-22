@@ -31,7 +31,7 @@
 		<dependency>
 			<groupId>it.pagopa.pn</groupId>
 			<artifactId>pn-model</artifactId>
-			<version>2.0.0</version>
+			<version>2.1.0-SNAPSHOT</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/io.swagger/swagger-annotations -->
@@ -214,10 +214,10 @@
 							<reactive>true</reactive>
 							<skipDefaultInterface>false</skipDefaultInterface>
 							<useTags>true</useTags>
-							<basePackage>${project.groupId}.mandate.rest.mandate.v1</basePackage>
-							<modelPackage>${project.groupId}.mandate.rest.mandate.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.rest.mandate.v1.api</apiPackage>
-							<configPackage>${project.groupId}.mandate.rest.mandate.v1.config</configPackage>
+							<basePackage>${project.groupId}.mandate.generated.openapi.server.v1</basePackage>
+							<modelPackage>${project.groupId}.mandate.generated.openapi.server.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.generated.openapi.server.v1.api</apiPackage>
+							<configPackage>${project.groupId}.mandate.generated.openapi.server.v1.config</configPackage>
 							</configOptions>				
 						</configuration>
 					</execution>
@@ -240,8 +240,8 @@
                                 <swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
-							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.selfcare.v1.api</apiPackage>
+							<modelPackage>${project.groupId}.mandate.generated.openapi.msclient.extregselfcare.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.generated.openapi.msclient.extregselfcare.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
 					</execution>
@@ -264,8 +264,8 @@
 								<swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
-							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.prvt.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.prvt.v1.api</apiPackage>
+							<modelPackage>${project.groupId}.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.generated.openapi.msclient.extregselfcaregroups.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
 					</execution>
@@ -288,8 +288,8 @@
                                 <swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
-							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.datavault.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.datavault.v1.api</apiPackage>
+							<modelPackage>${project.groupId}.mandate.generated.openapi.msclient.datavault.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.generated.openapi.msclient.datavault.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
 					</execution>					

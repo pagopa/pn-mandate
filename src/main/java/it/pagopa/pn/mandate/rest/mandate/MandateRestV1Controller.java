@@ -1,8 +1,8 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
-import it.pagopa.pn.mandate.rest.mandate.v1.api.MandateServiceApi;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.api.MandateServiceApi;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;

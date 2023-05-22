@@ -4,10 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.prvt.v1.dto.PgGroupDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.PnLastEvaluatedKey;
@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.Set;
 
 import it.pagopa.pn.mandate.model.PageResultDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.GroupDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.GroupDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.OrganizationIdDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.UserDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

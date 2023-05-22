@@ -2,7 +2,7 @@ package it.pagopa.pn.mandate.utils;
 
 import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.CxTypeAuthFleet;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -2,7 +2,7 @@ package it.pagopa.pn.mandate.mapper;
 
 import java.util.NoSuchElementException;
 
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
 
 /**
  * Mappa lo stato da StatusEnum, Stringa o valore intero ad uno degli altri tipi.

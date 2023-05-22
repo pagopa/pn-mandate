@@ -2,7 +2,7 @@ package it.pagopa.pn.mandate.rest.mandate;
 
 import it.pagopa.pn.mandate.mapper.MandateEntityInternalMandateDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.InternalMandateDto;
 import it.pagopa.pn.mandate.services.mandate.v1.MandatePrivateService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

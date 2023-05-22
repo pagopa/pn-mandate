@@ -40,7 +40,8 @@ public class ExpiredMandatesHandler {
 
                 MDC.put(MDCUtils.MDC_PN_CTX_MANDATEID, payload.getMandateId());
 
-                MDCUtils.addMDCToContextAndExecute(mandateService.expireMandate(payload.getMandateId(), payload.getDelegatorInternalUserid(), payload.getDelegatorUserid(), payload.getDelegatorCxType())).block();
+                MDCUtils.addMDCToContextAndExecute(mandateService.expireMandate(payload.getMandateId(),
+                        payload.getDelegatorInternalUserid(), payload.getDelegatorUserid(), payload.getDelegatorCxType())).block();
                 log.logEndingProcess(process);
             }
             catch (Exception ex) {

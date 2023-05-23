@@ -51,8 +51,6 @@ public class PnEventInboundService {
         String eventType = (String) message.getHeaders().get("eventType");
         log.info("Message received from customRouter with eventType = {}", eventType );
 
-        return "pnMandateExpiredMandatesConsumer";
-        /*
         if(eventType != null) {
             String handlerName = eventHandler.getHandler().get(eventType);
             if (!StringUtils.hasText(handlerName)) {
@@ -67,7 +65,6 @@ public class PnEventInboundService {
             log.error("eventType not present, cannot start scheduled action headers={} payload={}", message.getHeaders(), message.getPayload());
             throw new PnInternalException("eventType not present, cannot start scheduled action", ERROR_CODE_MANDATE_INVALID_MESSAGE_HEADERS);
         }
-*/
     }
 
 }

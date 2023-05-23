@@ -2,7 +2,6 @@ package it.pagopa.pn.mandate.middleware.msclient;
 
 
 import it.pagopa.pn.commons.log.PnLogger;
-import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.api.MandatesApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.api.RecipientsApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
@@ -20,7 +19,7 @@ import java.util.List;
  */
 @Component
 @lombok.CustomLog
-public class PnDataVaultClient extends CommonBaseClient {
+public class PnDataVaultClient {
     
     private final RecipientsApi recipientsApi;
     private final MandatesApi mandatesApi;

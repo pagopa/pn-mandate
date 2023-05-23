@@ -1,7 +1,6 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
 import it.pagopa.pn.commons.log.PnLogger;
-import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.api.InternalOnlyApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
 import org.springframework.stereotype.Component;
@@ -9,7 +8,7 @@ import reactor.core.publisher.Flux;
 
 @Component
 @lombok.CustomLog
-public class PnExtRegPrvtClient extends CommonBaseClient {
+public class PnExtRegPrvtClient {
 
     private final InternalOnlyApi internalApi;
 

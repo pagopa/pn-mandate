@@ -200,7 +200,7 @@
 							<inputSpec>${project.basedir}/docs/openapi/pn-mandate-internal.yaml</inputSpec>
 							<generatorName>spring</generatorName>
               				<library>spring-boot</library>
-							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates</templateDirectory>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0</templateDirectory>
 							<generateApiDocumentation>false</generateApiDocumentation>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
@@ -232,7 +232,7 @@
 							<generatorName>java</generatorName>
                 			<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
-							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates</templateDirectory>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>
@@ -256,7 +256,7 @@
 							<generatorName>java</generatorName>
 							<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
-							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates</templateDirectory>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>
@@ -280,7 +280,7 @@
 							<generatorName>java</generatorName>
                 			<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
-							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates</templateDirectory>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>

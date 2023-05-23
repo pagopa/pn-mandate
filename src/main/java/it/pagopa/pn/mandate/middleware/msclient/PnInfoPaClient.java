@@ -1,7 +1,6 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
 import it.pagopa.pn.commons.log.PnLogger;
-import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.api.InfoPaApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import org.springframework.stereotype.Component;
@@ -11,7 +10,7 @@ import java.util.List;
 
 @Component
 @lombok.CustomLog
-public class PnInfoPaClient extends CommonBaseClient {
+public class PnInfoPaClient {
 
     private final InfoPaApi infoPaApi;
 

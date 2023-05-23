@@ -38,7 +38,7 @@ public class PnEventInboundService {
 
                 traceId = Objects.requireNonNullElseGet(messageId, () -> "traceId:" + UUID.randomUUID());
 
-                MDC.put(MDCWebFilter.MDC_TRACE_ID_KEY, traceId);
+                MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
                 MDC.put(MDCUtils.MDC_PN_CTX_MESSAGE_ID, messageId);
                 return new FunctionRoutingResult(handleMessage(message));
             }

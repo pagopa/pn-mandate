@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class ClientBeans  extends CommonBaseClient {
+public class MsClientConfig extends CommonBaseClient {
 
     @Bean
     public RecipientsApi getRecipientsApi(PnMandateConfig mandateConfig) {

@@ -39,6 +39,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static it.pagopa.pn.commons.log.MDCWebFilter.*;
+import static it.pagopa.pn.commons.utils.MDCUtils.*;
 import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 
 @Repository
@@ -46,7 +47,6 @@ import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 @Import(PnAuditLogBuilder.class)
 public class MandateDao extends BaseDao {
 
-    public static final String AUDITLOG_MANDATEID = "mandateid";
 
     private static final int MAX_DYNAMODB_BATCH_SIZE = 100;
 
@@ -315,7 +315,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("acceptMandate for delegate uid=%s mandateid=%s verificationCode=%s", delegateInternaluserid, mandateId, verificationCode); 
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
-                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
                 .build();
 
         logEvent.log();
@@ -404,7 +404,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("rejectMandate for delegate uid=%s mandateid=%s", delegateInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REJECT, logMessage)
-                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
                 .build();
         logEvent.log();
 
@@ -454,7 +454,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("revokeMandate for delegate uid=%s mandateid=%s", delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
-                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
                 .build();
 
         logEvent.log();
@@ -509,7 +509,7 @@ public class MandateDao extends BaseDao {
                 .mdcEntry(MDC_CX_ID_KEY, delegatorInternaluserid)
                 .mdcEntry(MDC_PN_UID_KEY, delegatorUid)
                 .mdcEntry(MDC_PN_CX_TYPE_KEY, cxType)
-                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
                 .build();
 
         logEvent.log();
@@ -549,7 +549,7 @@ public class MandateDao extends BaseDao {
                                 log.info("no current mandate for delegator-delegate pair, can proceed to create mandate");
                                 PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                                         .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
-                                        .mdcEntry(AUDITLOG_MANDATEID, mandate.getMandateId())
+                                        .mdcEntry(MDC_PN_MANDATEID_KEY, mandate.getMandateId())
                                         .build();
 
                                 logEvent.log();

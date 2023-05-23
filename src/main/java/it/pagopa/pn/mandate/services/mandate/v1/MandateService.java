@@ -8,6 +8,8 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseReci
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
@@ -18,8 +20,6 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import it.pagopa.pn.mandate.utils.PgUtils;
@@ -406,7 +406,6 @@ public class MandateService {
      * @return void
      */
     public Mono<Object> revokeMandate(String mandateId, String internalUserId, CxTypeAuthFleet pnCxType, String pnCxRole, List<String> pnCxGroups) {
-        log.info("test1");
         if (mandateId == null) {
             return Mono.error(new PnMandateNotFoundException());
         }

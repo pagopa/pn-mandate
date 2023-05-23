@@ -462,6 +462,7 @@ public class MandateDao extends BaseDao {
                 .thenCompose(mandate -> {
                             if (mandate == null)
                             {
+                                log.error("mandate not found");
                                 logEvent.generateFailure(String.format("revokeMandate skipped, mandate not found mandateid=%s", mandateId)).log();
                                 return CompletableFuture.completedFuture(mandate);
                             }

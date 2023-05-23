@@ -36,8 +36,8 @@ public class MandateRestV1Controller  implements MandateServiceApi {
 
         MDC.put(MDCUtils.MDC_PN_MANDATEID_KEY, mandateId);
 
-        return  mandateService.acceptMandate(mandateId, acceptRequestDto, xPagopaPnCxId, xPagopaPnCxType, cxGroups, cxRole)
-                    .thenReturn(ResponseEntity.noContent().build());
+        return MDCUtils.addMDCToContextAndExecute(mandateService.acceptMandate(mandateId, acceptRequestDto, xPagopaPnCxId, xPagopaPnCxType, cxGroups, cxRole)
+                    .thenReturn(ResponseEntity.noContent().build()));
 
     }
 
@@ -63,8 +63,7 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                           Mono<MandateDto> mandateDto,
                                                           final ServerWebExchange exchange) {
 
-
-        return  mandateService.createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, groups, role)
+        return mandateService.createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, groups, role)
                     .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m));
     }
 
@@ -115,10 +114,9 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                     String xPagopaPnCxRole,
                                                     ServerWebExchange exchange) {
 
-        MDC.put(MDCUtils.MDC_PN_MANDATEID_KEY, mandateId);
-
-        return mandateService.rejectMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
-                .thenReturn(ResponseEntity.noContent().build());
+        MDC.put( MDCUtils.MDC_PN_MANDATEID_KEY, mandateId);
+        return MDCUtils.addMDCToContextAndExecute(mandateService.rejectMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+                .thenReturn(ResponseEntity.noContent().build()));
     }
 
     @Override
@@ -130,9 +128,9 @@ public class MandateRestV1Controller  implements MandateServiceApi {
                                                     ServerWebExchange exchange) {
 
 
-        MDC.put(MDCUtils.MDC_PN_MANDATEID_KEY, mandateId);
-        return mandateService.revokeMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
-                .thenReturn(ResponseEntity.noContent().build());
+        MDC.put( MDCUtils.MDC_PN_MANDATEID_KEY, mandateId);
+        return MDCUtils.addMDCToContextAndExecute(mandateService.revokeMandate(mandateId, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+                .thenReturn(ResponseEntity.noContent().build()));
 
     }
 

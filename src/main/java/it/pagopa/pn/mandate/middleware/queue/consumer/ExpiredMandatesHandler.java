@@ -35,8 +35,8 @@ public class ExpiredMandatesHandler {
             String process = "expired mandate cleanup";
             try {
                 log.logStartingProcess(process);
-                log.debug("pnMandateExpiredMandatesConsumer, message {}", message);
                 PnMandateExpiredEvent.Payload payload = message.getPayload();
+                log.debug("pnMandateExpiredMandatesConsumer, payload {}", payload);
 
                 MDC.put(MDCUtils.MDC_PN_MANDATEID_KEY, payload.getMandateId());
 

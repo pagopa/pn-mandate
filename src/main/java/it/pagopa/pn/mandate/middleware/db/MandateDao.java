@@ -339,7 +339,7 @@ public class MandateDao extends BaseDao {
         String logMessage = String.format("updateMandate for delegate uid=%s mandateId=%s", delegateId, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_UPDATE, logMessage)
-                .mdcEntry(AUDITLOG_MANDATEID, mandateId)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
                 .build();
         logEvent.log();
         return retrieveMandateForDelegate(delegateId, mandateId)

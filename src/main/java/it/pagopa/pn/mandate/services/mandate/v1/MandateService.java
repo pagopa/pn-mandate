@@ -21,8 +21,6 @@ import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.PageResultDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import it.pagopa.pn.mandate.utils.PgUtils;
@@ -333,7 +331,7 @@ public class MandateService {
                                     .build();
                             searchDto.setMaxPageNumber(pnMandateConfig.getMaxPageSize());
                             searchDto.setGroups(PgUtils.getGroupsForSecureFilter(request.getGroups(), cxGroups));
-                            validateInput(searchDto);
+                            validateUtils.validateSearchRequest(searchDto);
                             log.debug("searchByDelegate filters: {}", searchDto);
                             return searchDto;
                         })
@@ -526,4 +524,19 @@ public class MandateService {
         return null;
     }
 
+
+    private Mono<List<String>> getInternalIdFromTaxId(String taxId) {
+        if (StringUtils.hasText(taxId)) {
+            if(taxId.length() == 11){
+                return this.pnDatavaultClient.ensureRecipientByExternalId(false, taxId)
+                        .map(Collections::singletonList);
+            }else{
+                return this.pnDatavaultClient.ensureRecipientByExternalId(true, taxId)
+                        .concatWith(this.pnDatavaultClient.ensureRecipientByExternalId(false, taxId))
+                        .collectList();
+            }
+        } else {
+            return Mono.just(Collections.emptyList());
+        }
+    }
 }

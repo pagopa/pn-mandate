@@ -1,43 +1,34 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
-import it.pagopa.pn.commons.pnclients.CommonBaseClient;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.ApiClient;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.MandatesApi;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.RecipientsApi;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.*;
+
+import it.pagopa.pn.commons.log.PnLogger;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.api.MandatesApi;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.api.RecipientsApi;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.DenominationDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.RecipientTypeDto;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 /**
  * Classe wrapper di pn-data-vault, con gestione del backoff
  */
 @Component
-public class PnDataVaultClient extends CommonBaseClient {
+@lombok.CustomLog
+public class PnDataVaultClient {
     
-    private RecipientsApi recipientsApi;
-    private MandatesApi mandatesApi;
-    private final PnMandateConfig pnMandateConfig;
+    private final RecipientsApi recipientsApi;
+    private final MandatesApi mandatesApi;
 
-    public PnDataVaultClient(PnMandateConfig pnMandateConfig) {
-        this.pnMandateConfig = pnMandateConfig;
+    public PnDataVaultClient(RecipientsApi recipientsApi, MandatesApi mandatesApi) {
+        this.recipientsApi = recipientsApi;
+        this.mandatesApi = mandatesApi;
     }
 
-    @PostConstruct
-    public void init(){
-
-        ApiClient newApiClient = new ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
-        newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
-        this.recipientsApi = new RecipientsApi(newApiClient);
-
-        newApiClient = new ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
-        newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
-        this.mandatesApi = new MandatesApi(newApiClient);
-    }
 
     /**
      * Ritorna una lista di nominativi in base alla lista di iuid passati
@@ -47,7 +38,9 @@ public class PnDataVaultClient extends CommonBaseClient {
      */
     public Flux<BaseRecipientDtoDto> getRecipientDenominationByInternalId(List<String> internalIds)
     {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Opaque Ids Resolution");
         return recipientsApi.getRecipientDenominationByInternalId(internalIds);
+            
     }
 
     /**
@@ -58,7 +51,9 @@ public class PnDataVaultClient extends CommonBaseClient {
      */
     public Mono<String> ensureRecipientByExternalId(boolean isPerson, String fiscalCode)
     {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Opaque Id Creation");
         return recipientsApi.ensureRecipientByExternalId(isPerson?RecipientTypeDto.PF:RecipientTypeDto.PG, fiscalCode);
+            
     }
 
     /**
@@ -72,12 +67,15 @@ public class PnDataVaultClient extends CommonBaseClient {
      */
     public Mono<String> updateMandateById(String mandateId, String name, String surname, String businessName)
     {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Securing mandate info");
+
         DenominationDtoDto addressdto = new DenominationDtoDto();
         addressdto.setDestName(name);
         addressdto.setDestSurname(surname);
         addressdto.setDestBusinessName(businessName);
         return mandatesApi.updateMandateById(mandateId, addressdto)
                 .then(Mono.just("OK"));
+
     }
 
     /**
@@ -88,6 +86,7 @@ public class PnDataVaultClient extends CommonBaseClient {
      */
     public Mono<Void> deleteMandateById(String mandateId)
     {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Removing mandate info");
         return mandatesApi.deleteMandateById(mandateId);
     }
 
@@ -97,7 +96,8 @@ public class PnDataVaultClient extends CommonBaseClient {
      * @return lista userinfo deleghe
      */
     public Flux<MandateDtoDto> getMandatesByIds(List<String> mandateIds)
-    {                
+    {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Retrieving mandate info");
         return mandatesApi.getMandatesByIds(mandateIds);
     }
 

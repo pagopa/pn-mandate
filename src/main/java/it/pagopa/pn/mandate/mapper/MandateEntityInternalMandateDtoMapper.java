@@ -1,7 +1,7 @@
 package it.pagopa.pn.mandate.mapper;
 
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.InternalMandateDto;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

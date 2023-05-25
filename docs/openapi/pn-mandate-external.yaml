@@ -123,13 +123,9 @@ paths:
         - mandate-service
       summary: Update a mandate
       operationId: updateMandate
-      #      security:                                                                # ONLY EXTERNAL
-      #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
+      security:                                                                # ONLY EXTERNAL
+        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
       parameters:
-        - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
-        - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
         - name: mandateId
           in: path
           required: true

@@ -3,11 +3,13 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.api.dto.events.*;
+import it.pagopa.pn.api.dto.events.EventPublisher;
+import it.pagopa.pn.api.dto.events.EventType;
+import it.pagopa.pn.api.dto.events.GenericEventHeader;
+import it.pagopa.pn.api.dto.events.PnMandateEvent;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.utils.SetUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -23,7 +25,7 @@ import java.util.Map;
 
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_JSON_PROCESSING_SQS_SERVICE;
 
-@Slf4j
+@lombok.CustomLog
 @Component
 public class SqsService {
 
@@ -46,6 +48,8 @@ public class SqsService {
     }
 
     public Mono<SendMessageResponse> sendToDelivery(MandateEntity oldEntity, MandateEntity newEntity, EventType eventType) {
+        log.debug("Inserting data {} in SQS {}", newEntity, toDeliveryQueueName);
+
         log.debug("get queue url request from queue name: {}", toDeliveryQueueName);
         GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
                 .queueName(toDeliveryQueueName)
@@ -76,7 +80,7 @@ public class SqsService {
         log.debug("SendMessageRequest: {}", sendMsgRequest);
 
         return Mono.fromCallable(() -> sqsClient.sendMessage(sendMsgRequest))
-                .doOnNext(s -> log.info("Sent message to queue for update groups of Mandate: {}", newEntity.getMandateId()));
+                .doOnNext(m -> log.info("Inserted data in SQS {}", toDeliveryQueueName));
     }
 
     private Map<String, MessageAttributeValue> buildMessageAttributeMap(String eventId, EventType eventType) {

@@ -4,13 +4,13 @@ import it.pagopa.pn.api.dto.events.EventType;
 import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.*;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.DenominationDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.RecipientTypeDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.RecipientTypeDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
@@ -19,14 +19,16 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.PageResultDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -54,7 +56,6 @@ class MandateServiceTest {
 
     private static final String PG_ADMIN_ROLE = "admin";
 
-    @InjectMocks
     private MandateService mandateService;
 
     @Mock
@@ -78,6 +79,7 @@ class MandateServiceTest {
     @Mock
     private ValidateUtils validateUtils;
 
+
     @Mock
     private SqsService sqsService;
 
@@ -86,6 +88,13 @@ class MandateServiceTest {
 
     @Mock
     private MandateSearchService mandateSearchService;
+
+    @BeforeEach
+    public void init() {
+        MockitoAnnotations.openMocks(this);
+        MandateValidationUtils mandateValidationUtils = Mockito.spy(new MandateValidationUtils(validateUtils));
+        mandateService = new MandateService(mandateDao, delegateDao, mapper, userEntityMandateCountsDtoMapper, pnInfoPaClient, pnDatavaultClient, sqsService, mandateValidationUtils, mandateSearchService, pnMandateConfig);
+    }
 
     @Test
     void updateMandatePGNotAuthorized() {
@@ -329,7 +338,8 @@ class MandateServiceTest {
         when(userEntityMandateCountsDtoMapper.toDto(Mockito.same(delegateEntity))).thenReturn(dto);
 
         //When
-        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mandateService.countMandatesByDelegate(null, "fake", CxTypeAuthFleet.PF, null, null));
+        Mono<MandateCountsDto> mono = mandateService.countMandatesByDelegate(null, "fake", CxTypeAuthFleet.PF, null, null);
+        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mono.block());
 
     }
 
@@ -346,7 +356,8 @@ class MandateServiceTest {
 
         //When
         String status = MandateDto.StatusEnum.ACTIVE.getValue();
-        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mandateService.countMandatesByDelegate(status, "fake", CxTypeAuthFleet.PF, null, null));
+        Mono<MandateCountsDto> mono = mandateService.countMandatesByDelegate(status, "fake", CxTypeAuthFleet.PF, null, null);
+        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mono.block());
 
     }
 
@@ -1238,7 +1249,8 @@ class MandateServiceTest {
 
         //When
         String delegate = mandateEntity.getDelegate();
-        assertThrows(PnMandateNotFoundException.class, () -> mandateService.rejectMandate(null, delegate, CxTypeAuthFleet.PF, null, null));
+        Mono<Void> mono = mandateService.rejectMandate(null, delegate, CxTypeAuthFleet.PF, null, null);
+        assertThrows(PnMandateNotFoundException.class, () -> mono.block());
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -1310,7 +1322,8 @@ class MandateServiceTest {
 
         //When
         String delegator = mandateEntity.getDelegator();
-        assertThrows(PnMandateNotFoundException.class, () -> mandateService.revokeMandate(null, delegator, CxTypeAuthFleet.PF, null, null));
+        Mono<Object> mono = mandateService.revokeMandate(null, delegator, CxTypeAuthFleet.PF, null, null);
+        assertThrows(PnMandateNotFoundException.class, () -> mono.block());
 
         //Then
         // nothing, basta che non ci sia eccezione

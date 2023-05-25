@@ -1,6 +1,6 @@
 package it.pagopa.pn.mandate.mapper;
 
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

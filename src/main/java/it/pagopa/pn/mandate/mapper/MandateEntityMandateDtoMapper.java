@@ -1,10 +1,10 @@
 package it.pagopa.pn.mandate.mapper;
 
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.GroupDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.OrganizationIdDto;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.UserDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.GroupDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.OrganizationIdDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.UserDto;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;

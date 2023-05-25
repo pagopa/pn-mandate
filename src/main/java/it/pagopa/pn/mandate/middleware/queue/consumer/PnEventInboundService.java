@@ -2,8 +2,8 @@ package it.pagopa.pn.mandate.middleware.queue.consumer;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.MDCWebFilter;
+import it.pagopa.pn.commons.utils.MDCUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.cloud.function.context.MessageRoutingCallback;
 import org.springframework.context.annotation.Bean;
@@ -12,13 +12,14 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.util.StringUtils;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_HANDLER_NOT_PRESENT;
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_INVALID_MESSAGE_HEADERS;
 
 @Configuration
-@Slf4j
+@lombok.CustomLog
 @RequiredArgsConstructor
 public class PnEventInboundService {
 
@@ -29,14 +30,20 @@ public class PnEventInboundService {
             @Override
             public FunctionRoutingResult routingResult(Message<?> message) {
                 MessageHeaders messageHeaders = message.getHeaders();
-                String traceId = "";
+
+                String traceId = null;
+                String messageId = null;
 
                 if (messageHeaders.containsKey("aws_messageId"))
-                    traceId = messageHeaders.get("aws_messageId", String.class);
-                else
-                    traceId = "traceId:" + UUID.randomUUID();
+                    messageId = messageHeaders.get("aws_messageId", String.class);
+                if (messageHeaders.containsKey("X-Amzn-Trace-Id"))
+                    traceId = messageHeaders.get("X-Amzn-Trace-Id", String.class);
 
-                MDC.put(MDCWebFilter.MDC_TRACE_ID_KEY, traceId);
+                traceId = Objects.requireNonNullElseGet(traceId, () -> "traceId:" + UUID.randomUUID());
+
+                MDCUtils.clearMDCKeys();
+                MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
+                MDC.put(MDCUtils.MDC_PN_CTX_MESSAGE_ID, messageId);
                 return new FunctionRoutingResult(handleMessage(message));
             }
         };
@@ -46,6 +53,7 @@ public class PnEventInboundService {
         log.debug("Message received from customRouter {}", message);
         String eventType = (String) message.getHeaders().get("eventType");
         log.info("Message received from customRouter with eventType = {}", eventType );
+
         if(eventType != null) {
             String handlerName = eventHandler.getHandler().get(eventType);
             if (!StringUtils.hasText(handlerName)) {
@@ -60,7 +68,6 @@ public class PnEventInboundService {
             log.error("eventType not present, cannot start scheduled action headers={} payload={}", message.getHeaders(), message.getPayload());
             throw new PnInternalException("eventType not present, cannot start scheduled action", ERROR_CODE_MANDATE_INVALID_MESSAGE_HEADERS);
         }
-
     }
 
 }

@@ -136,6 +136,24 @@
 				</configuration>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.1.2</version>
+				<executions>
+					<execution>
+						<id>unpack-dependencies</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>unpack-dependencies</goal>
+						</goals>
+						<configuration>
+							<includeArtifactIds>pn-commons</includeArtifactIds>
+							<outputDirectory>${project.build.directory}/dependency-resources</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>3.1.0</version>
 				<executions>
@@ -177,11 +195,12 @@
 						<goals>
 							<goal>generate</goal>
 						</goals>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<inputSpec>${project.basedir}/docs/openapi/pn-mandate-internal.yaml</inputSpec>
 							<generatorName>spring</generatorName>
               				<library>spring-boot</library>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/server</templateDirectory>
 							<generateApiDocumentation>false</generateApiDocumentation>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
@@ -195,10 +214,10 @@
 							<reactive>true</reactive>
 							<skipDefaultInterface>false</skipDefaultInterface>
 							<useTags>true</useTags>
-							<basePackage>${project.groupId}.mandate.rest.mandate.v1</basePackage>
-							<modelPackage>${project.groupId}.mandate.rest.mandate.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.rest.mandate.v1.api</apiPackage>
-							<configPackage>${project.groupId}.mandate.rest.mandate.v1.config</configPackage>
+							<basePackage>${project.groupId}.mandate.generated.openapi.server.v1</basePackage>
+							<modelPackage>${project.groupId}.mandate.generated.openapi.server.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.generated.openapi.server.v1.api</apiPackage>
+							<configPackage>${project.groupId}.mandate.generated.openapi.server.v1.config</configPackage>
 							</configOptions>				
 						</configuration>
 					</execution>
@@ -207,12 +226,13 @@
 						<goals>
 							<goal>generate</goal> 
 						</goals>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
-							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-external-registries/5f6f31f804acdbec1a050d0462ae54d55dd6f974/docs/openapi/pn-selfcare-internal-v1.yaml</inputSpec>
+							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-external-registries/7eb17aae8cc15e852768ec43fd4f2e383ccd5b46/docs/openapi/pn-selfcare-internal-v1.yaml</inputSpec>
 							<generatorName>java</generatorName>
                 			<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>
@@ -220,8 +240,8 @@
                                 <swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
-							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.selfcare.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.selfcare.v1.api</apiPackage>
+							<modelPackage>${project.groupId}.mandate.generated.openapi.msclient.extregselfcare.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.generated.openapi.msclient.extregselfcare.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
 					</execution>
@@ -230,12 +250,13 @@
 						<goals>
 							<goal>generate</goal>
 						</goals>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
-							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-external-registries/faf040a52351a0208340b8ed0188e3727d7beb3a/docs/openapi/api-private-v1.yaml</inputSpec>
+							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-external-registries/7eb17aae8cc15e852768ec43fd4f2e383ccd5b46/docs/openapi/api-private-v1.yaml</inputSpec>
 							<generatorName>java</generatorName>
 							<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>
@@ -243,8 +264,8 @@
 								<swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
-							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.prvt.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.extreg.prvt.v1.api</apiPackage>
+							<modelPackage>${project.groupId}.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.generated.openapi.msclient.extregselfcaregroups.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
 					</execution>
@@ -253,12 +274,13 @@
 						<goals>
 							<goal>generate</goal> 
 						</goals>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
-							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-data-vault/647830b82cd7ee9f43dd5b4f6b10a17e50d6da12/docs/openapi/pn-datavault-api-v1.yaml</inputSpec>
+							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-data-vault/1c1bcaef3837a15f866596a6d9af94e3978805ff/docs/openapi/pn-datavault-api-v1.yaml</inputSpec>
 							<generatorName>java</generatorName>
                 			<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>
@@ -266,8 +288,8 @@
                                 <swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
-							<modelPackage>${project.groupId}.mandate.microservice.msclient.generated.datavault.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.microservice.msclient.generated.datavault.v1.api</apiPackage>
+							<modelPackage>${project.groupId}.mandate.generated.openapi.msclient.datavault.v1.dto</modelPackage>
+							<apiPackage>${project.groupId}.mandate.generated.openapi.msclient.datavault.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
 					</execution>					

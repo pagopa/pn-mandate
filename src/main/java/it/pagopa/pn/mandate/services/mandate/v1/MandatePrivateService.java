@@ -1,24 +1,25 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
+import it.pagopa.pn.mandate.mapper.MandateEntityInternalMandateDtoMapper;
+import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
+import it.pagopa.pn.mandate.middleware.db.MandateDao;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.DelegateType;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.InternalMandateDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateByDelegatorRequestDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
+import it.pagopa.pn.mandate.utils.PgUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+import reactor.core.publisher.Flux;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
-import it.pagopa.pn.mandate.utils.PgUtils;
-import org.springframework.stereotype.Service;
-
-import it.pagopa.pn.mandate.mapper.MandateEntityInternalMandateDtoMapper;
-import it.pagopa.pn.mandate.middleware.db.MandateDao;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.CollectionUtils;
-import reactor.core.publisher.Flux;
-
 @Service
-@Slf4j
+@lombok.CustomLog
 public class MandatePrivateService {
 
 

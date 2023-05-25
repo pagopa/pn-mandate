@@ -1,8 +1,7 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateDtoDto;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -62,8 +61,8 @@ class PnDataVaultClientTest {
                         .withPath("/datavault-private/v1/recipients/internal"))
                 .respond(response()
                         .withBody("{" +
-                                "\"" + BaseRecipientDtoDto.JSON_PROPERTY_INTERNAL_ID + "\": " + "\"" + iuid + "\"," +
-                                "\"" + BaseRecipientDtoDto.JSON_PROPERTY_DENOMINATION + "\": " + "\"" + denominazione + "\"" +
+                                "\"" + "internalId" + "\": " + "\"" + iuid + "\"," +
+                                "\"" + "denomination" + "\": " + "\"" + denominazione + "\"" +
                                 "}")
                         .withContentType(MediaType.APPLICATION_JSON)
                         .withStatusCode(200));
@@ -165,11 +164,11 @@ class PnDataVaultClientTest {
                         .withPath("/datavault-private/v1/mandates"))
                 .respond(response()
                         .withBody("{" +
-                                "\"" + MandateDtoDto.JSON_PROPERTY_MANDATE_ID + "\": " + "\"" + mandateid + "\"," +
-                                "\"" + MandateDtoDto.JSON_PROPERTY_INFO + "\": " +
-                                "{" + "\"" + DenominationDtoDto.JSON_PROPERTY_DEST_NAME + "\": " + "\"" + name + "\"," +
-                                        "\"" + DenominationDtoDto.JSON_PROPERTY_DEST_SURNAME + "\": " + "\"" + surname + "\"," +
-                                        "\"" + DenominationDtoDto.JSON_PROPERTY_DEST_BUSINESS_NAME + "\": " + "\"" + ragionesociale + "\""
+                                "\"" + "mandateId" + "\": " + "\"" + mandateid + "\"," +
+                                "\"" + "info" + "\": " +
+                                "{" + "\"" + "destName" + "\": " + "\"" + name + "\"," +
+                                        "\"" + "destSurname" + "\": " + "\"" + surname + "\"," +
+                                        "\"" + "destBusinessName" + "\": " + "\"" + ragionesociale + "\""
                                 +"}" +
                                 "}")
                         .withContentType(MediaType.APPLICATION_JSON)

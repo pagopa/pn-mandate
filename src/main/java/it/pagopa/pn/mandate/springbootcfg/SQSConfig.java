@@ -8,7 +8,6 @@ import com.amazonaws.handlers.RequestHandler2;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 import it.pagopa.pn.commons.configs.aws.AwsConfigs;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
@@ -47,7 +46,7 @@ public class SQSConfig {
      *             .build();
      *
      */
-    @Slf4j
+    @lombok.CustomLog
     static class CustomAWSRequestHandler extends RequestHandler2 {
 
         @Override

@@ -1,10 +1,11 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
+import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -190,6 +191,50 @@ class MandateRestV1ControllerTest {
                 .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isNoContent();
+    }
+
+
+    @Test
+    void rejectMandate_fail() {
+        //Given
+        String url = "/mandate/api/v1/mandate/{mandateId}/reject"
+                .replace("{mandateId}", "123e4567-e89b-12d3-a456-426614174000");
+
+        //When
+        Mockito.when(mandateService.rejectMandate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.error(new PnMandateNotFoundException()));
+
+        //Then
+        webTestClient.patch()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                .header(PN_PAGOPA_CX_ID, "internaluserid1234")
+                .header(PN_PAGOPA_USER_ID, "userid")
+                .header(PN_PAGOPA_CX_TYPE, "PF")
+                .exchange()
+                .expectStatus().is4xxClientError();
+    }
+
+
+    @Test
+    void rejectMandate_fail1() {
+        //Given
+        String url = "/mandate/api/v1/mandate/{mandateId}/reject"
+                .replace("{mandateId}", "123e4567-e89b-12d3-a456-426614174000");
+
+        //When
+        Mockito.when(mandateService.rejectMandate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.error(new PnMandateNotFoundException()));
+
+        //Then
+        webTestClient.patch()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                .header(PN_PAGOPA_CX_ID, "internaluserid1234")
+                .header(PN_PAGOPA_USER_ID, "userid")
+                .header(PN_PAGOPA_CX_TYPE, "PF")
+                .exchange()
+                .expectStatus().is4xxClientError();
     }
 
     @Test

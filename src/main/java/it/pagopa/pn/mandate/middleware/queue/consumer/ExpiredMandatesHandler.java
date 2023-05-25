@@ -1,9 +1,10 @@
 package it.pagopa.pn.mandate.middleware.queue.consumer;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.mandate.middleware.queue.consumer.event.PnMandateExpiredEvent;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -11,7 +12,7 @@ import org.springframework.messaging.Message;
 import java.util.function.Consumer;
 
 @Configuration
-@Slf4j
+@lombok.CustomLog
 @RequiredArgsConstructor
 public class ExpiredMandatesHandler {
     private final MandateService mandateService;
@@ -31,14 +32,21 @@ public class ExpiredMandatesHandler {
     @Bean
     public Consumer<Message<PnMandateExpiredEvent.Payload>> pnMandateExpiredMandatesConsumer() {
         return message -> {
+            String process = "expired mandate cleanup";
             try {
-                log.info("[enter] pnMandateExpiredMandatesConsumer, message {}", message);
+                log.logStartingProcess(process);
                 PnMandateExpiredEvent.Payload payload = message.getPayload();
-                mandateService.expireMandate(payload.getMandateId(), payload.getDelegatorInternalUserid(), payload.getDelegatorUserid(), payload.getDelegatorCxType()).block();
-                log.info("[exit] pnMandateExpiredMandatesConsumer");
+                log.debug("pnMandateExpiredMandatesConsumer, payload {}", payload);
+
+                MDC.put(MDCUtils.MDC_PN_MANDATEID_KEY, payload.getMandateId());
+
+                MDCUtils.addMDCToContextAndExecute(mandateService.expireMandate(payload.getMandateId(),
+                        payload.getDelegatorInternalUserid(), payload.getDelegatorUserid(), payload.getDelegatorCxType())).block();
+                log.logEndingProcess(process);
             }
             catch (Exception ex) {
                 HandleEventUtils.handleException(message.getHeaders(), ex);
+                log.logEndingProcess(process, false, ex.getMessage());
                 throw ex;
             }
 

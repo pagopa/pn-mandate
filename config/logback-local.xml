@@ -6,7 +6,9 @@
             <pattern>%d [%X{trace_id}] %highlight(%-5level) - %-4relative - [%thread] - %cyan(%logger{20}) - %msg %n</pattern>
         </encoder>
     </appender>
-    <root level="info">
+    <logger name="it.pagopa.pn.commons.pnclients.RestTemplateRetryable" level="INFO" />
+    <logger name="it.pagopa.pn" level="DEBUG" />
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

@@ -6,13 +6,13 @@ import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.*;
-import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
-import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.DelegateType;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateByDelegatorRequestDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
+import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
@@ -37,7 +37,6 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import static it.pagopa.pn.commons.log.MDCWebFilter.*;
 import static it.pagopa.pn.commons.utils.MDCUtils.*;
 import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 

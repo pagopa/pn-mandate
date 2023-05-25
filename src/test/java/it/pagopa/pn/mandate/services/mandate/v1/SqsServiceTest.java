@@ -2,9 +2,9 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.api.dto.events.EventType;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;

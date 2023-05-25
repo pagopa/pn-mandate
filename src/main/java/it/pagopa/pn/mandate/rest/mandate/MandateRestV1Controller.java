@@ -42,6 +42,18 @@ public class MandateRestV1Controller  implements MandateServiceApi {
     }
 
     @Override
+    public Mono<ResponseEntity<Void>> updateMandate(String xPagopaPnCxId,
+                                                    CxTypeAuthFleet xPagopaPnCxType,
+                                                    String mandateId,
+                                                    List<String> xPagopaPnCxGroups,
+                                                    String xPagopaPnCxRole,
+                                                    Mono<UpdateRequestDto> updateRequestDto,
+                                                    ServerWebExchange exchange) {
+        return mandateService.updateMandate(xPagopaPnCxId, xPagopaPnCxType, mandateId, xPagopaPnCxGroups, xPagopaPnCxRole, updateRequestDto)
+            .then(Mono.just(ResponseEntity.noContent().build()));
+    }
+
+    @Override
     public Mono<ResponseEntity<MandateCountsDto>> countMandatesByDelegate(String xPagopaPnCxId,
                                                                           CxTypeAuthFleet xPagopaPnCxType,
                                                                           List<String> cxGroups,

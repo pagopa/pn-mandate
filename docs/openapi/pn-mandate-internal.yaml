@@ -287,6 +287,38 @@ paths:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
+  /mandate/api/v1/mandate/{mandateId}/update:
+    patch:
+      tags:
+        - mandate-service
+      summary: Update a mandate
+      operationId: updateMandate
+#      security:                                                                # ONLY EXTERNAL
+#        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
+      parameters:
+        - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'         # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
+        - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
+        - name: mandateId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRequestDto'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
   /mandate/api/v1/mandate/{mandateId}/reject:
     patch:
       tags:
@@ -386,7 +418,7 @@ paths:
     post:
       tags:
         - mandate-service
-      summary: Return filtered mandates based on status, groups and delegators (mandateIds)
+      summary: Return filtered mandates based on status, groups and delegators (taxId)
       operationId: searchMandatesByDelegate
 #      security:                                                                # ONLY EXTERNAL
 #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
@@ -630,16 +662,25 @@ components:
             # ASCII printable characters
             maxLength: 80
             pattern: ^[ -~ ]*$
-    SearchMandateRequestDto:
+    UpdateRequestDto:
       type: object
       properties:
-        mandateIds:
+        groups:
           type: array
+          maxItems: 10
           items:
             type: string
             # ASCII printable characters
             maxLength: 39
             pattern: ^[ -~ ]*$
+    SearchMandateRequestDto:
+      type: object
+      properties:
+        taxId:
+          type: string
+          minLength: 11
+          maxLength: 16
+          pattern: "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1}$|^(IT)?[0-9]{11}$"
         groups:
           type: array
           items:

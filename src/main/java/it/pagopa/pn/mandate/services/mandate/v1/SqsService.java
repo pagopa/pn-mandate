@@ -9,6 +9,7 @@ import it.pagopa.pn.api.dto.events.GenericEventHeader;
 import it.pagopa.pn.api.dto.events.PnMandateEvent;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
+import it.pagopa.pn.mandate.utils.SetUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -43,7 +44,11 @@ public class SqsService {
     }
 
     public Mono<SendMessageResponse> sendToDelivery(MandateEntity entity, EventType eventType) {
-        log.debug("Inserting data {} in SQS {}", entity, toDeliveryQueueName);
+        return sendToDelivery(null, entity, eventType);
+    }
+
+    public Mono<SendMessageResponse> sendToDelivery(MandateEntity oldEntity, MandateEntity newEntity, EventType eventType) {
+        log.debug("Inserting data {} in SQS {}", newEntity, toDeliveryQueueName);
 
         log.debug("get queue url request from queue name: {}", toDeliveryQueueName);
         GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
@@ -52,21 +57,24 @@ public class SqsService {
         String queueUrl = sqsClient.getQueueUrl(getQueueRequest).queueUrl();
         log.debug("Queue name: {}; Queue URL: {}.", toDeliveryQueueName, queueUrl);
 
-        String eventId = "mandate_"  + entity.getMandateId() + "_" + eventType;
-        PnMandateEvent.Payload msg = PnMandateEvent.Payload.builder()
-                .mandateId(entity.getMandateId())
-                .delegateId(entity.getDelegate())
-                .delegatorId(entity.getDelegator())
-                .visibilityIds(entity.getVisibilityIds())
-                .groups(entity.getGroups())
-                .validFrom(entity.getValidfrom())
-                .validTo(entity.getValidto())
-                .build();
+        String eventId = "mandate_"  + newEntity.getMandateId() + "_" + eventType;
+        PnMandateEvent.Payload.PayloadBuilder msg = PnMandateEvent.Payload.builder()
+                .mandateId(newEntity.getMandateId())
+                .delegateId(newEntity.getDelegate())
+                .delegatorId(newEntity.getDelegator())
+                .visibilityIds(newEntity.getVisibilityIds())
+                .groups(newEntity.getGroups())
+                .validFrom(newEntity.getValidfrom())
+                .validTo(newEntity.getValidto());
+        if (oldEntity != null && eventType == EventType.MANDATE_UPDATED) {
+            msg.addedGroups(SetUtils.getDiffFromSet1ToSet2(newEntity.getGroups(), oldEntity.getGroups()));
+            msg.removedGroups(SetUtils.getDiffFromSet1ToSet2(oldEntity.getGroups(), newEntity.getGroups()));
+        }
 
         SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
                 .queueUrl(queueUrl)
                 .messageAttributes(buildMessageAttributeMap(eventId, eventType))
-                .messageBody(toJson(msg))
+                .messageBody(toJson(msg.build()))
                 .build();
 
         log.debug("SendMessageRequest: {}", sendMsgRequest);

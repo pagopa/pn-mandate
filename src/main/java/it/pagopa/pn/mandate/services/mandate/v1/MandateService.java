@@ -20,6 +20,9 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
+import it.pagopa.pn.mandate.model.PageResultDto;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.*;
+import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import it.pagopa.pn.mandate.utils.PgUtils;
@@ -113,6 +116,29 @@ public class MandateService {
                 });
     }
 
+    public Mono<Void> updateMandate(String xPagopaPnCxId,
+                                             CxTypeAuthFleet xPagopaPnCxType,
+                                             String mandateId,
+                                             List<String> xPagopaPnCxGroups,
+                                             String xPagopaPnCxRole,
+                                             Mono<UpdateRequestDto> updateRequestDto) {
+        return validaAccessoOnlyAdmin(xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+                .flatMap(obj -> updateRequestDto)
+                .flatMap(request -> {
+                    log.info("updating mandate {}", mandateId);
+                    Set<String> groups = null;
+                    if (request.getGroups() != null && !request.getGroups().isEmpty()) {
+                        groups = new HashSet<>(request.getGroups());
+                    }
+                    return mandateDao.updateMandate(xPagopaPnCxId, mandateId, groups)
+                            .flatMap(tuple -> {
+                                if (Boolean.FALSE.equals(tuple.getT2().getDelegateisperson())) {
+                                    return sqsService.sendToDelivery(tuple.getT1(), tuple.getT2(), EventType.MANDATE_UPDATED).then();
+                                }
+                                return Mono.just(tuple.getT2()).then();
+                            });
+                });
+    }
 
     /**
      * Ritorna il numero di deleghe nello stato passato per il delegato
@@ -295,25 +321,34 @@ public class MandateService {
                                                            String cxRole) {
         return validaAccessoOnlyGroupAdmin(cxType, cxRole, cxGroups)
                 .flatMap(obj -> requestDto)
-                .map(request -> {
-                    List<Integer> statutes = convertStatusStringToInteger(request.getStatus());
-                    InputSearchMandateDto searchDto = InputSearchMandateDto.builder()
-                            .delegateId(cxId)
-                            .statuses(statutes)
-                            .mandateIds(request.getMandateIds())
-                            .size(size)
-                            .nextPageKey(nextPageKey)
-                            .build();
-                    searchDto.setMaxPageNumber(pnMandateConfig.getMaxPageSize());
-                    searchDto.setGroups(PgUtils.getGroupsForSecureFilter(request.getGroups(), cxGroups));
-                    validateUtils.validateSearchRequest(searchDto);
-                    log.debug("searchByDelegate filters: {}", searchDto);
-                    return searchDto;
-                })
-                .flatMap(searchDto -> {
-                    PnLastEvaluatedKey lastEvaluatedKey = convertLastEvaluatedKey(searchDto.getNextPageKey());
-                    return mandateSearchService.searchByDelegate(searchDto, lastEvaluatedKey);
-                })
+                .flatMap(request -> getInternalIdFromTaxId(request.getTaxId())
+                        .map(internalIds -> {
+                            List<Integer> statutes = convertStatusStringToInteger(request.getStatus());
+                            InputSearchMandateDto searchDto = InputSearchMandateDto.builder()
+                                    .delegateId(cxId)
+                                    .statuses(statutes)
+                                    .delegatorIds(internalIds)
+                                    .size(size)
+                                    .nextPageKey(nextPageKey)
+                                    .build();
+                            searchDto.setMaxPageNumber(pnMandateConfig.getMaxPageSize());
+                            searchDto.setGroups(PgUtils.getGroupsForSecureFilter(request.getGroups(), cxGroups));
+                            validateInput(searchDto);
+                            log.debug("searchByDelegate filters: {}", searchDto);
+                            return searchDto;
+                        })
+                        .flatMap(searchDto -> {
+                            if (StringUtils.hasText(request.getTaxId()) && searchDto.getDelegatorIds().isEmpty()) {
+                                // se ho passato un taxId e non ho trovato l'internalId corrispondente, ritorno una pagina vuota
+                                return Mono.just(PageResultDto.<MandateDto, String>builder()
+                                        .more(false)
+                                        .page(Collections.emptyList())
+                                        .nextPagesKey(Collections.emptyList())
+                                        .build());
+                            }
+                            PnLastEvaluatedKey lastEvaluatedKey = convertLastEvaluatedKey(searchDto.getNextPageKey());
+                            return mandateSearchService.searchByDelegate(searchDto, lastEvaluatedKey);
+                        }))
                 .map(result -> {
                     log.info("searchByDelegate size: {}, hasMore: {}, nextPagesKey: {}", result.getPage().size(), result.isMore(), result.getNextPagesKey());
                     SearchMandateResponseDto responseDto = new SearchMandateResponseDto();

@@ -85,6 +85,27 @@ class MandateRestV1ControllerTest {
                 .expectStatus().isNoContent();
     }
 
+    @Test
+    void updateMandate() {
+        //Given
+        String url = "/mandate/api/v1/mandate/{mandateId}/update"
+                .replace("{mandateId}", "123e4567-e89b-12d3-a456-426614174000");
+
+        //When
+        Mockito.when( mandateService.updateMandate( Mockito.any(), Mockito.any() , Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.empty());
+
+        //Then
+        webTestClient.patch()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                .header( PN_PAGOPA_CX_ID, "internaluserid1234")
+                .header( PN_PAGOPA_USER_ID, "userid")
+                .header( PN_PAGOPA_CX_TYPE, "PF")
+                .exchange()
+                .expectStatus().isNoContent();
+    }
+
 
     @Test
     void createMandate() {

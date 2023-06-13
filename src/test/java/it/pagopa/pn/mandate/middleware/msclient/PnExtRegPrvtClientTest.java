@@ -72,7 +72,7 @@ class PnExtRegPrvtClientTest {
                             .withStatusCode(200));
 
             // When
-            List<PgGroupDto> result = pnExtRegPrvtClient.getGroups("cx-id")
+            List<PgGroupDto> result = pnExtRegPrvtClient.getGroups("cx-id", false)
                     .collectList()
                     .block(Duration.ofMillis(3000));
 

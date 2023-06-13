@@ -3,6 +3,7 @@ package it.pagopa.pn.mandate.middleware.msclient;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.api.InternalOnlyApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupStatusDto;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -17,8 +18,8 @@ public class PnExtRegPrvtClient {
     }
 
 
-    public Flux<PgGroupDto> getGroups(String id) {
+    public Flux<PgGroupDto> getGroups(String id, boolean onlyActive) {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_EXTERNAL_REGISTRIES, "Retrieving PG groups");
-        return internalApi.getAllPgGroupsPrivate(id, null);
+        return internalApi.getAllPgGroupsPrivate(id, onlyActive? PgGroupStatusDto.ACTIVE:null);
     }
 }

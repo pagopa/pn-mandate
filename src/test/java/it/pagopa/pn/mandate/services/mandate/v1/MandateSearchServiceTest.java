@@ -30,6 +30,7 @@ import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.OrganizationIdDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.UserDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
@@ -94,7 +95,7 @@ class MandateSearchServiceTest {
         PgGroupDto pgGroupDto = new PgGroupDto();
         pgGroupDto.setId("pgGroupId");
         pgGroupDto.setName("pgGroupName");
-        when(pnExtRegPrvtClient.getGroups("delegateId"))
+        when(pnExtRegPrvtClient.getGroups("delegateId", false))
                 .thenReturn(Flux.just(pgGroupDto));
 
         MandateDto dto1 = new MandateDto();
@@ -156,7 +157,7 @@ class MandateSearchServiceTest {
         when(pnInfoPaClient.getManyPa(any()))
                 .thenReturn(Flux.empty());
 
-        when(pnExtRegPrvtClient.getGroups(any()))
+        when(pnExtRegPrvtClient.getGroups(any(), Mockito.eq(false)))
                 .thenReturn(Flux.empty());
 
         when(mandateEntityMandateDtoMapper.toDto(any()))
@@ -187,7 +188,7 @@ class MandateSearchServiceTest {
         when(mandateDao.searchByDelegate(anyString(), isNull(), any(), any(), anyInt(), any()))
                 .thenReturn(Mono.just(page));
 
-        when(pnExtRegPrvtClient.getGroups(any()))
+        when(pnExtRegPrvtClient.getGroups(any(), Mockito.eq(false)))
                 .thenReturn(Flux.empty());
 
         PageResultDto<MandateDto, String> resultDto = mandateSearchService.searchByDelegate(searchDto, lastEvaluatedKey)

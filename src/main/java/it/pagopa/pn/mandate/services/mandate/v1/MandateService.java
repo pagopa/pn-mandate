@@ -96,6 +96,7 @@ public class MandateService {
         return Mono.defer(() -> validaAccessoOnlyAdmin(xPagopaPnCxType, cxRole, cxGroups))
                 .flatMap(obj -> acceptRequestDto)
                 .map(m -> validateUtils.validateAcceptMandateRequest(mandateId, m))
+                .flatMap(m -> validateUtils.validatePGGroups(internaluserId, m.getGroups()).thenReturn(m))
                 .flatMap(m -> {
                     try {
                         if (log.isInfoEnabled())
@@ -122,6 +123,7 @@ public class MandateService {
                                              Mono<UpdateRequestDto> updateRequestDto) {
         return validaAccessoOnlyAdmin(xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
                 .flatMap(obj -> updateRequestDto)
+                .flatMap(m -> validateUtils.validatePGGroups(xPagopaPnCxId, m.getGroups()).thenReturn(m))
                 .flatMap(request -> {
                     log.info("updating mandate {}", mandateId);
                     Set<String> groups = null;

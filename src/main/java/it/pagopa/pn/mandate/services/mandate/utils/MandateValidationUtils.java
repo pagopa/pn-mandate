@@ -4,6 +4,8 @@ import it.pagopa.pn.commons.exceptions.ExceptionHelper;
 import it.pagopa.pn.commons.exceptions.dto.ProblemError;
 import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.exceptions.*;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
+import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.AcceptRequestDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
@@ -20,6 +22,7 @@ import javax.validation.ValidatorFactory;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.*;
 
@@ -34,9 +37,11 @@ public class MandateValidationUtils {
     private static final String DATE_TO = "dateTo";
 
     private final ValidateUtils validateUtils;
+    private final PnExtRegPrvtClient pnExtRegPrvtClient;
 
-    public MandateValidationUtils(ValidateUtils validateUtils) {
+    public MandateValidationUtils(ValidateUtils validateUtils, PnExtRegPrvtClient pnExtRegPrvtClient) {
         this.validateUtils = validateUtils;
+        this.pnExtRegPrvtClient = pnExtRegPrvtClient;
     }
 
 
@@ -52,6 +57,40 @@ public class MandateValidationUtils {
 
         log.logCheckingOutcome(process, true);
         return Mono.empty();
+    }
+
+    /**
+     * Il metodo si occoupa di validare i gruppi passati, ovvero che facciano parte della PG
+     * e che siano gruppi ATTIVI
+     *
+     * @param institutionId id della PG
+     * @param groups gruppo/i su da validare
+     * @return exception se alcuni gruppi non son validi
+     */
+    public Mono<Void> validatePGGroups(String institutionId, List<String> groups) {
+        String process = "validating group";
+        log.logChecking(process);
+
+        if (groups == null || groups.isEmpty()) {
+            log.logCheckingOutcome(process, true);
+            return Mono.empty();
+        }
+
+        return pnExtRegPrvtClient.getGroups(institutionId, true)
+                .collectMap(PgGroupDto::getId, Function.identity())
+                .flatMap(mapInstitutionActiveGroups -> {
+                    for (String group :
+                            groups) {
+
+                        if (!mapInstitutionActiveGroups.containsKey(group)) {
+                            log.logCheckingOutcome(process, false, "invalid group");
+                            return Mono.error(new PnInvalidGroupCodeException());
+                        }
+                    }
+
+                    log.logCheckingOutcome(process, true);
+                    return Mono.empty();
+                });
     }
 
     @NotNull

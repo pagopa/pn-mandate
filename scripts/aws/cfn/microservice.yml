@@ -361,7 +361,7 @@ Resources:
         WAFName: !Sub '${ProjectName}-mandate-web'
         IntendedUsage: WEB
         APIGatewayARNs: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN
-        Limit: 3000
+        Limit: 300
 
   MandateMicroserviceCloudWatchDashboard:
     Type: AWS::CloudFormation::Stack

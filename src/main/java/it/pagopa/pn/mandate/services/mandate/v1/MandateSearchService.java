@@ -242,7 +242,7 @@ public class MandateSearchService {
     }
 
     private Mono<Map<String, PgGroupDto>> callExternalRegistries(String delegateId) {
-        return pnExtRegPrvtClient.getGroups(delegateId)
+        return pnExtRegPrvtClient.getGroups(delegateId, false)
                 .collectMap(PgGroupDto::getId, Function.identity());
     }
 

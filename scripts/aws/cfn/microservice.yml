@@ -242,6 +242,10 @@ Parameters:
     Type: Number
     Description: maximum autoscaling number of tasks 
 
+  LogAlarmStrategy:
+    Type: String
+    Default: 'FATAL'
+
 Resources:
 
   # PN-Mandate microservice
@@ -284,6 +288,8 @@ Resources:
         AlbSecurityGroup: !Ref AlbSecurityGroup
         TaskRoleManagedPolicyArn: !Ref MandateMicroserviceTaskManagedPolicy
         EcsLogGroup: !Ref EcsLogGroup
+        LogAlarmStrategyV1: !Ref LogAlarmStrategy
+
 
   # Grant operational rights to PN-Mandate microservice
   MandateMicroserviceTaskManagedPolicy:

@@ -9,6 +9,7 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.Denomina
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.RecipientTypeDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
@@ -17,6 +18,7 @@ import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
+import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
@@ -89,10 +91,13 @@ class MandateServiceTest {
     @Mock
     private MandateSearchService mandateSearchService;
 
+    @Mock
+    private PnExtRegPrvtClient pnExtRegPrvtClient;
+
     @BeforeEach
     public void init() {
         MockitoAnnotations.openMocks(this);
-        MandateValidationUtils mandateValidationUtils = Mockito.spy(new MandateValidationUtils(validateUtils));
+        MandateValidationUtils mandateValidationUtils = Mockito.spy(new MandateValidationUtils(validateUtils, pnExtRegPrvtClient));
         mandateService = new MandateService(mandateDao, delegateDao, mapper, userEntityMandateCountsDtoMapper, pnInfoPaClient, pnDatavaultClient, sqsService, mandateValidationUtils, mandateSearchService, pnMandateConfig);
     }
 
@@ -156,6 +161,79 @@ class MandateServiceTest {
         });
     }
 
+
+    @Test
+    void updateMandateWhereDelegateIsNotPerson_withgroups() {
+        //Given
+        String groupid = "123";
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
+        mandateEntity.setDelegateisperson(false);
+        UpdateRequestDto updateRequestDto = new UpdateRequestDto();
+        updateRequestDto.setGroups(List.of(groupid));
+        Tuple2<MandateEntity, MandateEntity> tuple2 = Tuples.of(mandateEntity, mandateEntity);
+        Mono<Tuple2<MandateEntity, MandateEntity>> tuple2Mono = Mono.just(tuple2);
+        when(mandateDao.updateMandate(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
+                .thenReturn(tuple2Mono);
+        when(sqsService.sendToDelivery(Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.empty());
+
+
+        List<PgGroupDto> groups = new ArrayList<>();
+        PgGroupDto g1 = new PgGroupDto();
+        g1.setId(groupid);
+        g1.setName("gruppo1");
+        groups.add(g1);
+        PgGroupDto g2 = new PgGroupDto();
+        g2.setId(groupid+"-2");
+        g2.setName("gruppo2");
+        groups.add(g2);
+
+        when(pnExtRegPrvtClient.getGroups("cyId", true)).thenReturn(Flux.fromIterable(groups));
+
+        //When
+        assertDoesNotThrow(() -> {
+            mandateService.updateMandate("cyId", CxTypeAuthFleet.PG,
+                            mandateEntity.getMandateId(), new ArrayList<>(), "ADMIN", Mono.just(updateRequestDto))
+                    .block(D);
+
+        });
+    }
+
+    @Test
+    void updateMandateWhereDelegateIsNotPerson_withgroups_fail() {
+        //Given
+        String groupid = "123";
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
+        mandateEntity.setDelegateisperson(false);
+        UpdateRequestDto updateRequestDto = new UpdateRequestDto();
+        updateRequestDto.setGroups(List.of(groupid+"wrong"));
+        Tuple2<MandateEntity, MandateEntity> tuple2 = Tuples.of(mandateEntity, mandateEntity);
+        Mono<Tuple2<MandateEntity, MandateEntity>> tuple2Mono = Mono.just(tuple2);
+        when(mandateDao.updateMandate(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
+                .thenReturn(tuple2Mono);
+        when(sqsService.sendToDelivery(Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.empty());
+
+
+        List<PgGroupDto> groups = new ArrayList<>();
+        PgGroupDto g1 = new PgGroupDto();
+        g1.setId(groupid);
+        g1.setName("gruppo1");
+        groups.add(g1);
+        PgGroupDto g2 = new PgGroupDto();
+        g2.setId(groupid+"-2");
+        g2.setName("gruppo2");
+        groups.add(g2);
+
+        when(pnExtRegPrvtClient.getGroups("cyId", true)).thenReturn(Flux.fromIterable(groups));
+
+        //When
+        Mono<Void> mono = mandateService.updateMandate("cyId", CxTypeAuthFleet.PG,
+                mandateEntity.getMandateId(), new ArrayList<>(), "ADMIN", Mono.just(updateRequestDto));
+        assertThrows(PnInvalidGroupCodeException.class, () -> mono.block(D));
+
+    }
+
     @Test
     void acceptMandatePGNotAuthorized() {
         //Given
@@ -211,6 +289,77 @@ class MandateServiceTest {
 
         //Then
         verify(sqsService).sendToDelivery(mandateEntity, EventType.MANDATE_ACCEPTED);
+    }
+
+
+    @Test
+    void acceptMandatePG_withgroups() {
+        //Given
+        String groupid ="123";
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
+        mandateEntity.setDelegateisperson(false); // PG
+        AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
+        acceptRequestDto.setVerificationCode(mandateEntity.getValidationcode());
+        acceptRequestDto.setGroups(List.of(groupid));
+        when(mandateDao.acceptMandate(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.just(mandateEntity));
+        when(sqsService.sendToDelivery(mandateEntity, EventType.MANDATE_ACCEPTED))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        List<PgGroupDto> groups = new ArrayList<>();
+        PgGroupDto g1 = new PgGroupDto();
+        g1.setId(groupid);
+        g1.setName("gruppo1");
+        groups.add(g1);
+        PgGroupDto g2 = new PgGroupDto();
+        g2.setId(groupid+"-2");
+        g2.setName("gruppo2");
+        groups.add(g2);
+
+        when(pnExtRegPrvtClient.getGroups(mandateEntity.getDelegate(), true)).thenReturn(Flux.fromIterable(groups));
+
+        //When
+        assertDoesNotThrow(() -> {
+            mandateService.acceptMandate(mandateEntity.getMandateId(),
+                            Mono.just(acceptRequestDto), mandateEntity.getDelegate(), CxTypeAuthFleet.PG, null, PG_ADMIN_ROLE)
+                    .block(D);
+        });
+
+        //Then
+        verify(sqsService).sendToDelivery(mandateEntity, EventType.MANDATE_ACCEPTED);
+    }
+
+
+    @Test
+    void acceptMandatePG_withgroups_fail() {
+        //Given
+        String groupid ="123";
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
+        mandateEntity.setDelegateisperson(false); // PG
+        AcceptRequestDto acceptRequestDto = new AcceptRequestDto();
+        acceptRequestDto.setVerificationCode(mandateEntity.getValidationcode());
+        acceptRequestDto.setGroups(List.of(groupid+"wrong"));
+        when(mandateDao.acceptMandate(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.just(mandateEntity));
+        when(sqsService.sendToDelivery(mandateEntity, EventType.MANDATE_ACCEPTED))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        List<PgGroupDto> groups = new ArrayList<>();
+        PgGroupDto g1 = new PgGroupDto();
+        g1.setId(groupid);
+        g1.setName("gruppo1");
+        groups.add(g1);
+        PgGroupDto g2 = new PgGroupDto();
+        g2.setId(groupid+"-2");
+        g2.setName("gruppo2");
+        groups.add(g2);
+
+        when(pnExtRegPrvtClient.getGroups(mandateEntity.getDelegate(), true)).thenReturn(Flux.fromIterable(groups));
+
+        //When
+        Mono<MandateEntity> mono = mandateService.acceptMandate(mandateEntity.getMandateId(),
+                Mono.just(acceptRequestDto), mandateEntity.getDelegate(), CxTypeAuthFleet.PG, null, PG_ADMIN_ROLE);
+        assertThrows(PnInvalidGroupCodeException.class, () -> mono.block(D));
     }
 
     @Test

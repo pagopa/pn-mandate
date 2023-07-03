@@ -3,7 +3,7 @@ package it.pagopa.pn.mandate.mapper;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import org.springframework.stereotype.Component;
 
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateCountsDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateCountsDto;
 
 @Component
 public class UserEntityMandateCountsDtoMapper implements BaseMapperInterface<MandateCountsDto, DelegateEntity> {

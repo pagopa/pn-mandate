@@ -1,51 +1,34 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
 
-import io.netty.handler.timeout.TimeoutException;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.ApiClient;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.MandatesApi;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.api.RecipientsApi;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.BaseRecipientDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.DenominationDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.MandateDtoDto;
-import it.pagopa.pn.mandate.microservice.msclient.generated.datavault.v1.dto.RecipientTypeDto;
-import it.pagopa.pn.mandate.middleware.msclient.common.BaseClient;
+import it.pagopa.pn.commons.log.PnLogger;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.api.MandatesApi;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.api.RecipientsApi;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.DenominationDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateDtoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.RecipientTypeDto;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
-import javax.annotation.PostConstruct;
-import java.net.ConnectException;
-import java.time.Duration;
 import java.util.List;
 
 /**
  * Classe wrapper di pn-data-vault, con gestione del backoff
  */
 @Component
-public class PnDataVaultClient extends BaseClient {
+@lombok.CustomLog
+public class PnDataVaultClient {
     
-    private RecipientsApi recipientsApi;
-    private MandatesApi mandatesApi;
-    private final PnMandateConfig pnMandateConfig;
+    private final RecipientsApi recipientsApi;
+    private final MandatesApi mandatesApi;
 
-    public PnDataVaultClient(PnMandateConfig pnMandateConfig) {
-        this.pnMandateConfig = pnMandateConfig;
+    public PnDataVaultClient(RecipientsApi recipientsApi, MandatesApi mandatesApi) {
+        this.recipientsApi = recipientsApi;
+        this.mandatesApi = mandatesApi;
     }
 
-    @PostConstruct
-    public void init(){
-
-        ApiClient newApiClient = new ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
-        newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
-        this.recipientsApi = new RecipientsApi(newApiClient);
-
-        newApiClient = new ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
-        newApiClient.setBasePath(pnMandateConfig.getClientDatavaultBasepath());
-        this.mandatesApi = new MandatesApi(newApiClient);
-    }
 
     /**
      * Ritorna una lista di nominativi in base alla lista di iuid passati
@@ -55,11 +38,8 @@ public class PnDataVaultClient extends BaseClient {
      */
     public Flux<BaseRecipientDtoDto> getRecipientDenominationByInternalId(List<String> internalIds)
     {
-        return recipientsApi.getRecipientDenominationByInternalId(internalIds)
-            .retryWhen(
-                    Retry.backoff(2, Duration.ofMillis(25))
-                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );                             
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Opaque Ids Resolution");
+        return recipientsApi.getRecipientDenominationByInternalId(internalIds);
             
     }
 
@@ -71,11 +51,8 @@ public class PnDataVaultClient extends BaseClient {
      */
     public Mono<String> ensureRecipientByExternalId(boolean isPerson, String fiscalCode)
     {
-        return recipientsApi.ensureRecipientByExternalId(isPerson?RecipientTypeDto.PF:RecipientTypeDto.PG, fiscalCode)
-            .retryWhen(
-                    Retry.backoff(2, Duration.ofMillis(25))
-                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Opaque Id Creation");
+        return recipientsApi.ensureRecipientByExternalId(isPerson?RecipientTypeDto.PF:RecipientTypeDto.PG, fiscalCode);
             
     }
 
@@ -90,15 +67,13 @@ public class PnDataVaultClient extends BaseClient {
      */
     public Mono<String> updateMandateById(String mandateId, String name, String surname, String businessName)
     {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Securing mandate info");
+
         DenominationDtoDto addressdto = new DenominationDtoDto();
         addressdto.setDestName(name);
         addressdto.setDestSurname(surname);
         addressdto.setDestBusinessName(businessName);
         return mandatesApi.updateMandateById(mandateId, addressdto)
-            .retryWhen(
-                    Retry.backoff(2, Duration.ofMillis(25))
-                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                )
                 .then(Mono.just("OK"));
 
     }
@@ -111,11 +86,8 @@ public class PnDataVaultClient extends BaseClient {
      */
     public Mono<Void> deleteMandateById(String mandateId)
     {
-        return mandatesApi.deleteMandateById(mandateId)
-                .retryWhen(
-                        Retry.backoff(2, Duration.ofMillis(25))
-                                .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Removing mandate info");
+        return mandatesApi.deleteMandateById(mandateId);
     }
 
     /**
@@ -124,11 +96,9 @@ public class PnDataVaultClient extends BaseClient {
      * @return lista userinfo deleghe
      */
     public Flux<MandateDtoDto> getMandatesByIds(List<String> mandateIds)
-    {                
-        return mandatesApi.getMandatesByIds(mandateIds)
-            .retryWhen(
-                    Retry.backoff(2, Duration.ofMillis(25))
-                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );
+    {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DATA_VAULT, "Retrieving mandate info");
+        return mandatesApi.getMandatesByIds(mandateIds);
     }
+
 }

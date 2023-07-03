@@ -15,11 +15,13 @@ import org.springframework.context.annotation.Import;
 @Import(SharedAutoConfiguration.class)
 public class PnMandateConfig {
 
-    private String clientInfopaBasepath;
+    private String clientExtregBasepath;
     private String clientDatavaultBasepath;
 
     @Value("${aws.dynamodb_table:}")
     private String dynamodbTable;
     @Value("${aws.dynamodb_table_history:}")
     private String dynamodbTableHistory;
+
+    private Integer maxPageSize;
 }

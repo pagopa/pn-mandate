@@ -1,16 +1,16 @@
 package it.pagopa.pn.mandate.mapper;
 
-
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.InternalMandateDto;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class MandateEntityInternalMandateDtoMapper implements BaseMapperInterface<InternalMandateDto, MandateEntity> {
 
-    private MandateEntityInternalMandateDtoMapper(){
+    private MandateEntityInternalMandateDtoMapper() {
         super();
     }     
 
@@ -27,10 +27,12 @@ public class MandateEntityInternalMandateDtoMapper implements BaseMapperInterfac
         target.setDateto(entity.getValidto().toString());
         target.setDelegate(entity.getDelegate());
         target.setDelegator(entity.getDelegator());
-        if (entity.getVisibilityIds() != null)
+        target.setGroups(entity.getGroups() != null ? List.copyOf(entity.getGroups()) : null);
+        if (entity.getVisibilityIds() != null) {
             target.setVisibilityIds(new ArrayList<>(entity.getVisibilityIds()));
-        else
+        } else {
             target.setVisibilityIds(new ArrayList<>());
+        }
         return target;
     } 
  

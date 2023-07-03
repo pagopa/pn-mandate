@@ -5,24 +5,24 @@ import it.pagopa.pn.commons.log.PnAuditLogBuilder;
 import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
-import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
-import it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes;
-import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
+import it.pagopa.pn.mandate.exceptions.*;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.DelegateType;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateByDelegatorRequestDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.utils.DateUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Import;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
+import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -34,35 +34,41 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+import static it.pagopa.pn.commons.utils.MDCUtils.*;
+import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
+
 @Repository
-@Slf4j
+@lombok.CustomLog
 @Import(PnAuditLogBuilder.class)
 public class MandateDao extends BaseDao {
 
-    private final PnAuditLogBuilder auditLogBuilder;
+
+    private static final int MAX_DYNAMODB_BATCH_SIZE = 100;
+
+    private static final String AND = " AND ";
+    private static final String CONTAINS = "contains";
+    private static final String EQ = "=";
+
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
     DynamoDbAsyncClient dynamoDbAsyncClient;
     DynamoDbAsyncTable<MandateEntity> mandateTable;
     DynamoDbAsyncTable<MandateSupportEntity> mandateSupportTable;
     DynamoDbAsyncTable<MandateEntity> mandateHistoryTable;
-    
+
     String table;
 
     public MandateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
-                       DynamoDbAsyncClient dynamoDbAsyncClient,
-                       PnMandateConfig awsConfigs,
-                       PnAuditLogBuilder pnAuditLogBuilder) {
+                      DynamoDbAsyncClient dynamoDbAsyncClient,
+                      PnMandateConfig awsConfigs) {
         this.mandateTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTable(), TableSchema.fromBean(MandateEntity.class));
         this.mandateSupportTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTable(), TableSchema.fromBean(MandateSupportEntity.class));
         this.mandateHistoryTable = dynamoDbEnhancedAsyncClient.table(awsConfigs.getDynamodbTableHistory(), TableSchema.fromBean(MandateEntity.class));
         this.table = awsConfigs.getDynamodbTable();
         this.dynamoDbAsyncClient = dynamoDbAsyncClient;
         this.dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient;
-        this.auditLogBuilder = pnAuditLogBuilder;
     }
 
     //#region public methods
@@ -71,10 +77,10 @@ public class MandateDao extends BaseDao {
      * Ritorna la lista delle deleghe per delegato
      *
      * @param delegateInternaluserid internaluserid del delegato
-     * @param status stato da usare nel filtro (OPZIONALE)
+     * @param status                 stato da usare nel filtro (OPZIONALE)
      * @return lista delle deleghe
      */
-    public Flux<MandateEntity> listMandatesByDelegate(String delegateInternaluserid, Integer status, String mandateId) {
+    public Flux<MandateEntity> listMandatesByDelegate(String delegateInternaluserid, Integer status, String mandateId, CxTypeAuthFleet xPagopaPnCxType, List<String> cxGroups) {
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
@@ -83,10 +89,9 @@ public class MandateDao extends BaseDao {
         log.info("listMandatesByDelegate uid={} status={}", delegateInternaluserid, status);
 
         QueryConditional queryConditional = QueryConditional.sortLessThanOrEqualTo(getKeyBuild(delegateInternaluserid, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)));
-        if (status != null)
-        {
-                queryConditional = QueryConditional.keyEqualTo(getKeyBuild(delegateInternaluserid, status));    // si noti keyEqualTo al posto di sortLessThanOrEqualTo
-        }        
+        if (status != null) {
+            queryConditional = QueryConditional.keyEqualTo(getKeyBuild(delegateInternaluserid, status));    // si noti keyEqualTo al posto di sortLessThanOrEqualTo
+        }
 
         // devo sempre mettere un filtro di salvaguardia per quanto riguarda la scadenza della delega.
         // infatti se una delega è scaduta, potrebbe rimanere a sistema per qualche ora/giorno prima di essere svecchiata
@@ -95,27 +100,30 @@ public class MandateDao extends BaseDao {
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
         String expression = getValidToFilterExpression();
 
-        if (mandateId != null)
-        {
+        if (mandateId != null) {
             expressionValues.put(":mandateId", AttributeValue.builder().s(mandateId).build());
-            expression += "  AND " + getMandateFilterExpression();
+            expression += AND + getMandateFilterExpression();
         }
 
+        if (CxTypeAuthFleet.PG == xPagopaPnCxType && !CollectionUtils.isEmpty(cxGroups)) {
+            expression += AND + buildExpressionGroupFilter(cxGroups, expressionValues);
+        }
 
+        log.debug("expression: {}", expression);
 
         Expression exp = Expression.builder()
-            .expression(expression)
-            .expressionValues(expressionValues)
-            .build();
-         
-        
+                .expression(expression)
+                .expressionValues(expressionValues)
+                .build();
+
+
         // il filtro cambia in base al fatto se ho chiesto uno stato specifico (uso =)
         //   o se invece non chiedo lo stato (e quindi mi interessano pendenti e attive, uso <=)
         QueryEnhancedRequest qeRequest = QueryEnhancedRequest
                 .builder()
                 .queryConditional(queryConditional)
-                .filterExpression(exp)                
-                .scanIndexForward(true)                
+                .filterExpression(exp)
+                .scanIndexForward(true)
                 .build();
 
 
@@ -125,25 +133,113 @@ public class MandateDao extends BaseDao {
                 .flatMapIterable(Page::items));
     }
 
+    public Mono<Page<MandateEntity>> searchByDelegate(String delegateId,
+                                                      @Nullable Integer status,
+                                                      List<String> groups,
+                                                      List<String> delegatorIds,
+                                                      int size,
+                                                      PnLastEvaluatedKey lastEvaluatedKey) {
+        log.debug("searchByDelegate {}, status: {}, groups: {}, delegatorIds: {}, size: {}, lek: {}",
+                delegateId, status, groups, delegatorIds, size, lastEvaluatedKey);
+
+        Key.Builder keyBuilder = Key.builder().partitionValue(delegateId);
+        if (status != null) {
+            keyBuilder.sortValue(status);
+        }
+        Key key = keyBuilder.build();
+        QueryConditional queryConditional = QueryConditional.keyEqualTo(key);
+        log.debug("query conditional PK: {}, SK: {}", key.partitionKeyValue(), key.sortKeyValue());
+
+        QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
+                .queryConditional(queryConditional)
+                .filterExpression(filterExpressionSearchByDelegate(groups, delegatorIds))
+                .scanIndexForward(true)
+                .limit(size)
+                .exclusiveStartKey(lastEvaluatedKeySearchByDelegate(lastEvaluatedKey))
+                .build();
+
+        return Mono.from(mandateTable.index(GSI_INDEX_DELEGATE_STATE).query(queryEnhancedRequest));
+    }
+
+    private Expression filterExpressionSearchByDelegate(List<String> groups, List<String> delegatorIds) {
+        Expression.Builder expressionBuilder = Expression.builder();
+        StringBuilder filterExpression = new StringBuilder();
+        if (!CollectionUtils.isEmpty(groups)) {
+            addNewFilterExpression(filterExpression);
+            addFilterExpression(groups, MandateEntity.COL_A_GROUPS, ":g", CONTAINS, expressionBuilder, filterExpression);
+        }
+        if (!CollectionUtils.isEmpty(delegatorIds)) {
+            addNewFilterExpression(filterExpression);
+            addFilterExpression(delegatorIds, MandateEntity.COL_PK, ":d", EQ, expressionBuilder, filterExpression);
+        }
+        if (!filterExpression.isEmpty()) {
+            expressionBuilder.expression(filterExpression.toString());
+        }
+        Expression expression = expressionBuilder.build();
+        log.debug("filterExpression: {}, values: {}", expression.expression(), expression.expressionValues());
+        return expression;
+    }
+
+    private @Nullable Map<String, AttributeValue> lastEvaluatedKeySearchByDelegate(PnLastEvaluatedKey lastEvaluatedKey) {
+        if (lastEvaluatedKey != null && !lastEvaluatedKey.getInternalLastEvaluatedKey().isEmpty()) {
+            var map = new HashMap<>(lastEvaluatedKey.getInternalLastEvaluatedKey());
+            map.computeIfPresent(MandateEntity.COL_I_STATE, (k, v) -> AttributeValue.builder()
+                    .n(v.s() != null ? v.s() : v.n())
+                    .build());
+            log.debug("lastEvaluatedKey from: {}, to: {}", lastEvaluatedKey, map);
+            return map;
+        }
+        return null;
+    }
+
+    private void addFilterExpression(List<String> values, String field, String prefix, String operator,
+                                     Expression.Builder expressionBuilder, StringBuilder expression) {
+        expression.append("(");
+        for (int i = 0; i < values.size(); i++) {
+            switch (operator) {
+                case CONTAINS -> addContainsFilterExpression(field, prefix, i, expression);
+                case EQ -> addEqFilterExpression(field, prefix, i, expression);
+                default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
+            }
+            if (i < values.size() - 1) {
+                expression.append(" OR ");
+            }
+            expressionBuilder.putExpressionValue(prefix + i, AttributeValue.builder().s(values.get(i)).build());
+        }
+        expression.append(")");
+    }
+
+    private void addContainsFilterExpression(String field, String prefix, int idx, StringBuilder expression) {
+        expression.append(CONTAINS).append("(").append(field).append(",").append(prefix).append(idx).append(")");
+    }
+
+    private void addEqFilterExpression(String field, String prefix, int idx, StringBuilder expression) {
+        expression.append(field).append(EQ).append(prefix).append(idx);
+    }
+
+    private void addNewFilterExpression(StringBuilder expression) {
+        expression.append(expression.length() > 0 ? AND : "");
+    }
+
     /**
      * Ritorna la lista delle deleghe per delegante
      *
      * @param delegatorInternaluserid internaluserid del delegante
-     * @param status stato da usare nel filtr (OPZIONALE)
+     * @param status                  stato da usare nel filtr (OPZIONALE)
      * @return lista delle deleghe
      */
-    public Flux<MandateEntity> listMandatesByDelegator(String delegatorInternaluserid, Integer status, String mandateId) {
+    public Flux<MandateEntity> listMandatesByDelegator(String delegatorInternaluserid, Integer status, String mandateId, DelegateType delegateType) {
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
         // affidamento ad indici diversi e query diverse
         // listMandatesByDelegator si affida all'ordinamento principale, che filtra per utente e delega. Lo stato va previsto a parte nell'expressionfilter
+        // Il delegateType è il tipo del delegato, utilizzato per trovare le deleghe dato il delegante restringendo la ricerca per tipo dei delegati.
         log.info("listMandatesByDelegator uid={} status={}", delegatorInternaluserid, status);
 
         int iState = StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE);
         String filterexp = getValidToFilterExpression() + " AND  " + getStatusFilterExpression(true);
-        if (status != null)
-        {
+        if (status != null) {
             filterexp = getValidToFilterExpression() + "  AND " + getStatusFilterExpression(false);   // si noti = status
             iState = status;
         }
@@ -154,17 +250,21 @@ public class MandateDao extends BaseDao {
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
         expressionValues.put(":status", AttributeValue.builder().n(iState + "").build());
-        if (mandateId != null)
-        {
+        if (mandateId != null) {
             expressionValues.put(":mandateId", AttributeValue.builder().s(mandateId).build());
-            filterexp += " AND " + getMandateFilterExpression();
+            filterexp += AND + getMandateFilterExpression();
         }
 
-        Expression exp = Expression.builder()                
-        .expression(filterexp)
+        if (delegateType != null) {
+            filterexp += AND + getDelegateIsPersonExpression();
+            expressionValues.put(":isPerson", AttributeValue.builder().bool(DelegateType.PF == delegateType).build());
+        }
+
+        Expression exp = Expression.builder()
+                .expression(filterexp)
                 .expressionValues(expressionValues)
-                .build();    
-       
+                .build();
+
 
         QueryEnhancedRequest qeRequest = QueryEnhancedRequest
                 .builder()
@@ -177,103 +277,159 @@ public class MandateDao extends BaseDao {
     }
 
     /**
+     * Ritorna la lista dei delegati
+     * @param mandatesByDelegators lista dei deleganti
+     * @return lista deleghe
+     */
+    public Flux<MandateEntity> listMandatesByDelegators(List<MandateByDelegatorRequestDto> mandatesByDelegators) {
+        return Flux.fromIterable(mandatesByDelegators)
+                .map(dto -> new MandateEntity(dto.getDelegatorId(), dto.getMandateId()))
+                .collectList()
+                .flatMapMany(this::batchGetMandate);
+    }
+
+    /**
      * Il metodo si occupa di:
      * - leggere l'item dal GSI delegato
      * - validare la richiesta
      * - aggiornarne il contenuto (stato e data accettazione) nell'entity
      * - creare un NUOVO record di supporto, con TTL pari a scadenza della delega (se è prevista). Questo record, quando scadrà, darà luogo ad un loopback
-     *   che mi permetterà di spostare il record principale nello storico. Il TTL NON viene messo nel record principale perchè se qualcosa va storto almeno
-     *   il record principale rimane (scaduto) e non viene perso.
+     * che mi permetterà di spostare il record principale nello storico. Il TTL NON viene messo nel record principale perchè se qualcosa va storto almeno
+     * il record principale rimane (scaduto) e non viene perso.
      * - update dell'entity aggiornata in DB
      *
      * @param delegateInternaluserid internaluserid del delegato
-     * @param mandateId id della delega
-     * @param verificationCode codice di verifica della relativo all'accettazione
+     * @param mandateId              id della delega
+     * @param verificationCode       codice di verifica della relativo all'accettazione
      * @return void
      */
-    public Mono<Void> acceptMandate(String delegateInternaluserid, String mandateId, String verificationCode)
-    {
-        String logMessage = String.format("acceptMandate for delegate uid=%s mandateid=%s verificationCode=%s", delegateInternaluserid, mandateId, verificationCode); 
-        PnAuditLogEvent logEvent = auditLogBuilder
+    public Mono<MandateEntity> acceptMandate(String delegateInternaluserid,
+                                             String mandateId,
+                                             String verificationCode,
+                                             List<String> groups,
+                                             CxTypeAuthFleet cxTypeAuthFleet) {
+        String logMessage = String.format("acceptMandate for delegate uid=%s mandateid=%s verificationCode=%s", delegateInternaluserid, mandateId, verificationCode);
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
-                .uid(delegateInternaluserid)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
                 .build();
 
         logEvent.log();
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
-                .flatMap(mandate -> {
-                    if (!mandate.getValidationcode().equals(verificationCode))
-                        throw new PnInvalidVerificationCodeException();
-
-                    log.info("retrieved mandateobj={}", mandate);
-                    if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING))
-                    {
-                        // aggiorno lo stato, solo se era in pending. NB: non do errore
-                        mandate.setAccepted(Instant.now());
-                        mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE));
-                    }
-                    else if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
-                        log.info("mandate is already ACTIVE accepting silently");
+                .doOnNext(mandate -> editMandateState(mandate, verificationCode, cxTypeAuthFleet, groups))
+                .flatMap(this::save)
+                .doOnSuccess(mandate -> {
+                    String messageAction = String.format(
+                            "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
+                            mandate.getDelegator(), mandate.getDelegate(), mandate);
+                    logEvent.generateSuccess(messageAction).log();
+                })
+                .onErrorResume(throwable -> {
+                    if (throwable instanceof PnInvalidVerificationCodeException)
+                        logEvent.generateSuccess("FAILURE {}", throwable.getMessage()).log();
                     else
-                    {
-                        // non dovrebbe veramente succedere, perchè vuol dire che è rimasta una delega scaduta e che qualcuno ci ha pure chiesto l'accettazione, cmq tiro eccezione
-                        log.warn("mandate is not PENDING or ACTIVE, throw error");
-                        throw new PnInternalException("accept a expired mandate is not permitted", PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOTACCEPTABLE);
-                    }
-                    // Se la delega prevede una scadenza impostata dall'utente, creo un record di supporto con TTL
-                    // e quando questo verrà cancellato, dynamoDB invocherà la nostra logica che andrà a spostare il record principale nello storico.
-                    // Questo perchè se mettevo il TTL nel record principale e per qualche anomalia non veniva gestito l'evento di cancellazione
-                    // avrei perso definitivamente il record della delega (scaduta, ma che va mantenuta per 10 anni nello storico)
-                    TransactWriteItemsEnhancedRequest.Builder transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-                    if (mandate.getValidto() != null) {
-                        MandateSupportEntity support = new MandateSupportEntity(mandate);
-                        transactionBuilder.addPutItem(mandateSupportTable, TransactPutItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build());
-                        log.info("mandate has validto setted, creating also support entity for ttl expiration");
-                    }
+                        logEvent.generateFailure(throwable.getMessage()).log();
+                    return Mono.error(throwable);
+                });
+    }
 
-                    // aggiungo l'update delle deleghe e lancio la transazione
-                    TransactWriteItemsEnhancedRequest transaction = transactionBuilder
-                            .addUpdateItem(mandateTable, TransactUpdateItemEnhancedRequest.builder(MandateEntity.class).item(mandate).ignoreNulls(true).build())
-                            .build();
-                    
-                    return Mono.fromFuture(dynamoDbEnhancedAsyncClient.transactWriteItems(transaction).thenApply(x -> {
-                        String messageAction = String.format(
-                                "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
-                                mandate.getDelegator(), mandate.getDelegate(), mandate);
-                        logEvent.generateSuccess(messageAction).log();
-                        return mandate;
-                    })).then();
+    public Mono<Tuple2<MandateEntity, MandateEntity>> updateMandate(String delegateId, String mandateId, Set<String> groups) {
+        String logMessage = String.format("updateMandate for delegate uid=%s mandateId=%s", delegateId, mandateId);
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
+                .before(PnAuditLogEventType.AUD_DL_UPDATE, logMessage)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
+                .build();
+        logEvent.log();
+        return retrieveMandateForDelegate(delegateId, mandateId)
+                .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
+                .flatMap(mandate -> {
+                    if (StatusEnumMapper.fromValue(mandate.getState()) != StatusEnum.ACTIVE) {
+                        log.warn("mandate is not ACTIVE, throw error");
+                        return Mono.error(new PnInvalidMandateStatusException("update an inactive mandate is not permitted", "Invalid mandate status", 500, PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOTUPDATABLE, "update an inactive mandate is not permitted"));
+                    } else if (mandate.getValidto() != null && mandate.getValidto().isBefore(Instant.now())) {
+                        log.warn("mandate is not ACTIVE, throw error");
+                        return Mono.error(new PnMandateNotFoundException());
+                    }
+                    MandateEntity oldCopyOfMandate = new MandateEntity(mandate);
+                    mandate.setGroups(groups);
+                    return save(mandate)
+                            .map(newCopyOfMandate -> Tuples.of(oldCopyOfMandate, newCopyOfMandate));
+                })
+                .doOnSuccess(t -> {
+                    String msg = String.format("mandate updated delegator uid=%s delegate uid=%s mandateObj=%S", t.getT2().getDelegator(), t.getT2().getDelegate(), t.getT2());
+                    logEvent.generateSuccess(msg).log();
                 })
                 .onErrorResume(throwable -> {
                     logEvent.generateFailure(throwable.getMessage()).log();
                     return Mono.error(throwable);
                 });
+    }
 
+    private void editMandateState(MandateEntity mandate,
+                                  String verificationCode,
+                                  CxTypeAuthFleet cxTypeAuthFleet,
+                                  List<String> groups) {
+        if (!mandate.getValidationcode().equals(verificationCode)) {
+            throw new PnInvalidVerificationCodeException();
+        }
+        if (CxTypeAuthFleet.PG == cxTypeAuthFleet && !CollectionUtils.isEmpty(groups)) {
+            mandate.setGroups(Set.copyOf(groups));
+        }
+        log.info("retrieved mandateobj={}", mandate);
+        if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)) {
+            // aggiorno lo stato, solo se era in pending. NB: non do errore
+            mandate.setAccepted(Instant.now());
+            mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE));
+        } else if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
+            log.info("mandate is already ACTIVE accepting silently");
+        else {
+            // non dovrebbe veramente succedere, perchè vuol dire che è rimasta una delega scaduta e che qualcuno ci ha pure chiesto l'accettazione, cmq tiro eccezione
+            log.warn("mandate is not PENDING or ACTIVE, throw error");
+            throw new PnInternalException("accept a expired mandate is not permitted", PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOTACCEPTABLE);
+        }
+    }
+
+    private Mono<MandateEntity> save(MandateEntity mandate) {
+        // Se la delega prevede una scadenza impostata dall'utente, creo un record di supporto con TTL
+        // e quando questo verrà cancellato, dynamoDB invocherà la nostra logica che andrà a spostare il record principale nello storico.
+        // Questo perchè se mettevo il TTL nel record principale e per qualche anomalia non veniva gestito l'evento di cancellazione
+        // avrei perso definitivamente il record della delega (scaduta, ma che va mantenuta per 10 anni nello storico)
+        TransactWriteItemsEnhancedRequest.Builder transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
+        if (mandate.getValidto() != null) {
+            MandateSupportEntity support = new MandateSupportEntity(mandate);
+            transactionBuilder.addPutItem(mandateSupportTable, TransactPutItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build());
+            log.info("mandate has validto setted, creating also support entity for ttl expiration");
+        }
+
+        // aggiungo l'update delle deleghe e lancio la transazione
+        TransactWriteItemsEnhancedRequest transaction = transactionBuilder
+                .addUpdateItem(mandateTable, TransactUpdateItemEnhancedRequest.builder(MandateEntity.class).item(mandate).ignoreNulls(false).build())
+                .build();
+        return Mono.fromFuture(dynamoDbEnhancedAsyncClient.transactWriteItems(transaction)).thenReturn(mandate);
     }
 
     /**
-     *  Il metodo si occupa di:
-     *  - leggere l'item dal GSI delegato
-     *  - aggiornarne il contenuto (stato e data rifiuto) nell'entity
-     *  - creare una copia dell'entity nella tabella dello storico, impostandone il TTL a 10 anni
-     *  - eliminare l'entity dalla tabella principale
+     * Il metodo si occupa di:
+     * - leggere l'item dal GSI delegato
+     * - aggiornarne il contenuto (stato e data rifiuto) nell'entity
+     * - creare una copia dell'entity nella tabella dello storico, impostandone il TTL a 10 anni
+     * - eliminare l'entity dalla tabella principale
      *
      * @param delegateInternaluserid internaluserid del delegato
-     * @param mandateId id della delega
+     * @param mandateId              id della delega
      * @return void
      */
-    public Mono<Void> rejectMandate(final String delegateInternaluserid, final String mandateId)
-    {
+    public Mono<MandateEntity> rejectMandate(final String delegateInternaluserid, final String mandateId) {
         // qui l'internaluserid è quello del DELEGATO, e quindi NON posso usare direttamente l'informazione per accedere al record.
         // devo passare quindi per l'indice sul delegato, recuperarmi la riga, aggiornare il contenuto e salvarla.
         // NB: si noti che ci può essere un problema legato alla concorrenza, ma dato che i dati sulle deleghe non cambiano così frequentemente, 
         // si accetta la possibilità dell'improbabilità che arrivino 2 scritture contemporanee nel piccolo lasso di tempo tra query e update...
 
         String logMessage = String.format("rejectMandate for delegate uid=%s mandateid=%s", delegateInternaluserid, mandateId);
-        PnAuditLogEvent logEvent = auditLogBuilder
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REJECT, logMessage)
-                .uid(delegateInternaluserid)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
                 .build();
         logEvent.log();
 
@@ -283,8 +439,7 @@ public class MandateDao extends BaseDao {
                     log.info("rejectMandate mandate for delegate retrieved mandateobj={}", mandate);
 
                     if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
-                            || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
-                    {
+                            || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {
                         // aggiorno lo stato, solo se era in pending o active, ignoro eventuali altri stati (che NON dovrebbero essere presenti)
                         mandate.setRejected(Instant.now());
                         mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REJECTED));
@@ -293,9 +448,8 @@ public class MandateDao extends BaseDao {
                                 .map(m -> {
                                     logEvent.generateSuccess("mandate rejected mandate={}", m).log();
                                     return m;
-                                }).then();
-                    }
-                    else
+                                });
+                    } else
                         log.warn("no mandate found in pending,active or rejected state, fail silently");
 
                     return Mono.empty();
@@ -316,15 +470,14 @@ public class MandateDao extends BaseDao {
      * - eliminare eventuale entity di supporto dalla tabella principale
      *
      * @param delegatorInternaluserid internaluserid del delegante
-     * @param mandateId id della delega
+     * @param mandateId               id della delega
      * @return void
      */
-    public Mono<Object> revokeMandate(String delegatorInternaluserid, String mandateId)
-    {
+    public Mono<MandateEntity> revokeMandate(String delegatorInternaluserid, String mandateId) {
         String logMessage = String.format("revokeMandate for delegate uid=%s mandateid=%s", delegatorInternaluserid, mandateId);
-        PnAuditLogEvent logEvent = auditLogBuilder
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
-                .uid(delegatorInternaluserid)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
                 .build();
 
         logEvent.log();
@@ -332,14 +485,14 @@ public class MandateDao extends BaseDao {
                 .thenCompose(mandate -> {
                             if (mandate == null)
                             {
+                                log.error("mandate not found");
                                 logEvent.generateFailure(String.format("revokeMandate skipped, mandate not found mandateid=%s", mandateId)).log();
                                 return CompletableFuture.completedFuture(mandate);
                             }
 
                             log.info("revokeMandate mandate for delegate retrieved mandateobj={}", mandate);
                             if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
-                                    || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
-                            {
+                                    || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {
                                 // aggiorno lo stato, solo se era in pending o active, ignoro eventuali altri stati (che NON dovrebbero essere presenti)
                                 mandate.setRevoked(Instant.now());
                                 mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.REVOKED));
@@ -359,36 +512,39 @@ public class MandateDao extends BaseDao {
     }
 
     /**
-     *  Il metodo si occupa di:
-     *  - leggere l'item dalla tabella principale
-     *  - aggiornarne il contenuto (stato) nell'entity
-     *  - creare una copia dell'entity nella tabella dello storico, impostandone il TTL a 10 anni
-     *  - eliminare l'entity dalla tabella principale
-     *  - eliminare eventuale entity di supporto dalla tabella principale
+     * Il metodo si occupa di:
+     * - leggere l'item dalla tabella principale
+     * - aggiornarne il contenuto (stato) nell'entity
+     * - creare una copia dell'entity nella tabella dello storico, impostandone il TTL a 10 anni
+     * - eliminare l'entity dalla tabella principale
+     * - eliminare eventuale entity di supporto dalla tabella principale
      *
      * @param delegatorInternaluserid internaluserid del delegante
-     * @param mandateId id della delega
+     * @param delegatorUid            uid del delegante
+     * @param cxType                  cxType del delegante
+     * @param mandateId               id della delega
      * @return void
      */
-    public Mono<Object> expireMandate(String delegatorInternaluserid, String mandateId)
-    {
-        String logMessage = String.format("expireMandate for delegate uid=%s{} mandateid=%s", delegatorInternaluserid, mandateId);
-        PnAuditLogEvent logEvent = auditLogBuilder
+    public Mono<MandateEntity> expireMandate(String delegatorInternaluserid, String delegatorUid, String cxType, String mandateId) {
+        String logMessage = String.format("expireMandate for delegate internalId=%s uid=%s cxType=%s mandateid=%s", delegatorInternaluserid, delegatorUid, cxType, mandateId);
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_EXPIRE, logMessage)
-                .uid(delegatorInternaluserid)
+                .mdcEntry(MDC_CX_ID_KEY, delegatorInternaluserid)
+                .mdcEntry(MDC_PN_UID_KEY, delegatorUid)
+                .mdcEntry(MDC_PN_CX_TYPE_KEY, cxType)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
                 .build();
 
         logEvent.log();
         return Mono.fromFuture(retrieveMandateForDelegator(delegatorInternaluserid, mandateId)
-                .thenCompose(mandate -> {
+                        .thenCompose(mandate -> {
                             if (mandate == null) {
                                 throw new PnMandateNotFoundException();
                             }
                             log.info("expireMandate mandate for delegate retrieved mandateobj={}", mandate);
                             mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
                             return saveHistoryAndDeleteFromMain(mandate);
-                        })
-                )
+                        }))
                 .onErrorResume(throwable -> {
                     logEvent.generateFailure(throwable.getMessage()).log();
                     return Mono.error(throwable);
@@ -407,44 +563,52 @@ public class MandateDao extends BaseDao {
      * @param mandate oggetto delega da creare
      * @return oggetto delega creato
      */
-    public Mono<MandateEntity> createMandate(MandateEntity mandate){
+    public Mono<MandateEntity> createMandate(MandateEntity mandate) {
         String logMessage = String.format("create mandate mandate=%s", mandate);
-        PnAuditLogEvent logEvent = auditLogBuilder
-                .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
-                .uid(mandate.getDelegator())
-                .build();
 
-        logEvent.log();
+        return Mono.fromFuture(countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate())
+                        .thenCompose(total -> {
+                            if (total == 0 || isSelfPgMandate(mandate)) {
+                                log.info("no current mandate for delegator-delegate pair, can proceed to create mandate");
+                                PnAuditLogEvent logEvent = new PnAuditLogBuilder()
+                                        .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
+                                        .mdcEntry(MDC_PN_MANDATEID_KEY, mandate.getMandateId())
+                                        .build();
 
-        return Mono.fromFuture(
-                        countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate())
-                .thenCompose(total -> {
-                    if (total == 0)
-                    {
-                        log.info("no current mandate for delegator-delegate pair, can proceed to create mandate");
-                        PutItemEnhancedRequest<MandateEntity> putRequest = PutItemEnhancedRequest.builder(MandateEntity.class)
-                                .item(mandate)
-                                //.conditionExpression()
-                                .build();
-                        return mandateTable.putItem(putRequest).thenApply(x -> {
-                            log.info("saved mandate mandateobj={}", mandate);
-                            return mandate;
-                        });
-                    }
-                    else {
-                        throw new PnMandateAlreadyExistsException();
-                    }
-                }))
-                .onErrorResume(throwable -> {
-                    logEvent.generateFailure(throwable.getMessage()).log();
-                    return Mono.error(throwable);
-                })
+                                logEvent.log();
+
+                                PutItemEnhancedRequest<MandateEntity> putRequest = PutItemEnhancedRequest.builder(MandateEntity.class)
+                                        .item(mandate)
+                                        .build();
+                                return mandateTable.putItem(putRequest)
+                                        .exceptionally(throwable -> {
+                                            logEvent.generateFailure(throwable.getMessage()).log();
+                                            if (throwable instanceof RuntimeException runtimeException) {
+                                                throw runtimeException;
+                                            }
+                                            if (throwable instanceof Error error) throw error;
+                                            throw new AssertionError(throwable);
+                                        })
+                                        .thenApply(x -> {
+                                            log.info("saved mandate mandateobj={}", mandate);
+                                            logEvent.generateSuccess(String.format("created mandate mandateobj=%s", mandate)).log();
+                                            return mandate;
+                                        });
+                            } else {
+                                throw new PnMandateAlreadyExistsException();
+                            }
+                        }))
+                .onErrorResume(Mono::error)
                 .map(mandateCreated -> {
                     log.info("created mandate mandateobj={}", mandateCreated);
-                    logEvent.generateSuccess(String.format("created mandate mandateobj=%s", mandateCreated)).log();
+
 
                     return mandateCreated;
                 });
+    }
+
+    private boolean isSelfPgMandate(MandateEntity mandate) {
+        return Boolean.FALSE.equals(mandate.getDelegatorisperson()) && mandate.getDelegator().equals(mandate.getDelegate());
     }
 
     //#endregion
@@ -455,15 +619,15 @@ public class MandateDao extends BaseDao {
      * Recupera una delega in base all'internaluserid del delegante e all'id della delega
      *
      * @param delegatorInternaluserid internaluserid del delegante
-     * @param mandateId id della delega
+     * @param mandateId               id della delega
      * @return future contenente la delega
      */
     private CompletableFuture<MandateEntity> retrieveMandateForDelegator(String delegatorInternaluserid, String mandateId) {
         MandateEntity mandate = new MandateEntity(delegatorInternaluserid, mandateId);
         // qui l'internaluserid è quello del DELEGANTE, e quindi posso usare direttamente l'informazione per accedere al record
         GetItemEnhancedRequest getitemRequest = GetItemEnhancedRequest.builder()
-        .key(getKeyBuild(mandate.getDelegator() , mandate.getSk()))
-        .build();
+                .key(getKeyBuild(mandate.getDelegator(), mandate.getSk()))
+                .build();
 
 
         return mandateTable.getItem(getitemRequest);
@@ -471,8 +635,9 @@ public class MandateDao extends BaseDao {
 
     /**
      * Recupera una delega in base all'internaluserid del delegato e all'id della delega
+     *
      * @param delegateInternaluserid internaluserid del delegato
-     * @param mandateId id della delega
+     * @param mandateId              id della delega
      * @return publisher contenente un solo record di delega
      */
     private Mono<MandateEntity> retrieveMandateForDelegate(String delegateInternaluserid, String mandateId) {
@@ -487,18 +652,18 @@ public class MandateDao extends BaseDao {
         // non viene filtrato lo stato, dato che questo metodo può essere usato per motivi generici
         MandateEntity mandate = new MandateEntity(delegateInternaluserid, mandateId);
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":mandateid",  AttributeValue.builder().s(mandate.getSk()).build());
+        expressionValues.put(":mandateid", AttributeValue.builder().s(mandate.getSk()).build());
 
         Expression exp = Expression.builder()
                 .expression(MandateEntity.COL_SK + " = :mandateid")
                 .expressionValues(expressionValues)
-                .build();    
+                .build();
 
         QueryEnhancedRequest qeRequest = QueryEnhancedRequest
                 .builder()
                 .queryConditional(QueryConditional.keyEqualTo(getKeyBuild(delegateInternaluserid)))
-                .filterExpression(exp)                
-                .scanIndexForward(true)                
+                .filterExpression(exp)
+                .scanIndexForward(true)
                 .build();
 
         return Flux.from(mandateTable.index(GSI_INDEX_DELEGATE_STATE).query(qeRequest)
@@ -509,7 +674,7 @@ public class MandateDao extends BaseDao {
      * Recupera il numero di deleghe presenti per la coppia delegante-delegato
      *
      * @param delegatorInternaluserid internaluserid del delegante
-     * @param delegateInternaluserid internaluserid del delegato
+     * @param delegateInternaluserid  internaluserid del delegato
      * @return future contenente il conteggio delle deleghe
      */
     private CompletableFuture<Integer> countMandateForDelegateAndDelegator(String delegatorInternaluserid, String delegateInternaluserid) {
@@ -518,9 +683,9 @@ public class MandateDao extends BaseDao {
         // uso l'expression filter per filtrare le deleghe valide per il delegato
         // si accetta il costo di leggere più righe per niente
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":delegate",  AttributeValue.builder().s(delegateInternaluserid).build());
-        expressionValues.put(":delegator",  AttributeValue.builder().s(delegatorInternaluserid).build());
-        expressionValues.put(":mandateprefix",  AttributeValue.builder().s(MandateEntity.MANDATE_PREFIX).build());
+        expressionValues.put(":delegate", AttributeValue.builder().s(delegateInternaluserid).build());
+        expressionValues.put(":delegator", AttributeValue.builder().s(delegatorInternaluserid).build());
+        expressionValues.put(":mandateprefix", AttributeValue.builder().s(MandateEntity.MANDATE_PREFIX).build());
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
         expressionValues.put(":status", AttributeValue.builder().n(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE) + "").build());
 
@@ -528,7 +693,7 @@ public class MandateDao extends BaseDao {
                 .builder()
                 .select(Select.COUNT)
                 .tableName(table)
-                .filterExpression(getValidToFilterExpression() + " AND " + getStatusFilterExpression(true) + " AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)")
+                .filterExpression(getValidToFilterExpression() + AND + getStatusFilterExpression(true) + " AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)")
                 .keyConditionExpression(MandateEntity.COL_PK + " = :delegator AND begins_with(" + MandateEntity.COL_SK + ", :mandateprefix)")
                 .expressionAttributeValues(expressionValues)
                 .build();
@@ -537,8 +702,7 @@ public class MandateDao extends BaseDao {
     }
 
 
-    private CompletableFuture<MandateEntity> saveHistoryAndDeleteFromMain(MandateEntity mandate)
-    {
+    private CompletableFuture<MandateEntity> saveHistoryAndDeleteFromMain(MandateEntity mandate) {
         // aggiorno il TTL
         mandate.setTtl(LocalDateTime.now().plusYears(10).atZone(ZoneId.systemDefault()).toEpochSecond());
 
@@ -558,16 +722,61 @@ public class MandateDao extends BaseDao {
         });
     }
 
-    private String getValidToFilterExpression(){
+    private String getValidToFilterExpression() {
         return "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) ";
     }
 
-    private String getStatusFilterExpression(boolean lessEqualThan){
-        return " (" + MandateEntity.COL_I_STATE + " " + (lessEqualThan?"<=":"=") + " :status) ";
+    private String getStatusFilterExpression(boolean lessEqualThan) {
+        return " (" + MandateEntity.COL_I_STATE + " " + (lessEqualThan ? "<=" : "=") + " :status) ";
     }
 
     private String getMandateFilterExpression() {
         return "(" + MandateEntity.COL_S_MANDATEID + " = :mandateId) ";
+    }
+
+    private String getDelegateIsPersonExpression() {
+        return "(" + MandateEntity.COL_B_DELEGATEISPERSON + " = :isPerson) ";
+    }
+
+    private Flux<MandateEntity> batchGetMandate(List<MandateEntity> entities) {
+        return Flux.fromIterable(entities)
+                .window(MAX_DYNAMODB_BATCH_SIZE)
+                .flatMap(chunk -> {
+                    ReadBatch.Builder<MandateEntity> builder = ReadBatch.builder(MandateEntity.class)
+                            .mappedTableResource(mandateTable);
+                    Mono<BatchGetResultPage> deferred = Mono.defer(() ->
+                            Mono.from(dynamoDbEnhancedAsyncClient.batchGetItem(BatchGetItemEnhancedRequest.builder()
+                                    .readBatches(builder.build())
+                                    .build())));
+                    return chunk
+                            .doOnNext(item -> {
+                                Key key = Key.builder().partitionValue(item.getDelegator()).sortValue(item.getSk()).build();
+                                builder.addGetItem(key);
+                            })
+                            .then(deferred);
+                })
+                .flatMap(page -> {
+                    List<MandateEntity> results = page.resultsForTable(mandateTable);
+                    log.debug("request size: {}, query result size: {}", entities.size(), results.size());
+                    if (!page.unprocessedKeysForTable(mandateTable).isEmpty()) {
+                        List<Key> unprocessedKeys = page.unprocessedKeysForTable(mandateTable);
+                        List<MandateEntity> unprocessedEntities = filterMandateAlreadyProcessed(entities, unprocessedKeys);
+                        log.info("unprocessed entities {} over total entities {}", unprocessedEntities.size(), entities.size());
+                        return Flux.fromIterable(results)
+                                .concatWith(batchGetMandate(unprocessedEntities));
+                    }
+                    return Flux.fromIterable(results);
+                });
+    }
+
+    private List<MandateEntity> filterMandateAlreadyProcessed(List<MandateEntity> entities, List<Key> unprocessedKeys) {
+        Set<Key> setKeys = new HashSet<>(unprocessedKeys);
+        return entities.stream()
+                .filter(entity -> {
+                    Key key = Key.builder().partitionValue(entity.getDelegator()).sortValue(entity.getSk()).build();
+                    return setKeys.contains(key);
+                })
+                .toList();
     }
     //#endregion
 }

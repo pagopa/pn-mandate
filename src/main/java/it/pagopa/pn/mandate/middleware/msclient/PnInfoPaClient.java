@@ -1,45 +1,26 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
-
-import io.netty.handler.timeout.TimeoutException;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.ApiClient;
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.api.InfoPaApi;
-import it.pagopa.pn.mandate.microservice.msclient.generated.infopa.v1.dto.PaInfoDto;
-import it.pagopa.pn.mandate.middleware.msclient.common.BaseClient;
+import it.pagopa.pn.commons.log.PnLogger;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.api.InfoPaApi;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
+import reactor.core.publisher.Flux;
 
-import javax.annotation.PostConstruct;
-import java.net.ConnectException;
-import java.time.Duration;
+import java.util.List;
 
 @Component
-public class PnInfoPaClient extends BaseClient {
+@lombok.CustomLog
+public class PnInfoPaClient {
 
-    private InfoPaApi infoPaApi;
-    private final PnMandateConfig pnMandateConfig;
+    private final InfoPaApi infoPaApi;
 
-    public PnInfoPaClient(PnMandateConfig pnMandateConfig) {
-        this.pnMandateConfig = pnMandateConfig;
+    public PnInfoPaClient(InfoPaApi infoPaApi) {
+        this.infoPaApi = infoPaApi;
     }
 
-    @PostConstruct
-    public void init(){
 
-        ApiClient newApiClient = new ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
-        newApiClient.setBasePath(pnMandateConfig.getClientInfopaBasepath());
-        this.infoPaApi = new InfoPaApi(newApiClient);
+    public Flux<PaSummaryDto> getManyPa(List<String> paIds) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_EXTERNAL_REGISTRIES, "Retrieving PAs summary infos");
+        return infoPaApi.getManyPa(paIds);
     }
-
-    public Mono<PaInfoDto> getOnePa(String id) {
-
-        return this.infoPaApi                        
-                .getOnePa(id)                
-                .retryWhen(
-                    Retry.backoff(2, Duration.ofMillis(25))
-                            .filter(throwable -> throwable instanceof TimeoutException || throwable instanceof ConnectException)
-                );
-    } 
 }

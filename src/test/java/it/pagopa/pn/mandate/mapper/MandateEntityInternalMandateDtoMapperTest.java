@@ -2,11 +2,13 @@ package it.pagopa.pn.mandate.mapper;
 
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.rest.mandate.v1.dto.InternalMandateDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.InternalMandateDto;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -55,5 +57,20 @@ class MandateEntityInternalMandateDtoMapperTest {
         } catch (Exception e) {
             fail(e);
         }
+    }
+
+    @Test
+    void toDtoVisibilityIds() {
+        //Given
+        MandateEntity mandate = MandateDaoIT.newMandate(true);
+        mandate.setVisibilityIds(Set.of("G"));
+
+        //When
+        InternalMandateDto result = mapper.toDto(mandate);
+
+        //Then
+        assertNotNull(result);
+        assertNotNull(result.getVisibilityIds());
+        assertTrue(result.getVisibilityIds().contains("G"));
     }
 }

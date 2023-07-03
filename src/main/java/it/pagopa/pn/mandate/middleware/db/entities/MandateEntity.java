@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Set;
 
 import static it.pagopa.pn.mandate.middleware.db.BaseDao.GSI_INDEX_DELEGATE_STATE;
@@ -23,6 +24,7 @@ public class MandateEntity {
     public static final String COL_PK = "pk";
     public static final String COL_SK = "sk";
     public static final String COL_S_DELEGATE = "s_delegate";
+    public static final String COL_S_DELEGATORUID = "s_delegatoruid";
     public static final String COL_I_STATE = "i_state";
     public static final String COL_B_DELEGATORISPERSON = "b_delegatorisperson";
     public static final String COL_B_DELEGATEISPERSON = "b_delegateisperson";
@@ -36,11 +38,35 @@ public class MandateEntity {
     public static final String COL_S_VALIDATIONCODE = "s_validationcode";
     public static final String COL_A_VISIBILITYIDS = "a_visibilityids";
     public static final String COL_I_TTL = "i_ttl";
+    public static final String COL_A_GROUPS = "a_groups";
 
-    public MandateEntity(String delegator, String mandateid)
-    {
+    public MandateEntity(String delegator, String mandateId) {
         this.setDelegator(delegator);
-        this.setMandateId(mandateid);
+        this.setMandateId(mandateId);
+    }
+
+    public MandateEntity(MandateEntity mandateEntity) {
+        this.setDelegator(mandateEntity.getDelegator());
+        this.setMandateId(mandateEntity.getMandateId());
+        this.setDelegate(mandateEntity.getDelegate());
+        this.setState(mandateEntity.getState());
+        this.setDelegatorisperson(mandateEntity.getDelegatorisperson());
+        this.setDelegateisperson(mandateEntity.getDelegateisperson());
+        this.setValidfrom(mandateEntity.getValidfrom());
+        this.setValidto(mandateEntity.getValidto());
+        this.setCreated(mandateEntity.getCreated());
+        this.setAccepted(mandateEntity.getAccepted());
+        this.setRejected(mandateEntity.getRejected());
+        this.setRevoked(mandateEntity.getRevoked());
+        this.setValidationcode(mandateEntity.getValidationcode());
+        if (mandateEntity.getVisibilityIds() != null) {
+            this.setVisibilityIds(new HashSet<>(mandateEntity.getVisibilityIds()));
+        }
+        this.setDelegatorUid(mandateEntity.getDelegatorUid());
+        if (mandateEntity.getGroups() != null) {
+            this.setGroups(new HashSet<>(mandateEntity.getGroups()));
+        }
+        this.setTtl(mandateEntity.getTtl());
     }
 
     @DynamoDbAttribute(COL_S_MANDATEID)
@@ -72,6 +98,9 @@ public class MandateEntity {
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_S_VALIDATIONCODE)}))  private String validationcode;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_A_VISIBILITYIDS)}))  private Set<String> visibilityIds;
 
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_S_DELEGATORUID)}))  private String delegatorUid;
+
+    @Getter(onMethod = @__({@DynamoDbAttribute(COL_A_GROUPS)})) private Set<String> groups;
 
     // per lo storico e per la struttura dati di appoggio
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_TTL)}))  private Long ttl;

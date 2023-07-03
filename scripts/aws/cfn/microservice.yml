@@ -63,6 +63,17 @@ Parameters:
     Type: String
     Description: 'network load balancer link for API-GW'
 
+  # OpenApi Bucket params
+  MicroserviceBucketName:
+    Type: String
+    Default: ''
+    Description: 'Name of the bucket where the microservice files are copied during deploy'
+
+  MicroserviceBucketBaseKey:
+    Type: String
+    Default: ''
+    Description: 'Base key of the microservice in the s3 bucket'
+
   MandatesDynamoTableName:
     Type: String
     Description: 'Name of dynamodb table containing mandates'
@@ -75,10 +86,42 @@ Parameters:
     Type: String
     Description: 'ARN of dynamodb table containing mandates'
 
+  PnMandateInputsQueueURL:
+    Type: String
+    Description: pn-mandate_inputs queue URL
+
   MandatesDynamoTableHistoryArn:
     Type: String
     Description: 'ARN of dynamodb table containing mandates history'
-  
+
+  MandatesDynamoTableNameStreamArn:
+    Type: String
+    Description: ARN of dynamodb table containing stream mandates
+
+  PnMandateExpiredTriggerDLQAlarmARN:
+    Type: String
+    Description: pn-mandate_expired_trigger_DLQ alarm ARN
+
+  PnMandateInputsQueueAgeAlarmARN:
+    Type: String
+    Description: pn-mandate_inputs queue age ARN DLQ
+
+  PnMandateExpiredTriggerDLQARN:
+    Type: String
+    Description: pn-mandate_expired_trigger_DLQ queue ARN
+
+  PnMandateInputsQueueARN:
+    Type: String
+    Description: pn-mandate_inputs queue ARN
+
+  PnMandateInputsQueueAlarmARN:
+    Type: String
+    Description: pn-mandate_inputs queue ARN DLQ
+
+  PnMandateInputsQueueName:
+    Type: String
+    Description: pn-mandate_inputs queue name
+
   LogsKinesisSourceStreamArn:
     Type: String
     Description: 'Kinesis stream that receive logs'
@@ -86,6 +129,122 @@ Parameters:
   Version:
     Type: String
     Description: 'keep track of used projects commitIds'
+
+  AlbSecurityGroup:
+    Type: String
+    Description: 'Application load balancer security group'
+
+  Mandate2DeliveryQueueName:
+    Type: String
+    Description: 'The name of the SQS queue used to communicate with pn-delivery module.'
+
+  Mandate2DeliveryQueueARN:
+    Type: String
+    Description: 'Identify the resource that the policy applies to.'
+
+  PnMandateExpiredTriggerLambdaEventSourceMappingBatchSize:
+    Type: String
+    Description: 'BatchSize stream mapping'
+
+  PnMandateExpiredTriggerLambdaEventSourceMappingMaximumBatchingWindowInSeconds:
+    Type: String
+    Description: 'BatchWindow stream mapping'
+
+  PnMandateExpiredTriggerLambdaEventSourceMappingMaximumRetryAttempts:
+    Type: String
+    Description: 'MaxRetry stream mapping'
+
+  LogsKinesisFilterPattern:
+    Type: String
+    Default: ""
+    Description: 'Log kinesis filter pattern'
+
+ # Log group exports
+  EcsLogGroup:
+    Type: String
+
+  PnMandateExpiredTriggerLambdaName:
+   Type: String
+
+  # Heath Check parameters
+  HealthCheckInterval:
+    Description: Seconds between two health check
+    Type: Number
+    Default: 60
+
+  HealthCheckTimeout:
+    Description: health check timeout seconds
+    Type: Number
+    Default: 5
+  
+  HealthyThresholdCount:
+    Description: |
+      The number of consecutive health checks successes required before considering 
+      an unhealthy target healthy. 
+    Type: Number
+    Default: 5
+  
+  UnhealthyThresholdCount:
+    Description: |
+      The number of consecutive health check failures required before considering a target unhealthy. 
+    Type: Number
+    Default: 2
+
+  # Instance parameters
+  # 256 (.25 vCPU) - Available memory values: 0.5GB, 1GB, 2GB
+  # 512 (.5 vCPU) - Available memory values: 1GB, 2GB, 3GB, 4GB
+  # 1024 (1 vCPU) - Available memory values: 2GB, 3GB, 4GB, 5GB, 6GB, 7GB, 8GB
+  # 2048 (2 vCPU) - Available memory values: Between 4GB and 16GB in 1GB increments
+  # 4096 (4 vCPU) - Available memory values: Between 8GB and 30GB in 1GB increments
+  CpuValue:
+    Type: Number
+    Default: 1024
+    Description: Fargate virtual CPU quantity 1024 equals one vCPU
+
+  # 0.5GB, 1GB, 2GB - Available cpu values: 256 (.25 vCPU)
+  # 1GB, 2GB, 3GB, 4GB - Available cpu values: 512 (.5 vCPU)
+  # 2GB, 3GB, 4GB, 5GB, 6GB, 7GB, 8GB - Available cpu values: 1024 (1 vCPU)
+  # Between 4GB and 16GB in 1GB increments - Available cpu values: 2048 (2 vCPU)
+  # Between 8GB and 30GB in 1GB increments - Available cpu values: 4096 (4 vCPU)
+  MemoryAmount:
+    Type: String
+    Default: 2GB
+    Description: memory amount reserved to the task pod.
+    AllowedValues: [ 2GB, 4GB, 6GB, 8GB ]
+
+  # Autoscaling parameters
+  AutoscalingCheckPeriod:
+    Default: 60
+    Type: Number
+    Description: minimum autoscaling number of tasks\
+
+  AutoscalingDataPointN:
+    Default: 1
+    Type: Number
+    Description: activate when N datapoint on M
+
+  AutoscalingDataPointM:
+    Default: 1
+    Type: Number
+    Description: activate when N datapoint on M
+
+  AutoscalingThreshold:
+    Default: 70
+    Type: String
+  
+  MinTasksNumber:
+    Default: 1
+    Type: Number
+    Description: minimum autoscaling number of tasks
+
+  MaxTasksNumber:
+    Default: 6
+    Type: Number
+    Description: maximum autoscaling number of tasks 
+
+  LogAlarmStrategy:
+    Type: String
+    Default: 'FATAL'
 
 Resources:
 
@@ -96,8 +255,19 @@ Resources:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/ecs-service.yaml"
       Parameters:
         MicroServiceUniqueName: !Sub '${ProjectName}-mandate'
-        CpuValue: 1024
-        MemoryAmount: 2GB
+        CpuValue: !Ref CpuValue
+        MemoryAmount: !Ref MemoryAmount
+        HealthCheckTimeout: !Ref HealthCheckTimeout
+        HealthCheckInterval: !Ref HealthCheckInterval
+        HealthyThresholdCount: !Ref HealthyThresholdCount
+        UnhealthyThresholdCount: !Ref UnhealthyThresholdCount
+        AutoscalingStrategy: REST-API
+        AutoscalingThreshold: !Ref AutoscalingThreshold
+        AutoscalingCheckPeriod: !Ref AutoscalingCheckPeriod
+        MinTasksNumber: !Ref MinTasksNumber
+        MaxTasksNumber: !Ref MaxTasksNumber
+        AutoscalingDataPointN: !Ref AutoscalingDataPointN
+        AutoscalingDataPointM: !Ref AutoscalingDataPointM
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGIONCODE=${AWS::Region}'
@@ -105,7 +275,9 @@ Resources:
         ContainerEnvEntry3: !Sub 'AWS_DYNAMODB_TABLE=${MandatesDynamoTableName}'
         ContainerEnvEntry4: !Sub 'AWS_DYNAMODB_TABLE_HISTORY=${MandatesDynamoTableHistoryName}'
         ContainerEnvEntry5: 'PN_MANDATE_CLIENT_DATAVAULT_BASEPATH=http://alb.confidential.pn.internal:8080'
-        ContainerEnvEntry6: !Sub 'PN_MANDATE_CLIENT_INFOPA_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
+        ContainerEnvEntry6: !Sub 'PN_MANDATE_CLIENT_EXTREG_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
+        ContainerEnvEntry7: !Sub 'SPRING_CLOUD_FUNCTIONROUTER_QUEUES_LIST=${PnMandateInputsQueueName}'
+        ContainerEnvEntry8: !Sub 'PN_MANDATE_SQS_TO_PN_DELIVERY_NAME=${Mandate2DeliveryQueueName}'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -113,15 +285,16 @@ Resources:
         EcsDefaultSecurityGroup: !Ref EcsDefaultSecurityGroup
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
-        CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
+        AlbSecurityGroup: !Ref AlbSecurityGroup
+        TaskRoleManagedPolicyArn: !Ref MandateMicroserviceTaskManagedPolicy
+        EcsLogGroup: !Ref EcsLogGroup
+        LogAlarmStrategyV1: !Ref LogAlarmStrategy
+
 
   # Grant operational rights to PN-Mandate microservice
-  MandateMicroserviceTaskPolicy:
-    Type: AWS::IAM::Policy
+  MandateMicroserviceTaskManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
     Properties:
-      PolicyName: !Sub '${ProjectName}-mandate-CustomTaskPolicy'
-      Roles:
-        - !GetAtt MandateMicroservice.Outputs.TaskRoleName
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -141,12 +314,32 @@ Resources:
               - !Sub "${MandatesDynamoTableArn}"
               - !Sub "${MandatesDynamoTableArn}/*"
               - !Sub "${MandatesDynamoTableHistoryArn}"
+          - Effect: Allow
+            Action:
+              - sqs:ChangeMessageVisibility
+              - sqs:ChangeMessageVisibilityBatch
+              - sqs:DeleteMessage
+              - sqs:DeleteMessageBatch
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+              - sqs:ReceiveMessage
+              - sqs:SendMessage
+              - sqs:SendMessageBatch
+            Resource:
+              - !Ref PnMandateInputsQueueARN
+              - !Ref Mandate2DeliveryQueueARN
+          - Effect: Allow
+            Action:
+              - ssm:GetParameter
+              - ssm:GetParameters
+            Resource:
+              - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
 
   # Expose PN-Mandate microservice public API with API-GW for WEB usage
   MandateMicroservicePublicWebAPI:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service.yaml"
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service-openapi.yaml"
       Parameters:
         MicroServiceUniqueName: !Sub '${ProjectName}-mandate'
         IntendedUsage: WEB
@@ -157,12 +350,16 @@ Resources:
         ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
         CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
+        OpenApiBucketName: !Ref MicroserviceBucketName
+        OpenApiBucketKey: !Sub ${MicroserviceBucketBaseKey}/docs/openapi/aws/api-mandate-WEB-aws.yaml
+
   MandateMicroservicePublicWebApiWaf:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
       Parameters:
         WAFName: !Sub '${ProjectName}-mandate-web'
+        IntendedUsage: WEB
         APIGatewayARNs: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN
         Limit: 3000
 
@@ -179,11 +376,178 @@ Resources:
         RestApiStageArns: !Join
           - ','
           - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiStageArn
+        LambdaArns: !Join
+          - ','
+          - - !GetAtt PnMandateExpiredTriggerLambda.Arn
         RestApiNames: !Join
           - ','
           - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiName
         AlarmArns: !Join
           - ','
-          - - !GetAtt MandateMicroservice.Outputs.AutoScalingAlarmArn
-            - !GetAtt MandateMicroservice.Outputs.FatalLogsMetricAlarmArn
+          - - !GetAtt MandateMicroservice.Outputs.FatalLogsMetricAlarmArn
             - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiErrorAlarmArn
+            - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiLatencyAlarmArn
+            - !Ref PnMandateExpiredTriggerDLQAlarmARN
+            - !Ref PnMandateInputsQueueAlarmARN
+            - !Ref PnMandateInputsQueueAgeAlarmARN
+        QueueArns: !Join
+          - ','
+          - - !Ref Mandate2DeliveryQueueARN
+        LogGroupsNames: !Join
+          - ','
+          - - !Sub '/aws/ecs/${ProjectName}-mandate'
+
+  # Lambda function role
+  PnMandateExpiredTriggerLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-PnMandateExpiredTriggerLambdaRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-PnMandateExpiredTriggerLambdaRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: WriteOnQueue
+                Effect: Allow
+                Action:
+                  - sqs:ChangeMessageVisibility
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                  - sqs:SendMessage
+                Resource:
+                  - !Ref PnMandateInputsQueueARN
+                  - !Ref PnMandateExpiredTriggerDLQARN
+              - Sid: ReceiveDynamoStream
+                Effect: Allow
+                Action:
+                  - "dynamodb:DescribeStream"
+                  - "dynamodb:GetRecords"
+                  - "dynamodb:GetShardIterator"
+                  - "dynamodb:ListStreams"
+                Resource:
+                  - !Ref MandatesDynamoTableNameStreamArn
+              - Sid: CanWriteLogs
+                Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "*"
+
+  PnMandateExpiredTriggerLambdaEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !Ref MandatesDynamoTableNameStreamArn
+      StartingPosition: LATEST
+      BatchSize: !Sub ${PnMandateExpiredTriggerLambdaEventSourceMappingBatchSize}
+      MaximumBatchingWindowInSeconds: !Sub ${PnMandateExpiredTriggerLambdaEventSourceMappingMaximumBatchingWindowInSeconds}
+      MaximumRetryAttempts: !Sub ${PnMandateExpiredTriggerLambdaEventSourceMappingMaximumRetryAttempts}
+      FilterCriteria:
+        Filters: [{"Pattern": "{\"userIdentity\":{\"type\":[\"Service\"],\"principalId\":[\"dynamodb.amazonaws.com\"]}}"}]
+      FunctionName: !GetAtt PnMandateExpiredTriggerLambda.Arn
+       # Add an OnFailure destination on the event source mapping
+      DestinationConfig:
+        OnFailure:
+          Destination: !Ref PnMandateExpiredTriggerDLQARN
+
+
+
+  PnMandateExpiredTriggerLambda:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs16.x
+      FunctionName: !Ref PnMandateExpiredTriggerLambdaName
+      Description: 'It triggers expired mandates for moving them to history'
+      MemorySize: 128
+      Timeout: 10
+      Role: !GetAtt PnMandateExpiredTriggerLambdaRole.Arn
+      Layers:
+        - !Sub "arn:aws:lambda:${AWS::Region}:339249233099:layer:LambdaInsightsExtension:13"
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref PnMandateInputsQueueURL
+      Code:
+        ZipFile: |
+              const AWS = require('aws-sdk')
+              const sqs = new AWS.SQS();
+
+              const QUEUE_URL = process.env.QUEUE_URL
+
+              exports.handler = async (event) => {
+                  console.log(JSON.stringify(event, null, 2));
+                  console.log(QUEUE_URL);
+
+                  for(var i = 0;i<event.Records.length;i++)
+                  {
+                      let record = event.Records[i];
+                      if (record.eventName != 'REMOVE')
+                        continue;
+
+                      console.log('Processing dynamoDB Record: %j', record.dynamodb);
+                      const sortkey = record.dynamodb.Keys.sk.S;
+
+                      if (sortkey.match(/^MANDATETRIGGERHELPER#.*/)==null)
+                        continue;
+
+                      const delegatorInternalUserid = record.dynamodb.Keys.pk.S;
+                      const mandateId = sortkey.replace("MANDATETRIGGERHELPER#","");
+
+                      const delegatorUserid = record.dynamodb.OldImage.s_delegatoruid.S;
+                      const delegatorCxType = record.dynamodb.OldImage.s_delegatortype.S;
+
+                      var message = {
+                        DelaySeconds: 0,
+                        MessageGroupId: 'MANDATE',
+                        MessageDeduplicationId: sortkey + "_remove",
+                        MessageAttributes: {
+                          "createdAt": {
+                            DataType: "String",
+                            StringValue: new Date().toISOString()
+                          },
+                          "eventId": {
+                            DataType: "String",
+                            StringValue: sortkey + "_remove"
+                          },
+                          "eventType": {
+                            DataType: "String",
+                            StringValue: "MANDATE_EXPIRED"
+                          },
+                          "publisher": {
+                            DataType: "String",
+                            StringValue: "MANDATE"
+                          }
+                        },
+                        MessageBody: JSON.stringify({delegatorInternalUserid: delegatorInternalUserid, mandateId: mandateId, delegatorUserid: delegatorUserid, delegatorCxType: delegatorCxType}),
+                        QueueUrl: QUEUE_URL
+                      };
+
+                      console.log('Sending message: %j', message);
+                      try{
+                          let queueRes = await sqs.sendMessage(message).promise();
+                          console.log("Sent message", queueRes.MessageId);
+                      }catch(exc){
+                          console.log("error sending message", exc)
+                          throw exc;
+                      }
+                  }
+
+                  const response = {
+                      StatusCode: 200
+                  };
+                  return response;
+
+              };
+      #ENDpnmandateexpiredtrigger
+      #Non rimuovere o modificare il commento sopra, è usato come placeholder negli script
+

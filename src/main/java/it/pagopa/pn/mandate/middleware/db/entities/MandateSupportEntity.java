@@ -8,6 +8,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
+import java.time.Instant;
+
 /**
  * Entity di supporto alla delega
  */
@@ -27,12 +29,18 @@ public class MandateSupportEntity {
 
     public MandateSupportEntity(MandateEntity source)
     {
+       this(source, source.getValidto());
+    }
+
+
+    public MandateSupportEntity(MandateEntity source, Instant expire)
+    {
         this.setDelegator(source.getDelegator());
         this.setMandateId(source.getMandateId());
         this.setDelegatorUid(source.getDelegatorUid());
         this.setDelegatorType(Boolean.TRUE.equals(source.getDelegatorisperson())?"PF":"PG");
-        if (source.getValidto() != null)
-            this.setTtl(source.getValidto().getEpochSecond());
+        if (expire != null)
+            this.setTtl(expire.getEpochSecond());
     }
 
 

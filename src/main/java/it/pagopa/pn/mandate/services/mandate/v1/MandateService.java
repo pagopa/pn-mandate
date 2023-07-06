@@ -32,6 +32,7 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 
@@ -198,6 +199,7 @@ public class MandateService {
                                             entity.setDelegator(requesterInternaluserId);
                                             entity.setDelegatorisperson(requesterUserTypeIsPF);
                                             entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
+                                            entity.setCreated(Instant.now());
                                             entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
                                             if (log.isInfoEnabled())
                                                 log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}",

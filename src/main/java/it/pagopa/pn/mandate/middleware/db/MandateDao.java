@@ -205,7 +205,7 @@ public class MandateDao extends BaseDao {
             switch (operator) {
                 case CONTAINS -> addContainsFilterExpression(field, prefix, i, expression);
                 case EQ -> addEqFilterExpression(field, prefix, i, expression);
-                case GT -> addLtFilterExpression(field, prefix, i, expression);
+                case GT -> addGtFilterExpression(field, prefix, i, expression);
                 default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
             }
             if (i < values.size() - 1) {
@@ -216,7 +216,7 @@ public class MandateDao extends BaseDao {
         expression.append(")");
     }
 
-    private void addLtFilterExpression(String field, String prefix, int i, StringBuilder expression) {
+    private void addGtFilterExpression(String field, String prefix, int i, StringBuilder expression) {
         expression.append(field).append(GT).append(prefix).append(i).append(" OR attribute_not_exists(").append(field).append(")");
     }
 

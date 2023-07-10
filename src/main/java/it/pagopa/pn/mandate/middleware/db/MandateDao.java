@@ -48,6 +48,8 @@ public class MandateDao extends BaseDao {
     private static final String AND = " AND ";
     private static final String CONTAINS = "contains";
     private static final String EQ = "=";
+    private static final String GT = ">";
+
 
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
     DynamoDbAsyncClient dynamoDbAsyncClient;
@@ -163,6 +165,10 @@ public class MandateDao extends BaseDao {
     private Expression filterExpressionSearchByDelegate(List<String> groups, List<String> delegatorIds) {
         Expression.Builder expressionBuilder = Expression.builder();
         StringBuilder filterExpression = new StringBuilder();
+        String date = DateUtils.formatDate(ZonedDateTime.now().toInstant());
+        addNewFilterExpression(filterExpression);
+        addFilterExpression(List.of(date), MandateEntity.COL_D_VALIDTO, ":now",GT, expressionBuilder, filterExpression);
+
         if (!CollectionUtils.isEmpty(groups)) {
             addNewFilterExpression(filterExpression);
             addFilterExpression(groups, MandateEntity.COL_A_GROUPS, ":g", CONTAINS, expressionBuilder, filterExpression);
@@ -198,6 +204,7 @@ public class MandateDao extends BaseDao {
             switch (operator) {
                 case CONTAINS -> addContainsFilterExpression(field, prefix, i, expression);
                 case EQ -> addEqFilterExpression(field, prefix, i, expression);
+                case GT -> addGtFilterExpression(field, prefix, i, expression);
                 default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
             }
             if (i < values.size() - 1) {
@@ -206,6 +213,10 @@ public class MandateDao extends BaseDao {
             expressionBuilder.putExpressionValue(prefix + i, AttributeValue.builder().s(values.get(i)).build());
         }
         expression.append(")");
+    }
+
+    private void addGtFilterExpression(String field, String prefix, int i, StringBuilder expression) {
+        expression.append(field).append(GT).append(prefix).append(i).append(" OR attribute_not_exists(").append(field).append(")");
     }
 
     private void addContainsFilterExpression(String field, String prefix, int idx, StringBuilder expression) {

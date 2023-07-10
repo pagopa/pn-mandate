@@ -19,6 +19,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -70,6 +71,39 @@ class DelegateDaoIT {
         try {
             Assertions.assertNotNull( result);
             Assertions.assertEquals(1,  result.getPendingcount());
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+
+    @Test
+    void countMandatesPendingExpiredOnly() {
+        //Given
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
+        mandateToInsert.setValidto(Instant.now().minusSeconds(10));
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        DelegateEntity result = delegateDao.countMandates(mandateToInsert.getDelegate(), CxTypeAuthFleet.PF, null)
+                .block(Duration.ofMillis(3000));
+
+        //Then
+        try {
+            Assertions.assertNotNull( result);
+            Assertions.assertEquals(0,  result.getPendingcount());
         } catch (Exception e) {
             fail(e);
         } finally {

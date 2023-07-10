@@ -87,7 +87,7 @@ class DelegateDaoIT {
     void countMandatesPendingExpiredOnly() {
         //Given
         MandateEntity mandateToInsert = MandateDaoIT.newMandate(true);
-        mandateToInsert.setValidto(Instant.now().minusSeconds(10));
+        mandateToInsert.setValidto(Instant.now().minusSeconds(86400));
 
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());

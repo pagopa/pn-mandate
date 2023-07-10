@@ -52,17 +52,17 @@ public class DelegateDao extends BaseDao {
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
         expressionValues.put(":state", AttributeValue.builder().n(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING) + "").build());  //anche se numero, va convertito in stringa, a dynamo piace così
 
-        String expression = null;
+        String expression = getValidToFilterExpression();
 
         if(CxTypeAuthFleet.PG.equals(cxTypeAuthFleet) && cxGroups!=null && !cxGroups.isEmpty())
-            expression = buildExpressionGroupFilter(cxGroups, expressionValues);
+            expression += " AND " + buildExpressionGroupFilter(cxGroups, expressionValues);
 
         QueryRequest qeRequest = QueryRequest
                 .builder()
                 .select(Select.COUNT)
                 .tableName(table)
                 .indexName(GSI_INDEX_DELEGATE_STATE)
-                .keyConditionExpression("(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) AND " + MandateEntity.COL_S_DELEGATE + " = :delegate AND " + MandateEntity.COL_I_STATE + " = :state")
+                .keyConditionExpression(MandateEntity.COL_S_DELEGATE + " = :delegate AND " + MandateEntity.COL_I_STATE + " = :state")
                 .expressionAttributeValues(expressionValues)
                 .filterExpression(expression)
                 .build();
@@ -72,5 +72,10 @@ public class DelegateDao extends BaseDao {
                 user.setPendingcount(x.count());
                 return user;
         }));
+    }
+
+
+    private String getValidToFilterExpression() {
+        return "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) ";
     }
 }

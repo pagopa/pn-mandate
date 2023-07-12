@@ -1,7 +1,9 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
+import it.pagopa.pn.commons.exceptions.PnRuntimeException;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
+import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.exceptions.PnUnsupportedFilterException;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
@@ -254,6 +256,13 @@ public class MandateService {
                                                    CxTypeAuthFleet xPagopaPnCxType,
                                                    List<String> xPagopaPnCxGroups,
                                                    String xPagopaPnCxRole) {
+
+        try {
+            validateUtils.validateListMandatesByDelegateRequest(xPagopaPnCxType);
+        }catch(PnRuntimeException e){
+            return Flux.error(e);
+        }
+
         Integer iStatus = null;
         if (status != null && !status.equals("")) {
             iStatus = convertStatusStringToInteger(status);

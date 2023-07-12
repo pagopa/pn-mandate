@@ -201,4 +201,11 @@ public class MandateValidationUtils {
         log.logCheckingOutcome(process, true);
     }
 
+    public void validateListMandatesByDelegateRequest(
+                CxTypeAuthFleet xPagopaPnCxType){
+
+        if (CxTypeAuthFleet.PG.equals(xPagopaPnCxType) ) {
+            throw new PnForbiddenException();
+        }
+    }
 }

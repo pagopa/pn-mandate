@@ -255,7 +255,7 @@ public class MandateService {
                                                    CxTypeAuthFleet xPagopaPnCxType,
                                                    List<String> xPagopaPnCxGroups,
                                                    String xPagopaPnCxRole) {
-        if (xPagopaPnCxType.equals(CxTypeAuthFleet.PG) ) {
+        if (CxTypeAuthFleet.PG.equals(xPagopaPnCxType) ) {
             return Flux.error(new PnForbiddenException());
         }
         Integer iStatus = null;

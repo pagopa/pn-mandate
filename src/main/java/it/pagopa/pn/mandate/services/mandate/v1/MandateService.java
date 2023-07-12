@@ -258,9 +258,9 @@ public class MandateService {
                                                    String xPagopaPnCxRole) {
 
         try {
-            validateUtils.validateListMandatesByDelegateRequest(status, internaluserId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole);
+            validateUtils.validateListMandatesByDelegateRequest(xPagopaPnCxType);
         }catch(PnRuntimeException e){
-            Flux.error(e);
+            return Flux.error(e);
         }
 
         Integer iStatus = null;

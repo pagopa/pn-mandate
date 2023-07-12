@@ -172,10 +172,10 @@ class MandateRestV1ControllerTest {
     @Test
     void listMandatesByDelegate1Validation() {
         assertDoesNotThrow(()->
-            validationUtils.validateListMandatesByDelegateRequest(null, "", CxTypeAuthFleet.PF, null, null)
+            validationUtils.validateListMandatesByDelegateRequest( CxTypeAuthFleet.PF)
         );
 
-        Throwable exception = assertThrows(PnForbiddenException.class, () -> validationUtils.validateListMandatesByDelegateRequest(null, "", CxTypeAuthFleet.PG, null, null));
+        Throwable exception = assertThrows(PnForbiddenException.class, () -> validationUtils.validateListMandatesByDelegateRequest( CxTypeAuthFleet.PG));
         assertEquals("Accesso negato!", exception.getMessage());
 
     }

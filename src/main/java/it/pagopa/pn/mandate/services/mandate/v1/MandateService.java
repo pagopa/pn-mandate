@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
+import it.pagopa.pn.commons.exceptions.PnRuntimeException;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
@@ -255,9 +256,13 @@ public class MandateService {
                                                    CxTypeAuthFleet xPagopaPnCxType,
                                                    List<String> xPagopaPnCxGroups,
                                                    String xPagopaPnCxRole) {
-        if (CxTypeAuthFleet.PG.equals(xPagopaPnCxType) ) {
-            return Flux.error(new PnForbiddenException());
+
+        try {
+            validateUtils.validateListMandatesByDelegateRequest(status, internaluserId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole);
+        }catch(PnRuntimeException e){
+            Flux.error(e);
         }
+
         Integer iStatus = null;
         if (status != null && !status.equals("")) {
             iStatus = convertStatusStringToInteger(status);

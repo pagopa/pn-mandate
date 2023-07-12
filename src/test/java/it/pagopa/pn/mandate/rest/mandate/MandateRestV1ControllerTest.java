@@ -1,11 +1,15 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
+import it.pagopa.pn.commons.utils.ValidateUtils;
+import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
+import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -21,11 +25,14 @@ import reactor.core.publisher.Mono;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 
 @WebFluxTest(controllers = {MandateRestV1Controller.class})
-@Import({MandateEntityMandateDtoMapper.class, UserEntityMandateCountsDtoMapper.class})
+@Import({MandateEntityMandateDtoMapper.class, UserEntityMandateCountsDtoMapper.class, MandateValidationUtils.class })
 class MandateRestV1ControllerTest {
 
     public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-uid";
@@ -39,8 +46,17 @@ class MandateRestV1ControllerTest {
     @Autowired
     private MandateEntityMandateDtoMapper mapper;
 
+    @Autowired
+    private MandateValidationUtils validationUtils;
+
     @MockBean
     private MandateService mandateService;
+
+    @MockBean
+    private ValidateUtils validateUtils;
+
+    @MockBean
+    private PnExtRegPrvtClient pnExtRegPrvtClient;
 
     @Test
     void countMandatesByDelegate() {
@@ -73,6 +89,7 @@ class MandateRestV1ControllerTest {
         //When
         Mockito.when( mandateService.acceptMandate( Mockito.any(), Mockito.any() , Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(Mono.just(new MandateEntity()));
+
 
         //Then
         webTestClient.patch()
@@ -149,6 +166,18 @@ class MandateRestV1ControllerTest {
                 .header(PN_PAGOPA_CX_TYPE, "PF")
                 .exchange()
                 .expectStatus().isOk().expectBodyList(MandateDto.class);
+    }
+
+
+    @Test
+    void listMandatesByDelegate1Validation() {
+        assertDoesNotThrow(()->
+            validationUtils.validateListMandatesByDelegateRequest(null, "", CxTypeAuthFleet.PF, null, null)
+        );
+
+        Throwable exception = assertThrows(PnForbiddenException.class, () -> validationUtils.validateListMandatesByDelegateRequest(null, "", CxTypeAuthFleet.PG, null, null));
+        assertEquals("Accesso negato!", exception.getMessage());
+
     }
 
     @Test

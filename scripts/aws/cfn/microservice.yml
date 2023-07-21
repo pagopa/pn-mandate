@@ -367,6 +367,7 @@ Resources:
         IntendedUsage: WEB
         APIGatewayARNs: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN
         Limit: !Ref WebApiLimit
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
 
   MandateMicroserviceCloudWatchDashboard:
     Type: AWS::CloudFormation::Stack

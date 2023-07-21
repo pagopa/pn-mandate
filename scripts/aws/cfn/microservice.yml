@@ -246,6 +246,11 @@ Parameters:
     Type: String
     Default: 'FATAL'
 
+  WebApiLimit:
+    Type: Number
+    Default: 600
+    Description: WEB api WAF Limit (per IP)
+
 Resources:
 
   # PN-Mandate microservice
@@ -361,7 +366,7 @@ Resources:
         WAFName: !Sub '${ProjectName}-mandate-web'
         IntendedUsage: WEB
         APIGatewayARNs: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN
-        Limit: 300
+        Limit: !Ref WebApiLimit
 
   MandateMicroserviceCloudWatchDashboard:
     Type: AWS::CloudFormation::Stack

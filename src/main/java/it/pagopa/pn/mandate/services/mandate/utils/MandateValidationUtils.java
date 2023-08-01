@@ -159,13 +159,13 @@ public class MandateValidationUtils {
         }
 
         if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
-                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), true)) {
+                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), true, false)) {
             log.logCheckingOutcome(process, false, "invalid delegate taxid");
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
         }
         // le PG possono avere p.iva o CF!
         if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
-                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), false)) {
+                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), false,false)) {
             log.logCheckingOutcome(process, false, "invalid delegate taxid");
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
         }

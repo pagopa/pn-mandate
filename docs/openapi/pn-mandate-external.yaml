@@ -292,6 +292,15 @@ paths:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
+
+tags:
+  - name: HealthCheck
+    description: >-
+      Invocazioni per sapere lo stato del microservizio
+  - name: mandate-service
+    description: >-
+      Servizi per gestione delega
+
 components:
   parameters:
     cxRoleAuthFleet:

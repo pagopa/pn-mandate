@@ -6,6 +6,7 @@
     "WebApiLimit": "3000",
     "MinTasksNumber": "2",
     "MaxTasksNumber": "3",
-    "AutoscalingThreshold": "1300"
+    "AutoscalingThreshold": "1300",
+    "EnhancedWebSecurityEnabled": "true"
   }
 }

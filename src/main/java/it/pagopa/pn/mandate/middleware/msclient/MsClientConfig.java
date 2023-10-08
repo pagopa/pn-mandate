@@ -5,6 +5,7 @@ import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.ApiClient;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.api.MandatesApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.api.RecipientsApi;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.api.AooUoIdsApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.api.InfoPaApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +34,13 @@ public class MsClientConfig extends CommonBaseClient {
         return new it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.api.InternalOnlyApi(apiClient);
     }
 
+    @Bean
+    public AooUoIdsApi getAooUoIdsApi(PnMandateConfig mandateConfig) {
+        it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.ApiClient apiClient =
+                new it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.ApiClient(super.initWebClient(ApiClient.buildWebClientBuilder()));
+        apiClient.setBasePath(mandateConfig.getClientExtregBasepath());
+        return new AooUoIdsApi(apiClient);
+    }
 
     @Bean
     public InfoPaApi getInfoPaApi(PnMandateConfig mandateConfig) {

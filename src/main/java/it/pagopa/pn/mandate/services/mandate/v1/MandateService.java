@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
 import it.pagopa.pn.commons.exceptions.PnRuntimeException;
+import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
@@ -187,6 +188,7 @@ public class MandateService {
         return Mono.defer(() -> validaAccessoOnlyAdmin(cxTypeAuthFleet, role, groups))
                 .flatMap(obj -> mandateDto
                         .map(validateUtils::validateCreationRequest)
+                        .flatMap(m -> validateUtils.validateVisibilityId(m).thenReturn(m))
                         .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegate().getPerson(), dto.getDelegate().getFiscalCode())
                                         .map(delegateInternaluserId -> {
 

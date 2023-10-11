@@ -812,6 +812,7 @@ class MandateServiceTest {
         when(mapper.toEntity(Mockito.any())).thenReturn(entity);
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
         when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean(), Mockito.eq(false))).thenReturn( true );
+        when(pnExtRegPrvtClient.checkAooUoIds(Mockito.anyList())).thenReturn(Flux.empty());
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
@@ -825,6 +826,71 @@ class MandateServiceTest {
         assertEquals(paSummaryDto.getName(), result.getVisibilityIds().get(0).getName());
     }
 
+
+    @Test
+    void createMandateWithInvalidVisibilityId() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+        // MandateDto come proviene da FE quindi senza alcune info
+        final MandateDto mandateDto = new MandateDto();
+        mandateDto.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDto.setVerificationCode(entity.getValidationcode());
+        mandateDto.setVisibilityIds(new ArrayList<>());
+        OrganizationIdDto organizationIdDto = new OrganizationIdDto();
+        organizationIdDto.setUniqueIdentifier("abcd");
+        mandateDto.getVisibilityIds().add(organizationIdDto);
+        mandateDto.setDelegate(new UserDto());
+        mandateDto.getDelegate().setFirstName("mario");
+        mandateDto.getDelegate().setLastName("rossi");
+        mandateDto.getDelegate().setFiscalCode("LVLDAA85T50G702B");
+        mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
+
+        final MandateDto mandateDtoRes = new MandateDto();
+        mandateDtoRes.setMandateId(entity.getMandateId());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
+        mandateDtoRes.setStatus(MandateDto.StatusEnum.PENDING);
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRes.setVerificationCode(entity.getValidationcode());
+        mandateDtoRes.setVisibilityIds(new ArrayList<>());
+        mandateDtoRes.getVisibilityIds().add(organizationIdDto);
+        mandateDtoRes.setDelegate(new UserDto());
+        mandateDtoRes.getDelegate().setFirstName("mario");
+        mandateDtoRes.getDelegate().setLastName("rossi");
+        mandateDtoRes.getDelegate().setFiscalCode("LVLDAA85T50G702B");
+        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
+
+        List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
+        MandateDtoDto mandateDtoDto = new MandateDtoDto();
+        mandateDtoDto.mandateId(entity.getMandateId());
+        DenominationDtoDto denominationDtoDto = new DenominationDtoDto();
+        denominationDtoDto.setDestName("mario");
+        denominationDtoDto.setDestSurname("rossi");
+        mandateDtoDto.setInfo(denominationDtoDto);
+        resgetmandatesbyid.add(mandateDtoDto);
+
+        PaSummaryDto paSummaryDto = new PaSummaryDto();
+        paSummaryDto.setId(organizationIdDto.getUniqueIdentifier());
+        paSummaryDto.setName("nome");
+
+
+        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
+        when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
+        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
+        when(pnInfoPaClient.getManyPa(Mockito.anyList())).thenReturn(Flux.fromIterable(List.of(paSummaryDto)));
+        when(mapper.toEntity(Mockito.any())).thenReturn(entity);
+        when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+        when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean(), Mockito.eq(false))).thenReturn( true );
+
+        when(pnExtRegPrvtClient.checkAooUoIds(Mockito.anyList())).thenReturn(Flux.just("abcd"));
+
+
+        //When
+        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
+        //Then
+        assertThrows(PnInvalidVisibilityIdException.class, () -> mono.block(D));
+
+    }
 
     @Test
     void createMandateWithListMany() {
@@ -888,6 +954,7 @@ class MandateServiceTest {
         when(mapper.toEntity(Mockito.any())).thenReturn(entity);
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn( true );
+        when(pnExtRegPrvtClient.checkAooUoIds(Mockito.anyList())).thenReturn(Flux.empty());
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
@@ -941,7 +1008,7 @@ class MandateServiceTest {
         mandateDto.getDelegate().setFiscalCode("FAKEFAKEFAKE");
         mandateDto.getDelegate().setPerson(false);
 
-        //When
+       //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
         Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);

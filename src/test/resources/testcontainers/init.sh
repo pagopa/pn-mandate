@@ -1,3 +1,5 @@
+echo "test"
+
 echo "### CREATE QUEUES FIFO ###"
 
 queues_fifo="local-mandate-inputs.fifo"
@@ -66,6 +68,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
 echo "Initialization terminated"
 
 echo "Initialization terminated"
+
 
 
 

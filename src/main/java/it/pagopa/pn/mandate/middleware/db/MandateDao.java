@@ -432,8 +432,12 @@ public class MandateDao extends BaseDao {
     private CompletableFuture<Void> savePendingWithExpireSupport(MandateEntity mandate) {
         // Prevedo un record di supporto con TTL con impostata la scadenza relativa all'accettazione della delega
         TransactWriteItemsEnhancedRequest.Builder transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
+
+        if (mandate.getCreated() == null) {
+            mandate.setCreated(Instant.now());
+        }
         Instant pendingExpiredInstant = mandate.getCreated().plus(this.pendingExpire);
-        MandateSupportEntity support = new MandateSupportEntity(mandate, pendingExpiredInstant);
+        MandateSupportEntity support = new MandateSupportEntity(mandate, pendingExpiredInstant.isBefore(mandate.getValidto())?pendingExpiredInstant:mandate.getValidto());
         transactionBuilder.addPutItem(mandateSupportTable, TransactPutItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build());
         log.info("creating also support entity for pending ttl expiration pendingExpiredInstant={}", pendingExpiredInstant);
 
@@ -577,12 +581,20 @@ public class MandateDao extends BaseDao {
                                 throw new PnMandateNotFoundException();
                             }
                             log.info("expireMandate mandate for delegate retrieved mandateobj={}", mandate);
+                            boolean skipHistory = false;
                             // se lo stato era active, lo porto ad expired
                             // ora invece potrà succedere che arrivi l'expired di deleghe in pending
-                            if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
-                                mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
+                            if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {
+                                if (Instant.now().isAfter(mandate.getCreated().plus(this.pendingExpire))){
+                                    mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
+                                } else {
+                                    //Se nel frattempo la delega è stata accettata ignoro l'expire date del pending
+                                    log.warn("delegate is accepted in meanwhile {}", mandate);
+                                    skipHistory = true;
+                                }
+                            }
 
-                            return saveHistoryAndDeleteFromMain(mandate);
+                            return skipHistory ? CompletableFuture.completedFuture(mandate) : saveHistoryAndDeleteFromMain(mandate);
                         }))
                 .onErrorResume(throwable -> {
                     logEvent.generateFailure(throwable.getMessage()).log();

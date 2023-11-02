@@ -37,7 +37,6 @@ public class MandateEntity {
     public static final String COL_T_REVOKED = "t_revoked";
     public static final String COL_S_VALIDATIONCODE = "s_validationcode";
     public static final String COL_A_VISIBILITYIDS = "a_visibilityids";
-    //public static final String COL_I_INVALIDCODEATTEMPTS = "i_invalidcodeattempts";
     public static final String COL_I_TTL = "i_ttl";
     public static final String COL_A_GROUPS = "a_groups";
 

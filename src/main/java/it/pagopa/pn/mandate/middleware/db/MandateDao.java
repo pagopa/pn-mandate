@@ -228,7 +228,7 @@ public class MandateDao extends BaseDao {
     }
 
     private void addNewFilterExpression(StringBuilder expression) {
-        expression.append(expression.length() > 0 ? AND : "");
+        expression.append(!expression.isEmpty() ? AND : "");
     }
 
     /**
@@ -437,8 +437,14 @@ public class MandateDao extends BaseDao {
             mandate.setCreated(Instant.now());
         }
         Instant pendingExpiredInstant = mandate.getCreated().plus(this.pendingExpire);
-        MandateSupportEntity support = new MandateSupportEntity(mandate, pendingExpiredInstant.isBefore(mandate.getValidto())?pendingExpiredInstant:mandate.getValidto());
-        transactionBuilder.addPutItem(mandateSupportTable, TransactPutItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build());
+        MandateSupportEntity support;
+        if (mandate.getValidto() != null && pendingExpiredInstant.isBefore(mandate.getValidto())){
+            support = new MandateSupportEntity(mandate, pendingExpiredInstant);
+        } else {
+            support = new MandateSupportEntity(mandate, mandate.getValidto() != null ?mandate.getValidto() :  pendingExpiredInstant);
+        }
+        var request = TransactPutItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build();
+        transactionBuilder.addPutItem(mandateSupportTable, request);
         log.info("creating also support entity for pending ttl expiration pendingExpiredInstant={}", pendingExpiredInstant);
 
         // aggiungo l'update delle deleghe e lancio la transazione
@@ -585,7 +591,8 @@ public class MandateDao extends BaseDao {
                             // se lo stato era active, lo porto ad expired
                             // ora invece potrà succedere che arrivi l'expired di deleghe in pending
                             if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {
-                                if (Instant.now().isAfter(mandate.getCreated().plus(this.pendingExpire))){
+                                Instant validTo = mandate.getValidto() != null ? mandate.getValidto() :mandate.getCreated().plus(this.pendingExpire);
+                                if (Instant.now().isAfter(validTo)){
                                     mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
                                 } else {
                                     //Se nel frattempo la delega è stata accettata ignoro l'expire date del pending

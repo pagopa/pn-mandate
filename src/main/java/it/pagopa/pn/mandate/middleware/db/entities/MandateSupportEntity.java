@@ -3,6 +3,7 @@ package it.pagopa.pn.mandate.middleware.db.entities;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
@@ -15,6 +16,7 @@ import java.time.Instant;
  */
 @DynamoDbBean
 @Data
+@Setter
 @NoArgsConstructor
 public class MandateSupportEntity {
 
@@ -39,8 +41,9 @@ public class MandateSupportEntity {
         this.setMandateId(source.getMandateId());
         this.setDelegatorUid(source.getDelegatorUid());
         this.setDelegatorType(Boolean.TRUE.equals(source.getDelegatorisperson())?"PF":"PG");
-        if (expire != null)
+        if (expire != null) {
             this.setTtl(expire.getEpochSecond());
+        }
     }
 
 
@@ -56,5 +59,5 @@ public class MandateSupportEntity {
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_DELEGATOR_UID)}))  private String delegatorUid;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_DELEGATOR_TYPE)}))  private String delegatorType;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_TTL)}))  private Long ttl;
-    
+
 }

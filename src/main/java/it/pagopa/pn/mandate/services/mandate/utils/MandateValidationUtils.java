@@ -5,6 +5,7 @@ import it.pagopa.pn.commons.exceptions.dto.ProblemError;
 import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.OrganizationIdDto;
 import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.AcceptRequestDto;
@@ -13,6 +14,7 @@ import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.ConstraintViolation;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.*;
 
@@ -93,6 +96,29 @@ public class MandateValidationUtils {
                 });
     }
 
+    public Mono<Void> validateVisibilityId(MandateDto mandateDto) {
+        String process = "validating visibilityId";
+        log.logChecking(process);
+
+        if (mandateDto.getVisibilityIds() == null || mandateDto.getVisibilityIds().isEmpty()) {
+            log.logCheckingOutcome(process, true);
+            return Mono.empty();
+        }
+
+
+        return pnExtRegPrvtClient.checkAooUoIds(mandateDto.getVisibilityIds().stream().map(OrganizationIdDto::getUniqueIdentifier).collect(Collectors.toList()))
+                .hasElements()
+                .flatMap(hasElement ->{
+                    if(hasElement){
+                        log.logCheckingOutcome(process, false, "invalid visibilityId");
+                        return Mono.error(new PnInvalidVisibilityIdException());
+                    }else{
+                        log.logCheckingOutcome(process, true);
+                        return Mono.empty();
+                    }
+                });
+    }
+
     @NotNull
     public AcceptRequestDto validateAcceptMandateRequest(String mandateId, AcceptRequestDto m) {
         String process = "validating accept mandate";
@@ -159,13 +185,13 @@ public class MandateValidationUtils {
         }
 
         if (Boolean.TRUE.equals(mandateDto.getDelegate().getPerson())
-                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), true)) {
+                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), true, false)) {
             log.logCheckingOutcome(process, false, "invalid delegate taxid");
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
         }
         // le PG possono avere p.iva o CF!
         if (Boolean.FALSE.equals(mandateDto.getDelegate().getPerson())
-                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), false)) {
+                && !validateUtils.validate(mandateDto.getDelegate().getFiscalCode(), false,false)) {
             log.logCheckingOutcome(process, false, "invalid delegate taxid");
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATE_FISCAL_CODE);
         }
@@ -175,7 +201,6 @@ public class MandateValidationUtils {
             log.logCheckingOutcome(process, false, "missing expire date");
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DATE_TO);
         }
-
 
         log.logCheckingOutcome(process, true);
         return mandateDto;
@@ -201,4 +226,11 @@ public class MandateValidationUtils {
         log.logCheckingOutcome(process, true);
     }
 
+    public void validateListMandatesByDelegateRequest(
+                CxTypeAuthFleet xPagopaPnCxType){
+
+        if (CxTypeAuthFleet.PG.equals(xPagopaPnCxType) ) {
+            throw new PnForbiddenException();
+        }
+    }
 }

@@ -7,6 +7,7 @@ import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
@@ -40,12 +41,6 @@ public class MandateDaoIT {
 
     @Autowired
     private MandateDao mandateDao;
-
-    @Autowired
-    PnMandateConfig cfg;
-
-    @Autowired
-    PnAuditLogBuilder pnAuditLogBuilder;
 
     @Autowired
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
@@ -1331,10 +1326,48 @@ public class MandateDaoIT {
     }
 
     @Test
-    void expireMandate() {
+    void expireMandateActiveStillValid() {
         //Given
         MandateEntity mandateToInsert = newMandate(false);
+        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE));
+        mandateToInsert.setValidto(Instant.now().plus(Duration.ofHours(1)));
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
 
+        //When
+        mandateDao.expireMandate(mandateToInsert.getDelegator(), mandateToInsert.getDelegatorUid(), mandateToInsert.getDelegatorisperson()?"PF":"PG", mandateToInsert.getMandateId()).block(d);
+
+
+        //Then
+        try {
+            MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            MandateEntity elementHistoryFromDb = testDao.getHistory(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+
+            Assertions.assertNotNull( elementFromDb);
+            Assertions.assertNull( elementHistoryFromDb);
+            Assertions.assertEquals( StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE), elementFromDb.getState());
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.deleteHistory(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void expireMandateActiveAndExpired() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE));
+        mandateToInsert.setValidto(Instant.now());
         try {
             testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
             mandateDao.createMandate(mandateToInsert).block(d);
@@ -1366,6 +1399,40 @@ public class MandateDaoIT {
         }
     }
 
+    @Test
+    void expireMandatePending() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        mandateDao.expireMandate(mandateToInsert.getDelegator(), mandateToInsert.getDelegatorUid(), mandateToInsert.getDelegatorisperson()?"PF":"PG", mandateToInsert.getMandateId()).block(d);
+
+
+        //Then
+        try {
+            MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            MandateEntity elementHistoryFromDb = testDao.getHistory(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+
+            Assertions.assertNull( elementFromDb);
+            Assertions.assertNotNull( elementHistoryFromDb);
+            Assertions.assertEquals( StatusEnumMapper.intValfromStatus(StatusEnum.PENDING), elementHistoryFromDb.getState());
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.deleteHistory(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
 
     @Test
     void expireMandateNotFound() {
@@ -1512,6 +1579,74 @@ public class MandateDaoIT {
             try {
                 testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
                 testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void createMandateWithCreated() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(true);
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        mandateDao.createMandate(mandateToInsert).block(d);
+
+        //Then
+        try {
+            MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+
+            Assertions.assertNotNull( elementFromDb);
+            Assertions.assertNotNull( elementFromDb.getCreated());
+            Assertions.assertEquals( mandateToInsert, elementFromDb);
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void acceptMandateWithExpiration() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(), null, CxTypeAuthFleet.PF).block(d);
+
+        //Then
+        try {
+            MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+
+            Assertions.assertNotNull(elementFromDb);
+            Assertions.assertEquals( StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), elementFromDb.getState());
+            Assertions.assertNotNull(elementFromDb.getAccepted());
+
+
+            MandateSupportEntity support = testDao.getSupport(elementFromDb.getDelegator(), MandateSupportEntity.MANDATE_TRIGGERHELPER_PREFIX+elementFromDb.getMandateId());
+            Assertions.assertNotNull(support.getTtl());
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
             } catch (Exception e) {
                 System.out.println("Nothing to remove");
             }

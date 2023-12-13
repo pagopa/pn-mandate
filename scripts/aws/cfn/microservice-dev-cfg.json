@@ -7,6 +7,7 @@
     "MinTasksNumber": "2",
     "MaxTasksNumber": "3",
     "AutoscalingThreshold": "1300",
+    "PendingDuration": "15m",
     "EnhancedWebSecurityEnabled": "true"
   }
 }

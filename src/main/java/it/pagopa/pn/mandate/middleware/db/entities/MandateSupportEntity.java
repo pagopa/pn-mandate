@@ -3,16 +3,20 @@ package it.pagopa.pn.mandate.middleware.db.entities;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+
+import java.time.Instant;
 
 /**
  * Entity di supporto alla delega
  */
 @DynamoDbBean
 @Data
+@Setter
 @NoArgsConstructor
 public class MandateSupportEntity {
 
@@ -27,12 +31,19 @@ public class MandateSupportEntity {
 
     public MandateSupportEntity(MandateEntity source)
     {
+       this(source, source.getValidto());
+    }
+
+
+    public MandateSupportEntity(MandateEntity source, Instant expire)
+    {
         this.setDelegator(source.getDelegator());
         this.setMandateId(source.getMandateId());
         this.setDelegatorUid(source.getDelegatorUid());
         this.setDelegatorType(Boolean.TRUE.equals(source.getDelegatorisperson())?"PF":"PG");
-        if (source.getValidto() != null)
-            this.setTtl(source.getValidto().getEpochSecond());
+        if (expire != null) {
+            this.setTtl(expire.getEpochSecond());
+        }
     }
 
 
@@ -48,5 +59,5 @@ public class MandateSupportEntity {
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_DELEGATOR_UID)}))  private String delegatorUid;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_DELEGATOR_TYPE)}))  private String delegatorType;
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_TTL)}))  private Long ttl;
-    
+
 }

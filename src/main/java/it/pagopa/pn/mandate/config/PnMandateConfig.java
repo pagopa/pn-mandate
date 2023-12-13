@@ -8,6 +8,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import java.time.Duration;
+
 @Getter
 @Setter
 @Configuration
@@ -24,4 +26,6 @@ public class PnMandateConfig {
     private String dynamodbTableHistory;
 
     private Integer maxPageSize;
+
+    private Duration pendingDuration;
 }

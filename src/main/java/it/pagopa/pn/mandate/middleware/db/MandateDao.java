@@ -30,10 +30,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.Select;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -61,6 +58,7 @@ public class MandateDao extends BaseDao {
     DynamoDbAsyncTable<MandateEntity> mandateHistoryTable;
 
     String table;
+    Duration pendingExpire;
 
     public MandateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                       DynamoDbAsyncClient dynamoDbAsyncClient,
@@ -71,6 +69,7 @@ public class MandateDao extends BaseDao {
         this.table = awsConfigs.getDynamodbTable();
         this.dynamoDbAsyncClient = dynamoDbAsyncClient;
         this.dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient;
+        this.pendingExpire = awsConfigs.getPendingDuration();
     }
 
     //#region public methods
@@ -229,7 +228,7 @@ public class MandateDao extends BaseDao {
     }
 
     private void addNewFilterExpression(StringBuilder expression) {
-        expression.append(expression.length() > 0 ? AND : "");
+        expression.append(!expression.isEmpty() ? AND : "");
     }
 
     /**
@@ -389,6 +388,15 @@ public class MandateDao extends BaseDao {
         }
         log.info("retrieved mandateobj={}", mandate);
         if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)) {
+
+            Instant pendingExpiredInstant = mandate.getCreated().plus(this.pendingExpire);
+            if (pendingExpiredInstant.isBefore(Instant.now()))
+            {
+                // caso raro, in cui l'utente sta accettando una delega subito dopo la scadenza dello stato di pending permesso
+                log.warn("mandate is PENDING but already expired and marked for deletion");
+                throw new PnMandatePendingExpiredException();
+            }
+
             // aggiorno lo stato, solo se era in pending. NB: non do errore
             mandate.setAccepted(Instant.now());
             mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE));
@@ -409,7 +417,7 @@ public class MandateDao extends BaseDao {
         TransactWriteItemsEnhancedRequest.Builder transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
         if (mandate.getValidto() != null) {
             MandateSupportEntity support = new MandateSupportEntity(mandate);
-            transactionBuilder.addPutItem(mandateSupportTable, TransactPutItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build());
+            transactionBuilder.addUpdateItem(mandateSupportTable, TransactUpdateItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build());
             log.info("mandate has validto setted, creating also support entity for ttl expiration");
         }
 
@@ -418,6 +426,32 @@ public class MandateDao extends BaseDao {
                 .addUpdateItem(mandateTable, TransactUpdateItemEnhancedRequest.builder(MandateEntity.class).item(mandate).ignoreNulls(false).build())
                 .build();
         return Mono.fromFuture(dynamoDbEnhancedAsyncClient.transactWriteItems(transaction)).thenReturn(mandate);
+    }
+
+
+    private CompletableFuture<Void> savePendingWithExpireSupport(MandateEntity mandate) {
+        // Prevedo un record di supporto con TTL con impostata la scadenza relativa all'accettazione della delega
+        TransactWriteItemsEnhancedRequest.Builder transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
+
+        if (mandate.getCreated() == null) {
+            mandate.setCreated(Instant.now());
+        }
+        Instant pendingExpiredInstant = mandate.getCreated().plus(this.pendingExpire);
+        MandateSupportEntity support;
+        if (mandate.getValidto() != null && pendingExpiredInstant.isBefore(mandate.getValidto())){
+            support = new MandateSupportEntity(mandate, pendingExpiredInstant);
+        } else {
+            support = new MandateSupportEntity(mandate, mandate.getValidto() != null ?mandate.getValidto() :  pendingExpiredInstant);
+        }
+        var request = TransactPutItemEnhancedRequest.builder(MandateSupportEntity.class).item(support).build();
+        transactionBuilder.addPutItem(mandateSupportTable, request);
+        log.info("creating also support entity for pending ttl expiration pendingExpiredInstant={}", pendingExpiredInstant);
+
+        // aggiungo l'update delle deleghe e lancio la transazione
+        TransactWriteItemsEnhancedRequest transaction = transactionBuilder
+                .addUpdateItem(mandateTable, TransactUpdateItemEnhancedRequest.builder(MandateEntity.class).item(mandate).ignoreNulls(false).build())
+                .build();
+        return dynamoDbEnhancedAsyncClient.transactWriteItems(transaction);
     }
 
     /**
@@ -553,8 +587,21 @@ public class MandateDao extends BaseDao {
                                 throw new PnMandateNotFoundException();
                             }
                             log.info("expireMandate mandate for delegate retrieved mandateobj={}", mandate);
-                            mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
-                            return saveHistoryAndDeleteFromMain(mandate);
+                            boolean skipHistory = false;
+                            // se lo stato era active, lo porto ad expired
+                            // ora invece potrà succedere che arrivi l'expired di deleghe in pending
+                            if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {
+                                Instant validTo = mandate.getValidto() != null ? mandate.getValidto() :mandate.getCreated().plus(this.pendingExpire);
+                                if (Instant.now().isAfter(validTo)){
+                                    mandate.setState(StatusEnumMapper.intValfromStatus(StatusEnum.EXPIRED));
+                                } else {
+                                    //Se nel frattempo la delega è stata accettata ignoro l'expire date del pending
+                                    log.warn("delegate is accepted in meanwhile {}", mandate);
+                                    skipHistory = true;
+                                }
+                            }
+
+                            return skipHistory ? CompletableFuture.completedFuture(mandate) : saveHistoryAndDeleteFromMain(mandate);
                         }))
                 .onErrorResume(throwable -> {
                     logEvent.generateFailure(throwable.getMessage()).log();
@@ -588,10 +635,8 @@ public class MandateDao extends BaseDao {
 
                                 logEvent.log();
 
-                                PutItemEnhancedRequest<MandateEntity> putRequest = PutItemEnhancedRequest.builder(MandateEntity.class)
-                                        .item(mandate)
-                                        .build();
-                                return mandateTable.putItem(putRequest)
+
+                                return this.savePendingWithExpireSupport(mandate)
                                         .exceptionally(throwable -> {
                                             logEvent.generateFailure(throwable.getMessage()).log();
                                             if (throwable instanceof RuntimeException runtimeException) {

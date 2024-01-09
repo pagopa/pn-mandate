@@ -142,6 +142,10 @@ Parameters:
     Type: String
     Description: 'Identify the resource that the policy applies to.'
 
+  PendingDuration:
+    Type: String
+    Description: 'Durata del pending massima oltre il quale la delega non accettata scade'
+
   PnMandateExpiredTriggerLambdaEventSourceMappingBatchSize:
     Type: String
     Description: 'BatchSize stream mapping'
@@ -291,6 +295,7 @@ Resources:
         ContainerEnvEntry6: !Sub 'PN_MANDATE_CLIENT_EXTREG_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
         ContainerEnvEntry7: !Sub 'SPRING_CLOUD_FUNCTIONROUTER_QUEUES_LIST=${PnMandateInputsQueueName}'
         ContainerEnvEntry8: !Sub 'PN_MANDATE_SQS_TO_PN_DELIVERY_NAME=${Mandate2DeliveryQueueName}'
+        ContainerEnvEntry9: !Sub 'PN_MANDATE_PENDINGDURATION=${PendingDuration}'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds

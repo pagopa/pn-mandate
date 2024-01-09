@@ -207,6 +207,7 @@ class DelegateDaoIT {
         DelegateEntity result = delegateDao.countMandates(mandateToInsert.getDelegate(), CxTypeAuthFleet.PF, null)
                 .block(Duration.ofMillis(3000));
 
+
         //Then
         try {
             Assertions.assertNotNull( result);

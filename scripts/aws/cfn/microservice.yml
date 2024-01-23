@@ -500,7 +500,7 @@ Resources:
       Code:
         ZipFile: |
           const { SQSClient, SendMessageCommand } = require("@aws-sdk/client-sqs");
-          const clientSQS = new SQSClient({region: process.env.REGION});
+          const clientSQS = new SQSClient();
           
           const QUEUE_URL = process.env.QUEUE_URL
           
@@ -546,6 +546,7 @@ Resources:
                     DataType: "String",
                     StringValue: "MANDATE"
                   }
+                },
                 MessageBody: JSON.stringify({delegatorInternalUserid: delegatorInternalUserid, mandateId: mandateId, delegatorUserid: delegatorUserid, delegatorCxType: delegatorCxType}),
                 QueueUrl: QUEUE_URL
               }

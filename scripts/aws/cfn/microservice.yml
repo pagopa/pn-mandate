@@ -546,6 +546,8 @@ Resources:
                     DataType: "String",
                     StringValue: "MANDATE"
                   }
+                MessageBody: JSON.stringify({delegatorInternalUserid: delegatorInternalUserid, mandateId: mandateId, delegatorUserid: delegatorUserid, delegatorCxType: delegatorCxType}),
+                QueueUrl: QUEUE_URL
               }
           
               console.log('Sending message: %j', message);

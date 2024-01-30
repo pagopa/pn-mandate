@@ -432,6 +432,8 @@ Resources:
             Action:
               - sts:AssumeRole
       Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
       Policies:
         - PolicyName: !Sub ${ProjectName}-PnMandateExpiredTriggerLambdaRolePolicy
           PolicyDocument:
@@ -492,8 +494,6 @@ Resources:
       MemorySize: 128
       Timeout: 10
       Role: !GetAtt PnMandateExpiredTriggerLambdaRole.Arn
-      TracingConfig:
-        Mode: Active
       Layers:
         - !Sub "arn:aws:lambda:${AWS::Region}:339249233099:layer:LambdaInsightsExtension:13"
       Environment:

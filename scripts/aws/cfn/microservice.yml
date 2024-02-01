@@ -432,6 +432,8 @@ Resources:
             Action:
               - sts:AssumeRole
       Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
       Policies:
         - PolicyName: !Sub ${ProjectName}-PnMandateExpiredTriggerLambdaRolePolicy
           PolicyDocument:

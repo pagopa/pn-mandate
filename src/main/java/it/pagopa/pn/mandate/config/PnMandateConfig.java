@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.time.Duration;
 
@@ -15,6 +16,7 @@ import java.time.Duration;
 @Configuration
 @ConfigurationProperties(prefix = "pn.mandate")
 @Import(SharedAutoConfiguration.class)
+@EnableScheduling
 public class PnMandateConfig {
 
     private String clientExtregBasepath;

@@ -8,6 +8,9 @@
     "MaxTasksNumber": "3",
     "AutoscalingThreshold": "1300",
     "PendingDuration": "15m",
-    "EnhancedWebSecurityEnabled": "true"
+    "EnhancedWebSecurityEnabled": "true",
+    "MountEfs": "false",
+    "PnCronAnalyzer": "* */1 * * * *",
+    "WireTapLogActivation": "false"
   }
 }

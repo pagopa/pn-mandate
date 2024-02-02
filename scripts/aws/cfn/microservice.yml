@@ -263,6 +263,32 @@ Parameters:
       - true
       - false
 
+  # EFS parameters
+  FargateEFSFileSystemID:
+    Type: String
+    Description: "EFS Filesystem"
+
+  MountEfs:
+    Type: String
+    Default: false
+    AllowedValues:
+      - "true"
+      - "false"
+
+  # Logging parameters
+  WireTapLogActivation:
+    Type: String
+    Default: false
+    Description: Activation of wire logs
+    AllowedValues:
+      - true
+      - false
+
+  PnCronAnalyzer:
+    Type: String
+    Default: '-'
+    Description: Cron for which you send the metric to CloudWatch
+
 Resources:
 
   # PN-Mandate microservice
@@ -286,6 +312,8 @@ Resources:
         AutoscalingDataPointN: !Ref AutoscalingDataPointN
         AutoscalingDataPointM: !Ref AutoscalingDataPointM
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        EfsFilesystem: !Ref FargateEFSFileSystemID
+        MountEfs: !Ref MountEfs
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGIONCODE=${AWS::Region}'
         ContainerEnvEntry2: !Sub 'CORS_ALLOWED_DOMAINS=${CorsAllowedDomains}'
@@ -296,6 +324,8 @@ Resources:
         ContainerEnvEntry7: !Sub 'SPRING_CLOUD_FUNCTIONROUTER_QUEUES_LIST=${PnMandateInputsQueueName}'
         ContainerEnvEntry8: !Sub 'PN_MANDATE_SQS_TO_PN_DELIVERY_NAME=${Mandate2DeliveryQueueName}'
         ContainerEnvEntry9: !Sub 'PN_MANDATE_PENDINGDURATION=${PendingDuration}'
+        ContainerEnvEntry10: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
+        ContainerEnvEntry11: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds

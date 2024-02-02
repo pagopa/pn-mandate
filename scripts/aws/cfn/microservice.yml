@@ -11,9 +11,9 @@ Parameters:
     Type: String
     Description: ARN of alarm topic
 
-   #ApiDnsName:
-   #  Type: String
-   #  Description: 'The DNS name used for B2B rest API.'
+    #ApiDnsName:
+    #  Type: String
+    #  Description: 'The DNS name used for B2B rest API.'
 
   WebApiDnsName:
     Type: String
@@ -163,12 +163,12 @@ Parameters:
     Default: ""
     Description: 'Log kinesis filter pattern'
 
- # Log group exports
+  # Log group exports
   EcsLogGroup:
     Type: String
 
   PnMandateExpiredTriggerLambdaName:
-   Type: String
+    Type: String
 
   # Heath Check parameters
   HealthCheckInterval:
@@ -244,7 +244,7 @@ Parameters:
   MaxTasksNumber:
     Default: 6
     Type: Number
-    Description: maximum autoscaling number of tasks 
+    Description: maximum autoscaling number of tasks
 
   LogAlarmStrategy:
     Type: String
@@ -419,9 +419,9 @@ Resources:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/microservice-cloudwatch-dashboard.yaml"
       Parameters:
         DashboardName: !Sub "${ProjectName}-mandate"
-        DynamoDBTableNames: !Join 
-          - ',' 
-          - - !Ref MandatesDynamoTableName 
+        DynamoDBTableNames: !Join
+          - ','
+          - - !Ref MandatesDynamoTableName
             - !Ref MandatesDynamoTableHistoryName
         RestApiStageArns: !Join
           - ','
@@ -507,7 +507,7 @@ Resources:
       FilterCriteria:
         Filters: [{"Pattern": "{\"userIdentity\":{\"type\":[\"Service\"],\"principalId\":[\"dynamodb.amazonaws.com\"]}}"}]
       FunctionName: !GetAtt PnMandateExpiredTriggerLambda.Arn
-       # Add an OnFailure destination on the event source mapping
+      # Add an OnFailure destination on the event source mapping
       DestinationConfig:
         OnFailure:
           Destination: !Ref PnMandateExpiredTriggerDLQARN
@@ -518,7 +518,7 @@ Resources:
     Type: 'AWS::Lambda::Function'
     Properties:
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs20.x
       FunctionName: !Ref PnMandateExpiredTriggerLambdaName
       Description: 'It triggers expired mandates for moving them to history'
       MemorySize: 128
@@ -531,75 +531,72 @@ Resources:
           QUEUE_URL: !Ref PnMandateInputsQueueURL
       Code:
         ZipFile: |
-              const AWS = require('aws-sdk')
-              const sqs = new AWS.SQS();
-
-              const QUEUE_URL = process.env.QUEUE_URL
-
-              exports.handler = async (event) => {
-                  console.log(JSON.stringify(event, null, 2));
-                  console.log(QUEUE_URL);
-
-                  for(var i = 0;i<event.Records.length;i++)
-                  {
-                      let record = event.Records[i];
-                      if (record.eventName != 'REMOVE')
-                        continue;
-
-                      console.log('Processing dynamoDB Record: %j', record.dynamodb);
-                      const sortkey = record.dynamodb.Keys.sk.S;
-
-                      if (sortkey.match(/^MANDATETRIGGERHELPER#.*/)==null)
-                        continue;
-
-                      const delegatorInternalUserid = record.dynamodb.Keys.pk.S;
-                      const mandateId = sortkey.replace("MANDATETRIGGERHELPER#","");
-
-                      const delegatorUserid = record.dynamodb.OldImage.s_delegatoruid.S;
-                      const delegatorCxType = record.dynamodb.OldImage.s_delegatortype.S;
-
-                      var message = {
-                        DelaySeconds: 0,
-                        MessageGroupId: 'MANDATE',
-                        MessageDeduplicationId: sortkey + "_remove",
-                        MessageAttributes: {
-                          "createdAt": {
-                            DataType: "String",
-                            StringValue: new Date().toISOString()
-                          },
-                          "eventId": {
-                            DataType: "String",
-                            StringValue: sortkey + "_remove"
-                          },
-                          "eventType": {
-                            DataType: "String",
-                            StringValue: "MANDATE_EXPIRED"
-                          },
-                          "publisher": {
-                            DataType: "String",
-                            StringValue: "MANDATE"
-                          }
-                        },
-                        MessageBody: JSON.stringify({delegatorInternalUserid: delegatorInternalUserid, mandateId: mandateId, delegatorUserid: delegatorUserid, delegatorCxType: delegatorCxType}),
-                        QueueUrl: QUEUE_URL
-                      };
-
-                      console.log('Sending message: %j', message);
-                      try{
-                          let queueRes = await sqs.sendMessage(message).promise();
-                          console.log("Sent message", queueRes.MessageId);
-                      }catch(exc){
-                          console.log("error sending message", exc)
-                          throw exc;
-                      }
+          const { SQSClient, SendMessageCommand } = require("@aws-sdk/client-sqs");
+          const clientSQS = new SQSClient();
+          
+          const QUEUE_URL = process.env.QUEUE_URL
+          
+          exports.handler = async (event) => {
+            console.log(JSON.stringify(event, null, 2));
+            console.log(QUEUE_URL);
+              
+            for(var i = 0;i<event.Records.length;i++) {
+              let record = event.Records[i];
+              if (record.eventName != 'REMOVE')
+                continue;
+          
+              console.log('Processing dynamoDB Record: %j', record.dynamodb);
+              const sortkey = record.dynamodb.Keys.sk.S;
+          
+              if (sortkey.match(/^MANDATETRIGGERHELPER#.*/)==null)
+                continue;
+          
+              const delegatorInternalUserid = record.dynamodb.Keys.pk.S;
+              const mandateId = sortkey.replace("MANDATETRIGGERHELPER#","");
+          
+              const delegatorUserid = record.dynamodb.OldImage.s_delegatoruid.S;
+              const delegatorCxType = record.dynamodb.OldImage.s_delegatortype.S;
+          
+              var message = {
+                DelaySeconds: 0,
+                MessageGroupId: 'MANDATE',
+                MessageDeduplicationId: sortkey + "_remove",
+                MessageAttributes: {
+                  "createdAt": {
+                    DataType: "String",
+                    StringValue: new Date().toISOString()
+                  },
+                  "eventId": {
+                    DataType: "String",
+                    StringValue: sortkey + "_remove"
+                  },
+                  "eventType": {
+                    DataType: "String",
+                    StringValue: "MANDATE_EXPIRED"
+                  },
+                  "publisher": {
+                    DataType: "String",
+                    StringValue: "MANDATE"
                   }
-
-                  const response = {
-                      StatusCode: 200
-                  };
-                  return response;
-
-              };
+                },
+                MessageBody: JSON.stringify({delegatorInternalUserid: delegatorInternalUserid, mandateId: mandateId, delegatorUserid: delegatorUserid, delegatorCxType: delegatorCxType}),
+                QueueUrl: QUEUE_URL
+              }
+          
+              console.log('Sending message: %j', message);
+              try{
+                const command = new SendMessageCommand(message);
+                const queueRes = await client.send(command);
+                console.log("Sent message", queueRes.MessageId);
+              }catch(exc){
+                console.log("error sending message", exc)
+                throw exc;
+              }
+            }
+            const response = {
+              StatusCode: 200
+            };
+            return response;
+          };
       #ENDpnmandateexpiredtrigger
       #Non rimuovere o modificare il commento sopra, è usato come placeholder negli script
-

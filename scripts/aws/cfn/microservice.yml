@@ -586,7 +586,7 @@ Resources:
               console.log('Sending message: %j', message);
               try{
                 const command = new SendMessageCommand(message);
-                const queueRes = await client.send(command);
+                const queueRes = await clientSQS.send(command);
                 console.log("Sent message", queueRes.MessageId);
               }catch(exc){
                 console.log("error sending message", exc)

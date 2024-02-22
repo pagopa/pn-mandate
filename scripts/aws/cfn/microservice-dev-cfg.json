@@ -9,8 +9,8 @@
     "AutoscalingThreshold": "1300",
     "PendingDuration": "15m",
     "EnhancedWebSecurityEnabled": "true",
-    "MountEfs": "true",
+    "MountEfs": "false",
     "PnCronAnalyzer": "* */1 * * * *",
-    "WireTapLogActivation": "true"
+    "WireTapLogActivation": "false"
   }
 }

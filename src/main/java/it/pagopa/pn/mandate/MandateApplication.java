@@ -13,7 +13,7 @@ public class MandateApplication {
 	public static void main(String[] args) {
 		SpringApplication app = new SpringApplication(MandateApplication.class);
 		app.addListeners(new TaskIdApplicationListener());
-		SpringApplication.run(MandateApplication.class, args);
+		app.run(args);
 	}
 
 	@RestController

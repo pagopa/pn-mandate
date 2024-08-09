@@ -309,40 +309,6 @@ components:
         - PG                                                                          # NO EXTERNAL
         - PF                                                                          # NO EXTERNAL
         - PA                                                                          # NO EXTERNAL
-    delegateType:                                                                     # NO EXTERNAL
-      type: string                                                                    # NO EXTERNAL
-      enum:                                                                           # NO EXTERNAL
-        - PG                                                                          # NO EXTERNAL
-        - PF                                                                          # NO EXTERNAL
-    InternalMandateDto:                                                               # NO EXTERNAL
-      type: object                                                                    # NO EXTERNAL
-      properties:                                                                     # NO EXTERNAL
-        mandateId:                                                                    # NO EXTERNAL
-          type: string                                                                # NO EXTERNAL
-        delegator:                                                                    # NO EXTERNAL
-          type: string                                                                # NO EXTERNAL
-        delegate:                                                                     # NO EXTERNAL
-          type: string                                                                # NO EXTERNAL
-        visibilityIds:                                                                # NO EXTERNAL
-          type: array                                                                 # NO EXTERNAL
-          items:                                                                      # NO EXTERNAL
-            type: string                                                              # NO EXTERNAL
-        datefrom:                                                                     # NO EXTERNAL
-          type: string                                                                # NO EXTERNAL
-          description: ISO 8601 format                                                # NO EXTERNAL
-        dateto:                                                                       # NO EXTERNAL
-          type: string                                                                # NO EXTERNAL
-          description: ISO 8601 format                                                # NO EXTERNAL
-        groups:                                                                       # NO EXTERNAL
-          type: array                                                                 # NO EXTERNAL
-          items:                                                                      # NO EXTERNAL
-            type: string                                                              # NO EXTERNAL
-    MandateCountsDto:
-      type: object
-      properties:
-        value:
-          type: integer
-          format: int32
     MandateDto:
       type: object
       properties:
@@ -515,21 +481,6 @@ components:
           type: array
           items:
             type: string
-    MandateByDelegatorRequestDto:
-      type: object
-      required:
-        - mandateId
-        - delegatorId
-      properties:
-        mandateId:
-          type: string
-          maxLength: 36
-          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
-        delegatorId:
-          type: string
-          # ASCII printable characters
-          maxLength: 39
-          pattern: ^[ -~ ]*$
 #  securitySchemes:                                      # ONLY EXTERNAL
 #    bearerAuth:                                         # ONLY EXTERNAL
 #      type: http                                        # ONLY EXTERNAL

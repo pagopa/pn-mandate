@@ -10,6 +10,7 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateD
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.RecipientTypeDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
+import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoB2bMapper;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
@@ -65,6 +66,9 @@ class MandateServiceTest {
     private MandateEntityMandateDtoMapper mapper;
 
     @Mock
+    private MandateEntityMandateDtoB2bMapper mapperB2b;
+
+    @Mock
     private MandateDao mandateDao;
 
     @Mock
@@ -99,7 +103,7 @@ class MandateServiceTest {
     public void init() {
         MockitoAnnotations.openMocks(this);
         MandateValidationUtils mandateValidationUtils = Mockito.spy(new MandateValidationUtils(validateUtils, pnExtRegPrvtClient));
-        mandateService = new MandateService(mandateDao, delegateDao, mapper, userEntityMandateCountsDtoMapper, pnInfoPaClient, pnDatavaultClient, sqsService, mandateValidationUtils, mandateSearchService, pnMandateConfig);
+        mandateService = new MandateService(mandateDao, delegateDao, mapper, mapperB2b, userEntityMandateCountsDtoMapper, pnInfoPaClient, pnDatavaultClient, sqsService, mandateValidationUtils, mandateSearchService, pnMandateConfig);
     }
 
     @Test
@@ -588,6 +592,56 @@ class MandateServiceTest {
         assertNotNull(result.getMandateId());
         assertNotNull(result.getStatus());
         assertEquals(mandateDto.getVerificationCode(), result.getVerificationCode());
+    }
+
+    @Test
+    void createMandateB2b() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+
+        final MandateDtoRequest mandateDtoRequest = new MandateDtoRequest();
+        mandateDtoRequest.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRequest.setDelegator(new UserDto());
+        mandateDtoRequest.getDelegator().setFirstName("mario");
+        mandateDtoRequest.getDelegator().setLastName("rossi");
+        mandateDtoRequest.getDelegator().setFiscalCode("LVLDAA85T50G702B");
+        mandateDtoRequest.getDelegator().setPerson(entity.getDelegateisperson());
+
+        final MandateDtoResponse mandateDtoRes = new MandateDtoResponse();
+        mandateDtoRes.setMandateId(entity.getMandateId());
+        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
+        mandateDtoRes.setStatus(MandateDtoResponse.StatusEnum.PENDING);
+        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRes.setDelegate(new UserDto());
+        mandateDtoRes.getDelegate().setFirstName("mario");
+        mandateDtoRes.getDelegate().setLastName("rossi");
+        mandateDtoRes.getDelegate().setFiscalCode("LVLDAA85T50G702B");
+        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
+
+        List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
+        MandateDtoDto mandateDtoDto = new MandateDtoDto();
+        mandateDtoDto.mandateId(entity.getMandateId());
+        DenominationDtoDto denominationDtoDto = new DenominationDtoDto();
+        denominationDtoDto.setDestName("mario");
+        denominationDtoDto.setDestSurname("rossi");
+        mandateDtoDto.setInfo(denominationDtoDto);
+        resgetmandatesbyid.add(mandateDtoDto);
+
+        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegator()));
+        when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
+        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
+//        when(mapperB2b.toEntity(Mockito.any())).thenReturn(entity);
+//        when(mapperB2b.toDto(Mockito.any())).thenReturn(mandateDtoRes);
+        when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn( true );
+
+        //When
+        MandateDtoResponse result = mandateService.createMandateB2b(Mono.just(mandateDtoRequest), null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null).block(D);
+
+        //Then
+        assertNotNull(result);
+        assertNotNull(result.getMandateId());
+        assertNotNull(result.getStatus());
     }
 
     @Test

@@ -300,7 +300,7 @@ paths:
   /mandate/api/v1/reverse-mandate:
     post:
       tags:
-        - mandate-service
+        - mandate-reverse-service
       summary: Create a new mandate, returns the just created mandate if successful
       operationId: createReverseMandate
       #      security:                                                                # ONLY EXTERNAL

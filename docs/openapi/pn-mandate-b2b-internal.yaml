@@ -297,12 +297,12 @@ paths:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
-  /mandate-b2b/api/v1/mandate:
+  /mandate/api/v1/reverse-mandate:
     post:
       tags:
-        - mandate-service-b2b
+        - mandate-reverse-service
       summary: Create a new mandate, returns the just created mandate if successful
-      operationId: createMandateB2b
+      operationId: createReverseMandate
       #      security:                                                                # ONLY EXTERNAL
       #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
       parameters: # NO EXTERNAL

@@ -10,9 +10,9 @@ import java.util.NoSuchElementException;
  * NB: Il valore intero degli stati è crescente. Il valore di ACTIVE (20), definisce quindi lo spartiacque
  *     tra una delega "viva" ed una storicizzata.
  */
-public class StatusEnumMapperB2b {
+public class ReverseMandateStatusEnumMapper {
 
-    private StatusEnumMapperB2b(){}
+    private ReverseMandateStatusEnumMapper(){}
     
     public static int intValfromStatus(StatusEnum s)
     {

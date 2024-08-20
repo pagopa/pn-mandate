@@ -11,7 +11,7 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateD
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
-import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoB2bMapper;
+import it.pagopa.pn.mandate.mapper.ReverseMandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
@@ -26,6 +26,7 @@ import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import it.pagopa.pn.mandate.utils.PgUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -50,7 +51,7 @@ public class MandateService {
     private final MandateDao mandateDao;
     private final DelegateDao userDao;
     private final MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper;
-    private final MandateEntityMandateDtoB2bMapper mandateEntityMandateDtoB2bMapper;
+    private final ReverseMandateEntityMandateDtoMapper reverseMandateEntityMandateDtoMapper;
     private final UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper;
     private final PnInfoPaClient pnInfoPaClient;
     private final PnDataVaultClient pnDatavaultClient;
@@ -62,7 +63,7 @@ public class MandateService {
     public MandateService(MandateDao mandateDao,
                           DelegateDao userDao,
                           MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper,
-                          MandateEntityMandateDtoB2bMapper mandateEntityMandateDtoB2bMapper,
+                          ReverseMandateEntityMandateDtoMapper reverseMandateEntityMandateDtoMapper,
                           UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper,
                           PnInfoPaClient pnInfoPaClient,
                           PnDataVaultClient pnDatavaultClient,
@@ -73,7 +74,7 @@ public class MandateService {
         this.mandateDao = mandateDao;
         this.userDao = userDao;
         this.mandateEntityMandateDtoMapper = mandateEntityMandateDtoMapper;
-        this.mandateEntityMandateDtoB2bMapper = mandateEntityMandateDtoB2bMapper;
+        this.reverseMandateEntityMandateDtoMapper = reverseMandateEntityMandateDtoMapper;
         this.userEntityMandateCountsDtoMapper = userEntityMandateCountsDtoMapper;
         this.pnInfoPaClient = pnInfoPaClient;
         this.pnDatavaultClient = pnDatavaultClient;
@@ -86,12 +87,12 @@ public class MandateService {
     /**
      * Accetta una delega
      *
-     * @param mandateId        id della delega
-     * @param acceptRequestDto dto accettazione delega
-     * @param internaluserId   iuid del delegato
-     * @param xPagopaPnCxType  tipo dell'utente (PF, PG)
-     * @param cxGroups         gruppi a cui appartiene l'utente
-     * @param cxRole           ruolo dell'utente
+     * @param mandateId         id della delega
+     * @param acceptRequestDto  dto accettazione delega
+     * @param internaluserId    iuid del delegato
+     * @param xPagopaPnCxType   tipo dell'utente (PF, PG)
+     * @param cxGroups          gruppi a cui appartiene l'utente
+     * @param cxRole            ruolo dell'utente
      * @return void
      */
     public Mono<MandateEntity> acceptMandate(String mandateId,
@@ -122,11 +123,11 @@ public class MandateService {
     }
 
     public Mono<Void> updateMandate(String xPagopaPnCxId,
-                                    CxTypeAuthFleet xPagopaPnCxType,
-                                    String mandateId,
-                                    List<String> xPagopaPnCxGroups,
-                                    String xPagopaPnCxRole,
-                                    Mono<UpdateRequestDto> updateRequestDto) {
+                                             CxTypeAuthFleet xPagopaPnCxType,
+                                             String mandateId,
+                                             List<String> xPagopaPnCxGroups,
+                                             String xPagopaPnCxRole,
+                                             Mono<UpdateRequestDto> updateRequestDto) {
         return validaAccessoOnlyAdmin(xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
                 .flatMap(obj -> updateRequestDto)
                 .flatMap(m -> validateUtils.validatePGGroups(xPagopaPnCxId, m.getGroups()).thenReturn(m))
@@ -149,11 +150,12 @@ public class MandateService {
     /**
      * Ritorna il numero di deleghe nello stato passato per il delegato
      *
-     * @param status          stato per il filtro
-     * @param internaluserId  iuid del delegato
-     * @param xPagopaPnCxType tipo dell'utente (PF, PG)
-     * @param cxGroups        gruppi a cui appartiene l'utente
-     * @param cxRole          ruolo dell'utente
+     * @param status            stato per il filtro
+     * @param internaluserId    iuid del delegato
+     * @param xPagopaPnCxType   tipo dell'utente (PF, PG)
+     * @param cxGroups          gruppi a cui appartiene l'utente
+     * @param cxRole            ruolo dell'utente
+     *
      * @return Totale deleghe nello stato richiesto
      */
     public Mono<MandateCountsDto> countMandatesByDelegate(String status,
@@ -172,11 +174,11 @@ public class MandateService {
     /**
      * Crea la delega
      *
-     * @param mandateDto              oggetto delega
-     * @param requesterInternaluserId iuid del delegante
-     * @param cxTypeAuthFleet         tipologia del delegante (PF/PG)
-     * @param groups                  gruppi a cui appartiene l'utente
-     * @param role                    ruolo dell'utente
+     * @param mandateDto                oggetto delega
+     * @param requesterInternaluserId   iuid del delegante
+     * @param cxTypeAuthFleet           tipologia del delegante (PF/PG)
+     * @param groups                    gruppi a cui appartiene l'utente
+     * @param role                      ruolo dell'utente
      * @return delega creata
      */
     public Mono<MandateDto> createMandate(Mono<MandateDto> mandateDto,
@@ -240,64 +242,53 @@ public class MandateService {
                 );
     }
 
-    public Mono<MandateDtoResponse> createMandateB2b(Mono<MandateDtoRequest> mandateDtoRequest,
-                                                     final String delegateUid,
-                                                     final String delegateInternaluserId,
-                                                     CxTypeAuthFleet cxTypeAuthFleet,
-                                                     List<String> groups,
-                                                     String role) {
+    public Mono<MandateDtoResponse> createReverseMandate(MandateDtoRequest mandateDtoRequest,
+                                                         final String xPagopaPnUid,
+                                                         final String xPagopaPnCxId,
+                                                         CxTypeAuthFleet cxTypeAuthFleet,
+                                                         List<String> groups,
+                                                         String role) {
         final String uuid = UUID.randomUUID().toString();
         return Mono.defer(() -> validaAccessoOnlyAdmin(cxTypeAuthFleet, role, groups))
-                .flatMap(obj -> mandateDtoRequest
-                        .map(validateUtils::validateCreationRequest)
+                .flatMap(obj -> Mono.just(validateUtils.validateReverseMandateCreationRequest(mandateDtoRequest))
                         .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegator().getPerson(), dto.getDelegator().getFiscalCode())
-                                        .map(delegatorInternaluserId -> {
-                                            // qui posso controllare se delegante e delegato sono gli stessi (prima non li avevo disponibili)
-                                            validateUtils.validateCreationRequestHimself(cxTypeAuthFleet, delegateInternaluserId, delegatorInternaluserId);
-
-                                            MandateEntity entity = mandateEntityMandateDtoB2bMapper.toEntity(dto);
-                                            entity.setDelegate(delegateInternaluserId);
-                                            entity.setDelegatorUid(null);//todo cosa ci va?
-                                            entity.setMandateId(uuid);
-                                            entity.setDelegator(delegatorInternaluserId);
-                                            entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
-                                            entity.setCreated(Instant.now());
-                                            entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
-                                            if (log.isInfoEnabled())
-                                                log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}",
-                                                        entity.getMandateId(), delegateInternaluserId, dto.getDelegator().getPerson(), entity.getValidfrom());
-
-                                            return entity;
-                                        })
-                                        .flatMap(ent -> {
-                                            return pnDatavaultClient.getRecipientDenominationByInternalId(List.of(delegateInternaluserId))//todo delegateInternaluserId dobbiamo aggiungere PG all'inizio?
-                                                    .collectList()
-                                                    .flatMap(recipientDto -> pnDatavaultClient.updateMandateById(uuid, null,
-                                                                    null, recipientDto.get(0).getDenomination())
-                                                            .then(Mono.just(ent)));
-                                        })
-                                        .flatMap(mandateDao::createMandate)
-                                , (ddto, entity) -> entity)
-                        .map(r -> {
-                            r.setDelegator(null);
-                            return mandateEntityMandateDtoB2bMapper.toDto(r);
-                        })
+                                .map(delegatorInternaluserId -> {
+                                    validateUtils.validateCreationRequestHimself(cxTypeAuthFleet, xPagopaPnCxId, delegatorInternaluserId);
+                                    MandateEntity entity = getMandateEntity(xPagopaPnCxId, dto, delegatorInternaluserId, uuid);
+                                    if (log.isInfoEnabled())
+                                        log.info("creating reverse mandate uuid: {} to: {} validfrom: {} requestBy: {}",
+                                                entity.getMandateId(), xPagopaPnCxId, entity.getValidfrom(), xPagopaPnUid);
+                                    return entity;
+                                })
+                                .flatMap(mandateDao::createMandate), (ddto, entity) -> entity)
+                        .flatMap(mandateEntity -> pnDatavaultClient.getRecipientDenominationByInternalId(Collections.singletonList(xPagopaPnUid))
+                                .flatMap(baseRecipientDtoDto -> pnDatavaultClient.updateMandateById(uuid, null, null, baseRecipientDtoDto.getDenomination()))
+                                .then(Mono.just(mandateEntity)))
+                        .map(mandateEntity ->  reverseMandateEntityMandateDtoMapper.toDto(mandateEntity, mandateDtoRequest.getDelegator(), null))
                         .zipWhen(dto -> {
-                                    // genero la lista degli id delega
                                     List<String> mandateIds = new ArrayList<>();
                                     mandateIds.add(dto.getMandateId());
-
-                                    // ritorno la lista
                                     return this.pnDatavaultClient.getMandatesByIds(mandateIds)
                                             .collectMap(MandateDtoDto::getMandateId, MandateDtoDto::getInfo);
-                                },
-                                (dto, userinfosdtos) -> {
+                                }, (dto, userinfosdtos) -> {
                                     if (userinfosdtos.containsKey(dto.getMandateId()))
                                         updateUserDto(dto.getDelegate(), userinfosdtos.get(dto.getMandateId()));
-
                                     return dto;
                                 })
                 );
+    }
+
+    @NotNull
+    private MandateEntity getMandateEntity(String xPagopaPnCxId, MandateDtoRequest dto, String delegatorInternaluserId, String uuid) {
+        MandateEntity entity = reverseMandateEntityMandateDtoMapper.toEntity(dto);
+        entity.setDelegate(xPagopaPnCxId);
+        entity.setDelegatorUid(delegatorInternaluserId);
+        entity.setMandateId(uuid);
+        entity.setDelegator(delegatorInternaluserId);
+        entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
+        entity.setCreated(Instant.now());
+        entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
+        return entity;
     }
 
 
@@ -324,7 +315,7 @@ public class MandateService {
 
         try {
             validateUtils.validateListMandatesByDelegateRequest(xPagopaPnCxType);
-        } catch (PnRuntimeException e) {
+        }catch(PnRuntimeException e){
             return Flux.error(e);
         }
 
@@ -334,7 +325,7 @@ public class MandateService {
         }
 
         Integer finalIStatus = iStatus;
-        return validaAccessoOnlyGroupAdmin(xPagopaPnCxType, xPagopaPnCxRole, xPagopaPnCxGroups)
+        return validaAccessoOnlyGroupAdmin(xPagopaPnCxType,xPagopaPnCxRole,xPagopaPnCxGroups)
                 .flatMapMany(obj -> mandateDao.listMandatesByDelegate(internaluserId, finalIStatus, null, xPagopaPnCxType, xPagopaPnCxGroups))   // (1)
                 .map(ent -> {
                     ent.setValidationcode(null);   // (2)
@@ -377,14 +368,14 @@ public class MandateService {
      * Il metodo si occupa di tornare la lista delle deleghe dato il delegante. Opzionalmente, è possibile filtrare
      * per stati, gruppi e deleganti.
      *
-     * @param requestDto  body della richiesta
-     * @param size        dimensione della pagina
-     * @param nextPageKey next key per la paginazione
-     * @param cxId        id del delegato
-     * @param cxType      tipo del delegato
-     * @param cxGroups    gruppi del delegato
-     * @param cxRole      ruolo del delegato
-     * @return una lista paginata di deleghe che rispettano i filtri in ingresso
+     * @param requestDto    body della richiesta
+     * @param size          dimensione della pagina
+     * @param nextPageKey   next key per la paginazione
+     * @param cxId          id del delegato
+     * @param cxType        tipo del delegato
+     * @param cxGroups      gruppi del delegato
+     * @param cxRole        ruolo del delegato
+     * @return              una lista paginata di deleghe che rispettano i filtri in ingresso
      */
     public Mono<SearchMandateResponseDto> searchByDelegate(Mono<SearchMandateRequestDto> requestDto,
                                                            Integer size,
@@ -561,7 +552,7 @@ public class MandateService {
             user.setDisplayName(info.getDestBusinessName());
     }
 
-    private Mono<MandateDto> enrichWithPaInfos(MandateDto mandateDto) {
+    private Mono<MandateDto> enrichWithPaInfos(MandateDto mandateDto){
         if (!mandateDto.getVisibilityIds().isEmpty())
             return pnInfoPaClient
                     .getManyPa(mandateDto.getVisibilityIds().stream().map(OrganizationIdDto::getUniqueIdentifier).toList())
@@ -603,10 +594,10 @@ public class MandateService {
 
     private Mono<List<String>> getInternalIdFromTaxId(String taxId) {
         if (StringUtils.hasText(taxId)) {
-            if (taxId.length() == 11) {
+            if(taxId.length() == 11){
                 return this.pnDatavaultClient.ensureRecipientByExternalId(false, taxId)
                         .map(Collections::singletonList);
-            } else {
+            }else{
                 return this.pnDatavaultClient.ensureRecipientByExternalId(true, taxId)
                         .concatWith(this.pnDatavaultClient.ensureRecipientByExternalId(false, taxId))
                         .collectList();

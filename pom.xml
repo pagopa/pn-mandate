@@ -246,7 +246,7 @@
 								<skipDefaultInterface>false</skipDefaultInterface>
 								<useTags>true</useTags>
 								<basePackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1</basePackage>
-								<modelPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.dto</modelPackage>
+								<modelPackage>${project.groupId}.mandate.generated.openapi.server.v1.dto</modelPackage>
 								<apiPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.api</apiPackage>
 								<configPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.config</configPackage>
 							</configOptions>

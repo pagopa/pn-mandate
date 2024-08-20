@@ -10,11 +10,11 @@ import org.springframework.stereotype.Component;
 import java.util.Random;
 
 @Component
-public class MandateEntityMandateDtoB2bMapper {
+public class ReverseMandateEntityMandateDtoMapper {
 
 
     public MandateEntity toEntity(MandateDtoRequest dto) {
-        final MandateEntity target = new MandateEntity();
+        MandateEntity target = new MandateEntity();
         if (dto.getDateto() != null)
             target.setValidto(DateUtils.atStartOfDay(DateUtils.parseDate(dto.getDateto()).toInstant()).plusDays(1).minusSeconds(1).toInstant());
         target.setValidationcode(generateRandomCode());
@@ -29,18 +29,15 @@ public class MandateEntityMandateDtoB2bMapper {
         return String.format("%05d", randomNumber);
     }
 
-    public MandateDtoResponse toDto(MandateEntity entity) {
+    public MandateDtoResponse toDto(MandateEntity entity, UserDto delegator, UserDto delegate) {
         final MandateDtoResponse target = new MandateDtoResponse();
 
         target.setMandateId(entity.getMandateId());
         target.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
         target.setDateto(DateUtils.formatDate(entity.getValidto()));
-        target.setStatus(StatusEnumMapperB2b.fromValue(entity.getState()));
-        // popolo delegato e delegante, con l'unica informazioni che conosco (il fatto se è PF/PG)
-        target.setDelegate(new UserDto());
-        target.getDelegate().setPerson(entity.getDelegateisperson());
-        target.setDelegator(new UserDto());
-        target.getDelegator().setPerson(entity.getDelegatorisperson());
+        target.setStatus(ReverseMandateStatusEnumMapper.fromValue(entity.getState()));
+        target.setDelegate(delegate);
+        target.setDelegator(delegator);
 
         return target;
     }

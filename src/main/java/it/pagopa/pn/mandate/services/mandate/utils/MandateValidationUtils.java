@@ -11,7 +11,6 @@ import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.ConstraintViolation;
@@ -206,7 +205,7 @@ public class MandateValidationUtils {
         return mandateDto;
     }
 
-    public MandateDtoRequest validateCreationRequest(MandateDtoRequest mandateDtoRequest) {
+    public MandateDtoRequest validateReverseMandateCreationRequest(MandateDtoRequest mandateDtoRequest) {
         String process = "validating create mandate b2b";
         log.logChecking(process);
         // valida delegante

@@ -10,7 +10,7 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateD
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.RecipientTypeDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
-import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoB2bMapper;
+import it.pagopa.pn.mandate.mapper.ReverseMandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
@@ -25,7 +25,6 @@ import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +65,7 @@ class MandateServiceTest {
     private MandateEntityMandateDtoMapper mapper;
 
     @Mock
-    private MandateEntityMandateDtoB2bMapper mapperB2b;
+    private ReverseMandateEntityMandateDtoMapper mapperB2b;
 
     @Mock
     private MandateDao mandateDao;
@@ -595,7 +594,7 @@ class MandateServiceTest {
     }
 
     @Test
-    void createMandateB2b() {
+    void createReverseMandate() {
         //Given
         MandateEntity entity = MandateDaoIT.newMandate(true);
 
@@ -628,15 +627,17 @@ class MandateServiceTest {
         resgetmandatesbyid.add(mandateDtoDto);
 
         when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        BaseRecipientDtoDto baseRecipientDtoDto = new BaseRecipientDtoDto();
+        baseRecipientDtoDto.setDenomination("test");
+       when(pnDatavaultClient.getRecipientDenominationByInternalId(anyList())).thenReturn(Flux.just(baseRecipientDtoDto));
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegator()));
-        when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
+       when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
-//        when(mapperB2b.toEntity(Mockito.any())).thenReturn(entity);
-//        when(mapperB2b.toDto(Mockito.any())).thenReturn(mandateDtoRes);
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn( true );
-
+        when(mapperB2b.toEntity(any())).thenReturn(entity);
+        when(mapperB2b.toDto(any(), any(), any())).thenReturn(mandateDtoRes);
         //When
-        MandateDtoResponse result = mandateService.createMandateB2b(Mono.just(mandateDtoRequest), null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null).block(D);
+        MandateDtoResponse result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null).block(D);
 
         //Then
         assertNotNull(result);

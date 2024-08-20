@@ -222,7 +222,7 @@
 						</configuration>
 					</execution>
 					<execution>
-						<id>generate-mandate-server-b2b</id>
+						<id>generate-reverse-mandate-server</id>
 						<goals>
 							<goal>generate</goal>
 						</goals>
@@ -245,10 +245,10 @@
 								<reactive>true</reactive>
 								<skipDefaultInterface>false</skipDefaultInterface>
 								<useTags>true</useTags>
-								<basePackage>${project.groupId}.mandate.generated.openapi.server.v1</basePackage>
-								<modelPackage>${project.groupId}.mandate.generated.openapi.server.v1.dto</modelPackage>
-								<apiPackage>${project.groupId}.mandate.generated.openapi.server.v1.api</apiPackage>
-								<configPackage>${project.groupId}.mandate.generated.openapi.server.v1.config</configPackage>
+								<basePackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1</basePackage>
+								<modelPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.dto</modelPackage>
+								<apiPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.api</apiPackage>
+								<configPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.config</configPackage>
 							</configOptions>
 						</configuration>
 					</execution>

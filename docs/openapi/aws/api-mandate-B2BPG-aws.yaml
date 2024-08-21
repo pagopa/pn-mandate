@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: t0gmmTPw7Hj6R3+IxWIgn9Gkt4i5BnvMnuFw1rlGHNk=
+  version: pgKVTscMguzSnnn3h8Ok31xEIuCAdRAZ3Z8edkmrJtQ=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -11,79 +11,14 @@ servers:
     x-amazon-apigateway-endpoint-configuration:
       disableExecuteApiEndpoint: true
 paths:
-  /api/v1/count-by-delegate:
-    get:
-      tags:
-        - mandate-service
-      security:
-        - pn-auth-fleet_jwtAuthorizer_openapi: []
-      summary: >-
-        Return total mandates based on required status if filter's specified. 
-        If no filter is present, returns total of all pending and active
-        mandates
-      operationId: countMandatesByDelegate
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum:
-              - pending
-              - active
-              - revoked
-              - rejected
-              - expired
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MandateCountsDto'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-      x-amazon-apigateway-integration:
-        uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/count-by-delegate
-        connectionId: ${stageVariables.NetworkLoadBalancerLink}
-        httpMethod: ANY
-        requestParameters:
-          integration.request.header.x-pagopa-pn-cx-id: context.authorizer.cx_id
-          integration.request.header.x-pagopa-pn-cx-role: context.authorizer.cx_role
-          integration.request.header.x-pagopa-pn-uid: context.authorizer.uid
-          integration.request.header.x-pagopa-pn-jti: context.authorizer.cx_jti
-          integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
-          integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
-          integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
-          integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
-        passthroughBehavior: when_no_match
-        connectionType: VPC_LINK
-        timeoutInMillis: 29000
-        type: http_proxy
-    options:
-      operationId: Options for /api/v1/count-by-delegate API CORS
-      x-amazon-apigateway-integration:
-        uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/count-by-delegate
-        connectionId: ${stageVariables.NetworkLoadBalancerLink}
-        httpMethod: ANY
-        requestParameters: {}
-        passthroughBehavior: when_no_match
-        connectionType: VPC_LINK
-        timeoutInMillis: 29000
-        type: http_proxy
   /api/v1/mandate:
     post:
       tags:
         - mandate-service
       summary: Create a new mandate, returns the just created mandate if successful
       operationId: createMandate
-      security:
-        - pn-auth-fleet_jwtAuthorizer_openapi: []
+      x-api-permissions:
+        - BASE
       requestBody:
         content:
           application/json:
@@ -102,6 +37,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Problem'
+      security:
+        - pn-auth-fleet_b2bAuthorizer_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandate
@@ -115,7 +52,7 @@ paths:
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
-          integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
+          integration.request.header.x-pagopa-pn-src-ch: context.authorizer.sourceChannel
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -139,8 +76,8 @@ paths:
         - mandate-service
       summary: Accept a mandate
       operationId: acceptMandate
-      security:
-        - pn-auth-fleet_jwtAuthorizer_openapi: []
+      x-api-permissions:
+        - BASE
       parameters:
         - name: mandateId
           in: path
@@ -164,6 +101,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Problem'
+      security:
+        - pn-auth-fleet_b2bAuthorizer_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandate/{mandateId}/accept
@@ -177,7 +116,7 @@ paths:
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
-          integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
+          integration.request.header.x-pagopa-pn-src-ch: context.authorizer.sourceChannel
           integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
@@ -202,8 +141,8 @@ paths:
         - mandate-service
       summary: Update a mandate
       operationId: updateMandate
-      security:
-        - pn-auth-fleet_jwtAuthorizer_openapi: []
+      x-api-permissions:
+        - BASE
       parameters:
         - name: mandateId
           in: path
@@ -224,6 +163,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Problem'
+      security:
+        - pn-auth-fleet_b2bAuthorizer_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandate/{mandateId}/update
@@ -237,7 +178,7 @@ paths:
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
-          integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
+          integration.request.header.x-pagopa-pn-src-ch: context.authorizer.sourceChannel
           integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
@@ -262,8 +203,8 @@ paths:
         - mandate-service
       summary: Reject a mandate
       operationId: rejectMandate
-      security:
-        - pn-auth-fleet_jwtAuthorizer_openapi: []
+      x-api-permissions:
+        - BASE
       parameters:
         - name: mandateId
           in: path
@@ -282,6 +223,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Problem'
+      security:
+        - pn-auth-fleet_b2bAuthorizer_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandate/{mandateId}/reject
@@ -295,7 +238,7 @@ paths:
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
-          integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
+          integration.request.header.x-pagopa-pn-src-ch: context.authorizer.sourceChannel
           integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
@@ -320,8 +263,8 @@ paths:
         - mandate-service
       summary: Revoke a mandate
       operationId: revokeMandate
-      security:
-        - pn-auth-fleet_jwtAuthorizer_openapi: []
+      x-api-permissions:
+        - BASE
       parameters:
         - name: mandateId
           in: path
@@ -340,6 +283,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Problem'
+      security:
+        - pn-auth-fleet_b2bAuthorizer_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandate/{mandateId}/revoke
@@ -353,7 +298,7 @@ paths:
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
-          integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
+          integration.request.header.x-pagopa-pn-src-ch: context.authorizer.sourceChannel
           integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
@@ -380,8 +325,8 @@ paths:
         Return filtered mandates based on required status if filter's specified.
         If no filter is present, returns all pending and active mandates
       operationId: listMandatesByDelegate_1
-      security:
-        - pn-auth-fleet_jwtAuthorizer_openapi: []
+      x-api-permissions:
+        - BASE
       parameters:
         - name: status
           in: query
@@ -408,6 +353,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Problem'
+      security:
+        - pn-auth-fleet_b2bAuthorizer_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandates-by-delegate
@@ -421,7 +368,7 @@ paths:
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
-          integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
+          integration.request.header.x-pagopa-pn-src-ch: context.authorizer.sourceChannel
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -431,8 +378,8 @@ paths:
         - mandate-service
       summary: Return filtered mandates based on status, groups and delegators (taxId)
       operationId: searchMandatesByDelegate
-      security:
-        - pn-auth-fleet_jwtAuthorizer_openapi: []
+      x-api-permissions:
+        - BASE
       parameters:
         - name: size
           in: query
@@ -464,6 +411,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Problem'
+      security:
+        - pn-auth-fleet_b2bAuthorizer_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandates-by-delegate
@@ -477,7 +426,7 @@ paths:
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
-          integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
+          integration.request.header.x-pagopa-pn-src-ch: context.authorizer.sourceChannel
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -500,8 +449,8 @@ paths:
         - mandate-service
       summary: Return all pending and active mandates
       operationId: listMandatesByDelegator_1
-      security:
-        - pn-auth-fleet_jwtAuthorizer_openapi: []
+      x-api-permissions:
+        - BASE
       responses:
         '200':
           description: OK
@@ -517,6 +466,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Problem'
+      security:
+        - pn-auth-fleet_b2bAuthorizer_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandates-by-delegator
@@ -530,7 +481,7 @@ paths:
           integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
-          integration.request.header.x-pagopa-pn-src-ch: '''WEB'''
+          integration.request.header.x-pagopa-pn-src-ch: context.authorizer.sourceChannel
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -541,6 +492,63 @@ paths:
       x-amazon-apigateway-integration:
         uri: >-
           http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/mandates-by-delegator
+        connectionId: ${stageVariables.NetworkLoadBalancerLink}
+        httpMethod: ANY
+        requestParameters: {}
+        passthroughBehavior: when_no_match
+        connectionType: VPC_LINK
+        timeoutInMillis: 29000
+        type: http_proxy
+  /api/v1/reverse-mandate:
+    post:
+      tags:
+        - mandate-reverse-service
+      summary: Create a new mandate, returns the just created mandate if successful
+      operationId: createReverseMandate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MandateDtoRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MandateDtoResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - pn-auth-fleet_b2bAuthorizer_openapi: []
+      x-amazon-apigateway-integration:
+        uri: >-
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/reverse-mandate
+        connectionId: ${stageVariables.NetworkLoadBalancerLink}
+        httpMethod: ANY
+        requestParameters:
+          integration.request.header.x-pagopa-pn-cx-id: context.authorizer.cx_id
+          integration.request.header.x-pagopa-pn-cx-role: context.authorizer.cx_role
+          integration.request.header.x-pagopa-pn-uid: context.authorizer.uid
+          integration.request.header.x-pagopa-pn-jti: context.authorizer.cx_jti
+          integration.request.header.x-pagopa-pn-cx-type: context.authorizer.cx_type
+          integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
+          integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
+          integration.request.header.x-pagopa-pn-src-ch: context.authorizer.sourceChannel
+        passthroughBehavior: when_no_match
+        connectionType: VPC_LINK
+        timeoutInMillis: 29000
+        type: http_proxy
+      parameters: []
+    options:
+      operationId: Options for /api/v1/reverse-mandate API CORS
+      x-amazon-apigateway-integration:
+        uri: >-
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/reverse-mandate
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
         requestParameters: {}
@@ -560,11 +568,6 @@ components:
         pattern: ^[ -~]*$
         maxLength: 64
   schemas:
-    MandateCountsDto:
-      type: object
-      properties:
-        value:
-          type: number
     MandateDto:
       type: object
       properties:
@@ -735,21 +738,28 @@ components:
           type: array
           items:
             type: string
-    MandateByDelegatorRequestDto:
+    MandateDtoRequest:
       type: object
-      required:
-        - mandateId
-        - delegatorId
       properties:
-        mandateId:
+        delegator:
+          $ref: '#/components/schemas/UserDto'
+        datefrom:
           type: string
-          maxLength: 36
-          pattern: >-
-            ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
-        delegatorId:
+          description: ISO 8601 format
+          maxLength: 10
+          pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
+        dateto:
           type: string
-          maxLength: 39
-          pattern: ^[ -~ ]*$
+          description: ISO 8601 format
+          maxLength: 10
+          pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
+    MandateDtoResponse:
+      type: String
+      maxLength: 36
+      pattern: >-
+        ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+      description: Unique identifier of mandate
+      nullable: false
     ProblemError:
       properties:
         code:
@@ -818,17 +828,17 @@ components:
         - errors
   responses: {}
   securitySchemes:
-    pn-auth-fleet_jwtAuthorizer_openapi:
+    pn-auth-fleet_b2bAuthorizer_openapi:
       type: apiKey
       name: Authorization
       in: header
       x-amazon-apigateway-authtype: custom
       x-amazon-apigateway-authorizer:
         authorizerUri: >-
-          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:pn-jwtAuthorizerLambda/invocations
-        authorizerResultTtlInSeconds: 300
-        identityValidationExpression: ^Bearer\s([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)\.([a-zA-Z0-9_\-]+)$
-        type: token
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:pn-b2bAuthorizerLambda/invocations
+        authorizerResultTtlInSeconds: 60
+        identitySource: method.request.header.Authorization
+        type: request
 tags:
   - name: HealthCheck
     description: Invocazioni per sapere lo stato del microservizio

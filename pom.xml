@@ -229,7 +229,7 @@
 						</goals>
 						<phase>generate-resources</phase>
 						<configuration>
-							<inputSpec>${project.basedir}/docs/openapi/pn-mandate-b2b-internal.yaml</inputSpec>
+							<inputSpec>${project.basedir}/docs/openapi/pn-mandate-b2b-pg-internal.yaml</inputSpec>
 							<generatorName>spring</generatorName>
 							<library>spring-boot</library>
 							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/server</templateDirectory>

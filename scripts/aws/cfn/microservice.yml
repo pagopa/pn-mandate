@@ -18,6 +18,10 @@ Parameters:
   WebApiDnsName:
     Type: String
     Description: 'The DNS name used for WEB rest API.'
+
+  ApiB2BPgDnsName:
+    Type: String
+    Description: 'The DNS name used for B2B PG rest API.'
   
   CorsAllowedDomains:
     Type: String
@@ -255,6 +259,11 @@ Parameters:
     Default: 600
     Description: WEB api WAF Limit (per IP)
 
+  B2bPgLimit:
+    Default: 600000
+    Type: Number
+    Description: B2B PG WAG limit
+
   EnhancedWebSecurityEnabled:
     Type: String
     Default: false
@@ -413,6 +422,35 @@ Resources:
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
         EnhancedWebSecurityEnabled: !Ref EnhancedWebSecurityEnabled
 
+  # Expose PN-Mandate microservice public API with API-GW for B2BPG usage
+  MandateMicroserviceB2BPGApi:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service-openapi.yaml"
+      Parameters:
+        MicroServiceUniqueName: !Sub '${ProjectName}-mandate'
+        IntendedUsage: B2BPG
+        DnsName: !Ref ApiB2BPgDnsName
+        ProjectName: !Ref ProjectName
+        ServiceApiPath: 'mandate'
+        NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
+        ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
+        OpenApiBucketName: !Ref MicroserviceBucketName
+        OpenApiBucketKey: !Sub ${MicroserviceBucketBaseKey}/docs/openapi/aws/api-mandate-B2BPG-aws.yaml
+
+  MandateMicroserviceB2BPGApiWaf:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
+      Parameters:
+        WAFName: !Sub '${ProjectName}-mandate-b2b-pg'
+        IntendedUsage: B2BPG
+        APIGatewayARNs: !GetAtt MandateMicroserviceB2BPGApi.Outputs.APIGatewayARN
+        Limit: !Ref B2bPgLimit
+        ExcludedRule0: CrossSiteScripting_BODY,SizeRestrictions_BODY
+
   MandateMicroserviceCloudWatchDashboard:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -426,17 +464,21 @@ Resources:
         RestApiStageArns: !Join
           - ','
           - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiStageArn
+            - !GetAtt MandateMicroserviceB2BPGApi.Outputs.RestApiStageArn
         LambdaArns: !Join
           - ','
           - - !GetAtt PnMandateExpiredTriggerLambda.Arn
         RestApiNames: !Join
           - ','
           - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiName
+            - !GetAtt MandateMicroserviceB2BPGApi.Outputs.RestApiName
         AlarmArns: !Join
           - ','
           - - !GetAtt MandateMicroservice.Outputs.FatalLogsMetricAlarmArn
             - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiErrorAlarmArn
             - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiLatencyAlarmArn
+            - !GetAtt MandateMicroserviceB2BPGApi.Outputs.RestApiErrorAlarmArn
+            - !GetAtt MandateMicroserviceB2BPGApi.Outputs.RestApiLatencyAlarmArn
             - !Ref PnMandateExpiredTriggerDLQAlarmARN
             - !Ref PnMandateInputsQueueAlarmARN
             - !Ref PnMandateInputsQueueAgeAlarmARN

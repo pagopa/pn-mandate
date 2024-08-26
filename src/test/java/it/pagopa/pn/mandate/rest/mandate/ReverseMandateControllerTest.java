@@ -1,9 +1,6 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDtoResponse;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.UserDto;
 import it.pagopa.pn.mandate.mapper.ReverseMandateEntityMandateDtoMapper;
-import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -26,23 +23,17 @@ class ReverseMandateControllerTest {
     @Autowired
     private WebTestClient webTestClient;
 
-    @Autowired
-    private ReverseMandateEntityMandateDtoMapper mapper;
-
     @MockBean
     private MandateService mandateService;
 
-
     @Test
-    void createReverseMandate() {
+    void createMandate() {
         //Given
         String url = "/mandate/api/v1/reverse-mandate";
 
-        MandateDtoResponse dto = mapper.toDto(MandateDaoIT.newMandate(true), new UserDto(), new UserDto());
-
         //When
-        Mockito.when(mandateService.createReverseMandate(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any()))
-                .thenReturn(Mono.just(dto));
+        Mockito.when(mandateService.createReverseMandate(Mockito.any(), Mockito.any() , Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.just("mandateId"));
 
         //Then
         webTestClient.post()
@@ -55,5 +46,4 @@ class ReverseMandateControllerTest {
                 .expectStatus().isCreated()
                 .expectBody();
     }
-
 }

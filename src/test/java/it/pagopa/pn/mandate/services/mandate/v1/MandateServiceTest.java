@@ -606,17 +606,6 @@ class MandateServiceTest {
         mandateDtoRequest.getDelegator().setFiscalCode("LVLDAA85T50G702B");
         mandateDtoRequest.getDelegator().setPerson(entity.getDelegateisperson());
 
-        final MandateDtoResponse mandateDtoRes = new MandateDtoResponse();
-        mandateDtoRes.setMandateId(entity.getMandateId());
-        mandateDtoRes.setDatefrom(DateUtils.formatDate(entity.getValidfrom()));
-        mandateDtoRes.setStatus(MandateDtoResponse.StatusEnum.PENDING);
-        mandateDtoRes.setDateto(DateUtils.formatDate(entity.getValidto()));
-        mandateDtoRes.setDelegate(new UserDto());
-        mandateDtoRes.getDelegate().setFirstName("mario");
-        mandateDtoRes.getDelegate().setLastName("rossi");
-        mandateDtoRes.getDelegate().setFiscalCode("LVLDAA85T50G702B");
-        mandateDtoRes.getDelegate().setPerson(entity.getDelegateisperson());
-
         List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
         MandateDtoDto mandateDtoDto = new MandateDtoDto();
         mandateDtoDto.mandateId(entity.getMandateId());
@@ -635,14 +624,12 @@ class MandateServiceTest {
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn( true );
         when(mapperB2b.toEntity(any())).thenReturn(entity);
-        when(mapperB2b.toDto(any(), any(), any())).thenReturn(mandateDtoRes);
         //When
-        MandateDtoResponse result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null).block(D);
+        String result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null).block(D);
 
         //Then
         assertNotNull(result);
-        assertNotNull(result.getMandateId());
-        assertNotNull(result.getStatus());
+
     }
 
     @Test

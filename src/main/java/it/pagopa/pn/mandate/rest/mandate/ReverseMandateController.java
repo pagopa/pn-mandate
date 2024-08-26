@@ -1,7 +1,6 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDtoRequest;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDtoResponse;
 import it.pagopa.pn.mandate.reverse.generated.openapi.server.v1.api.MandateReverseServiceApi;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
@@ -25,10 +24,8 @@ public class ReverseMandateController implements MandateReverseServiceApi {
 
 
     @Override
-    public Mono<ResponseEntity<MandateDtoResponse>> createReverseMandate(String xPagopaPnUid, String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, List<String> xPagopaPnCxGroups, String xPagopaPnCxRole, Mono<MandateDtoRequest> mandateDtoRequest, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<String>> createReverseMandate(String xPagopaPnUid, String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, List<String> xPagopaPnCxGroups, String xPagopaPnCxRole, Mono<MandateDtoRequest> mandateDtoRequest, final ServerWebExchange exchange) {
         return mandateDtoRequest.flatMap(request -> mandateService.createReverseMandate(request, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole)
                 .map(m -> ResponseEntity.status(HttpStatus.CREATED).body(m)));
     }
-
-
 }

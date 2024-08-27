@@ -1,5 +1,9 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDtoRequest;
 import it.pagopa.pn.mandate.mapper.ReverseMandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.Test;
@@ -10,6 +14,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
 @WebFluxTest(controllers = {ReverseMandateController.class})
@@ -19,6 +24,7 @@ class ReverseMandateControllerTest {
     public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-uid";
     public static final String PN_PAGOPA_CX_TYPE = "x-pagopa-pn-cx-type";
     public static final String PN_PAGOPA_CX_ID = "x-pagopa-pn-cx-id";
+    public static final String PN_PAGOPA_CX_ROLE = "x-pagopa-pn-cx-role";
 
     @Autowired
     private WebTestClient webTestClient;
@@ -27,23 +33,23 @@ class ReverseMandateControllerTest {
     private MandateService mandateService;
 
     @Test
-    void createMandate() {
-        //Given
-        String url = "/mandate/api/v1/reverse-mandate";
+    void createMandateSuccessfully() throws JsonProcessingException {
+        MandateDtoRequest request = new MandateDtoRequest();
+        String requestBody = new ObjectMapper().writeValueAsString(request);
 
-        //When
-        Mockito.when(mandateService.createReverseMandate(Mockito.any(), Mockito.any() , Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any()))
-                .thenReturn(Mono.just("mandateId"));
+        Mockito.when(mandateService.createReverseMandate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.just("Mandate Created"));
 
-        //Then
         webTestClient.post()
-                .uri(url)
-                .accept(MediaType.APPLICATION_JSON)
-                .header(PN_PAGOPA_CX_ID, "cxId")
-                .header(PN_PAGOPA_CX_TYPE, "PG")
-                .header(PN_PAGOPA_USER_ID, "uid")
+                .uri("/mandate/api/v1/reverse-mandate")
+                .header(PN_PAGOPA_USER_ID, "user-id")
+                .header(PN_PAGOPA_CX_ID, "cx-id")
+                .header(PN_PAGOPA_CX_TYPE, CxTypeAuthFleet.PG.toString())
+                .header(PN_PAGOPA_CX_ROLE, "cx-role")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(requestBody))
                 .exchange()
                 .expectStatus().isCreated()
-                .expectBody();
+                .expectBody(String.class).isEqualTo("Mandate Created");
     }
 }

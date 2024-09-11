@@ -5,12 +5,12 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Component
 public class ReverseMandateEntityMandateDtoMapper {
 
-    private final Random random = new Random();
+    private final SecureRandom random = new SecureRandom();
 
     public MandateEntity toEntity(MandateDtoRequest dto) {
         MandateEntity target = new MandateEntity();

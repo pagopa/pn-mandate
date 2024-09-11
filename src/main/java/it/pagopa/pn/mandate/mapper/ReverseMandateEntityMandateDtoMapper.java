@@ -10,6 +10,7 @@ import java.util.Random;
 @Component
 public class ReverseMandateEntityMandateDtoMapper {
 
+    private final Random random = new Random();
 
     public MandateEntity toEntity(MandateDtoRequest dto) {
         MandateEntity target = new MandateEntity();
@@ -22,7 +23,6 @@ public class ReverseMandateEntityMandateDtoMapper {
     }
 
     private String generateRandomCode() {
-        Random random = new Random();
         int randomNumber = random.nextInt(100000);
         return String.format("%05d", randomNumber);
     }

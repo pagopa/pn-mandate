@@ -2,9 +2,7 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
 import it.pagopa.pn.commons.exceptions.PnRuntimeException;
-import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.exceptions.PnUnsupportedFilterException;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
@@ -13,6 +11,7 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateD
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
+import it.pagopa.pn.mandate.mapper.ReverseMandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
@@ -27,6 +26,8 @@ import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import it.pagopa.pn.mandate.utils.PgUtils;
+import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -45,12 +46,13 @@ import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyGroupAdmin;
 
 @Service
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class MandateService {
-
 
     private final MandateDao mandateDao;
     private final DelegateDao userDao;
     private final MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper;
+    private final ReverseMandateEntityMandateDtoMapper reverseMandateEntityMandateDtoMapper;
     private final UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper;
     private final PnInfoPaClient pnInfoPaClient;
     private final PnDataVaultClient pnDatavaultClient;
@@ -59,27 +61,7 @@ public class MandateService {
     private final MandateSearchService mandateSearchService;
     private final PnMandateConfig pnMandateConfig;
 
-    public MandateService(MandateDao mandateDao,
-                          DelegateDao userDao,
-                          MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper,
-                          UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper,
-                          PnInfoPaClient pnInfoPaClient,
-                          PnDataVaultClient pnDatavaultClient,
-                          SqsService sqsService,
-                          MandateValidationUtils validateUtils,
-                          MandateSearchService mandateSearchService,
-                          PnMandateConfig pnMandateConfig) {
-        this.mandateDao = mandateDao;
-        this.userDao = userDao;
-        this.mandateEntityMandateDtoMapper = mandateEntityMandateDtoMapper;
-        this.userEntityMandateCountsDtoMapper = userEntityMandateCountsDtoMapper;
-        this.pnInfoPaClient = pnInfoPaClient;
-        this.pnDatavaultClient = pnDatavaultClient;
-        this.sqsService = sqsService;
-        this.validateUtils = validateUtils;
-        this.mandateSearchService = mandateSearchService;
-        this.pnMandateConfig = pnMandateConfig;
-    }
+    private static final String PG_PREFIX = "PG-";
 
     /**
      * Accetta una delega
@@ -237,6 +219,45 @@ public class MandateService {
                                 })
                         .flatMap(this::enrichWithPaInfos)
                 );
+    }
+
+    public Mono<String> createReverseMandate(MandateDtoRequest mandateDtoRequest,
+                                                         final String xPagopaPnUid,
+                                                         final String xPagopaPnCxId,
+                                                         CxTypeAuthFleet cxTypeAuthFleet,
+                                                         List<String> groups,
+                                                         String role) {
+        final String uuid = UUID.randomUUID().toString();
+        return Mono.defer(() -> validaAccessoOnlyAdmin(cxTypeAuthFleet, role, groups))
+                .flatMap(obj -> Mono.just(validateUtils.validateReverseMandateCreationRequest(mandateDtoRequest))
+                        .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegator().getPerson(), dto.getDelegator().getFiscalCode())
+                                .map(delegatorInternaluserId -> {
+                                    validateUtils.validateCreationRequestHimself(cxTypeAuthFleet, xPagopaPnCxId, delegatorInternaluserId);
+                                    MandateEntity entity = getMandateEntity(xPagopaPnCxId, dto, delegatorInternaluserId, uuid);
+                                    if (log.isInfoEnabled())
+                                        log.info("creating reverse mandate uuid: {} to: {} validfrom: {} requestBy: {}",
+                                                entity.getMandateId(), xPagopaPnCxId, entity.getValidfrom(), xPagopaPnUid);
+                                    return entity;
+                                })
+                                .flatMap(mandateDao::createMandate), (ddto, entity) -> entity)
+                        .flatMap(mandateEntity -> pnDatavaultClient.getRecipientDenominationByInternalId(Collections.singletonList(PG_PREFIX + xPagopaPnCxId))
+                                .flatMap(baseRecipientDtoDto -> pnDatavaultClient.updateMandateById(uuid, null, null, baseRecipientDtoDto.getDenomination()))
+                                .then(Mono.just(mandateEntity)))
+                        .map(MandateEntity::getMandateId)
+                );
+    }
+
+    @NotNull
+    private MandateEntity getMandateEntity(String xPagopaPnCxId, MandateDtoRequest dto, String delegatorInternaluserId, String uuid) {
+        MandateEntity entity = reverseMandateEntityMandateDtoMapper.toEntity(dto);
+        entity.setDelegate(xPagopaPnCxId);
+        entity.setDelegatorUid(delegatorInternaluserId);
+        entity.setMandateId(uuid);
+        entity.setDelegator(delegatorInternaluserId);
+        entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
+        entity.setCreated(Instant.now());
+        entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
+        return entity;
     }
 
 

@@ -10,6 +10,7 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateD
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.RecipientTypeDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
+import it.pagopa.pn.mandate.mapper.ReverseMandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
@@ -24,7 +25,6 @@ import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +65,9 @@ class MandateServiceTest {
     private MandateEntityMandateDtoMapper mapper;
 
     @Mock
+    private ReverseMandateEntityMandateDtoMapper mapperB2b;
+
+    @Mock
     private MandateDao mandateDao;
 
     @Mock
@@ -99,7 +102,7 @@ class MandateServiceTest {
     public void init() {
         MockitoAnnotations.openMocks(this);
         MandateValidationUtils mandateValidationUtils = Mockito.spy(new MandateValidationUtils(validateUtils, pnExtRegPrvtClient));
-        mandateService = new MandateService(mandateDao, delegateDao, mapper, userEntityMandateCountsDtoMapper, pnInfoPaClient, pnDatavaultClient, sqsService, mandateValidationUtils, mandateSearchService, pnMandateConfig);
+        mandateService = new MandateService(mandateDao, delegateDao, mapper, mapperB2b, userEntityMandateCountsDtoMapper, pnInfoPaClient, pnDatavaultClient, sqsService, mandateValidationUtils, mandateSearchService, pnMandateConfig);
     }
 
     @Test
@@ -588,6 +591,128 @@ class MandateServiceTest {
         assertNotNull(result.getMandateId());
         assertNotNull(result.getStatus());
         assertEquals(mandateDto.getVerificationCode(), result.getVerificationCode());
+    }
+
+    @Test
+    void createReverseMandate() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+
+        final MandateDtoRequest mandateDtoRequest = new MandateDtoRequest();
+        mandateDtoRequest.setDateto(DateUtils.formatDate(entity.getValidto()));
+        mandateDtoRequest.setDelegator(new UserDto());
+        mandateDtoRequest.getDelegator().setFirstName("mario");
+        mandateDtoRequest.getDelegator().setLastName("rossi");
+        mandateDtoRequest.getDelegator().setFiscalCode("LVLDAA85T50G702B");
+        mandateDtoRequest.getDelegator().setPerson(entity.getDelegateisperson());
+
+        List<MandateDtoDto> resgetmandatesbyid = new ArrayList<>();
+        MandateDtoDto mandateDtoDto = new MandateDtoDto();
+        mandateDtoDto.mandateId(entity.getMandateId());
+        DenominationDtoDto denominationDtoDto = new DenominationDtoDto();
+        denominationDtoDto.setDestName("mario");
+        denominationDtoDto.setDestSurname("rossi");
+        mandateDtoDto.setInfo(denominationDtoDto);
+        resgetmandatesbyid.add(mandateDtoDto);
+
+        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        BaseRecipientDtoDto baseRecipientDtoDto = new BaseRecipientDtoDto();
+        baseRecipientDtoDto.setDenomination("test");
+       when(pnDatavaultClient.getRecipientDenominationByInternalId(anyList())).thenReturn(Flux.just(baseRecipientDtoDto));
+        when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegator()));
+       when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
+        when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
+        when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn( true );
+        when(mapperB2b.toEntity(any())).thenReturn(entity);
+        //When
+        String result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null).block(D);
+
+        //Then
+        assertNotNull(result);
+
+    }
+
+    @Test
+    void createReverseMandateDelegatorNull() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+
+        final MandateDtoRequest mandateDtoRequest = new MandateDtoRequest();
+
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        assertThrows(PnInvalidInputException.class, () -> result.block(D));
+    }
+
+    @Test
+    void createReverseMandateFiscalCodeNull() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+
+        final MandateDtoRequest mandateDtoRequest = new MandateDtoRequest();
+        mandateDtoRequest.setDelegator(new UserDto());
+
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        assertThrows(PnInvalidInputException.class, () -> result.block(D));
+    }
+
+    @Test
+    void createReverseMandatePersonNull() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+
+        final MandateDtoRequest mandateDtoRequest = new MandateDtoRequest();
+        mandateDtoRequest.setDelegator(new UserDto());
+        mandateDtoRequest.getDelegator().setFiscalCode("LVLDAA85T50G702B");
+
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        assertThrows(PnInvalidInputException.class, () -> result.block(D));
+    }
+
+    @Test
+    void createReverseMandateInvalidDelegator(){
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+
+        final MandateDtoRequest mandateDtoRequest = new MandateDtoRequest();
+        mandateDtoRequest.setDelegator(new UserDto());
+        mandateDtoRequest.getDelegator().setFiscalCode("LVLDAA85T50G702B");
+        mandateDtoRequest.getDelegator().setPerson(true);
+
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        assertThrows(PnInvalidInputException.class, () -> result.block(D));
+    }
+
+    @Test
+    void crateReverseMandateInvalidFiscalCode(){
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+
+        final MandateDtoRequest mandateDtoRequest = new MandateDtoRequest();
+        mandateDtoRequest.setDelegator(new UserDto());
+        mandateDtoRequest.getDelegator().setFirstName("mario");
+        mandateDtoRequest.getDelegator().setLastName("rossi");
+        mandateDtoRequest.getDelegator().setFiscalCode("FAKEFAKEFAKE");
+        mandateDtoRequest.getDelegator().setPerson(true);
+
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        assertThrows(PnInvalidInputException.class, () -> result.block(D));
+    }
+
+    @Test
+    void createReverseMandateDateToNull() {
+        //Given
+        MandateEntity entity = MandateDaoIT.newMandate(true);
+
+        final MandateDtoRequest mandateDtoRequest = new MandateDtoRequest();
+        mandateDtoRequest.setDelegator(new UserDto());
+        mandateDtoRequest.getDelegator().setFirstName("mario");
+        mandateDtoRequest.getDelegator().setLastName("rossi");
+        mandateDtoRequest.getDelegator().setFiscalCode("LVLDAA85T50G702B");
+        mandateDtoRequest.getDelegator().setPerson(true);
+
+        when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn( true );
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        assertThrows(PnInvalidInputException.class, () -> result.block(D));
     }
 
     @Test

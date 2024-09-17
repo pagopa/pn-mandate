@@ -5,16 +5,12 @@ import it.pagopa.pn.commons.exceptions.dto.ProblemError;
 import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.OrganizationIdDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.AcceptRequestDto;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.ConstraintViolation;
@@ -34,9 +30,12 @@ import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.*;
 public class MandateValidationUtils {
 
     private static final String DELEGATE_FISCAL_CODE = "delegate.fiscalCode";
+    private static final String DELEGATOR_FISCAL_CODE = "delegator.fiscalCode";
     private static final String VERIFICATION_CODE = "verificationCode";
     private static final String DELEGATE_PERSON = "delegate.person";
+    private static final String DELEGATOR_PERSON = "delegator.person";
     private static final String DELEGATE = "delegate";
+    private static final String DELEGATOR = "delegator";
     private static final String DATE_TO = "dateTo";
 
     private final ValidateUtils validateUtils;
@@ -204,6 +203,52 @@ public class MandateValidationUtils {
 
         log.logCheckingOutcome(process, true);
         return mandateDto;
+    }
+
+    public MandateDtoRequest validateReverseMandateCreationRequest(MandateDtoRequest mandateDtoRequest) {
+        String process = "validating create mandate b2b";
+        log.logChecking(process);
+        // valida delegante
+        if (mandateDtoRequest.getDelegator() == null) {
+            log.logCheckingOutcome(process, false, "missing delegator");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATOR);
+        }
+        if ((mandateDtoRequest.getDelegator().getFiscalCode() == null)) {
+            log.logCheckingOutcome(process, false, "missing delegator taxid");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATOR_FISCAL_CODE);
+        }
+
+        if ((mandateDtoRequest.getDelegator().getPerson() == null)) {
+            log.logCheckingOutcome(process, false, "missing delegator isperson");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DELEGATOR_PERSON);
+        }
+
+        if ((mandateDtoRequest.getDelegator().getPerson() && (mandateDtoRequest.getDelegator().getFirstName() == null || mandateDtoRequest.getDelegator().getLastName() == null))
+                || (!mandateDtoRequest.getDelegator().getPerson() && mandateDtoRequest.getDelegator().getCompanyName() == null)) {
+            log.logCheckingOutcome(process, false, "invalid delegator");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER, DELEGATOR);
+        }
+
+        if (Boolean.TRUE.equals(mandateDtoRequest.getDelegator().getPerson())
+                && !validateUtils.validate(mandateDtoRequest.getDelegator().getFiscalCode(), true, false)) {
+            log.logCheckingOutcome(process, false, "invalid delegator taxid");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATOR_FISCAL_CODE);
+        }
+        // le PG possono avere p.iva o CF!
+        if (Boolean.FALSE.equals(mandateDtoRequest.getDelegator().getPerson())
+                && !validateUtils.validate(mandateDtoRequest.getDelegator().getFiscalCode(), false,false)) {
+            log.logCheckingOutcome(process, false, "invalid delegator taxid");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DELEGATOR_FISCAL_CODE);
+        }
+
+        // la delega richiede la data di fine
+        if (!StringUtils.hasText(mandateDtoRequest.getDateto())) {
+            log.logCheckingOutcome(process, false, "missing expire date");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DATE_TO);
+        }
+
+        log.logCheckingOutcome(process, true);
+        return mandateDtoRequest;
     }
 
 

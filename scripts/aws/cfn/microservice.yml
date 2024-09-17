@@ -279,7 +279,7 @@ Parameters:
 
   MountEfs:
     Type: String
-    Default: false
+    Default: "false"
     AllowedValues:
       - "true"
       - "false"

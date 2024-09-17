@@ -19,7 +19,7 @@ Parameters:
     Type: String
     Description: 'The DNS name used for WEB rest API.'
 
-  PgApiDnsName:
+  ApiDnsName:
     Type: String
     Description: 'The DNS name used for B2B PG rest API.'
   
@@ -430,7 +430,7 @@ Resources:
       Parameters:
         MicroServiceUniqueName: !Sub '${ProjectName}-mandate'
         IntendedUsage: B2BPG
-        DnsName: !Ref PgApiDnsName
+        DnsName: !Ref ApiDnsName
         ProjectName: !Ref ProjectName
         ServiceApiPath: 'mandate'
         NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink

@@ -20,6 +20,7 @@
 	<properties>
 		<awaitility.version>4.1.1</awaitility.version>
 		<ant.windows_bash_exe>c:\Program Files\Git\bin\bash.exe</ant.windows_bash_exe>
+		<pagopa.codegen.version>v01.06.01</pagopa.codegen.version>
 	</properties>
 
 	<dependencies>
@@ -219,6 +220,37 @@
 							<apiPackage>${project.groupId}.mandate.generated.openapi.server.v1.api</apiPackage>
 							<configPackage>${project.groupId}.mandate.generated.openapi.server.v1.config</configPackage>
 							</configOptions>				
+						</configuration>
+					</execution>
+					<execution>
+						<id>generate-reverse-mandate-server</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<phase>generate-resources</phase>
+						<configuration>
+							<inputSpec>${project.basedir}/docs/openapi/pn-mandate-b2b-pg-internal.yaml</inputSpec>
+							<generatorName>spring</generatorName>
+							<library>spring-boot</library>
+							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/server</templateDirectory>
+							<generateApiDocumentation>false</generateApiDocumentation>
+							<generateApiTests>false</generateApiTests>
+							<generateModelTests>false</generateModelTests>
+							<configOptions>
+								<dateLibrary>java11</dateLibrary>
+								<delegatePattern>true</delegatePattern>
+								<interfaceOnly>true</interfaceOnly>
+								<annotationLibrary>none</annotationLibrary>
+								<documentationProvider>source</documentationProvider>
+								<openApiNullable>false</openApiNullable>
+								<reactive>true</reactive>
+								<skipDefaultInterface>false</skipDefaultInterface>
+								<useTags>true</useTags>
+								<basePackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1</basePackage>
+								<modelPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.dto</modelPackage>
+								<apiPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.api</apiPackage>
+								<configPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.config</configPackage>
+							</configOptions>
 						</configuration>
 					</execution>
 					<execution>

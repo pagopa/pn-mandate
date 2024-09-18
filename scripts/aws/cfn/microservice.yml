@@ -18,6 +18,11 @@ Parameters:
   ApiDnsName:
     Type: String
     Description: 'The DNS name used for B2B PG rest API.'
+
+  DestApiDnsName:
+    Type: String
+    Description: 'The DNS name used for B2B PG rest API.'
+    Default: "destapi.dev.pn.pagopa.it"
   
   CorsAllowedDomains:
     Type: String
@@ -426,7 +431,7 @@ Resources:
       Parameters:
         MicroServiceUniqueName: !Sub '${ProjectName}-mandate'
         IntendedUsage: B2BPG
-        DnsName: !Ref ApiDnsName
+        DnsName: !Ref DestApiDnsName
         ProjectName: !Ref ProjectName
         ServiceApiPath: 'mandate'
         NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink

@@ -250,7 +250,7 @@ public class MandateService {
     @NotNull
     private MandateEntity getMandateEntity(String xPagopaPnCxId, MandateDtoRequest dto, String delegatorInternaluserId, String uuid) {
         MandateEntity entity = reverseMandateEntityMandateDtoMapper.toEntity(dto);
-        entity.setDelegate(xPagopaPnCxId);
+        entity.setDelegate("PG-"+xPagopaPnCxId);
         entity.setDelegatorUid(delegatorInternaluserId);
         entity.setMandateId(uuid);
         entity.setDelegator(delegatorInternaluserId);

@@ -233,7 +233,7 @@ public class MandateService {
                         .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegator().getPerson(), dto.getDelegator().getFiscalCode())
                                 .map(delegatorInternaluserId -> {
                                     validateUtils.validateCreationRequestHimself(cxTypeAuthFleet, xPagopaPnCxId, delegatorInternaluserId);
-                                    MandateEntity entity = getMandateEntity(xPagopaPnCxId, dto, delegatorInternaluserId, uuid);
+                                    MandateEntity entity = getMandateEntity(xPagopaPnCxId, dto, delegatorInternaluserId, uuid, cxTypeAuthFleet);
                                     if (log.isInfoEnabled())
                                         log.info("creating reverse mandate uuid: {} to: {} validfrom: {} requestBy: {}",
                                                 entity.getMandateId(), xPagopaPnCxId, entity.getValidfrom(), xPagopaPnUid);
@@ -248,9 +248,9 @@ public class MandateService {
     }
 
     @NotNull
-    private MandateEntity getMandateEntity(String xPagopaPnCxId, MandateDtoRequest dto, String delegatorInternaluserId, String uuid) {
+    private MandateEntity getMandateEntity(String xPagopaPnCxId, MandateDtoRequest dto, String delegatorInternaluserId, String uuid, CxTypeAuthFleet cxTypeAuthFleet) {
         MandateEntity entity = reverseMandateEntityMandateDtoMapper.toEntity(dto);
-        entity.setDelegate(xPagopaPnCxId);
+        entity.setDelegate(cxTypeAuthFleet.getValue() + "-" + xPagopaPnCxId);
         entity.setDelegatorUid(delegatorInternaluserId);
         entity.setMandateId(uuid);
         entity.setDelegator(delegatorInternaluserId);

@@ -61,8 +61,6 @@ public class MandateService {
     private final MandateSearchService mandateSearchService;
     private final PnMandateConfig pnMandateConfig;
 
-    private static final String PG_PREFIX = "PG-";
-
     /**
      * Accetta una delega
      *
@@ -233,14 +231,14 @@ public class MandateService {
                         .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegator().getPerson(), dto.getDelegator().getFiscalCode())
                                 .map(delegatorInternaluserId -> {
                                     validateUtils.validateCreationRequestHimself(cxTypeAuthFleet, xPagopaPnCxId, delegatorInternaluserId);
-                                    MandateEntity entity = getMandateEntity(xPagopaPnCxId, dto, delegatorInternaluserId, uuid, cxTypeAuthFleet);
+                                    MandateEntity entity = getMandateEntity(xPagopaPnCxId, dto, delegatorInternaluserId, uuid);
                                     if (log.isInfoEnabled())
                                         log.info("creating reverse mandate uuid: {} to: {} validfrom: {} requestBy: {}",
                                                 entity.getMandateId(), xPagopaPnCxId, entity.getValidfrom(), xPagopaPnUid);
                                     return entity;
                                 })
                                 .flatMap(mandateDao::createMandate), (ddto, entity) -> entity)
-                        .flatMap(mandateEntity -> pnDatavaultClient.getRecipientDenominationByInternalId(Collections.singletonList(PG_PREFIX + xPagopaPnCxId))
+                        .flatMap(mandateEntity -> pnDatavaultClient.getRecipientDenominationByInternalId(Collections.singletonList(xPagopaPnCxId))
                                 .flatMap(baseRecipientDtoDto -> pnDatavaultClient.updateMandateById(uuid, null, null, baseRecipientDtoDto.getDenomination()))
                                 .then(Mono.just(mandateEntity)))
                         .map(MandateEntity::getMandateId)
@@ -248,9 +246,9 @@ public class MandateService {
     }
 
     @NotNull
-    private MandateEntity getMandateEntity(String xPagopaPnCxId, MandateDtoRequest dto, String delegatorInternaluserId, String uuid, CxTypeAuthFleet cxTypeAuthFleet) {
+    private MandateEntity getMandateEntity(String xPagopaPnCxId, MandateDtoRequest dto, String delegatorInternaluserId, String uuid) {
         MandateEntity entity = reverseMandateEntityMandateDtoMapper.toEntity(dto);
-        entity.setDelegate(cxTypeAuthFleet.getValue() + "-" + xPagopaPnCxId);
+        entity.setDelegate(xPagopaPnCxId);
         entity.setDelegatorUid(delegatorInternaluserId);
         entity.setMandateId(uuid);
         entity.setDelegator(delegatorInternaluserId);
@@ -289,7 +287,7 @@ public class MandateService {
         }
 
         Integer iStatus = null;
-        if (status != null && !status.equals("")) {
+        if (status != null && !status.isEmpty()) {
             iStatus = convertStatusStringToInteger(status);
         }
 

@@ -17,6 +17,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -245,6 +246,13 @@ public class MandateValidationUtils {
         if (!StringUtils.hasText(mandateDtoRequest.getDateto())) {
             log.logCheckingOutcome(process, false, "missing expire date");
             throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_REQUIRED, DATE_TO);
+        }
+
+        LocalDate tomorrowDate = LocalDate.now().plusDays(1);
+        LocalDate dateTo = LocalDate.parse(mandateDtoRequest.getDateto());
+        if (dateTo.isBefore(tomorrowDate)) {
+            log.logCheckingOutcome(process, false, "expire date cannot be today or in the past");
+            throw new PnInvalidInputException(ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_PATTERN, DATE_TO);
         }
 
         log.logCheckingOutcome(process, true);

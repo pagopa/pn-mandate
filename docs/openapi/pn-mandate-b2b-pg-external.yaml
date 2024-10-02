@@ -268,6 +268,8 @@ paths:
         - mandate-reverse-service
       summary: Create a new mandate, returns the just created mandate if successful
       operationId: createReverseMandate
+      x-api-permissions:
+        - 'REVERSE_MANDATE'
       #      security:                                                                # ONLY EXTERNAL
       #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
       requestBody:
@@ -484,16 +486,16 @@ components:
           $ref: '#/components/schemas/UserDto'
         datefrom:
           type: string
-          description: ISO 8601 format
+          description: ISO 8601 format. The field is currently ignored and automatically set to 120 days prior to the creation of the delegation.
           maxLength: 10
           pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
         dateto:
           type: string
-          description: ISO 8601 format
+          description: ISO 8601 format. The field is set with a date starting from the day after the delegation is created.
           maxLength: 10
           pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
     MandateDtoResponse:
-      type: String
+      type: string
       maxLength: 36
       pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
       description: Unique identifier of mandate

@@ -34,3 +34,5 @@ build/
 .history
 .vscode
 target
+
+.DS_Store

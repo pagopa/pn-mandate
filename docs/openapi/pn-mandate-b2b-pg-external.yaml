@@ -1,25 +1,59 @@
 openapi: 3.0.1
 info:
-  title: PN Mandate u-service
-  description: Documentation APIs v1.0
+  title: PN Mandate MicroService
   termsOfService: https://termofservice.it
   x-api-id: api-internal-mandate
   x-summary: 'Piattaforma Notifiche: API B2B per la gestione delle deleghe'
   version: '1.0.0'
+  description: >-
+    ## Abstract
+      API utilizzate dalle persone giuridiche per avere la lista delle notifiche e il dettaglio di ognuna di queste.
+    ## Due dei possibili utilizzi che possono essere fatti
+    
+    ### La creazione di una delega inversa
+    <img src="https://raw.githubusercontent.com/pagopa/pn-mandate/refs/heads/feature/openApi_doc/docs/images/pg_reverse_mandate_creation.svg">
+
+    #### Descrizione delle operazioni:
+
+    <ul>
+      <li>1) Richiesta di creazione di una delega a favore della PG con dati della PG e del delegante/li>
+      <li>3) Accettazione della notifica fornendo il mandateId ricevuto in fase di richiesta di creazione e il verification code fornito dal delegante</li>
+    </ul>
+
+
+    ### Un workflow comprensivo di creazione delega inversa e interrogazione
+    <img src="https://raw.githubusercontent.com/pagopa/pn-mandate/refs/heads/feature/openApi_doc/docs/images/pg_mandates_management.svg">
+
+    Descrizione delle operazioni:
+    <ul>
+      <li>1) Richiesta di creazione di una delega a favore della PG con dati della PG e del delegante_1/li>
+      <li>3) Accettazione della notifica fornendo il mandateId ricevuto in fase di richiesta di creazione e il verification code fornito dal delegante_1</li>
+      <li>5) lista delle deleghe ricevute (si riceverà una lista di un elemento contenente i dati della delega appena creata [la PG delegata, il delegante "delegato 1", la data di validitò della delega...])</li>
+      <li>7) Richiesta di creazione di una delega a favore della PG con dati della PG e del delegante_2/li>
+      <li>9) Accettazione della notifica fornendo il mandateId ricevuto in fase di richiesta di creazione e il verification code fornito dal delegante_2</li>
+      <li>5) lista delle deleghe ricevute (si riceverà una lista di due elementi contenente i dati delle due deleghe create</li>
+    </ul>
+
   contact:
     email: pn@pagopa.it
   license:
     name: Licenza di PN
     url: 'https://da-definire/'
 servers:
-  - url: https://api.pn.pagopa.it
-    description: Generated server url
+  - url: https://api.prod.notifichedigitali.it
+    description: Ambiente di produzione
+  - url: https://api.uat.notifichedigitali.it
+    description: Ambiente di UAT
+  - url: https://api.test.notifichedigitali.it
+    description: Ambiente di test
+  - url: https://api.dev.notifichedigitali.it
+    description: Ambiente di sviluppo
 paths:
   /mandate/api/v1/mandate:
     post:
       tags:
         - mandate-service
-      summary: Create a new mandate, returns the just created mandate if successful
+      summary: Crea una nuova delega restituendone l'identificativo in caso di successo
       operationId: createMandate
       #      security:                                                                # ONLY EXTERNAL
       #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
@@ -38,7 +72,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MandateDto'
         '400':
-          description: Bad Request
+          description: Richiesta Errata
           content:
             application/json:
               schema:
@@ -47,7 +81,7 @@ paths:
     patch:
       tags:
         - mandate-service
-      summary: Accept a mandate
+      summary: Accettazione di una delega
       operationId: acceptMandate
       #      security:                                                                # ONLY EXTERNAL
       #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
@@ -68,9 +102,9 @@ paths:
               $ref: '#/components/schemas/AcceptRequestDto'
       responses:
         '204':
-          description: No Content
+          description: Nessun contenuto
         '400':
-          description: Bad Request
+          description: Richiesta Errata
           content:
             application/json:
               schema:
@@ -98,9 +132,9 @@ paths:
               $ref: '#/components/schemas/UpdateRequestDto'
       responses:
         '204':
-          description: No Content
+          description: Nessun contenuto
         '400':
-          description: Bad Request
+          description: Richiesta Errata
           content:
             application/json:
               schema:
@@ -109,7 +143,7 @@ paths:
     patch:
       tags:
         - mandate-service
-      summary: Reject a mandate
+      summary: Rifiuta il conferimento di una delega
       operationId: rejectMandate
       #      security:                                                                # ONLY EXTERNAL
       #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
@@ -125,9 +159,9 @@ paths:
             pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
       responses:
         '204':
-          description: No Content
+          description: Nessun contenuto
         '400':
-          description: Bad Request
+          description: Richiesta Errata
           content:
             application/json:
               schema:
@@ -136,7 +170,7 @@ paths:
     patch:
       tags:
         - mandate-service
-      summary: Revoke a mandate
+      summary: Annulla/Ritira una delega
       operationId: revokeMandate
       #      security:                                                                # ONLY EXTERNAL
       #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
@@ -152,9 +186,9 @@ paths:
             pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
       responses:
         '204':
-          description: No Content
+          description: Nessun contenuto
         '400':
-          description: Bad Request
+          description: Richiesta Errata
           content:
             application/json:
               schema:
@@ -163,7 +197,9 @@ paths:
     get:
       tags:
         - mandate-service
-      summary: Return filtered mandates based on required status if filter's specified. If no filter is present, returns all pending and active mandates
+      summary: >-
+        Restituisce la lista filtrata delle deleghe per delegato filtrate per il filtro passato come parametro.
+        Se non viene impostato nessun filtro, restituisce tutte le deleghe attive e in attesa (status=pending)
       operationId: listMandatesByDelegate_1
       #      security:                                                                # ONLY EXTERNAL
       #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
@@ -190,7 +226,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/MandateDto'
         '400':
-          description: Bad Request
+          description: Richiesta Errata
           content:
             application/json:
               schema:
@@ -198,7 +234,7 @@ paths:
     post:
       tags:
         - mandate-service
-      summary: Return filtered mandates based on status, groups and delegators (taxId)
+      summary: Restituisce la lista delle deleghe filtrata per stato, gruppi e deleganti(taxId)
       operationId: searchMandatesByDelegate
       #      security:                                                                # ONLY EXTERNAL
       #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
@@ -232,7 +268,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SearchMandateResponseDto'
         '400':
-          description: Bad Request
+          description: Richiesta Errata
           content:
             application/json:
               schema:
@@ -241,7 +277,7 @@ paths:
     get:
       tags:
         - mandate-service
-      summary: Return all pending and active mandates
+      summary: Restituisce la lista di tutte le deleghe pending o attive per un delegante
       operationId: listMandatesByDelegator_1
       #      security:                                                                # ONLY EXTERNAL
       #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
@@ -257,7 +293,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/MandateDto'
         '400':
-          description: Bad Request
+          description: Richiesta Errata
           content:
             application/json:
               schema:
@@ -266,7 +302,7 @@ paths:
     post:
       tags:
         - mandate-reverse-service
-      summary: Create a new mandate, returns the just created mandate if successful
+      summary: Crea una delega inversa (a richiederla è il delegato). Se ha successo, restituisce i dati della delega creata
       operationId: createReverseMandate
       x-api-permissions:
         - 'REVERSE_MANDATE'
@@ -285,7 +321,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MandateDtoResponse'
         '400':
-          description: Bad Request
+          description: Richiesta Errata
           content:
             application/json:
               schema:
@@ -319,7 +355,7 @@ components:
           type: string
           maxLength: 36
           pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
-          description: Available always, not required on mandate creation.
+          description: Identificativo della delega, non richiesto alla creazione della delega.
           nullable: true
         delegator:
           $ref: '#/components/schemas/UserDto'
@@ -327,7 +363,7 @@ components:
           $ref: '#/components/schemas/UserDto'
         status:
           type: string
-          description: Available always, not required on mandate creation.
+          description: Stato della delega, non richiesto alla creazione della delega.
           nullable: true
           enum:
             - pending
@@ -337,7 +373,7 @@ components:
             - expired
         visibilityIds:
           type: array
-          description: Available always, not required on mandate creation.
+          description: Enti mittenti per cui è valida la delega
           nullable: true
           items:
             $ref: '#/components/schemas/OrganizationIdDto'
@@ -345,20 +381,21 @@ components:
           type: string
           maxLength: 5
           pattern: ^[0-9]*$
-          description: Available only for request where requesting user is the delegator
+          description: Codice di verifica della delega. Disponibile solo per le richieste ricevute dal delegante.
           nullable: true
         datefrom:
           type: string
-          description: ISO 8601 format
+          description: Data in formato ISO 8601
           maxLength: 10
           pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
         dateto:
           type: string
-          description: ISO 8601 format
+          description: Data in formato ISO 8601
           maxLength: 10
           pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
         groups:
           type: array
+          description: Gruppi di utenti a cui la delega è concessa
           items:
             $ref: '#/components/schemas/GroupDto'
     OrganizationIdDto:
@@ -373,7 +410,7 @@ components:
           maxLength: 50
           # ASCII printable characters
           pattern: ^[ -~ ]*$
-      description: Available always, not required on mandate creation.
+      description: Dati degli enti mittenti
       nullable: true
     UserDto:
       type: object
@@ -400,7 +437,7 @@ components:
           pattern: '^([A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1})|([0-9]{11})$'
         person:
           type: boolean
-      description: Available only for request where requesting user is the delegator
+      description: Dati utente
       nullable: true
     GroupDto:
       type: object
@@ -486,19 +523,21 @@ components:
           $ref: '#/components/schemas/UserDto'
         datefrom:
           type: string
-          description: ISO 8601 format. The field is currently ignored and automatically set to 120 days prior to the creation of the delegation.
+          description: >-
+            Data in formato ISO 8601. Questo campo è al momento ignorato e automaticamente impostato a 120 
+            giorni prima della creazione della delega.
           maxLength: 10
           pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
         dateto:
           type: string
-          description: ISO 8601 format. The field is set with a date starting from the day after the delegation is created.
+          description: Data in formato ISO 8601. Questo campo deve essere almeno un giorno dopo la data di crezione della delega.
           maxLength: 10
           pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
     MandateDtoResponse:
       type: string
       maxLength: 36
       pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
-      description: Unique identifier of mandate
+      description: Identificativo univoco della delega
       nullable: false
 
   securitySchemes:                                      # ONLY EXTERNAL

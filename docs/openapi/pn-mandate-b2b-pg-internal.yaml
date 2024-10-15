@@ -11,7 +11,7 @@ info:
     ## Due dei possibili utilizzi che possono essere fatti
     
     ### La creazione di una delega inversa
-    <img src="https://raw.githubusercontent.com/pagopa/pn-mandate/refs/heads/feature/openApi_doc/docs/images/pg_reverse_mandate_creation.svg">
+    <img src="https://raw.githubusercontent.com/pagopa/pn-mandate/refs/heads/develop/docs/images/pg_reverse_mandate_creation.svg">
 
     #### Descrizione delle operazioni:
 
@@ -22,7 +22,7 @@ info:
 
 
     ### Un workflow comprensivo di creazione delega inversa e interrogazione
-    <img src="https://raw.githubusercontent.com/pagopa/pn-mandate/refs/heads/feature/openApi_doc/docs/images/pg_mandates_management.svg">
+    <img src="https://raw.githubusercontent.com/pagopa/pn-mandate/refs/heads/develop/docs/images/pg_mandates_management.svg">
 
     Descrizione delle operazioni:
     <ul>

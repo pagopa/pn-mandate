@@ -10,7 +10,7 @@
     "PendingDuration": "15m",
     "EnhancedWebSecurityEnabled": "true",
     "MountEfs": "false",
-    "PnCronAnalyzer": "* */1 * * * *",
+    "PnCronAnalyzer": "-",
     "WireTapLogActivation": "false"
   }
 }

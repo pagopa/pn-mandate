@@ -1,13 +1,6 @@
 {
     "openapi": [
         {
-            "intendedUsage": "WEB",
-            "openapiFiles": [
-                "pn-mandate-internal.yaml"
-            ],
-            "servicePath": "mandate"
-        },
-        {
             "intendedUsage": "B2BPG",
             "openapiFiles": [
                 "pn-mandate-b2b-pg-internal.yaml"

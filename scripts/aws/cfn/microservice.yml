@@ -11,14 +11,6 @@ Parameters:
     Type: String
     Description: ARN of alarm topic
 
-  WebApiDnsName:
-    Type: String
-    Description: 'The DNS name used for WEB rest API.'
-
-  ApiDnsName:
-    Type: String
-    Description: 'The DNS name used for B2B PG rest API.'
-
   DestApiDnsName:
     Type: String
     Description: 'The DNS name used for B2B PG rest API.'
@@ -254,23 +246,10 @@ Parameters:
     Type: String
     Default: 'FATAL'
 
-  WebApiLimit:
-    Type: Number
-    Default: 600
-    Description: WEB api WAF Limit (per IP)
-
   B2bPgLimit:
     Default: 600000
     Type: Number
     Description: B2B PG WAG limit
-
-  EnhancedWebSecurityEnabled:
-    Type: String
-    Default: false
-    Description: Enable additional WAF Web rules
-    AllowedValues:
-      - true
-      - false
 
   # EFS parameters
   FargateEFSFileSystemID:
@@ -392,36 +371,6 @@ Resources:
             Resource:
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
 
-  # Expose PN-Mandate microservice public API with API-GW for WEB usage
-  MandateMicroservicePublicWebAPI:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service-openapi.yaml"
-      Parameters:
-        MicroServiceUniqueName: !Sub '${ProjectName}-mandate'
-        IntendedUsage: WEB
-        DnsName: !Ref WebApiDnsName
-        ProjectName: !Ref ProjectName
-        ServiceApiPath: 'mandate'
-        NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
-        ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
-        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
-        CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
-        OpenApiBucketName: !Ref MicroserviceBucketName
-        OpenApiBucketKey: !Sub ${MicroserviceBucketBaseKey}/docs/openapi/aws/api-mandate-WEB-aws.yaml
-
-  MandateMicroservicePublicWebApiWaf:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
-      Parameters:
-        WAFName: !Sub '${ProjectName}-mandate-web'
-        IntendedUsage: WEB
-        APIGatewayARNs: !GetAtt MandateMicroservicePublicWebAPI.Outputs.APIGatewayARN
-        Limit: !Ref WebApiLimit
-        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
-        EnhancedWebSecurityEnabled: !Ref EnhancedWebSecurityEnabled
-
   # Expose PN-Mandate microservice public API with API-GW for B2BPG usage
   MandateMicroserviceB2BPGApi:
     Type: AWS::CloudFormation::Stack
@@ -463,20 +412,16 @@ Resources:
             - !Ref MandatesDynamoTableHistoryName
         RestApiStageArns: !Join
           - ','
-          - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiStageArn
-            - !GetAtt MandateMicroserviceB2BPGApi.Outputs.RestApiStageArn
+          - - !GetAtt MandateMicroserviceB2BPGApi.Outputs.RestApiStageArn
         LambdaArns: !Join
           - ','
           - - !GetAtt PnMandateExpiredTriggerLambda.Arn
         RestApiNames: !Join
           - ','
-          - - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiName
-            - !GetAtt MandateMicroserviceB2BPGApi.Outputs.RestApiName
+          - - !GetAtt MandateMicroserviceB2BPGApi.Outputs.RestApiName
         AlarmArns: !Join
           - ','
           - - !GetAtt MandateMicroservice.Outputs.FatalLogsMetricAlarmArn
-            - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiErrorAlarmArn
-            - !GetAtt MandateMicroservicePublicWebAPI.Outputs.RestApiLatencyAlarmArn
             - !GetAtt MandateMicroserviceB2BPGApi.Outputs.RestApiErrorAlarmArn
             - !GetAtt MandateMicroserviceB2BPGApi.Outputs.RestApiLatencyAlarmArn
             - !Ref PnMandateExpiredTriggerDLQAlarmARN

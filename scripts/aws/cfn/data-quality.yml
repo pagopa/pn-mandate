@@ -14,7 +14,7 @@ Parameters:
   GlueDatabaseName:
     Description: Name of the Glue Database
     Type: String
-  MandatesTableName:
+  MandatesDynamoTableName:
     Type: String
     Description: |
       DynamoDb table name for pn-mandate, valorized by the related output
@@ -34,7 +34,7 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/cdc-glue.yaml"
       Parameters:
-        DynamoTableName: !Ref MandatesTableName
+        DynamoTableName: !Ref MandatesDynamoTableName
         GlueTableName: !Ref MandatesGlueTableName
         GlueServiceRoleArn: !Ref GlueServiceRoleArn
         LogsBucketName: !Ref LogsBucketName

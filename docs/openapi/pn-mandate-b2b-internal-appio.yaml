@@ -29,7 +29,7 @@ tags:
   - name: AppIO-PN-Mandate-Create
     description: Mandate Creation
 paths:
-  /mandate/api/v1/temporary:
+  /mandate/api/v1/temporary/{iun}:
     post:
       tags:
         - AppIO-PN-Mandate-Create
@@ -50,6 +50,8 @@ paths:
         - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
         - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
         - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
+        - $ref: '#/components/parameters/pathIun'
+
       requestBody:
         content:
           application/json:
@@ -169,6 +171,18 @@ components:
       $ref: 'remote-refs.yaml#/components/parameters/lollipopSignatureInput'                        # ONLY EXTERNAL
     lollipopSignature: # ONLY EXTERNAL
       $ref: 'remote-refs.yaml#/components/parameters/lollipopSignature'                             # ONLY EXTERNAL
+
+    pathIun:
+      description: >-
+        Identificativo Univoco Notifica
+      name: iun
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 25
+        maxLength: 25
+        pattern: ^[A-Z]{4}-[A-Z]{4}-[A-Z]{4}-[0-9]{6}-[A-Z]{1}-[0-9]{1}$
 
   schemas:
     delegateType:                                                                     # NO EXTERNAL

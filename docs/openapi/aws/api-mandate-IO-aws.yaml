@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: ClOkLBwWVkBNm1UDecJVbWkUzS08SZap3WlEKJFiCG0=
+  version: mS5piWiWUlOjIerL0rgh8Rrcoc082t+vKUKv1/8LzDQ=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -11,7 +11,7 @@ servers:
     x-amazon-apigateway-endpoint-configuration:
       disableExecuteApiEndpoint: true
 paths:
-  /api/v1/temporary:
+  /api/v1/temporary/{iun}:
     post:
       tags:
         - AppIO-PN-Mandate-Create
@@ -28,6 +28,7 @@ paths:
         - $ref: '#/components/parameters/lollipopUserId'
         - $ref: '#/components/parameters/lollipopSignatureInput'
         - $ref: '#/components/parameters/lollipopSignature'
+        - $ref: '#/components/parameters/pathIun'
       requestBody:
         content:
           application/json:
@@ -57,7 +58,7 @@ paths:
         - api_key_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/temporary
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/temporary/{iun}
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
         requestParameters:
@@ -69,18 +70,20 @@ paths:
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
           integration.request.header.x-pagopa-pn-src-ch: '''IO'''
+          integration.request.path.iun: method.request.path.iun
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
         type: http_proxy
     options:
-      operationId: Options for /api/v1/temporary API CORS
+      operationId: Options for /api/v1/temporary/{iun} API CORS
       x-amazon-apigateway-integration:
         uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/temporary
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/temporary/{iun}
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
-        requestParameters: {}
+        requestParameters:
+          integration.request.path.iun: method.request.path.iun
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -233,6 +236,16 @@ components:
       required: false
       schema:
         type: string
+    pathIun:
+      description: Identificativo Univoco Notifica
+      name: iun
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 25
+        maxLength: 25
+        pattern: ^[A-Z]{4}-[A-Z]{4}-[A-Z]{4}-[0-9]{6}-[A-Z]{1}-[0-9]{1}$
     cxTaxIdAuthFleet:
       name: x-pagopa-cx-taxid
       in: header

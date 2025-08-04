@@ -51,7 +51,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MandateCreationData'
+              $ref: '#/components/schemas/MandateRequest'
       responses:
         '201':
           description: Created
@@ -175,18 +175,7 @@ components:
           type: integer
           format: int32
 
-    MandateCreationData:
-      type: object
-      required:
-        - qrCode
-        - delegate
-      properties:
-        qrCode:
-          type: string
-          description: Origin QRCode for mandate creation
-          nullable: true
-        delegate:
-          $ref: '#/components/schemas/DelegateData'
+
 
     MandateRequest:
       type: object

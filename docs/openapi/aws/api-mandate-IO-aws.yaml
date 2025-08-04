@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: c89SfITVgdQV+0IrUxEtO/TNswMdQMkPCiFIVv30YrI=
+  version: TP8A2rzehETins6J7wk4vPdBzUVb9Z6w/Nu74RRwEQU=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -33,7 +33,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MandateCreationData'
+              $ref: '#/components/schemas/MandateRequest'
       responses:
         '201':
           description: Created
@@ -261,19 +261,6 @@ components:
       properties:
         value:
           type: number
-    MandateCreationData:
-      type: object
-      required:
-        - qrCode
-        - delegate
-      properties:
-        qrCode:
-          description: Origin QRCode for mandate creation
-          oneOf:
-            - type: string
-            - type: 'null'
-        delegate:
-          $ref: '#/components/schemas/DelegateData'
     MandateRequest:
       type: object
       required:

@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: mS5piWiWUlOjIerL0rgh8Rrcoc082t+vKUKv1/8LzDQ=
+  version: c89SfITVgdQV+0IrUxEtO/TNswMdQMkPCiFIVv30YrI=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -11,7 +11,7 @@ servers:
     x-amazon-apigateway-endpoint-configuration:
       disableExecuteApiEndpoint: true
 paths:
-  /api/v1/temporary/{iun}:
+  /api/v2/mandate:
     post:
       tags:
         - AppIO-PN-Mandate-Create
@@ -58,7 +58,7 @@ paths:
         - api_key_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/temporary/{iun}
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v2/mandate
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
         requestParameters:
@@ -70,25 +70,23 @@ paths:
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
           integration.request.header.x-pagopa-pn-src-ch: '''IO'''
-          integration.request.path.iun: method.request.path.iun
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
         type: http_proxy
     options:
-      operationId: Options for /api/v1/temporary/{iun} API CORS
+      operationId: Options for /api/v2/mandate API CORS
       x-amazon-apigateway-integration:
         uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/temporary/{iun}
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v2/mandate
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
-        requestParameters:
-          integration.request.path.iun: method.request.path.iun
+        requestParameters: {}
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
         type: http_proxy
-  /api/v1/temporary/{mandateId}/accept:
+  /api/v2/{mandateId}/accept:
     patch:
       tags:
         - AppIO-PN-Mandate-Create
@@ -132,7 +130,7 @@ paths:
         - api_key_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/temporary/{mandateId}/accept
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v2/{mandateId}/accept
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
         requestParameters:
@@ -150,10 +148,10 @@ paths:
         timeoutInMillis: 29000
         type: http_proxy
     options:
-      operationId: Options for /api/v1/temporary/{mandateId}/accept API CORS
+      operationId: Options for /api/v2/{mandateId}/accept API CORS
       x-amazon-apigateway-integration:
         uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/temporary/{mandateId}/accept
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v2/{mandateId}/accept
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
         requestParameters:
@@ -270,11 +268,70 @@ components:
         - delegate
       properties:
         qrCode:
-          type: string
           description: Origin QRCode for mandate creation
-          nullable: false
+          oneOf:
+            - type: string
+            - type: 'null'
         delegate:
           $ref: '#/components/schemas/DelegateData'
+    MandateRequest:
+      type: object
+      required:
+        - flowType
+        - delegator
+        - delegate
+      properties:
+        flowType:
+          type: string
+          enum:
+            - standard
+            - b2b
+            - cie
+          description: Flow type
+        delegator:
+          $ref: '#/components/schemas/UserDto'
+        delegate:
+          $ref: '#/components/schemas/UserDto'
+        duration:
+          type: string
+          format: duration
+          description: >
+            Mandate lenght (RFC3339 duration, es. "P1Y"  1 year, "PT15M"  15
+            minutes). Example:
+              - Long time duration (1 year): "P1Y"
+              - Short duration (15 minutes): "PT15M"
+            If missing, following defaults will be used:  - `standard`: 6 months
+            - `b2b`: 1 year - `cie`: 15 minutes
+          example: P1Y
+        filterOptions:
+          $ref: '#/components/schemas/FilterOptions'
+    FilterOptions:
+      type: array
+      maxItems: 5
+      description: >
+        List filters applied to mandate. Each element is a filter; filter are
+        combined with a logical OR.
+      items:
+        type: object
+        properties:
+          iun:
+            type: array
+            items:
+              type: string
+            description: IUN List
+          taxonomy:
+            type: array
+            items:
+              type: string
+            description: Taxonomic Code
+          sender:
+            type: array
+            items:
+              type: string
+            description: PA Id's
+      example:
+        - iun:
+            - IUN1234567890
     MandateCreationResponse:
       type: object
       required:

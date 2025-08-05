@@ -34,7 +34,7 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/cdc-glue.yaml"
       Parameters:
-        DynamoTableName: !Ref MandatesDynamoTableName
+        DynamoTableName: !Ref MandatesTableName
         GlueTableName: !Ref MandatesGlueTableName
         GlueServiceRoleArn: !Ref GlueServiceRoleArn
         LogsBucketName: !Ref LogsBucketName
@@ -45,17 +45,23 @@ Resources:
             struct<
               pk:struct<S:string>,
               sk:struct<S:string>,
+              s_delegate:struct<S:string>,
+              i_state:struct<N:string>,
               d_validto:struct<S:string,NULL:boolean>,
               s_delegatoruid:struct<S:string,NULL:boolean>,
               s_validationcode:struct<S:string,NULL:boolean>,
-              i_state:struct<N:string,NULL:boolean>,
               b_delegateisperson:struct<BOOL:boolean,NULL:boolean>,
               d_validfrom:struct<S:string,NULL:boolean>,
-              s_delegate:struct<S:string,NULL:boolean>,
-              s_mandateid:struct<S:string,NULL:boolean>,
+              s_mandateid:struct<S:string>,
               t_created:struct<S:string,NULL:boolean>,
               b_delegatorisperson:struct<BOOL:boolean,NULL:boolean>,
               i_ttl:struct<N:string,NULL:boolean>,
               s_delegatortype:struct<S:string,NULL:boolean>,
-              mandateId:struct<S:string,NULL:boolean>
+              mandateId:struct<S:string,NULL:boolean>,
+              t_accepted:struct<S:string,NULL:boolean>,
+              t_rejected:struct<S:string,NULL:boolean>,
+              t_revoked:struct<S:string,NULL:boolean>,
+              a_visibilityids:struct<L:array<struct<S:string>>,NULL:boolean>,
+              a_groups:struct<L:array<struct<S:string>>,NULL:boolean>,
+              i_pendingcount:struct<N:string,NULL:boolean>
             >

@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: TP8A2rzehETins6J7wk4vPdBzUVb9Z6w/Nu74RRwEQU=
+  version: Cz4hHoJywXyFwQtkFLPNri62bwfSd7HhDtW2xRjVpUs=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -15,7 +15,9 @@ paths:
     post:
       tags:
         - AppIO-PN-Mandate-Create
-      summary: Create a new mandate, returns the just created mandate if successful
+      summary: >-
+        Crea una nuova delega in stato PENDING, restituendo i dati della stessa
+        in caso di successo
       operationId: createTempMandate
       parameters:
         - $ref: '#/components/parameters/cxTaxIdAuthFleet'
@@ -28,7 +30,6 @@ paths:
         - $ref: '#/components/parameters/lollipopUserId'
         - $ref: '#/components/parameters/lollipopSignatureInput'
         - $ref: '#/components/parameters/lollipopSignature'
-        - $ref: '#/components/parameters/pathIun'
       requestBody:
         content:
           application/json:
@@ -90,7 +91,7 @@ paths:
     patch:
       tags:
         - AppIO-PN-Mandate-Create
-      summary: Accept a mandate
+      summary: Accetta la delega
       operationId: acceptTempMandate
       parameters:
         - $ref: '#/components/parameters/cxTaxIdAuthFleet'
@@ -256,11 +257,6 @@ components:
         pattern: >-
           ^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1}
   schemas:
-    MandateCountsDto:
-      type: object
-      properties:
-        value:
-          type: number
     MandateRequest:
       type: object
       required:
@@ -273,8 +269,9 @@ components:
           enum:
             - standard
             - b2b
+            - b2breverse
             - cie
-          description: Flow type
+          description: Tipo di flusso che attiva la creazione delega
         delegator:
           $ref: '#/components/schemas/UserDto'
         delegate:
@@ -283,12 +280,13 @@ components:
           type: string
           format: duration
           description: >
-            Mandate lenght (RFC3339 duration, es. "P1Y"  1 year, "PT15M"  15
-            minutes). Example:
-              - Long time duration (1 year): "P1Y"
-              - Short duration (15 minutes): "PT15M"
-            If missing, following defaults will be used:  - `standard`: 6 months
-            - `b2b`: 1 year - `cie`: 15 minutes
+            Durata della delega (RFC3339 duration, es. "P1Y" per 1 anno, "PT15M"
+            per 15 minuti). Esempi:
+              - Lunga durata (1 anno): "P1Y"
+              - Breve durata (15 minuti): "PT15M"
+            Qualora venga omesso, viene usato il valore di default rispetto al
+            flowType indicato:  - `standard`: 6 mesi - `b2b`: 1 anno - `cie`: 15
+            minuti
           example: P1Y
         filterOptions:
           $ref: '#/components/schemas/FilterOptions'
@@ -296,8 +294,9 @@ components:
       type: array
       maxItems: 5
       description: >
-        List filters applied to mandate. Each element is a filter; filter are
-        combined with a logical OR.
+        Elenco di filtri distinti applicabili alla delega (massimo 5). Ogni
+        elemento rappresenta un filtro e i filtri sono combinati tra loro con
+        operatore AND. All'interno dello stesso filtro è applicato l'OR.
       items:
         type: object
         properties:
@@ -305,12 +304,14 @@ components:
             type: array
             items:
               type: string
-            description: IUN List
+            description: >
+              Lista di IUN/QRCode. Il QRCode è quello associato ad un AAR  e
+              permette l'individuazione di uno IUN
           taxonomy:
             type: array
             items:
               type: string
-            description: Taxonomic Code
+            description: Codice tassonomico notifiche
           sender:
             type: array
             items:
@@ -330,20 +331,6 @@ components:
           required: true
         mandate:
           $ref: '#/components/schemas/MandateDto'
-    MandateData:
-      description: Origin QRCode for mandate creation
-      oneOf:
-        - type: string
-        - type: 'null'
-    delegate:
-      $ref: '#/components/schemas/DelegateData'
-    DelegateData:
-      type: object
-      properties:
-        denomination:
-          type: string
-          maxLength: 80
-          pattern: ^([\x20-\xFF]{1,80})$
     MandateDto:
       type: object
       properties:
@@ -370,13 +357,8 @@ components:
                 - rejected
                 - expired
             - type: 'null'
-        visibilityIds:
-          description: Available always, not required on mandate creation.
-          oneOf:
-            - type: array
-              items:
-                $ref: '#/components/schemas/OrganizationIdDto'
-            - type: 'null'
+        filterOptions:
+          $ref: '#/components/schemas/FilterOptions'
         verificationCode:
           description: Available only for request where requesting user is the delegator
           oneOf:
@@ -413,7 +395,6 @@ components:
               pattern: ^[ -~ ]*$
         - type: 'null'
     UserDto:
-      description: Available only for request where requesting user is the delegator
       oneOf:
         - type: object
           properties:
@@ -451,83 +432,6 @@ components:
         name:
           type: string
           maxLength: 80
-          pattern: ^[ -~ ]*$
-    AcceptRequestDto:
-      type: object
-      properties:
-        verificationCode:
-          type: string
-          maxLength: 5
-          pattern: ^[0-9]*$
-        groups:
-          type: array
-          items:
-            type: string
-            maxLength: 80
-            pattern: ^[ -~ ]*$
-    UpdateRequestDto:
-      type: object
-      properties:
-        groups:
-          type: array
-          maxItems: 10
-          items:
-            type: string
-            maxLength: 39
-            pattern: ^[ -~ ]*$
-    SearchMandateRequestDto:
-      type: object
-      properties:
-        taxId:
-          type: string
-          minLength: 11
-          maxLength: 16
-          pattern: >-
-            ^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1}$|^(IT)?[0-9]{11}$
-        groups:
-          type: array
-          items:
-            type: string
-            maxLength: 80
-            pattern: ^[ -~ ]*$
-        status:
-          type: array
-          items:
-            type: string
-            maxLength: 10
-            pattern: ^[A-Za-z]+$
-    SearchMandateResponseDto:
-      type: object
-      properties:
-        resultsPage:
-          type: array
-          items:
-            $ref: '#/components/schemas/MandateDto'
-        moreResult:
-          description: Indica se sono presenti ulteriori pagine di risultati
-          type: boolean
-        nextPagesKey:
-          description: >-
-            Elenco, non esaustivo, delle chiavi da usare per richiedere le 
-            pagine di risultati successive a quella corrente. <br/> Valorizzato
-            solo se il campo __moreResult__ ha valore __true__.
-          type: array
-          items:
-            type: string
-    MandateByDelegatorRequestDto:
-      type: object
-      required:
-        - mandateId
-        - delegatorId
-      properties:
-        mandateId:
-          type: string
-          maxLength: 36
-          pattern: >-
-            ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
-        delegatorId:
-          type: string
-          maxLength: 39
           pattern: ^[ -~ ]*$
     CIEValidationData:
       type: object

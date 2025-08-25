@@ -36,7 +36,7 @@ class CieCheckerTest {
         byte[] nisPubKey = ValidateUtils.hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
         byte[] nisSignature = ValidateUtils.hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
 
-        Assertions.assertTrue(cieChecker.extractChallengeFromSignature(nisSignature,nisPubKey,nisChallenge));
+        Assertions.assertTrue(cieChecker.verifyChallengeFromSignature(nisSignature,nisPubKey,nisChallenge));
     }
 
     @Test

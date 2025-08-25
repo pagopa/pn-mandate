@@ -15,8 +15,8 @@
 		<connection>${git.conn}</connection>
 		<developerConnection>${git.devConn}</developerConnection>
 		<url>${git.url}</url>
-	  <tag>HEAD</tag>
-  </scm>
+		<tag>HEAD</tag>
+	</scm>
 	<properties>
 		<awaitility.version>4.1.1</awaitility.version>
 		<ant.windows_bash_exe>c:\Program Files\Git\bin\bash.exe</ant.windows_bash_exe>
@@ -25,9 +25,20 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>it.pagopa.pn</groupId>
-			<artifactId>pn-commons</artifactId>
-			<version>2.2.6</version>
+				<groupId>it.pagopa.pn</groupId>
+				<artifactId>pn-commons</artifactId>
+				<version>2.2.6</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.bouncycastle</groupId>
+						<artifactId>bcprov-jdk15on</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.bouncycastle</groupId>
+						<artifactId>bc-fips</artifactId>
+					</exclusion>
+
+				</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>it.pagopa.pn</groupId>
@@ -57,6 +68,35 @@
 			<groupId>net.logstash.logback</groupId>
 			<artifactId>logstash-logback-encoder</artifactId>
 		</dependency>
+
+		<!-- Bouncy-Castle: provider JCA/JCE -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.81</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.bouncycastle/bc-fips -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bc-fips</artifactId>
+			<version>2.1.0</version>
+		</dependency>
+
+		<!-- Bouncy-Castle: API PKIX/CMS/OCSP/… -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpkix-jdk18on</artifactId>
+			<version>1.81</version>
+		</dependency>
+
+		<!-- Decodifica HEX (equivalente di tr + xxd) -->
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.19.0</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream</artifactId>
@@ -69,16 +109,16 @@
 
 		<!-- https://mvnrepository.com/artifact/junit/junit -->
 		<dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-		 <dependency>
-            <groupId>org.mock-server</groupId>
-            <artifactId>mockserver-junit-jupiter</artifactId>
-            <version>5.11.1</version>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
-        </dependency>
+		</dependency>
+		<dependency>
+			<groupId>org.mock-server</groupId>
+			<artifactId>mockserver-junit-jupiter</artifactId>
+			<version>5.11.1</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>localstack</artifactId>
@@ -190,7 +230,7 @@
 				<groupId>org.openapitools</groupId>
 				<artifactId>openapi-generator-maven-plugin</artifactId>
 				<version>5.4.0</version>
-				<executions>					
+				<executions>
 					<execution>
 						<id>generate-mandate-server</id>
 						<goals>
@@ -200,26 +240,26 @@
 						<configuration>
 							<inputSpec>${project.basedir}/docs/openapi/pn-mandate-internal.yaml</inputSpec>
 							<generatorName>spring</generatorName>
-              				<library>spring-boot</library>
+							<library>spring-boot</library>
 							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/server</templateDirectory>
 							<generateApiDocumentation>false</generateApiDocumentation>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<configOptions>
-							<dateLibrary>java11</dateLibrary>
-							<delegatePattern>true</delegatePattern>
-							<interfaceOnly>true</interfaceOnly>
-							<annotationLibrary>none</annotationLibrary>
-							<documentationProvider>source</documentationProvider>
-							<openApiNullable>false</openApiNullable>
-							<reactive>true</reactive>
-							<skipDefaultInterface>false</skipDefaultInterface>
-							<useTags>true</useTags>
-							<basePackage>${project.groupId}.mandate.generated.openapi.server.v1</basePackage>
-							<modelPackage>${project.groupId}.mandate.generated.openapi.server.v1.dto</modelPackage>
-							<apiPackage>${project.groupId}.mandate.generated.openapi.server.v1.api</apiPackage>
-							<configPackage>${project.groupId}.mandate.generated.openapi.server.v1.config</configPackage>
-							</configOptions>				
+								<dateLibrary>java11</dateLibrary>
+								<delegatePattern>true</delegatePattern>
+								<interfaceOnly>true</interfaceOnly>
+								<annotationLibrary>none</annotationLibrary>
+								<documentationProvider>source</documentationProvider>
+								<openApiNullable>false</openApiNullable>
+								<reactive>true</reactive>
+								<skipDefaultInterface>false</skipDefaultInterface>
+								<useTags>true</useTags>
+								<basePackage>${project.groupId}.mandate.generated.openapi.server.v1</basePackage>
+								<modelPackage>${project.groupId}.mandate.generated.openapi.server.v1.dto</modelPackage>
+								<apiPackage>${project.groupId}.mandate.generated.openapi.server.v1.api</apiPackage>
+								<configPackage>${project.groupId}.mandate.generated.openapi.server.v1.config</configPackage>
+							</configOptions>
 						</configuration>
 					</execution>
 					<execution>
@@ -247,7 +287,7 @@
 								<skipDefaultInterface>false</skipDefaultInterface>
 								<useTags>true</useTags>
 								<basePackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1</basePackage>
-                                <modelPackage>${project.groupId}.mandate.generated.openapi.server.v1.dto</modelPackage>
+								<modelPackage>${project.groupId}.mandate.generated.openapi.server.v1.dto</modelPackage>
 								<apiPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.api</apiPackage>
 								<configPackage>${project.groupId}.mandate.reverse.generated.openapi.server.v1.config</configPackage>
 							</configOptions>
@@ -256,20 +296,20 @@
 					<execution>
 						<id>generate-client-extreg-selfcare</id>
 						<goals>
-							<goal>generate</goal> 
+							<goal>generate</goal>
 						</goals>
 						<phase>generate-resources</phase>
 						<configuration>
 							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-external-registries/65fa8a57302d51b06fdffd94c163ea4e88ca52e0/docs/openapi/pn-selfcare-internal-v1.yaml</inputSpec>
 							<generatorName>java</generatorName>
-                			<library>webclient</library>
+							<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
 							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>
 							<configOptions>
-                                <swaggerAnnotations>false</swaggerAnnotations>
+								<swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
 							<modelPackage>${project.groupId}.mandate.generated.openapi.msclient.extregselfcare.v1.dto</modelPackage>
@@ -304,29 +344,29 @@
 					<execution>
 						<id>generate-client-datavault</id>
 						<goals>
-							<goal>generate</goal> 
+							<goal>generate</goal>
 						</goals>
 						<phase>generate-resources</phase>
 						<configuration>
 							<inputSpec>https://raw.githubusercontent.com/pagopa/pn-data-vault/1c1bcaef3837a15f866596a6d9af94e3978805ff/docs/openapi/pn-datavault-api-v1.yaml</inputSpec>
 							<generatorName>java</generatorName>
-                			<library>webclient</library>
+							<library>webclient</library>
 							<generateApiDocumentation>false</generateApiDocumentation>
 							<templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
 							<generateApiTests>false</generateApiTests>
 							<generateModelTests>false</generateModelTests>
 							<generateSupportingFiles>true</generateSupportingFiles>
 							<configOptions>
-                                <swaggerAnnotations>false</swaggerAnnotations>
+								<swaggerAnnotations>false</swaggerAnnotations>
 								<openApiNullable>false</openApiNullable>
 							</configOptions>
 							<modelPackage>${project.groupId}.mandate.generated.openapi.msclient.datavault.v1.dto</modelPackage>
 							<apiPackage>${project.groupId}.mandate.generated.openapi.msclient.datavault.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
 						</configuration>
-					</execution>					
+					</execution>
 				</executions>
-			</plugin>			 		 
+			</plugin>
 		</plugins>
 	</build>
 </project>

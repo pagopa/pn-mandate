@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: Cz4hHoJywXyFwQtkFLPNri62bwfSd7HhDtW2xRjVpUs=
+  version: i8LD+DXx6aZGv+x2AtRWrpxsD0pp6mysYAX5LbLcJks=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -320,17 +320,6 @@ components:
       example:
         - iun:
             - IUN1234567890
-    MandateCreationResponse:
-      type: object
-      required:
-        - requestTTL
-        - mandate
-      properties:
-        requestTTL:
-          type: number
-          required: true
-        mandate:
-          $ref: '#/components/schemas/MandateDto'
     MandateDto:
       type: object
       properties:
@@ -380,6 +369,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GroupDto'
+    MandateCreationResponse:
+      type: object
+      required:
+        - requestTTL
+        - mandate
+      properties:
+        requestTTL:
+          type: number
+        mandate:
+          $ref: '#/components/schemas/MandateDto'
     OrganizationIdDto:
       description: Available always, not required on mandate creation.
       oneOf:

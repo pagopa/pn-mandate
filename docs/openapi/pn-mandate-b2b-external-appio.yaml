@@ -228,21 +228,6 @@ components:
       example:
         - iun: [ "IUN1234567890" ]
 
-
-
-    MandateCreationResponse:
-      type: object
-      required:
-        - requestTTL
-        - mandate
-      properties:
-        requestTTL:
-          type: integer
-          format: int32
-          required: true
-        mandate:
-          $ref: '#/components/schemas/MandateDto'
-
     MandateDto:
       type: object
       properties:
@@ -288,6 +273,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GroupDto'
+
+    MandateCreationResponse:
+      type: object
+      required:
+        - requestTTL
+        - mandate
+      properties:
+        requestTTL:
+          type: integer
+          format: int32
+        mandate:
+          $ref: '#/components/schemas/MandateDto'
+
 
     OrganizationIdDto:
       type: object

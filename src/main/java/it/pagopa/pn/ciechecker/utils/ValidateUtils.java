@@ -25,9 +25,6 @@ import java.util.*;
 
 public class ValidateUtils {
 
-    private static final String EXPECTED_SIGNED_ATTRS_HEX="3148301506092A864886F70D01090331080606678108010101302F06092A864886F70D01090431220420C9002855CB7A5D366DB2CD6CCD6E148B7F8265E765C520ACC88855C2F3338FEB";
-    private static final String EXPECTED_SIGNATURE_HEX="68080B83AA856FC3AF1F9A1D897011526130AE85E236862890970D54746535DF3328AD0638C90584B0DB0A466C86F9A65049FBC830E34499FD54107536204DE029A575F5D97E1F1DFF604B560A97465E2B5F105BFD97B0C86EB492E960F929DA298D6FB87637051B37980C8AC4737FBFE3C37993A41FDC2749DA2EB3B21B51A2FE66979D2258FB161F8BB1DFE8BCFBFC55E50E5D62F3F4FDCB2BF880B60D63EC411809C813CC2F9DA24C03B6A45B15D3AECDA1047FAB8806029A54D70A4E9A4E3DE888899D2A6762B073C91ACBD2C39A27105CF6C24CF78352C115A18E97E9A2D29164177DB03C6F3D90F03B7D842DF31B0FE9A36CA361DD722B5AFD01EA10BD";
-
     private ValidateUtils() {}
 
     public static X509CertificateHolder extractDscCertDer(byte[] signedDataPkcs7) throws CMSException {
@@ -48,7 +45,7 @@ public class ValidateUtils {
     //************************************************
 
 
-    public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) throws CMSException {
+    public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) throws CieCheckerException {
 
         Store<X509CertificateHolder> certStore = cms.getCertificates();
 
@@ -57,16 +54,16 @@ public class ValidateUtils {
             return matches.iterator().next();
         }
 
-        throw new CieCheckerException("No certificates found in PKCS7");
+        throw new CieCheckerException("No certificates found");
     }
 
     /**
-     * Estrae la PublicKey dal Certificato X509 - riga 64
+     * Estrazione la PublicKey dal Certificato X509 - riga 64
      *
      * @param certHolder certificato
      * @return PublicKey
+     * @throws CieCheckerException exception
      * @throws CertificateException exception
-     * @throws IllegalArgumentException argomento non valido
      */
     public static PublicKey extractPublicKeyFromHolder(X509CertificateHolder certHolder) throws CieCheckerException, CertificateException {
         if (certHolder == null) {
@@ -91,7 +88,7 @@ public class ValidateUtils {
      * riga 70: openssl asn1parse -inform DER -in "$SIGNED_DATA_ONLY" -strparse "$signature_offset" -out "$SIGNATURE_FILE" >/dev/null 2>&1
      *
      * @param signedData CMSSignedData
-     * @return Lista di firme di ogni firmatario dal SignedData in byte[]
+     * @return List<byte[]> Lista di firme di ogni firmatario dal SignedData in byte[]
      * @throws CMSException exception
      */
     public static List<byte[]> extractSignaturesFromSignedData(CMSSignedData signedData) throws CMSException {
@@ -120,12 +117,37 @@ public class ValidateUtils {
 
     // INIT : ESTRAZIONE DEGLI HASH: CONTENT
 
-    //Verifica che la 1a OctetString sia identica alla 5a OctetString
+    /**
+     * Verifica che lo sha256 di hashes_octet_block sia uguale al digest estratto
+     *
+     * @param cms CMSSignedData
+     * @return boolean
+     * @throws CMSException exception
+     * @throws CieCheckerException exception
+     * @throws NoSuchAlgorithmException exception
+     */
+    public static boolean verifyMatchHashContent(CMSSignedData cms) throws CMSException, CieCheckerException, NoSuchAlgorithmException {
+
+        // --- PARTE 1: ESTRAI E CALCOLA L'HASH DEI DATI FIRMATI ---
+        byte[] hashSignedData = ValidateUtils.extractHashBlock(cms);
+
+        // --- PARTE 2: ESTRAI L'HASH FIRMATO (messageDigest) ---
+        ASN1OctetString signedHash = ValidateUtils.extractHashSigned(cms);
+        return ValidateUtils.verifyOctetStrings(hashSignedData, signedHash);
+    }
+
+    /**
+     * Verifica che la 1a OctetString sia identica alla 5a OctetString
+     * @param firstOctetString byte[]
+     * @param fiveOctetString ASN1OctetString
+     * @return boolean
+     * @throws NoSuchAlgorithmException exception
+     */
     public static boolean verifyOctetStrings(byte[] firstOctetString, ASN1OctetString fiveOctetString) throws NoSuchAlgorithmException {
 
         String firstStr = calculateSha256(firstOctetString);
         String fiveStr = getHexFromOctetString(fiveOctetString);
-        System.out.println("calculateSha256 --> firstStr: "+ firstStr + " - getHexFromOctetString --> fiveStr: " + fiveStr);
+        //System.out.println("calculateSha256 --> firstStr: "+ firstStr + " - getHexFromOctetString --> fiveStr: " + fiveStr);
         if (firstStr.equalsIgnoreCase(fiveStr)) {
             System.out.println("VERIFICA RIUSCITA: Gli hash corrispondono.");
             return true;
@@ -135,20 +157,29 @@ public class ValidateUtils {
         }
     }
 
+    /**
+     * Converte byte[] in String esadecimale Sha256
+     * @param octetByte byte[]
+     * @return String
+     * @throws CieCheckerException exception
+     * @throws NoSuchAlgorithmException exception
+     */
     public static String calculateSha256(byte[] octetByte) throws CieCheckerException, NoSuchAlgorithmException{
         if (octetByte == null) {
             throw new CieCheckerException("byte[] octetByte is null");
         }
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(octetByte);
-            return Hex.toHexString(hashBytes).toString().toUpperCase(); //bytesToHex(hashBytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw e;
-        }
+
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = digest.digest(octetByte);
+        return Hex.toHexString(hashBytes).toString().toUpperCase(); //bytesToHex(hashBytes);
     }
 
-    // Metodo di conversione per il digest di un ASN1OctetString di BouncyCastle in una stringa
+    /**
+     * Metodo di conversione per il digest di un ASN1OctetString di BouncyCastle in una stringa
+     * @param octetString  ASN1OctetString
+     * @return String
+     * @throws CieCheckerException exception
+     */
     private static String getHexFromOctetString(ASN1OctetString octetString) throws CieCheckerException{
         if (octetString == null) {
             throw new CieCheckerException("ASN1OctetString octetString is null");
@@ -157,6 +188,12 @@ public class ValidateUtils {
         return bytesToHex(digestBytes);
     }
 
+    /**
+     * Conversione di un byte[] in Stringa esadecimale
+     *
+     * @param bytes byte[]
+     * @return String
+     */
     public static String bytesToHex(byte[] bytes) {
         StringBuilder hexString = new StringBuilder();
         for (byte b : bytes) {
@@ -170,8 +207,13 @@ public class ValidateUtils {
         return hexString.toString().toUpperCase();
     }
 
-
-    // Estrae la prima OCTET STRING che contiene gli hash crittografici dei dati originali
+    /**
+     * Estrae la prima OCTET STRING che contiene gli hash crittografici dei dati originali
+     * @param signedData CMSSignedData
+     * @return byte[]
+     * @throws CieCheckerException e
+     * @throws CMSException e
+     */
     public static byte[] extractHashBlock(CMSSignedData signedData) throws CieCheckerException, CMSException {
         if (signedData == null) {
             throw new CieCheckerException("L'oggetto CMSSignedData e' nullo");
@@ -184,7 +226,13 @@ public class ValidateUtils {
         return (byte[]) signedContent.getContent();
     }
 
-    //Estrae la quinta OCTET STRING che contiene il digest (l'hash) dell'intera struttura di dati
+
+    /**
+     * Estrae la quinta OCTET STRING che contiene il digest (l'hash) dell'intera struttura di dati
+     * @param signedData CMSSignedData
+     * @return ASN1OctetString
+     * @throws CMSException e
+     */
     public static ASN1OctetString extractHashSigned(CMSSignedData signedData) throws CMSException{
         SignerInformationStore signers = signedData.getSignerInfos();
         if (signers.size() == 0) {
@@ -201,14 +249,19 @@ public class ValidateUtils {
         Attribute messageDigestAttribute = signedAttributes.get(PKCSObjectIdentifiers.pkcs_9_at_messageDigest);
 
         // Estrai l'OCTET STRING che contiene il valore dell'hash
-        ASN1OctetString messageDigestOctetString = (ASN1OctetString) messageDigestAttribute.getAttrValues().getObjectAt(0);
-
-        return messageDigestOctetString;
+        return (ASN1OctetString) messageDigestAttribute.getAttrValues().getObjectAt(0);
     }
+    // END ESTRAZIONE DEGLI HASH: CONTENT
 
 
-    //ESTRAZIONE DEGLI ATTRIBUTI FIRMATI (signedAttributes)
-    public static Hashtable<ASN1ObjectIdentifier, Attribute> extractAllSignedAttributes (CMSSignedData signedData) throws CMSException{
+    /**
+     * ESTRAZIONE DEGLI ATTRIBUTI FIRMATI (signedAttributes)
+     * @param signedData  CMSSignedData
+     * @return Hashtable<ASN1ObjectIdentifier, Attribute>
+     * @throws CieCheckerException e
+     * @throws CMSException e
+     */
+    public static Hashtable<ASN1ObjectIdentifier, Attribute> extractAllSignedAttributes (CMSSignedData signedData) throws CieCheckerException, CMSException{
         SignerInformationStore signers = signedData.getSignerInfos();
         if (signers.size() == 0) {
             throw new CMSException("SignerInformationStore is empty");
@@ -220,24 +273,33 @@ public class ValidateUtils {
         if (it.hasNext()) {
             SignerInformation signer = it.next();
             // Estrai gli attributi firmati
-            AttributeTable signedAttributes = signer.getSignedAttributes();
-            System.out.println("signedAttributes.size: " + signedAttributes.size());
-            System.out.println("signedAttributes.size: " + signedAttributes.toHashtable());
+            //AttributeTable signedAttributes = signer.getSignedAttributes();
+            //System.out.println("signedAttributes.size: " + signedAttributes.size());
+            //System.out.println("signedAttributes.size: " + signedAttributes.toHashtable());
             //System.out.println("signedAttributes : " + signedAttributes.toASN1Structure().getAttributes());
             // Converti l'AttributeTable in una Hashtable
-            Hashtable<ASN1ObjectIdentifier, Attribute> attrTable = signedAttributes.toHashtable();
+            if (signer.getSignedAttributes() == null) {
+                throw new CieCheckerException("signed AttributesTable is null");
+            }
+            return (signer.getSignedAttributes()).toHashtable();
 
-            return attrTable;
         }
-        throw new CMSException("Il firmatario è null");
+        throw new CMSException("SignerInformation is null");
     }
 
     /*
      * ANALISI DEGLI HASH DEI DATI (DataGroupHashes)
      */
 
-    //IL DataGroupHashes è il contenuto firmato del SOD
-    // Il metodo estrae la lista degli hash dei Data Group da un oggetto CMSSignedData
+
+    /**
+     * IL DataGroupHashes è il contenuto firmato del SOD :
+     * Estrazione della lista degli hash dei Data Group da un oggetto CMSSignedData
+     * @param cmsData CMSSignedData
+     * @return List<String>
+     * @throws CMSException e
+     * @throws IOException e
+     */
     public static List<String> extractDataGroupHashes(CMSSignedData cmsData) throws  CMSException, IOException {
         List<String> hashes = new ArrayList<>();
 
@@ -269,7 +331,7 @@ public class ValidateUtils {
                                 ASN1Integer dgNumber = ASN1Integer.getInstance(hashEntry.getObjectAt(0));
 
                                 ASN1OctetString dgHash = ASN1OctetString.getInstance(hashEntry.getObjectAt(1));
-                                System.out.println("Trovato hash per il Data Group " + dgNumber.getValue() + " - dgNumber.toString(): " + dgNumber.toString());
+                                System.out.println("Trovato hash per il Data Group " + dgNumber.getValue() + " - dgNumber.toString(): " + dgNumber);
                                 System.out.println("Trovato hash  " + Hex.toHexString(dgHash.getOctets()).toUpperCase());
                                 // Aggiungi l'hash alla lista in formato esadecimale.
                                 hashes.add(Hex.toHexString(dgHash.getOctets()).toUpperCase());
@@ -281,48 +343,76 @@ public class ValidateUtils {
                 throw new IOException("Il contenuto firmato non è una sequenza di hash valida.");
             }
         }
-        System.out.println("Trovato hashes SIZE: " + hashes.size());
+        //System.out.println("Trovato hashes SIZE: " + hashes.size());
         return hashes;
     }
 
-    public static boolean verifyNisSha256FromDataGroup(CMSSignedData cmsData, String nisSha256) throws CieCheckerException, IOException, CMSException {
+    /**
+     * Estrazione e verifica della lista degli hash dei Data Group
+     * @param cmsData CMSSignedData
+     * @param nisSha256 byte[]
+     * @return boolean
+     * @throws CieCheckerException c
+     * @throws IOException ioe
+     * @throws CMSException ce
+     * @throws NoSuchAlgorithmException nsae
+     */
+    public static boolean verifyNisSha256FromDataGroup(CMSSignedData cmsData, byte[] nisSha256) throws CieCheckerException, IOException, CMSException, NoSuchAlgorithmException {
         if (cmsData == null || nisSha256 == null) {
             throw new CieCheckerException("Input parameters null: CMSSignedData is " + cmsData + " - String is " + nisSha256);
         }
+        String nisHexToCheck = calculateSha256(nisSha256);
         List<String> dataGroupList = extractDataGroupHashes(cmsData);
-        if(dataGroupList == null)
-            throw new CMSException("List<String> dataGroupList is NULL");
-        if(dataGroupList.contains(nisSha256)){
+        //if(dataGroupList == null)
+        //    throw new CMSException("List<String> dataGroupList is NULL");
+        if(dataGroupList.contains(nisHexToCheck)){
             return true;
         }else{
+            System.err.println("The dataGroupList do not contains nisSha256");
             return false;
         }
     }
 
-    public static boolean verifyNisPublicKeyFromDataGroup(CMSSignedData cmsData, String nisSha256PublicKey) throws CieCheckerException, IOException, CMSException {
+
+    /*
+    // NB: USATO NELLO SCRIPT SHELL SOLO COME TEST
+    public static boolean verifyNisPublicKeyFromDataGroup(CMSSignedData cmsData, byte[] nisSha256PublicKey) throws CieCheckerException, IOException, CMSException, NoSuchAlgorithmException {
         if (cmsData == null || nisSha256PublicKey == null) {
             throw new CieCheckerException("Input parameters NULL: CMSSignedData is " + cmsData + " - String is " + nisSha256PublicKey);
         }
+        String nisSha256PublicKeyToCheck = calculateSha256(nisSha256PublicKey);
         List<String> dataGroupList = extractDataGroupHashes(cmsData);
-        if(dataGroupList == null)
-            throw new CMSException("List<String> dataGroupList is NULL");
-        if(dataGroupList.contains(nisSha256PublicKey)){
+        if(dataGroupList.contains(nisSha256PublicKeyToCheck)){
             return true;
         }else{
+            System.err.println("The dataGroupList do not contains nisSha256PublicKey");
             return false;
         }
     }
+    */
 
-    public static boolean verifyDataGroupHashes(CMSSignedData cmsData, String nisSha256, String nisSha256PublicKey) throws CieCheckerException, IOException, CMSException {
+
+    /*
+    // NB: USATO NELLO SCRIPT SHELL SOLO COME TEST
+    public static boolean verifyDataGroupHashes(CMSSignedData cmsData, byte[] nisSha256, byte[] nisSha256PublicKey) throws CieCheckerException, IOException, CMSException {
         if (cmsData == null) {
-            throw new CieCheckerException("L'oggetto CMSSignedData e' nullo");
+            throw new CieCheckerException("CMSSignedData is null");
         }
-        if(!ValidateUtils.verifyNisSha256FromDataGroup(cmsData, nisSha256))
-            return false;
-        if(!ValidateUtils.verifyNisPublicKeyFromDataGroup(cmsData, nisSha256PublicKey))
-            return false;
-        return true;
+        try {
+            if(!ValidateUtils.verifyNisSha256FromDataGroup(cmsData, nisSha256))
+                return false;
+
+            if(!ValidateUtils.verifyNisPublicKeyFromDataGroup(cmsData, nisSha256PublicKey))
+                return false;
+
+            return true;
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
     }
+     */
+
     // END : ESTRAZIONE DEGLI HASH: CONTENT
 
     /*
@@ -336,8 +426,13 @@ public class ValidateUtils {
 
     /*
     *  PASSO 3: VERIFICA FINALE DELLA FIRMA DIGITALE
-    */
+    **/
+    /*
+    NB: USATO NELLO SCRIPT SHELL SOLO COME TEST
     //if [ "$ACTUAL_SIGNED_ATTRS_HEX" = "$EXPECTED_SIGNED_ATTRS_HEX" ]; then
+
+    // private static final String EXPECTED_SIGNED_ATTRS_HEX="3148301506092A864886F70D01090331080606678108010101302F06092A864886F70D01090431220420C9002855CB7A5D366DB2CD6CCD6E148B7F8265E765C520ACC88855C2F3338FEB";
+
     public static boolean veryfySignedAttrIsSet (CMSSignedData signedData) throws CMSException, IOException {
         if (signedData == null) {
             throw new CieCheckerException("L'oggetto CMSSignedData e' nullo");
@@ -366,17 +461,22 @@ public class ValidateUtils {
             ASN1Set signedAttributesSet = (ASN1Set) primitive;
             byte[] signedAttributesSetByte = signedAttributesSet.getEncoded();
             String signedAttributesSetToHex = ValidateUtils.bytesToHex(signedAttributesSetByte);
-            System.out.println("signedAttributesSetToHex: " + signedAttributesSetToHex);
+            //System.out.println("signedAttributesSetToHex: " + signedAttributesSetToHex);
 
-            if(EXPECTED_SIGNED_ATTRS_HEX.equals(signedAttributesSetToHex))
+            if(EXPECTED_SIGNED_ATTRS_HEX.equals(signedAttributesSetToHex)) {
                 return true;
-            else
+            }else {
+                System.err.println("SignedAttribute content do not match the expected value");
                 return false;
+            }
         }
         throw new CMSException("SignerInformation is null");
     }
 
-    //if [ "$ACTUAL_SIGNATURE_HEX" = "$EXPECTED_SIGNATURE_HEX" ]; then
+    //  NB: USATO NELLO SCRIPT SHELL SOLO COME TEST
+    //  if [ "$ACTUAL_SIGNATURE_HEX" = "$EXPECTED_SIGNATURE_HEX" ]; then
+    // private static final String EXPECTED_SIGNATURE_HEX="68080B83AA856FC3AF1F9A1D897011526130AE85E236862890970D54746535DF3328AD0638C90584B0DB0A466C86F9A65049FBC830E34499FD54107536204DE029A575F5D97E1F1DFF604B560A97465E2B5F105BFD97B0C86EB492E960F929DA298D6FB87637051B37980C8AC4737FBFE3C37993A41FDC2749DA2EB3B21B51A2FE66979D2258FB161F8BB1DFE8BCFBFC55E50E5D62F3F4FDCB2BF880B60D63EC411809C813CC2F9DA24C03B6A45B15D3AECDA1047FAB8806029A54D70A4E9A4E3DE888899D2A6762B073C91ACBD2C39A27105CF6C24CF78352C115A18E97E9A2D29164177DB03C6F3D90F03B7D842DF31B0FE9A36CA361DD722B5AFD01EA10BD";
+
     public static boolean veryfySignatures (CMSSignedData signedData) throws CMSException {
         if (signedData == null) {
             throw new CieCheckerException("L'oggetto CMSSignedData e' nullo");
@@ -385,11 +485,13 @@ public class ValidateUtils {
         List<String> signaturesHexStrings = decodeListByteIntoListString(signatures);
         if(signaturesHexStrings.contains(EXPECTED_SIGNATURE_HEX))
             return true;
-        else
+        else {
+            System.err.println("Signature do not match the expected value");
             return false;
+        }
     }
 
-    private static List<String> decodeListByteIntoListString(List<byte[]> byteArrays) throws CMSException {
+    private static List<String> decodeListByteIntoListString(List<byte[]> byteArrays) {
         List<String> hexStrings = new ArrayList<>();
         for (byte[] byteArray : byteArrays) {
             if (byteArray != null) {
@@ -398,27 +500,33 @@ public class ValidateUtils {
         }
         return hexStrings;
     }
+    */
 
 
     // openssl dgst -sha1 -verify "$PUBLIC_KEY_FILE" -signature "$SIGNATURE_FILE" "$SIGNED_ATTRS_SET" >/dev/null 2>&1;
-    public static boolean verifyDigitalSignature(byte[] sodIasByteArray) throws CieCheckerException, CMSException, CertificateException, OperatorCreationException {
-        if (sodIasByteArray == null) {
-            throw new CieCheckerException("byte[] sodIasByteArray is null");
-        }
-        CMSSignedData cmsData = new CMSSignedData(sodIasByteArray);
 
-        SignerInformationStore signers = cmsData.getSignerInfos();
+    /**
+     * VERIFICA FINALE DELLA FIRMA DIGITALE
+     * @param cms CMSSignedData
+     * @return boolean
+     * @throws CieCheckerException c
+     * @throws CMSException cx
+     * @throws CertificateException ce
+     * @throws OperatorCreationException ope
+     */
+    public static boolean verifyDigitalSignature(CMSSignedData cms ) throws CieCheckerException, CMSException, CertificateException, OperatorCreationException {
+
+        SignerInformationStore signers = cms.getSignerInfos();
         Collection<SignerInformation> c = signers.getSigners();
         Iterator<SignerInformation> it = c.iterator();
 
         if (it.hasNext()) {
             SignerInformation signer = it.next();
 
-            X509CertificateHolder certHolder = extractDscCertDer(cmsData);
+            X509CertificateHolder certHolder = extractDscCertDer(cms);
             PublicKey pubKey = extractPublicKeyFromHolder(certHolder);
 
             // Crea il verificatore di firma
-            //JcaSimpleSignerInfoVerifierBuilder verifierBuilder = new JcaSimpleSignerInfoVerifierBuilder();
             JcaSimpleSignerInfoVerifierBuilder verifierBuilder = new JcaSimpleSignerInfoVerifierBuilder(); //.setProvider(BouncyCastleProvider.PROVIDER_NAME);
             verifierBuilder.setProvider(new BouncyCastleProvider());
             return signer.verify(verifierBuilder.build(pubKey));

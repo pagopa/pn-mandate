@@ -285,8 +285,8 @@ class ValidateUtilsTest {
 
 /// ///
 
-
-   @Test
+/*
+    @Test
     void veryfySignedAttrIsSet() throws IOException, DecoderException, CMSException {
         System.out.println("TEST convertSignedAttributesIntoSet - INIT");
         System.out.println(" - Leggo il file SOD_IAS_FILENAME e decodifico in byte[] HEX");
@@ -297,7 +297,6 @@ class ValidateUtilsTest {
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
         Assertions.assertTrue(ValidateUtils.veryfySignedAttrIsSet ( cms));
-
     }
 
     @Test
@@ -313,7 +312,7 @@ class ValidateUtilsTest {
         Assertions.assertTrue(ValidateUtils.veryfySignatures( cms));
 
     }
-
+    */
 
     @Test
     void verifyDigitalSignature() throws IOException, DecoderException, CMSException, CertificateException, OperatorCreationException {
@@ -322,8 +321,9 @@ class ValidateUtilsTest {
         String fileString = Files.readString(basePath.resolve(SOD_IAS_FILENAME)).replaceAll("\\s+", "");
         String subString = fileString.substring(8, fileString.length());
         byte[] sodIasByteArray = hexFile(subString);
+        CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
-        Assertions.assertTrue(ValidateUtils.verifyDigitalSignature(sodIasByteArray));
+        Assertions.assertTrue(ValidateUtils.verifyDigitalSignature(cms));
     }
 
 

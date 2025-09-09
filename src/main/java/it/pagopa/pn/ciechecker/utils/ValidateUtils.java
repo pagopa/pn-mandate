@@ -1,9 +1,5 @@
 package it.pagopa.pn.ciechecker.utils;
 
-
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,7 +18,6 @@ import org.bouncycastle.util.Store;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;

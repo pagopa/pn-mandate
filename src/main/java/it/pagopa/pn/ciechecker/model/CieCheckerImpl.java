@@ -3,6 +3,7 @@ package it.pagopa.pn.ciechecker.model;
 import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
+import it.pagopa.pn.ciechecker.model.CieIas;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cert.X509CertificateHolder;

@@ -39,7 +39,7 @@ class ValidateUtilsTest {
     private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
     private static final String SOD_HEX = "SOD_IAS.HEX";
     private static final String NIS_PUBKEY_FILENAME = "NIS_PUBKEY.HEX";
-    private static final String NIS_HEX_TO_CHECK = "NIS.HEX";
+    private static final String NIS_HEX_TO_CHECK="393130373138343634363534";
     private static final Map<String,String> expectedIssuer = Map.of(
             "2.5.4.3", "Italian Country Signer CA",
             "2.5.4.11", "National Electronic Center of State Police",

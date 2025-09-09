@@ -10,6 +10,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.math.BigInteger;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
 public class CieCheckerImpl implements CieChecker {
@@ -46,6 +47,11 @@ public class CieCheckerImpl implements CieChecker {
         // estrae dalla signature i byte del nonce/challenge
         byte[] recovered = engine2.processBlock(signature, 0, signature.length);
         return Arrays.equals(recovered, challenge);
+    }
+
+    @Override
+    public boolean extractChallengeFromSignature(byte[] signature, byte[] pubKey, byte[] nis) throws NoSuchAlgorithmException, InvalidKeySpecException, CryptoException {
+        return false;
     }
 
     /**

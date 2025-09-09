@@ -23,22 +23,49 @@
 		<pagopa.codegen.version>v01.06.01</pagopa.codegen.version>
 	</properties>
 
-	<dependencies>
-		<dependency>
-				<groupId>it.pagopa.pn</groupId>
-				<artifactId>pn-commons</artifactId>
-				<version>2.2.6</version>
-				<exclusions>
-					<exclusion>
-						<groupId>org.bouncycastle</groupId>
-						<artifactId>bcprov-jdk15on</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>org.bouncycastle</groupId>
-						<artifactId>bc-fips</artifactId>
-					</exclusion>
+	<!-- Ensure BC modules are aligned at one version for the whole reactor -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk18on</artifactId>
+				<version>1.81</version>
+			</dependency>
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcpkix-jdk18on</artifactId>
+				<version>1.81</version>
+			</dependency>
+			<dependency>
+				<!-- NEW: pin bcutil to the same version to avoid operator/asn1 mismatches -->
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcutil-jdk18on</artifactId>
+				<version>1.81</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
-				</exclusions>
+	<dependencies>
+		<!-- FIX: ripristino pn-commons con esclusioni BouncyCastle legacy/FIPS -->
+		<dependency>
+			<groupId>it.pagopa.pn</groupId>
+			<artifactId>pn-commons</artifactId>
+			<version>2.2.6</version>
+			<exclusions>
+				<!-- esclude vecchia linea BC jdk15on e FIPS per evitare mix -->
+				<exclusion>
+					<groupId>org.bouncycastle</groupId>
+					<artifactId>bcprov-jdk15on</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bouncycastle</groupId>
+					<artifactId>bc-fips</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bouncycastle</groupId>
+					<artifactId>bcpkix-jdk15on</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>it.pagopa.pn</groupId>
@@ -76,12 +103,7 @@
 			<version>1.81</version>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.bouncycastle/bc-fips -->
-		<dependency>
-			<groupId>org.bouncycastle</groupId>
-			<artifactId>bc-fips</artifactId>
-			<version>2.1.0</version>
-		</dependency>
+		<!-- CHANGE: rimosso bc-fips per evitare mix FIPS/non-FIPS che causa NoSuchFieldError -->
 
 		<!-- Bouncy-Castle: API PKIX/CMS/OCSP/… -->
 		<dependency>
@@ -140,16 +162,12 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<!-- sotto il cofano, testcontainer usa aws1 e quindi serve la dipendenza -->
 		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-s3</artifactId>
 			<version>1.12.332</version>
 			<scope>test</scope>
 		</dependency>
-
-		<!-- Sebbene non usata dal codice, in intelliJ non si riusciva a risolvere il plugin antrun semplicemetne dichiarandolo
-             Mettendolo come dipedenza, si aggira il problema -->
 		<dependency>
 			<groupId>org.apache.maven.plugins</groupId>
 			<artifactId>maven-antrun-plugin</artifactId>
@@ -157,7 +175,6 @@
 			<type>maven-plugin</type>
 			<scope>test</scope>
 		</dependency>
-
 	</dependencies>
 
 	<build>
@@ -363,6 +380,38 @@
 							<modelPackage>${project.groupId}.mandate.generated.openapi.msclient.datavault.v1.dto</modelPackage>
 							<apiPackage>${project.groupId}.mandate.generated.openapi.msclient.datavault.v1.api</apiPackage>
 							<modelNameSuffix>Dto</modelNameSuffix>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.5.0</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>extra-enforcer-rules</artifactId>
+						<version>1.10.0</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<id>ban-legacy-bouncycastle</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<bannedDependencies>
+									<searchTransitive>true</searchTransitive>
+									<excludes>
+										<exclude>org.bouncycastle:bcprov-jdk15on</exclude>
+										<exclude>org.bouncycastle:bcpkix-jdk15on</exclude>
+										<exclude>org.bouncycastle:bc-fips</exclude>
+									</excludes>
+								</bannedDependencies>
+							</rules>
 						</configuration>
 					</execution>
 				</executions>

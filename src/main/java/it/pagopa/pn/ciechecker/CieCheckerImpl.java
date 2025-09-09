@@ -1,21 +1,44 @@
 package it.pagopa.pn.ciechecker;
 
-import it.pagopa.pn.ciechecker.model.CieValidationData;
+import it.pagopa.pn.ciechecker.CieChecker;
+import it.pagopa.pn.ciechecker.exception.CieCheckerException;
+import it.pagopa.pn.ciechecker.utils.ValidateUtils;
+import it.pagopa.pn.ciechecker.model.*;
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.cms.Attribute;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.crypto.CryptoException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.OperatorCreationException;
+
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.Security;
+import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
+import java.util.Hashtable;
+import java.util.List;
 
 public class CieCheckerImpl implements CieChecker {
 
     @Override
     public void init() {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
     }
 
     @Override
     public boolean validateMandate(CieValidationData data) {
-        return false;
+        return true;
     }
 
     @Override
-    public boolean extractChallengeFromSignature(byte[] signature, byte[] pubKey, byte[] nis) {
-        return false;
+    public boolean extractChallengeFromSignature(byte[] signature, byte[] pubKey,byte[] nis) throws NoSuchAlgorithmException, InvalidKeySpecException, CryptoException{
+        return true;
     }
 
     @Override
@@ -91,6 +114,5 @@ public class CieCheckerImpl implements CieChecker {
             return false;
         }
     }
-
 
 }

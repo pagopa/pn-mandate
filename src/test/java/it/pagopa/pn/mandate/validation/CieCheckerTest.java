@@ -4,6 +4,7 @@ import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.model.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.crypto.CryptoException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -30,18 +31,23 @@ class CieCheckerTest {
         cieChecker.init();
     }
 
+    private static byte[] hexFile(String toHex) throws DecoderException {
+        return Hex.decodeHex(toHex);
+    }
+
+
     @Test
     void checkExtractChallengeTest() throws IOException, DecoderException, NoSuchAlgorithmException, InvalidKeySpecException, CryptoException {
-        byte[] nisChallenge = ValidateUtils.hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_CHALLENGE.HEX")));
-        byte[] nisPubKey = ValidateUtils.hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
-        byte[] nisSignature = ValidateUtils.hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
+        byte[] nisChallenge = hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_CHALLENGE.HEX")));
+        byte[] nisPubKey = hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
+        byte[] nisSignature = hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
 
         Assertions.assertTrue(cieChecker.verifyChallengeFromSignature(nisSignature,nisPubKey,nisChallenge));
     }
 
     @Test
     void decodeTest() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException, DecoderException {
-        byte[] decoded =ValidateUtils.hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
+        byte[] decoded = hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
         org.bouncycastle.asn1.pkcs.RSAPublicKey pkcs1PublicKey = org.bouncycastle.asn1.pkcs.RSAPublicKey.getInstance(decoded);
         BigInteger modulus = pkcs1PublicKey.getModulus();
         BigInteger publicExponent = pkcs1PublicKey.getPublicExponent();

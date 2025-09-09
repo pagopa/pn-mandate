@@ -19,11 +19,6 @@ public class ValidateUtils {
     private ValidateUtils() {}
 
 
-    /// -> TO TEST
-    public static byte[] hexFile(String toHex) throws DecoderException {
-        return Hex.decodeHex(toHex);
-    }
-
     public static String cleanString(Path file) throws IOException {
         return Files.readString(file).replaceAll("\\s+", "");
     }

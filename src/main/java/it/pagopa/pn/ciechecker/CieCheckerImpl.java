@@ -1,6 +1,17 @@
 package it.pagopa.pn.ciechecker;
 
 import it.pagopa.pn.ciechecker.CieChecker;
+import org.bouncycastle.asn1.pkcs.RSAPublicKey;
+import org.bouncycastle.crypto.CryptoException;
+import org.bouncycastle.crypto.encodings.PKCS1Encoding;
+import org.bouncycastle.crypto.engines.RSAEngine;
+import org.bouncycastle.crypto.params.RSAKeyParameters;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import java.math.BigInteger;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.ciechecker.model.*;
@@ -9,8 +20,6 @@ import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
-import org.bouncycastle.crypto.CryptoException;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.IOException;
@@ -18,7 +27,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Security;
 import java.security.cert.CertificateException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Hashtable;
 import java.util.List;
 
@@ -36,10 +44,47 @@ public class CieCheckerImpl implements CieChecker {
         return true;
     }
 
-    @Override
-    public boolean extractChallengeFromSignature(byte[] signature, byte[] pubKey,byte[] nis) throws NoSuchAlgorithmException, InvalidKeySpecException, CryptoException{
-        return true;
+    /**
+     *
+     * @param signature
+     * @param pubKey
+     * @param challenge
+     * @return
+     * @throws CryptoException
+     *
+     *  Verifica il challenge (nonce) dalla signature, confrontandolo con quello estratto dalla firma.
+     */
+    public boolean verifyChallengeFromSignature(byte[] signature, byte[] pubKey, byte[] challenge) throws  CryptoException {
+        RSAEngine engine = new RSAEngine();
+        PKCS1Encoding engine2 = new PKCS1Encoding(engine);
+        // estrazione public key dall'oggetto firma
+        RSAKeyParameters publicKey = extractPublicKeyFromSignature(pubKey);
+        engine2.init(false, publicKey);
+        // estrae dalla signature i byte del nonce/challenge
+        byte[] recovered = engine2.processBlock(signature, 0, signature.length);
+        return Arrays.equals(recovered, challenge);
     }
+
+    @Override
+    public boolean extractChallengeFromSignature(byte[] signature, byte[] pubKey, byte[] nis) throws NoSuchAlgorithmException, InvalidKeySpecException, CryptoException {
+        return false;
+    }
+
+    /**
+     *
+     * @param pubKey
+     * @return
+     *
+     * Converte la public key byte array in una public Key
+     */
+    private RSAKeyParameters extractPublicKeyFromSignature(byte[] pubKey) {
+        RSAPublicKey pkcs1PublicKey = RSAPublicKey.getInstance(pubKey);
+        BigInteger modulus = pkcs1PublicKey.getModulus();
+        BigInteger publicExponent = pkcs1PublicKey.getPublicExponent();
+
+        return new RSAKeyParameters(false, modulus, publicExponent); // false per public key (true=private)
+    }
+
 
     @Override
     /**
@@ -97,16 +142,16 @@ public class CieCheckerImpl implements CieChecker {
             /*******************************************************************
              **  PASSO 3: VERIFICA FINALE DELLA FIRMA DIGITALE
              ********************************************************************/
-            /* NB: LE DUE SEGUENTI VERIFICHE SONO USATE NELLO SCRIPT SHELL E QUI SOLO COME TEST
-            if (!ValidateUtils.veryfySignedAttrIsSet(cms)) {
-                //System.err.println("SignedAttribute content do not match the expected value");
-                return false;
-            }
-            if (!ValidateUtils.veryfySignatures(cms)) {
-                //System.err.println("Signature do not match the expected value");
-                return false;
-            }
-            */
+        /* NB: LE DUE SEGUENTI VERIFICHE SONO USATE NELLO SCRIPT SHELL E QUI SOLO COME TEST
+        if (!ValidateUtils.veryfySignedAttrIsSet(cms)) {
+            //System.err.println("SignedAttribute content do not match the expected value");
+            return false;
+        }
+        if (!ValidateUtils.veryfySignatures(cms)) {
+            //System.err.println("Signature do not match the expected value");
+            return false;
+        }
+        */
             return ValidateUtils.verifyDigitalSignature(cms);
 
         } catch (CieCheckerException | CMSException | IOException | CertificateException | NoSuchAlgorithmException | OperatorCreationException e ){

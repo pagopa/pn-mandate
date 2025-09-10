@@ -1,5 +1,8 @@
 package it.pagopa.pn.ciechecker.utils;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 
 import java.security.InvalidAlgorithmParameterException;
@@ -22,7 +25,6 @@ import org.bouncycastle.util.Store;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -33,6 +35,11 @@ import java.util.*;
 public class ValidateUtils {
 
     private ValidateUtils() {}
+
+
+    public static String cleanString(Path file) throws IOException {
+        return Files.readString(file).replaceAll("\\s+", "");
+    }
 
     public static X509CertificateHolder extractDscCertDer(byte[] signedDataPkcs7) throws CMSException {
         CMSSignedData cms = new CMSSignedData(signedDataPkcs7);

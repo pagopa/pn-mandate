@@ -28,12 +28,12 @@ tags:
   - name: AppIO-PN-Mandate-Create
     description: Mandate Creation
 paths:
-  /mandate/api/v2/mandate:
+  /mandate/api/v1/io/mandate:
     post:
       tags:
         - AppIO-PN-Mandate-Create
-      summary: Crea una nuova delega in stato PENDING, restituendo i dati della stessa in caso di successo
-      operationId: createTempMandate
+      summary: Crea una nuova delega in stato PENDING che in seguito all'accettazione può permettere l'accesso temporaneo ad una notifica. Restituisce i dati della delega in caso di successo
+      operationId: createIOMandate
       parameters:
         - $ref: 'remote-refs.yaml#/components/parameters/uidAuthFleet'                            # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'                           # NO EXTERNAL
@@ -49,12 +49,11 @@ paths:
         - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
         - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
         - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
-
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MandateRequest'
+              $ref: '#/components/schemas/MandateCreationRequest'
       responses:
         '201':
           description: Created
@@ -74,20 +73,32 @@ paths:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
+        '409':
+          description: Conflict - There is already an active or pending mandate between the same delegator and delegate
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
 
 
-  /mandate/api/v2/{mandateId}/accept:
+  /mandate/api/v1/io/mandate/{mandateId}/cie/accept:
     patch:
       tags:
         - AppIO-PN-Mandate-Create
-      summary: Accetta la delega
-      operationId: acceptTempMandate
+      summary: Accetta la delega fornendo i dati della CIE del delegante. La delega passa in stato ACTIVE in caso di successo.
+      operationId: acceptIOMandate
       parameters:
-        - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'                         # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
-        - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                                     # ONLY EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'                           # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'                         # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'                       # NO EXTERNAL
+        - $ref: '#/components/parameters/cxRoleAuthFleet'                                         # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL
         - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
         - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
         - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
@@ -114,6 +125,12 @@ paths:
           description: No Content
         '403':
           description: User not authorized
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -183,36 +200,16 @@ components:
         pattern: ^[A-Z]{4}-[A-Z]{4}-[A-Z]{4}-[0-9]{6}-[A-Z]{1}-[0-9]{1}$
 
   schemas:
-    MandateRequest:
+    MandateCreationRequest:
       type: object
       required:
-        - flowType
-        - delegator
-        - delegate
+        - aarQrCodeValue
       properties:
-        flowType:
+        aarQrCodeValue:
           type: string
-          enum: [ standard, b2b, b2breverse, cie ]
-          description: Tipo di flusso che attiva la creazione delega
-        delegator:
-          $ref: '#/components/schemas/UserDto'
-        delegate:
-          $ref: '#/components/schemas/UserDto'
-        duration:
-          type: string
-          format: duration
-          description: >
-            Durata della delega (RFC3339 duration, es. "P1Y" per 1 anno, "PT15M" per 15 minuti).
-            Esempi:
-              - Lunga durata (1 anno): "P1Y"
-              - Breve durata (15 minuti): "PT15M"
-            Qualora venga omesso, viene usato il valore di default rispetto al flowType indicato: 
-            - `standard`: 6 mesi
-            - `b2b`: 1 anno
-            - `cie`: 15 minuti
-          example: "P1Y"
-        filterOptions:
-          $ref: '#/components/schemas/FilterOptions'
+          description: valore del token QR-Code presente sull'avviso di avvenuta ricezione
+          pattern: ^[ -~]*$
+          maxLength: 300
 
     FilterOptions:
       type: array
@@ -278,13 +275,9 @@ components:
         dateFrom:
           type: string
           description: ISO 8601 format
-          maxLength: 10
-          pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
         dateTo:
           type: string
           description: ISO 8601 format
-          maxLength: 10
-          pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
         groups:
           type: array
           items:
@@ -301,22 +294,6 @@ components:
           format: int32
         mandate:
           $ref: '#/components/schemas/MandateDto'
-
-
-    OrganizationIdDto:
-      type: object
-      properties:
-        name:
-          type: string
-          maxLength: 250
-          pattern: ^([\x20-\xFF]{1,250})$
-        uniqueIdentifier:
-          type: string
-          maxLength: 50
-          # ASCII printable characters
-          pattern: ^[ -~ ]*$
-      description: Available always, not required on mandate creation.
-      nullable: true
 
     UserDto:
       type: object

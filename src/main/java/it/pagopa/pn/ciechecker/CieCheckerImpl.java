@@ -1,4 +1,4 @@
-package it.pagopa.pn.ciechecker.model;
+package it.pagopa.pn.ciechecker;
 
 import it.pagopa.pn.ciechecker.CieChecker;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
@@ -14,6 +14,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
+import it.pagopa.pn.ciechecker.model.*;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -158,6 +159,5 @@ public class CieCheckerImpl implements CieChecker {
             return false;
         }
     }
-
 
 }

@@ -1,6 +1,5 @@
 package it.pagopa.pn.ciechecker;
 
-import it.pagopa.pn.ciechecker.CieChecker;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
@@ -9,7 +8,6 @@ import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.math.BigInteger;
-import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
@@ -40,8 +38,8 @@ public class CieCheckerImpl implements CieChecker {
     }
 
     @Override
-    public boolean validateMandate(CieValidationData data) {
-        return true;
+    public ResultCieChecker validateMandate(CieValidationData data) {
+        return ResultCieChecker.OK;
     }
 
     /**

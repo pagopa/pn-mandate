@@ -49,9 +49,8 @@ public class CieCheckerImpl implements CieChecker {
     }
 
     @Override
-    public boolean validateMandate(CieValidationData data) {
-
-
+    public ResultCieChecker validateMandate(CieValidationData data) {
+       
 
         //NIS: nis_verify_sod_passive_auth.sh
         verificationSodCie(data.getCieIas());
@@ -60,7 +59,7 @@ public class CieCheckerImpl implements CieChecker {
 
         //MRTD: verify_signature.sh
         verifyDigitalSignatureMrtd( data.getCieMrtd());
-        return true;
+        return ResultCieChecker.OK;
     }
 
     /**

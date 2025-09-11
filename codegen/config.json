@@ -6,6 +6,13 @@
                 "pn-mandate-b2b-pg-internal.yaml"
             ],
             "servicePath": "mandate"
+        },
+        {
+        "intendedUsage": "IO",
+        "openapiFiles": [
+          "pn-mandate-b2b-internal-appio.yaml"
+        ],
+        "servicePath": "mandate"
         }
     ]
 }

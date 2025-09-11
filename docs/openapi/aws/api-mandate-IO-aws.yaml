@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: i8LD+DXx6aZGv+x2AtRWrpxsD0pp6mysYAX5LbLcJks=
+  version: RRF5mEkKkdjfAC5HCRZUGCoSxYQub2a8rGwYRv168HA=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -11,14 +11,15 @@ servers:
     x-amazon-apigateway-endpoint-configuration:
       disableExecuteApiEndpoint: true
 paths:
-  /api/v2/mandate:
+  /api/v1/io/mandate:
     post:
       tags:
         - AppIO-PN-Mandate-Create
       summary: >-
-        Crea una nuova delega in stato PENDING, restituendo i dati della stessa
-        in caso di successo
-      operationId: createTempMandate
+        Crea una nuova delega in stato PENDING che in seguito all'accettazione
+        può permettere l'accesso temporaneo ad una notifica. Restituisce i dati
+        della delega in caso di successo
+      operationId: createIOMandate
       parameters:
         - $ref: '#/components/parameters/cxTaxIdAuthFleet'
         - $ref: '#/components/parameters/lollipopOriginalUrl'
@@ -34,7 +35,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MandateRequest'
+              $ref: '#/components/schemas/MandateCreationRequest'
       responses:
         '201':
           description: Created
@@ -54,12 +55,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '409':
+          description: >-
+            Conflict - There is already an active or pending mandate between the
+            same delegator and delegate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
       security:
         - pn-auth-fleet_IoAuthorizer_openapi: []
         - api_key_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v2/mandate
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/io/mandate
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
         requestParameters:
@@ -76,10 +91,10 @@ paths:
         timeoutInMillis: 29000
         type: http_proxy
     options:
-      operationId: Options for /api/v2/mandate API CORS
+      operationId: Options for /api/v1/io/mandate API CORS
       x-amazon-apigateway-integration:
         uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v2/mandate
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/io/mandate
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
         requestParameters: {}
@@ -87,12 +102,14 @@ paths:
         connectionType: VPC_LINK
         timeoutInMillis: 29000
         type: http_proxy
-  /api/v2/{mandateId}/accept:
+  /api/v1/io/mandate/{mandateId}/cie/accept:
     patch:
       tags:
         - AppIO-PN-Mandate-Create
-      summary: Accetta la delega
-      operationId: acceptTempMandate
+      summary: >-
+        Accetta la delega fornendo i dati della CIE del delegante. La delega
+        passa in stato ACTIVE in caso di successo.
+      operationId: acceptIOMandate
       parameters:
         - $ref: '#/components/parameters/cxTaxIdAuthFleet'
         - $ref: '#/components/parameters/lollipopOriginalUrl'
@@ -126,12 +143,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
       security:
         - pn-auth-fleet_IoAuthorizer_openapi: []
         - api_key_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v2/{mandateId}/accept
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/io/mandate/{mandateId}/cie/accept
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
         requestParameters:
@@ -149,10 +172,10 @@ paths:
         timeoutInMillis: 29000
         type: http_proxy
     options:
-      operationId: Options for /api/v2/{mandateId}/accept API CORS
+      operationId: Options for /api/v1/io/mandate/{mandateId}/cie/accept API CORS
       x-amazon-apigateway-integration:
         uri: >-
-          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v2/{mandateId}/accept
+          http://${stageVariables.ApplicationLoadBalancerDomain}:8080/${stageVariables.ServiceApiPath}/api/v1/io/mandate/{mandateId}/cie/accept
         connectionId: ${stageVariables.NetworkLoadBalancerLink}
         httpMethod: ANY
         requestParameters:
@@ -257,39 +280,16 @@ components:
         pattern: >-
           ^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1}
   schemas:
-    MandateRequest:
+    MandateCreationRequest:
       type: object
       required:
-        - flowType
-        - delegator
-        - delegate
+        - aarQrCodeValue
       properties:
-        flowType:
+        aarQrCodeValue:
           type: string
-          enum:
-            - standard
-            - b2b
-            - b2breverse
-            - cie
-          description: Tipo di flusso che attiva la creazione delega
-        delegator:
-          $ref: '#/components/schemas/UserDto'
-        delegate:
-          $ref: '#/components/schemas/UserDto'
-        duration:
-          type: string
-          format: duration
-          description: >
-            Durata della delega (RFC3339 duration, es. "P1Y" per 1 anno, "PT15M"
-            per 15 minuti). Esempi:
-              - Lunga durata (1 anno): "P1Y"
-              - Breve durata (15 minuti): "PT15M"
-            Qualora venga omesso, viene usato il valore di default rispetto al
-            flowType indicato:  - `standard`: 6 mesi - `b2b`: 1 anno - `cie`: 15
-            minuti
-          example: P1Y
-        filterOptions:
-          $ref: '#/components/schemas/FilterOptions'
+          description: valore del token QR-Code presente sull'avviso di avvenuta ricezione
+          pattern: ^[ -~]*$
+          maxLength: 300
     FilterOptions:
       type: array
       maxItems: 5
@@ -331,23 +331,6 @@ components:
               pattern: >-
                 ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
             - type: 'null'
-        delegator:
-          $ref: '#/components/schemas/UserDto'
-        delegate:
-          $ref: '#/components/schemas/UserDto'
-        status:
-          description: Available always, not required on mandate creation.
-          oneOf:
-            - type: string
-              enum:
-                - pending
-                - active
-                - revoked
-                - rejected
-                - expired
-            - type: 'null'
-        filterOptions:
-          $ref: '#/components/schemas/FilterOptions'
         verificationCode:
           description: Available only for request where requesting user is the delegator
           oneOf:
@@ -355,20 +338,9 @@ components:
               maxLength: 5
               pattern: ^[0-9]*$
             - type: 'null'
-        dateFrom:
-          type: string
-          description: ISO 8601 format
-          maxLength: 10
-          pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
         dateTo:
           type: string
           description: ISO 8601 format
-          maxLength: 10
-          pattern: ^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$
-        groups:
-          type: array
-          items:
-            $ref: '#/components/schemas/GroupDto'
     MandateCreationResponse:
       type: object
       required:
@@ -379,59 +351,6 @@ components:
           type: number
         mandate:
           $ref: '#/components/schemas/MandateDto'
-    OrganizationIdDto:
-      description: Available always, not required on mandate creation.
-      oneOf:
-        - type: object
-          properties:
-            name:
-              type: string
-              maxLength: 250
-              pattern: ^([\x20-\xFF]{1,250})$
-            uniqueIdentifier:
-              type: string
-              maxLength: 50
-              pattern: ^[ -~ ]*$
-        - type: 'null'
-    UserDto:
-      oneOf:
-        - type: object
-          properties:
-            displayName:
-              type: string
-              maxLength: 80
-              pattern: ^([\x20-\xFF]{1,80})$
-            firstName:
-              type: string
-              maxLength: 80
-              pattern: ^([\x20-\xFF]{1,80})$
-            lastName:
-              type: string
-              maxLength: 80
-              pattern: ^([\x20-\xFF]{1,80})$
-            companyName:
-              type: string
-              maxLength: 250
-              pattern: ^([\x20-\xFF]{1,250})$
-            fiscalCode:
-              type: string
-              maxLength: 16
-              pattern: >-
-                ^([A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1})|([0-9]{11})$
-            person:
-              type: boolean
-        - type: 'null'
-    GroupDto:
-      type: object
-      properties:
-        id:
-          type: string
-          maxLength: 50
-          pattern: ^[ -~ ]*$
-        name:
-          type: string
-          maxLength: 80
-          pattern: ^[ -~ ]*$
     CIEValidationData:
       type: object
       required:

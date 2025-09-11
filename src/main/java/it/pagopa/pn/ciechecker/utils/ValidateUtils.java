@@ -4,6 +4,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
+import it.pagopa.pn.ciechecker.model.SodSummary;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.icao.DataGroupHash;
+import org.bouncycastle.asn1.icao.LDSSecurityObject;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.cert.*;
@@ -18,12 +24,17 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.*;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.util.Store;
 import org.bouncycastle.util.encoders.Hex;
 
+import java.security.cert.X509Certificate;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.io.ByteArrayInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -93,7 +104,7 @@ public class ValidateUtils {
             return false;
         }
     }
-  
+
      public static boolean verifyDscAgainstAnchorBytes(byte[] dscDerOrPem,
                                                Collection<byte[]> cscaAnchorBlobs,
                                                Date atTime) {
@@ -612,6 +623,66 @@ public class ValidateUtils {
         throw new CMSException("SignerInformation is null");
     }
 
+    /**
+     * Mappa OID dell'algoritmo (come estratto dal SOD) al nome utilizzabile da MessageDigest.
+     * (Uguale a quanto usato nel test: 2.16.840.1.101.3.4.2.1 -> SHA-256, ecc.)
+     */
+    public static String getDigestName(String oid) {
+        return switch (oid) {
+            case "1.3.14.3.2.26" -> SHA_1;
+            case "2.16.840.1.101.3.4.2.1" -> SHA_256;
+            case "2.16.840.1.101.3.4.2.2" -> SHA_384;
+            case "2.16.840.1.101.3.4.2.3" -> SHA_512;
+            default -> throw new IllegalArgumentException("OID digest non supportato: " + oid);
+        };
+    }
+
+    public static int extractDataGroupNumber(String fileName) {
+        // supponiamo formati tipo EF.DG1.bin → prende il numero
+        String digits = fileName.replaceAll("\\D+", "");
+        return Integer.parseInt(digits);
+    }
+
+    public static byte[] calculateDigest(byte[] data, String algorithm) throws Exception {
+        MessageDigest md = MessageDigest.getInstance(algorithm);
+        return md.digest(data);
+    }
+
+    public static Integer extractDgNumber(String filename) {
+        var p = java.util.regex.Pattern.compile("(?i)^(?:EF\\.)?DG0*(\\d+)(?:\\.[A-Za-z0-9]+)?$");
+        var m = p.matcher(filename);
+        var parsed = m.find() ? Integer.parseInt(m.group(1)) : null;
+        return parsed;
+    }
+
+    //creazione oggetto rappresentante EF.SOD -> decode_sod_hr.sh
+    public static SodSummary decodeSodHr(byte[] sodBytes) throws Exception {
+        CMSSignedData cms = new CMSSignedData(sodBytes);
+
+        String contentTypeOid = cms.getSignedContentTypeOID();
+        byte[] eContent = (byte[]) Objects.requireNonNull(cms.getSignedContent()).getContent();
+        LDSSecurityObject lds = LDSSecurityObject.getInstance(
+                ASN1Sequence.getInstance(ASN1Primitive.fromByteArray(eContent)));
+
+        AlgorithmIdentifier dgDigestAlg = lds.getDigestAlgorithmIdentifier();
+
+        LinkedHashMap<Integer, byte[]> dgMap = new LinkedHashMap<>();
+        for (DataGroupHash dgh : lds.getDatagroupHash()) {
+            dgMap.put(dgh.getDataGroupNumber(), dgh.getDataGroupHashValue().getOctets());
+        }
+
+        SignerInformation si = cms.getSignerInfos().getSigners().iterator().next();
+        AlgorithmIdentifier sigAlg = AlgorithmIdentifier.getInstance(si.getDigestAlgorithmID());
+        byte[] signature = si.getSignature();
+
+        X509Certificate dsc = null;
+        X509CertificateHolder holder = extractDscCertDer(sodBytes);
+        if (holder != null) {
+            dsc = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(holder);
+        }
+
+        return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
+    }
 
 
 }

@@ -3,6 +3,7 @@ package it.pagopa.pn.mandate.validate;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 
+import it.pagopa.pn.ciechecker.model.SodSummary;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -23,6 +24,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.*;
@@ -32,6 +34,8 @@ import java.security.PublicKey;
 import java.security.cert.CertificateException;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.X_509;
+import static it.pagopa.pn.ciechecker.utils.ValidateUtils.decodeSodHr;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ValidateUtilsTest {
 
@@ -40,6 +44,7 @@ class ValidateUtilsTest {
     private static final String SOD_HEX = "SOD_IAS.HEX";
     private static final String NIS_PUBKEY_FILENAME = "NIS_PUBKEY.HEX";
     private static final String NIS_HEX_TO_CHECK="393130373138343634363534";
+    private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
     private static final Map<String,String> expectedIssuer = Map.of(
             "2.5.4.3", "Italian Country Signer CA",
             "2.5.4.11", "National Electronic Center of State Police",
@@ -506,6 +511,34 @@ class ValidateUtilsTest {
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
         Assertions.assertTrue(ValidateUtils.verifyDigitalSignature(cms));
+    }
+
+    @Test
+    void testDecodeSodHrOk() throws Exception {
+        byte[] sodBytes = Files.readAllBytes(sodFile);
+        System.out.println("bytes letti dal file SOD: " + sodBytes.length);
+
+        SodSummary summary = decodeSodHr(sodBytes);
+        Assertions.assertNotNull(summary);
+        Assertions.assertNotNull(summary.getDgDigestAlgorithm());
+        Assertions.assertNotNull(summary.getDgExpectedHashes());
+        assertFalse(summary.getDgExpectedHashes().isEmpty());
+        Assertions.assertNotNull(summary.getSignatureAlgorithm());
+        Assertions.assertNotNull(summary.getCmsSignature());
+        Assertions.assertNotNull(summary.getDscCertificate());
+        System.out.println("SodSummary: "+ summary);
+
+    }
+    @Test
+    void testDecodeSodHrFail() {
+        byte[] corruptedSod = new byte[]{0x01, 0x02, 0x03}; // SOD corrotto
+        System.out.println("bytes letti dal file SOD corrotto: " + corruptedSod.length);
+
+        Exception exception = assertThrows(Exception.class, () -> {
+            ValidateUtils.decodeSodHr(corruptedSod);
+        });
+        System.out.println("Eccezione catturata: " + exception.getClass().getSimpleName() + " - " + exception.getMessage());
+        assertTrue(exception.getMessage().contains("unable") || !exception.getMessage().isEmpty());
     }
   
 

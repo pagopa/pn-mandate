@@ -18,4 +18,11 @@ public class CieCheckerConstants {
     public static final String PARSED_ZERO_CSCA_CERTIFICATES="Parsed 0 CSCA certificates";
     public static final String NO_CSCA_ANCHORS_PROVIDED= "No CSCA anchors provided";
 
+    public static final String EXC_INPUT_PARAMETER_NULL="Input parameter is null";
+    public static final String EXC_NO_SIGNATURES_SIGNED_DATA="No signatures found in Signed Data";
+    public static final String EXC_NO_HASH_CONTENT_MATCH="No HashContent match";
+    public static final String EXC_NO_HASH_SIGNED_DATA = "No hash of Signed Data found";
+    public static final String EXC_NO_SIGNED_ATTRIBUTE = "No signed Attributes found";
+    public static final String EXC_NO_MATCH_NIS_HASHES_DATAGROUP ="The NIS hashes DataGroup do not match with the expected value";
+    public static final String EXC_NO_CERTIFICATE_NOT_SIGNED = "the certificate has not been signed";
 }

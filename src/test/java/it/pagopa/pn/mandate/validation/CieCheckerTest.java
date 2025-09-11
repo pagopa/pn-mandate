@@ -54,19 +54,22 @@ class CieCheckerTest {
         return Hex.decodeHex(toHex);
     }
 
+    private static String cleanString(Path file) throws IOException {
+        return Files.readString(file).replaceAll("\\s+", "");
+    }
 
     @Test
     void checkExtractChallengeTest() throws IOException, DecoderException, NoSuchAlgorithmException, InvalidKeySpecException, CryptoException {
-        byte[] nisChallenge = hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_CHALLENGE.HEX")));
-        byte[] nisPubKey = hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
-        byte[] nisSignature = hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
+        byte[] nisChallenge = hexFile(cleanString(basePath.resolve("NIS_CHALLENGE.HEX")));
+        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
+        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
 
         Assertions.assertTrue(cieChecker.verifyChallengeFromSignature(nisSignature,nisPubKey,nisChallenge));
     }
 
     @Test
     void decodeTest() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException, DecoderException {
-        byte[] decoded = hexFile(ValidateUtils.cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
+        byte[] decoded = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
         org.bouncycastle.asn1.pkcs.RSAPublicKey pkcs1PublicKey = org.bouncycastle.asn1.pkcs.RSAPublicKey.getInstance(decoded);
         BigInteger modulus = pkcs1PublicKey.getModulus();
         BigInteger publicExponent = pkcs1PublicKey.getPublicExponent();

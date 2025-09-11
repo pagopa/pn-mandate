@@ -1,8 +1,6 @@
 package it.pagopa.pn.ciechecker.utils;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.SodSummary;
 import org.bouncycastle.asn1.ASN1Primitive;
@@ -47,10 +45,6 @@ public class ValidateUtils {
 
     private ValidateUtils() {}
 
-
-    public static String cleanString(Path file) throws IOException {
-        return Files.readString(file).replaceAll("\\s+", "");
-    }
 
     public static X509CertificateHolder extractDscCertDer(byte[] signedDataPkcs7) throws CMSException {
         CMSSignedData cms = new CMSSignedData(signedDataPkcs7);
@@ -142,7 +136,7 @@ public class ValidateUtils {
             return matches.iterator().next();
         }
 
-        throw new CieCheckerException("No certificates found");
+        throw new CieCheckerException(EXC_NO_CERT);
     }
 
     /**
@@ -218,6 +212,8 @@ public class ValidateUtils {
 
         // --- PARTE 1: ESTRAI E CALCOLA L'HASH DEI DATI FIRMATI ---
         byte[] hashSignedData = ValidateUtils.extractHashBlock(cms);
+        if(hashSignedData == null || hashSignedData.length == 0)
+            throw new CieCheckerException(EXC_NO_HASH_SIGNED_DATA);
 
         // --- PARTE 2: ESTRAI L'HASH FIRMATO (messageDigest) ---
         ASN1OctetString signedHash = ValidateUtils.extractHashSigned(cms);
@@ -323,7 +319,7 @@ public class ValidateUtils {
      */
     public static ASN1OctetString extractHashSigned(CMSSignedData signedData) throws CMSException{
         SignerInformationStore signers = signedData.getSignerInfos();
-        if (signers.size() == 0) {
+        if ( signers == null || signers.size() == 0) {
             throw new CMSException("SignerInformationStore is empty");
         }
 

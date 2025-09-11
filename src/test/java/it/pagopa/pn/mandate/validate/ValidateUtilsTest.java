@@ -1,8 +1,10 @@
 package it.pagopa.pn.mandate.validate;
 
 
+import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 
+import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -38,6 +40,7 @@ class ValidateUtilsTest {
     private static final Path BASE_PATH = Path.of("src","test","resources");
     private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
     private static final String SOD_HEX = "SOD_IAS.HEX";
+    private static final String EF_SOD_HEX = "EF_SOD.HEX";
     private static final String NIS_PUBKEY_FILENAME = "NIS_PUBKEY.HEX";
     private static final String NIS_HEX_TO_CHECK="393130373138343634363534";
     private static final Map<String,String> expectedIssuer = Map.of(
@@ -545,5 +548,30 @@ class ValidateUtilsTest {
                    .collect(Collectors.toList());
         }
     }
-  
+
+
+    @Test
+    void verifyDigitalSignatureMrtd() throws Exception {
+        System.out.println("TEST verifyDigitalSignatureMrtd - INIT");
+        System.out.println(" - Leggo il file EF_SOD_HEX e decodifico in byte[] HEX");
+        String fileString = Files.readString(BASE_PATH.resolve(EF_SOD_HEX)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8,fileString.length());
+        byte[] efSod = hexFile(subString);
+
+        CieMrtd cieMrtd = new CieMrtd();
+        cieMrtd.setSod(efSod);
+
+        List<byte[]> ders = pickManyDerFromResources(-1);
+        String concatenatedPem = ders.stream()
+                .map(d->new String(toPem(d), StandardCharsets.UTF_8))
+                .collect(Collectors.joining());
+        byte[] blob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
+        cieMrtd.setCscaAnchor(List.of(blob));
+
+        CieCheckerImpl cieChecker = new CieCheckerImpl();
+        cieChecker.init();
+
+        Assertions.assertTrue(cieChecker.verifyDigitalSignatureMrtd(cieMrtd));
+
+    }
 }

@@ -8,8 +8,13 @@ import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.*;
+
 import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
+import java.util.*;
+
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
@@ -26,11 +31,15 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Security;
 import java.security.cert.CertificateException;
+import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
 
+
 public class CieCheckerImpl implements CieChecker {
+
+    private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
 
     @Override
     public void init() {
@@ -172,6 +181,102 @@ public class CieCheckerImpl implements CieChecker {
             System.err.println("Error during verification SOD: " + e.getMessage());
             return false;
         }
+    }
+    /**
+     * accetta path EF.SOD e una lista variabile di path EF.DG* (varargs, così possiamo
+     * passare un numero variabile di parametri senza dover creare un array a mano)
+     *
+     * questo metodo replica il comportamento dello script verify_integrity.sh:
+     * 1) decodifica il SOD (ValidateUtils.decodeSodHr)
+     * 2) identifica l'algoritmo di hash
+     * 3) verifica che sia compatibile
+     * 4) per ogni DG passato ricalcola l'hash e lo confronta con quello nel SOD
+     *
+     * In caso di eccezione ritorna false (puoi cambiare la gestione se preferisci lanciare eccezioni).
+     */
+    @Override
+    public boolean verifyIntegrity(Path sodPath, List<Path> dgPaths) {
+        Objects.requireNonNull(sodPath, "sodPath null");
+        try {
+            byte[] sodBytes = Files.readAllBytes(sodPath);
+            List<Path> dgs = dgPaths != null ? dgPaths : Collections.emptyList();
+            return verifyIntegrityCore(sodBytes, dgs);
+        } catch (Exception e) {
+            System.err.println("Error in verifyIntegrity: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * esegue la logica vera e propria e propaga le eccezioni.
+     * - usa ValidateUtils.decodeSodHr(...) per ottenere SodSummary (equivalente a sod_summary dello script)
+     * - per ogni DG contenuto in dgFiles verifica hash
+     *
+     * Ritorna true solo se tutti i DG verificati combaciano.
+     */
+    public boolean verifyIntegrityCore(byte[] sodBytes, List<Path> dgFiles) throws Exception {
+        // 1) decodifica SOD -> SodSummary (ValidateUtils contiene decodeSodHr)
+        SodSummary sodSummary = decodeSodHr(sodBytes);
+
+        // 2) identifica algoritmo di digest (OID -> nome MessageDigest)
+        String hashAlgorithmName = getDigestName(sodSummary.getDgDigestAlgorithm().getAlgorithm().getId());
+        if (hashAlgorithmName == null || hashAlgorithmName.isBlank()) {
+            throw new CieCheckerException("Unable to determine hash algorithm from SOD");
+        }
+
+        // 3) verifica compatibilità algoritmo
+        if (!COMPATIBLE_ALGOS.contains(hashAlgorithmName)) {
+            throw new CieCheckerException("Unsupported hash algorithm: " + hashAlgorithmName);
+        }
+        System.out.println("Selected Algorithm: " + hashAlgorithmName);
+
+        // 4) recupera map degli hash attesi
+        Map<Integer, byte[]> expectedHashes = sodSummary.getDgExpectedHashes();
+        if (expectedHashes == null || expectedHashes.isEmpty()) {
+            throw new CieCheckerException("No expected hashes found in SOD");
+        }
+        System.out.println("Expected hash : " + expectedHashes);
+
+        // 5) calcolo e verifica per ogni DG passato
+        MessageDigest md = MessageDigest.getInstance(hashAlgorithmName);
+
+        for (Path dgPath : dgFiles) {
+            String fileName = dgPath.getFileName().toString();
+            Integer dgNum = extractDgNumber(fileName);
+            if (dgNum == null) {
+                throw new CieCheckerException("Unable to extract DG number from filename: " + fileName);
+            }
+
+            // verifica esistenza e lettura file
+            byte[] fileContent = Files.readAllBytes(dgPath);
+            if (fileContent.length == 0) {
+                throw new CieCheckerException("DG file is empty: " + dgPath);
+            }
+
+            // calcola digest
+            md.reset();
+            byte[] actualDigest = md.digest(fileContent);
+
+            // expected
+            byte[] expectedDigest = expectedHashes.get(dgNum);
+            if (expectedDigest == null) {
+                throw new CieCheckerException("No expected digest found in SOD for DG" + dgNum);
+            }
+
+            // confronto
+            boolean isSameDigest = Arrays.equals(actualDigest, expectedDigest);
+            System.out.printf("DG%d -> expected=%s, actual=%s, esito=%s%n",
+                    dgNum,
+                    bytesToHex(expectedDigest),
+                    bytesToHex(actualDigest),
+                    isSameDigest ? "OK" : "KO");
+
+            if (!isSameDigest) {
+                throw new CieCheckerException("DG not machtes: actualDG="+ Arrays.toString(actualDigest) +" expectedDG="+ Arrays.toString(expectedDigest));
+            }
+        }
+        // se arrivo qui tutti i DG verificati sono ok
+        return true;
     }
 
 

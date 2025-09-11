@@ -162,12 +162,16 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- sotto il cofano, testcontainer usa aws1 e quindi serve la dipendenza -->
 		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-s3</artifactId>
 			<version>1.12.332</version>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- Sebbene non usata dal codice, in intelliJ non si riusciva a risolvere il plugin antrun semplicemetne dichiarandolo
+             Mettendolo come dipedenza, si aggira il problema -->
 		<dependency>
 			<groupId>org.apache.maven.plugins</groupId>
 			<artifactId>maven-antrun-plugin</artifactId>

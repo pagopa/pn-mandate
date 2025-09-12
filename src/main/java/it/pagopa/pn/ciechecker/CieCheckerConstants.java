@@ -13,6 +13,7 @@ public class CieCheckerConstants {
     public static final String SHA_384 = "SHA-384";
     public static final String SHA_512 = "SHA-512";
 
+    public static final String OK = "OK";
     // exception messages
     public static final String EXC_NO_CERT="No certificates found in PKCS7";
     public static final String PARSED_ZERO_CSCA_CERTIFICATES="Parsed 0 CSCA certificates";
@@ -24,5 +25,14 @@ public class CieCheckerConstants {
     public static final String EXC_NO_HASH_SIGNED_DATA = "No hash of Signed Data found";
     public static final String EXC_NO_SIGNED_ATTRIBUTE = "No signed Attributes found";
     public static final String EXC_NO_MATCH_NIS_HASHES_DATAGROUP ="The NIS hashes DataGroup do not match with the expected value";
-    public static final String EXC_NO_CERTIFICATE_NOT_SIGNED = "the certificate has not been signed";
+    public static final String EXC_CERTIFICATE_NOT_SIGNED = "The certificate has not been signed";
+    public static final String EXC_NO_SIGNERINFORMATION = "SignerInformation is null";
+    public static final String EXC_PARSING_CERTIFICATION = "Errore durante la conversione del certificato per ottenere la chiave pubblica.";
+    public static final String EXC_GENERATE_CERTIFICATE = "Error in generating the certificate object and initializes";
+    public static final String EXC_VALIDATE_CERTIFICATE = "Path does not chain with any of the trust anchors";
+    public static final String EXC_GENERATE_CMSSIGNEDDATA = "Error in generating CMSSignedData";
+    public static final String EXC_NO_SUPPORTED_CERTIFICATEFACTORY = "No Provider supports a CertificateFactorySpi implementation for the specified type";
+    public static final String EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR = "No Provider supports a CertPathValidatorSpi implementation for the specified algorithm";
+    public static final String EXC_INVALID_PARAMETER_CERTPATHVALIDATOR = "The specified parameters or the type of the specified CertPath are inappropriate for this CertPathValidator";
+    public static final String EXC_IOEXCEPTION = "KO_IOEXCEPTION";
 }

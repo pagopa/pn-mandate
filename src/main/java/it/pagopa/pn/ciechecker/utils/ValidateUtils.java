@@ -1,7 +1,9 @@
 package it.pagopa.pn.ciechecker.utils;
 
 import java.io.IOException;
+
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
+import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.SodSummary;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -24,7 +26,6 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.util.Store;
 import org.bouncycastle.util.encoders.Hex;
@@ -38,7 +39,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.*;
 
 public class ValidateUtils {
@@ -60,9 +60,9 @@ public class ValidateUtils {
     }
 
     public static List<X509Certificate> parseCscaAnchors(Collection<byte[]> cscaAnchorBlobs,
-                                                          CertificateFactory x509Cf) throws CertificateException {
+                                                          CertificateFactory x509Cf) throws CieCheckerException, CertificateException {
         if (cscaAnchorBlobs == null || cscaAnchorBlobs.isEmpty()) {
-            throw new CertificateException(NO_CSCA_ANCHORS_PROVIDED);
+            throw new CieCheckerException(NO_CSCA_ANCHORS_PROVIDED);
         }
         List<X509Certificate> out = new ArrayList<>();
         for (byte[] blob : cscaAnchorBlobs) {
@@ -73,10 +73,10 @@ public class ValidateUtils {
         return out;
     }
 
-    public static boolean verifyDscAgainstTrustBundle(byte[] dscDer, Collection<X509Certificate> cscaTrustAnchors, Date atTime) {
+    public static ResultCieChecker verifyDscAgainstTrustBundle(byte[] dscDer, Collection<X509Certificate> cscaTrustAnchors, Date atTime) {
         try {
-            if (Objects.isNull(dscDer) || Objects.isNull(cscaTrustAnchors)) return false;
-            if (dscDer.length == 0) return false;
+            if (Objects.isNull(dscDer) || dscDer.length == 0) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
+            if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(NO_CSCA_ANCHORS_PROVIDED);
 
             CertificateFactory x509Cf = CertificateFactory.getInstance(X_509);
 
@@ -90,24 +90,40 @@ public class ValidateUtils {
             if (atTime != null) params.setDate(atTime);
 
             CertPathValidator.getInstance(PKIX).validate(path, params); // No exception thrown = ok
-            return true;
+            return ResultCieChecker.OK;
 
-        } catch (CertificateException | InvalidAlgorithmParameterException | NoSuchAlgorithmException e) {
-            throw new CieCheckerException(e);
-        } catch (CertPathValidatorException e) {
-            return false;
+        } catch (CertificateException ce) {
+            System.err.println("CertificateException: " + ce.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE);
+            //return ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE;
+        }catch (CertPathValidatorException cpe) {
+            System.err.println("CertPathValidatorException: " + cpe.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE);
+            //return ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE;
+        }catch (NoSuchAlgorithmException nsae){
+            System.err.println("NoSuchAlgorithmException: " + nsae.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR);
+            //return ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR;
+        } catch ( InvalidAlgorithmParameterException e) {
+            System.err.println("InvalidAlgorithmParameterException: " + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR);
+            //return ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR;
         }
     }
 
-     public static boolean verifyDscAgainstAnchorBytes(byte[] dscDerOrPem,
+     public static ResultCieChecker verifyDscAgainstAnchorBytes(byte[] dscDerOrPem,
                                                Collection<byte[]> cscaAnchorBlobs,
                                                Date atTime) {
         try {
             CertificateFactory x509Cf = CertificateFactory.getInstance(X_509);
             List<X509Certificate> anchors = parseCscaAnchors(cscaAnchorBlobs, x509Cf);
             return verifyDscAgainstTrustBundle(dscDerOrPem, anchors, atTime);
+            //return resultCieChecker.getValue().equals("OK");
+            //if(!resultCieChecker.getValue().equals("OK"))
+            //    throw new CieCheckerException(resultCieChecker);
         } catch (CertificateException e) {
-            return false;
+            System.err.println("CertificateException: " + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE);
         }
     }
 
@@ -116,7 +132,8 @@ public class ValidateUtils {
                                                       Date atTime) {
         try {
             if (dscHolder == null) return false;
-            return verifyDscAgainstTrustBundle(dscHolder.getEncoded(), cscaTrustAnchors, atTime);
+            ResultCieChecker resultCieChecker = verifyDscAgainstTrustBundle(dscHolder.getEncoded(), cscaTrustAnchors, atTime);
+            return resultCieChecker.getValue().equals("OK");
         } catch (IOException e) {
             throw new CieCheckerException(e);
         }
@@ -127,7 +144,7 @@ public class ValidateUtils {
     //************************************************
 
 
-    public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) throws CieCheckerException {
+    public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) {
 
         Store<X509CertificateHolder> certStore = cms.getCertificates();
 
@@ -136,7 +153,7 @@ public class ValidateUtils {
             return matches.iterator().next();
         }
 
-        throw new CieCheckerException(EXC_NO_CERT);
+        throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_CERT);
     }
 
     /**
@@ -147,9 +164,9 @@ public class ValidateUtils {
      * @throws CieCheckerException exception
      * @throws CertificateException exception
      */
-    public static PublicKey extractPublicKeyFromHolder(X509CertificateHolder certHolder) throws CieCheckerException, CertificateException {
+    public static PublicKey extractPublicKeyFromHolder(X509CertificateHolder certHolder) {
         if (certHolder == null) {
-            throw new CieCheckerException("X509CertificateHolder is null");
+            throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
         }
         try {
             // Per convertire X509CertificateHolder in un X509Certificate utilizzo la classe JcaX509CertificateConverter
@@ -161,7 +178,8 @@ public class ValidateUtils {
             // Estrae la chiave pubblica dall'oggetto X509Certificate
             return certificate.getPublicKey();
         } catch (CertificateException e) {
-            throw new CertificateException("Errore durante la conversione del certificato per ottenere la chiave pubblica.", e);
+            System.err.println(EXC_PARSING_CERTIFICATION);
+            throw new CieCheckerException(EXC_PARSING_CERTIFICATION);
         }
     }
 
@@ -599,24 +617,33 @@ public class ValidateUtils {
      * @throws CertificateException ce
      * @throws OperatorCreationException ope
      */
-    public static boolean verifyDigitalSignature(CMSSignedData cms ) throws CieCheckerException, CMSException, CertificateException, OperatorCreationException {
+    public static ResultCieChecker verifyDigitalSignature(CMSSignedData cms ) {
+        try {
+            SignerInformationStore signers = cms.getSignerInfos();
+            Collection<SignerInformation> c = signers.getSigners();
+            Iterator<SignerInformation> it = c.iterator();
 
-        SignerInformationStore signers = cms.getSignerInfos();
-        Collection<SignerInformation> c = signers.getSigners();
-        Iterator<SignerInformation> it = c.iterator();
+            if (it.hasNext()) {
+                SignerInformation signer = it.next();
 
-        if (it.hasNext()) {
-            SignerInformation signer = it.next();
+                X509CertificateHolder certHolder = extractDscCertDer(cms);
+                PublicKey pubKey = extractPublicKeyFromHolder(certHolder);
 
-            X509CertificateHolder certHolder = extractDscCertDer(cms);
-            PublicKey pubKey = extractPublicKeyFromHolder(certHolder);
-
-            // Crea il verificatore di firma
-            JcaSimpleSignerInfoVerifierBuilder verifierBuilder = new JcaSimpleSignerInfoVerifierBuilder(); //.setProvider(BouncyCastleProvider.PROVIDER_NAME);
-            verifierBuilder.setProvider(new BouncyCastleProvider());
-            return signer.verify(verifierBuilder.build(pubKey));
+                // Crea il verificatore di firma
+                JcaSimpleSignerInfoVerifierBuilder verifierBuilder = new JcaSimpleSignerInfoVerifierBuilder(); //.setProvider(BouncyCastleProvider.PROVIDER_NAME);
+                verifierBuilder.setProvider(new BouncyCastleProvider());
+                if (!signer.verify(verifierBuilder.build(pubKey)))
+                    throw new CMSException("");
+                return ResultCieChecker.OK;
+            }
+       // }catch(CertificateException ce) {
+         //   throw new CieCheckerException(ResultCieChecker.KO);
+        }catch (OperatorCreationException oce){
+            throw new CieCheckerException(ResultCieChecker.KO);
+        }catch( CMSException cmse){
+            throw new CieCheckerException(ResultCieChecker.KO);
         }
-        throw new CMSException("SignerInformation is null");
+        throw new CieCheckerException(ResultCieChecker.KO_NO_SIGNERINFORMATION);
     }
 
     /**

@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -44,6 +45,7 @@ class CieCheckerTest {
     private static final Path basePath= Path.of("src","test","resources");
     private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
     private static final Path dg1Files = Paths.get("src/test/resources/EF.DG1");
+    private static final Path dg11Files = Paths.get("src/test/resources/EF.DG11");
     private static final Path dg1FilesCorrupted = Paths.get("src/test/resources/DG1_CORROTTO.HEX");
     private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
@@ -92,21 +94,19 @@ class CieCheckerTest {
     }
 
     @Test
-    void testVerifyIntegritySuccess() throws Exception {
+    void testVerifyIntegrityDG_NotFound() throws Exception {
         // Legge il SOD binario
         byte[] sod = Files.readAllBytes(sodFile);
 
-        byte[] dg1 = Files.readAllBytes(dg1Files);
-
         CieMrtd mrtd = new CieMrtd();
         mrtd.setSod(sod);
-        mrtd.setDg1(dg1);
+        mrtd.setDg1(null);
         mrtd.setDg11(null);
 
         // Verifica integrità
         ResultCieChecker result = cieChecker.verifyIntegrity(mrtd);
 
-        assertEquals(ResultCieChecker.OK, result);
+        assertEquals(ResultCieChecker.KO_NOTFOUND_DIGEST_SOD, result);
     }
 
     @Test

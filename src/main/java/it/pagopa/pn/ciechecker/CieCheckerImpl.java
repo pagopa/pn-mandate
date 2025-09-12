@@ -202,10 +202,11 @@ public class CieCheckerImpl implements CieChecker {
             if(mrtd.getSod() == null){
                 throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_MRTD_SOD);
             }
-            List<byte[]> dg1List = mrtd.getDg1() != null ? Collections.singletonList(mrtd.getDg1()) : Collections.emptyList();
-            List<byte[]> dg11List = mrtd.getDg11() != null ? Collections.singletonList(mrtd.getDg11()) : Collections.emptyList();
+            byte[] dg1 = mrtd.getDg1() != null ? mrtd.getDg1() : null;
+            byte[] dg11 = mrtd.getDg11() != null ? mrtd.getDg11() : null;
+            System.out.println("DG11: "+dg11);
 
-            return verifyIntegrityCore(mrtd.getSod(), dg1List, dg11List);
+            return verifyIntegrityCore(mrtd.getSod(), dg1, dg11);
         } catch (CieCheckerException e) {
             log.error("Validation error in verifyIntegrity: {}", e.getMessage());
             return e.getResult();
@@ -223,7 +224,7 @@ public class CieCheckerImpl implements CieChecker {
      *
      * Ritorna true solo se tutti i DG verificati combaciano.
      */
-    public ResultCieChecker verifyIntegrityCore(byte[] sodBytes, List<byte[]> dg1List, List<byte[]> dg11List) throws Exception {
+    public ResultCieChecker verifyIntegrityCore(byte[] sodBytes, byte[] dg1, byte[] dg11) throws Exception {
         // 1) Decodifica SOD
         SodSummary sodSummary = decodeSodHr(sodBytes);
 
@@ -245,18 +246,17 @@ public class CieCheckerImpl implements CieChecker {
         }
 
         // 3) Verifica DG1 e DG11
-        verifyDigestList(md, dg1List, expectedHashes, 1);
-        verifyDigestList(md, dg11List, expectedHashes, 11);
+        verifyDigestList(md, dg1, expectedHashes, 1);
+        verifyDigestList(md, dg11, expectedHashes, 11);
 
         return ResultCieChecker.OK;
     }
 
-    private void verifyDigestList(MessageDigest md, List<byte[]> dgList, Map<Integer, byte[]> expectedHashes, int dgNum) throws CieCheckerException {
-        for (byte[] dg : dgList) {
+    private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum) throws CieCheckerException {
             if (!isVerifyDigest(md, dg, expectedHashes.get(dgNum))) {
                 throw new CieCheckerException(ResultCieChecker.KO_NOT_SAME_DIGEST);
             }
-        }
+
     }
 
     /**

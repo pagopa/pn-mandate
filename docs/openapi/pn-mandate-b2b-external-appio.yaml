@@ -12,9 +12,24 @@ info:
     url: 'https://da-definire/'
   description: |-
     ## Abstract
-      API utilizzate dal backend di AppIO per:
-      - creare una delega in stato PENDING
+    
+    API utilizzate dal backend di AppIO per:
+      - creare una delega temporanea in stato PENDING
       - ACCETTARE una delega attraverso la presentazione dei dati presenti sulla CIE del delegante
+    
+    La delega temporanea verrà definita come un caso particolare delle deleghe “permanenti” 
+    (sono comunque limitate nel tempo, ma per distinguerla la chiameremo <b>permanente</b>) 
+    comunemente utilizzate in SEND.<br>
+    In particolare, la delega temporanea sarà una delega:
+    -  con un periodo di validità limitato
+    - limitata all’accesso ad una notifica
+    
+    La delega temporanea coesisterà con quella permanente. <br>
+    I vincoli saranno:
+    - una sola delega temporanea per la terna (delegato, delegante, iun) in stato <i>Active</i>
+    - una sola delega permanente per la coppia (delegato, delegante) valida in ogni istante (in stato <i>Active</i> e non ancora scaduta)
+
+
 servers:
   - url: https://api-io.notifichedigitali.it
     description: Ambiente di produzione
@@ -32,7 +47,8 @@ paths:
     post:
       tags:
         - AppIO-PN-Mandate-Create
-      summary: Crea una nuova delega in stato PENDING che in seguito all'accettazione può permettere l'accesso temporaneo ad una notifica. Restituisce i dati della delega in caso di successo
+      summary: Crea una delega temporanea in stato PENDING
+      description: Crea una nuova delega in stato PENDING che in seguito all'accettazione può permettere l'accesso temporaneo ad una notifica. Restituisce i dati della delega in caso di successo
       operationId: createIOMandate
       parameters:
         - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL

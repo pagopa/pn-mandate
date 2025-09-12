@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: RRF5mEkKkdjfAC5HCRZUGCoSxYQub2a8rGwYRv168HA=
+  version: GXwT3uBZQ5VhQhxRV0L4Ixh06jrT+VKtcosYNeH8/rU=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -15,7 +15,8 @@ paths:
     post:
       tags:
         - AppIO-PN-Mandate-Create
-      summary: >-
+      summary: Crea una delega temporanea in stato PENDING
+      description: >-
         Crea una nuova delega in stato PENDING che in seguito all'accettazione
         può permettere l'accesso temporaneo ad una notifica. Restituisce i dati
         della delega in caso di successo

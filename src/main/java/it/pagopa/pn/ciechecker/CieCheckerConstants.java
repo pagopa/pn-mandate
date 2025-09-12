@@ -35,4 +35,10 @@ public class CieCheckerConstants {
     public static final String EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR = "No Provider supports a CertPathValidatorSpi implementation for the specified algorithm";
     public static final String EXC_INVALID_PARAMETER_CERTPATHVALIDATOR = "The specified parameters or the type of the specified CertPath are inappropriate for this CertPathValidator";
     public static final String EXC_IOEXCEPTION = "KO_IOEXCEPTION";
+    public static final String EXC_NO_HASH_ALGORITHM_SOD = "Unable to determine hash algorithm from SOD";
+    public static final String EXC_UNSUPPORTED_HASH_ALGORITHM_SOD = "Unsupported hash algorithm for SOD";
+    public static final String EXC_NO_EXPECTED_HASHES_FOUND_SOD = "No expected hashes found in SOD";
+    public static final String EXC_NOTFOUND_DIGEST = "One ore more digest not found.";
+    public static final String EXC_NOTFOUND_MRTD_SOD = "Mrtd SOD is empty: must be present";
 }
+

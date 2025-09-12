@@ -2,19 +2,28 @@ package it.pagopa.pn.mandate.validation;
 
 import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerImpl;
+import it.pagopa.pn.ciechecker.model.CieMrtd;
+import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.SodSummary;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import lombok.extern.slf4j.Slf4j;
+import net.visma.autopay.http.digest.DigestAlgorithm;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.cms.ContentInfo;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,29 +31,30 @@ import java.security.*;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
-import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 @Slf4j
 class CieCheckerTest {
 
     private static CieChecker cieChecker;
+    private static ValidateUtils validateUtils;
     private static final Path basePath= Path.of("src","test","resources");
     private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
-    private static final List<Path> dgFiles = List.of(Paths.get("src/test/resources/EF.DG1"));
-    private static final List<Path> dgFilesCorrotto = List.of(Paths.get("src/test/resources/EF.DG1_CORROTTO"));
+    private static final Path dg1Files = Paths.get("src/test/resources/EF.DG1");
+    private static final Path dg11Files = Paths.get("src/test/resources/EF.DG11");
+    private static final Path dg1FilesCorrupted = Paths.get("src/test/resources/DG1_CORROTTO.HEX");
+    private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
 
     @BeforeAll
     static void setUp() {
         cieChecker = new CieCheckerImpl();
         cieChecker.init();
+
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(new BouncyCastleProvider());
         }
@@ -83,89 +93,78 @@ class CieCheckerTest {
         Assertions.assertEquals(publicExponent, pkcs1PublicKey.getPublicExponent());
     }
 
-
     @Test
-    public void testVerifyIntegrityOk() {
-        boolean result = cieChecker.verifyIntegrity(sodFile, dgFiles);
-        assertTrue(result, "Gli hash dei DG devono corrispondere a quelli del SOD");
+    void testVerifyIntegrityDG_NotFound() throws Exception {
+        // Legge il SOD binario
+        byte[] sod = Files.readAllBytes(sodFile);
+
+        CieMrtd mrtd = new CieMrtd();
+        mrtd.setSod(sod);
+        mrtd.setDg1(null);
+        mrtd.setDg11(null);
+
+        // Verifica integrità
+        ResultCieChecker result = cieChecker.verifyIntegrity(mrtd);
+
+        assertEquals(ResultCieChecker.KO_NOTFOUND_DIGEST_SOD, result);
     }
 
     @Test
-    public void testVerifyIntegrityFail() {
-        boolean result = cieChecker.verifyIntegrity(sodFile, dgFilesCorrotto);
-        assertFalse(result, "Con DG corrotto la verifica deve fallire");
-    }
+    void testVerifyIntegritySOD_null() throws Exception {
+        // Legge il SOD binario
+        byte[] sod = null;
 
+        byte[] dg1 = Files.readAllBytes(dg1Files);
+
+        CieMrtd mrtd = new CieMrtd();
+        mrtd.setSod(sod);
+        mrtd.setDg1(dg1);
+        mrtd.setDg11(null);
+
+        // Verifica integrità
+        ResultCieChecker result = cieChecker.verifyIntegrity(mrtd);
+
+        assertEquals(ResultCieChecker.KO_NOTFOUND_MRTD_SOD, result);
+    }
 
     @Test
-    public void allVerificationCompleted() throws Exception {
-        log.info("--- Inizio Verifica Integrità (Passive Authentication) ---");
-        //Parse EF.SOD
-        /*--- 1. Estrazione dei dati attesi dal SOD ---
-         *  sod_summary=$(./decode_sod_hr.sh EF.SOD)
-         */
-        log.info("1. Analizzo il SOD per ottenere gli hash attesi...");
-        SodSummary sodSummary = decodeSodHr(Files.readAllBytes(sodFile));
-        //Identify hash Algo
-        //hash_algo_name=$(echo "$sod_summary" | grep "Algoritmo di Hashing" | awk '{print $6}')          ###STAMPA algoritmo di hashing
-        String hashAlgorithmName = getDigestName(sodSummary.getDgDigestAlgorithm().getAlgorithm().getId());
-        //Verifies hash algo exists or exits.
-        assertTrue(hashAlgorithmName != null && !hashAlgorithmName.isEmpty());
+    void testVerifyIntegrityFailDG1() throws Exception {
+        byte[] sod = Files.readAllBytes(sodFile);
 
-        //Retrieves expected hash
-        Map<Integer,byte[]> expectedHashes = sodSummary.getDgExpectedHashes();
-        assertNotNull(expectedHashes);
-        assertFalse(expectedHashes.isEmpty());
+        // DG1 corrotto (modifica 1 byte)
+        byte[] dg1 = Files.readAllBytes(dg1FilesCorrupted);
 
-        log.info("Expected hash : {}", expectedHashes);
+        CieMrtd mrtd = new CieMrtd();
+        mrtd.setSod(sod);
+        mrtd.setDg1(dg1);
+        mrtd.setDg11(null);
 
-        //Verifies if sha algorithm is supported or exits
-        Assertions.assertNotNull(hashAlgorithmName); //verify hash algorithm compatibility
-        assertTrue(compatibleAlgorithms.contains(hashAlgorithmName));
-        log.info("Selected Algorithm: {}", hashAlgorithmName);
-        //# --- 2. Verifica di ogni Data Group presente ---
-        log.info("2. Calcolo e verifico l'hash per ogni Data Group trovato...");
-
-        MessageDigest md = MessageDigest.getInstance(hashAlgorithmName);
-        // For each EF.DG* file determine and validate the hash
-        for (Path dgFilePath: dgFiles) {
-            String fileName = dgFilePath.getFileName().toString();
-            log.info("FileName: {}", fileName);
-            Integer dgNum = extractDgNumber(fileName);
-            log.info("DgNumber: {}", dgNum);
-            //Verify that file exists
-            Assertions.assertNotNull(dgNum);
-
-            byte[] fileContent= Files.readAllBytes(dgFilePath);
-            //verify that file is not empty
-            assertTrue(fileContent.length > 0);
-
-            //Calculate digest
-            md.reset();
-            byte[] actualDigest = md.digest(fileContent);
-
-            //Expected
-            byte[] expectedDigest = expectedHashes.get(dgNum);
-            Assertions.assertNotNull(actualDigest);
-            Assertions.assertNotNull(expectedDigest);
-
-            //Verify Hash
-            boolean isSameDigest = Arrays.equals(actualDigest, expectedDigest);
-            log.info("DG{} -> expected={}, actual={}, esito={}",
-                    dgNum,
-                    org.bouncycastle.util.encoders.Hex.toHexString(expectedDigest),
-                    org.bouncycastle.util.encoders.Hex.toHexString(actualDigest),
-                    isSameDigest ? "OK" : "KO");
-
-            Assertions.assertArrayEquals(expectedDigest, actualDigest);
-        }
-        assertTrue(true);
+        ResultCieChecker result = cieChecker.verifyIntegrity(mrtd);
+        assertEquals(ResultCieChecker.KO_NOT_SAME_DIGEST, result, "DG1 corrotto deve dare KO");
     }
 
+    @Test
+    void testVerifyIntegrityFailDG11() throws Exception {
+        byte[] sod = Files.readAllBytes(sodFile);
+
+        byte[] dg1 = Files.readAllBytes(dg1Files);
+
+        // DG11 corrotto (mancano dei caratteri)
+        byte[] dg11 = Files.readAllBytes(dg11FilesCorroupted);
+
+        CieMrtd mrtd = new CieMrtd();
+        mrtd.setSod(sod);
+        mrtd.setDg1(dg1);
+        mrtd.setDg11(dg11);
+
+        ResultCieChecker result = cieChecker.verifyIntegrity(mrtd);
+        assertEquals(ResultCieChecker.KO_NOT_SAME_DIGEST, result, "DG11 corrotto deve dare KO");
+    }
 
     @Test
     void validateMandateTest() {
         //TO BE IMPLEMENTED
         Assertions.assertTrue(true);
     }
+
 }

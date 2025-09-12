@@ -1,5 +1,7 @@
 package it.pagopa.pn.ciechecker;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
@@ -24,17 +26,19 @@ import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Security;
+import java.security.cert.CertificateException;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
 
-
+@Slf4j
 public class CieCheckerImpl implements CieChecker {
 
     private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
@@ -58,6 +62,7 @@ public class CieCheckerImpl implements CieChecker {
             //16050 NIS: nis_verify_challenge.sh - verifica del nonce - verificare la firma di una challenge IAS
 
             //16051 MRTD: verify_integrity.sh
+            verifyIntegrity(data.getCieMrtd());
 
             //16052 MRTD: verify_signature.sh
             //verifyDigitalSignature(data.getCieMrtd().getSod(), data.getCieMrtd().getCscaAnchor());
@@ -203,15 +208,22 @@ public class CieCheckerImpl implements CieChecker {
      * In caso di eccezione ritorna false (puoi cambiare la gestione se preferisci lanciare eccezioni).
      */
     @Override
-    public boolean verifyIntegrity(Path sodPath, List<Path> dgPaths) {
-        Objects.requireNonNull(sodPath, "sodPath null");
+    public ResultCieChecker verifyIntegrity(CieMrtd mrtd) {
         try {
-            byte[] sodBytes = Files.readAllBytes(sodPath);
-            List<Path> dgs = dgPaths != null ? dgPaths : Collections.emptyList();
-            return verifyIntegrityCore(sodBytes, dgs);
+            if(mrtd.getSod() == null){
+                throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_MRTD_SOD);
+            }
+            byte[] dg1 = mrtd.getDg1() != null ? mrtd.getDg1() : null;
+            byte[] dg11 = mrtd.getDg11() != null ? mrtd.getDg11() : null;
+            System.out.println("DG11: "+dg11);
+
+            return verifyIntegrityCore(mrtd.getSod(), dg1, dg11);
+        } catch (CieCheckerException e) {
+            log.error("Validation error in verifyIntegrity: {}", e.getMessage());
+            return e.getResult();
         } catch (Exception e) {
-            System.err.println("Error in verifyIntegrity: " + e.getMessage());
-            return false;
+            log.error("Unexpected error in verifyIntegrity: {}", e.getMessage());
+            return ResultCieChecker.KO;
         }
     }
 
@@ -222,71 +234,40 @@ public class CieCheckerImpl implements CieChecker {
      *
      * Ritorna true solo se tutti i DG verificati combaciano.
      */
-    public boolean verifyIntegrityCore(byte[] sodBytes, List<Path> dgFiles) throws Exception {
-        // 1) decodifica SOD -> SodSummary (ValidateUtils contiene decodeSodHr)
+    public ResultCieChecker verifyIntegrityCore(byte[] sodBytes, byte[] dg1, byte[] dg11) throws Exception {
+        // 1) Decodifica SOD
         SodSummary sodSummary = decodeSodHr(sodBytes);
 
-        // 2) identifica algoritmo di digest (OID -> nome MessageDigest)
+        // 2) Identifica algoritmo di digest
         String hashAlgorithmName = getDigestName(sodSummary.getDgDigestAlgorithm().getAlgorithm().getId());
         if (hashAlgorithmName == null || hashAlgorithmName.isBlank()) {
-            throw new CieCheckerException("Unable to determine hash algorithm from SOD");
+            throw new CieCheckerException(ResultCieChecker.KO_HASH_ALGORITHM_SOD);
         }
-
-        // 3) verifica compatibilità algoritmo
         if (!COMPATIBLE_ALGOS.contains(hashAlgorithmName)) {
-            throw new CieCheckerException("Unsupported hash algorithm: " + hashAlgorithmName);
+            log.error("Unsupported hash algorithm: {}", hashAlgorithmName);
+            throw new CieCheckerException(ResultCieChecker.KO_UNSUPPORTED_ALGORITHM_SOD);
         }
-        System.out.println("Selected Algorithm: " + hashAlgorithmName);
 
-        // 4) recupera map degli hash attesi
-        Map<Integer, byte[]> expectedHashes = sodSummary.getDgExpectedHashes();
-        if (expectedHashes == null || expectedHashes.isEmpty()) {
-            throw new CieCheckerException("No expected hashes found in SOD");
-        }
-        System.out.println("Expected hash : " + expectedHashes);
-
-        // 5) calcolo e verifica per ogni DG passato
         MessageDigest md = MessageDigest.getInstance(hashAlgorithmName);
 
-        for (Path dgPath : dgFiles) {
-            String fileName = dgPath.getFileName().toString();
-            Integer dgNum = extractDgNumber(fileName);
-            if (dgNum == null) {
-                throw new CieCheckerException("Unable to extract DG number from filename: " + fileName);
-            }
-
-            // verifica esistenza e lettura file
-            byte[] fileContent = Files.readAllBytes(dgPath);
-            if (fileContent.length == 0) {
-                throw new CieCheckerException("DG file is empty: " + dgPath);
-            }
-
-            // calcola digest
-            md.reset();
-            byte[] actualDigest = md.digest(fileContent);
-
-            // expected
-            byte[] expectedDigest = expectedHashes.get(dgNum);
-            if (expectedDigest == null) {
-                throw new CieCheckerException("No expected digest found in SOD for DG" + dgNum);
-            }
-
-            // confronto
-            boolean isSameDigest = Arrays.equals(actualDigest, expectedDigest);
-            System.out.printf("DG%d -> expected=%s, actual=%s, esito=%s%n",
-                    dgNum,
-                    bytesToHex(expectedDigest),
-                    bytesToHex(actualDigest),
-                    isSameDigest ? "OK" : "KO");
-
-            if (!isSameDigest) {
-                throw new CieCheckerException("DG not machtes: actualDG="+ Arrays.toString(actualDigest) +" expectedDG="+ Arrays.toString(expectedDigest));
-            }
+        Map<Integer, byte[]> expectedHashes = sodSummary.getDgExpectedHashes();
+        if (expectedHashes == null || expectedHashes.isEmpty()) {
+            throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_EXPECTED_HASHES_SOD);
         }
-        // se arrivo qui tutti i DG verificati sono ok
-        return true;
+
+        // 3) Verifica DG1 e DG11
+        verifyDigestList(md, dg1, expectedHashes, 1);
+        verifyDigestList(md, dg11, expectedHashes, 11);
+
+        return ResultCieChecker.OK;
     }
 
+    private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum) throws CieCheckerException {
+            if (!isVerifyDigest(md, dg, expectedHashes.get(dgNum))) {
+                throw new CieCheckerException(ResultCieChecker.KO_NOT_SAME_DIGEST);
+            }
+
+    }
 
     /**
      * Verifica la validità della catena di fiducia del SOD
@@ -357,4 +338,5 @@ public class CieCheckerImpl implements CieChecker {
             //return ResultCieChecker.KO_EXC_IOEXCEPTION;
         }
     }
+
 }

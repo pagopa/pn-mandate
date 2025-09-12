@@ -25,4 +25,9 @@ public class CieCheckerConstants {
     public static final String EXC_NO_SIGNED_ATTRIBUTE = "No signed Attributes found";
     public static final String EXC_NO_MATCH_NIS_HASHES_DATAGROUP ="The NIS hashes DataGroup do not match with the expected value";
     public static final String EXC_NO_CERTIFICATE_NOT_SIGNED = "the certificate has not been signed";
+    public static final String EXC_NO_HASH_ALGORITHM_SOD = "Unable to determine hash algorithm from SOD";
+    public static final String EXC_UNSUPPORTED_HASH_ALGORITHM_SOD = "Unsupported hash algorithm for SOD";
+    public static final String EXC_NO_EXPECTED_HASHES_FOUND_SOD = "No expected hashes found in SOD";
+    public static final String EXC_NOTFOUND_DIGEST = "One ore more digest not found.";
+    public static final String EXC_NOTFOUND_MRTD_SOD = "Mrtd SOD is empty: must be present";
 }

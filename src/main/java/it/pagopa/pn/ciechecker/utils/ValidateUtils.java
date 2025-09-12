@@ -2,6 +2,7 @@ package it.pagopa.pn.ciechecker.utils;
 
 import java.io.IOException;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
+import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.SodSummary;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -639,17 +640,25 @@ public class ValidateUtils {
         return Integer.parseInt(digits);
     }
 
-    public static byte[] calculateDigest(byte[] data, String algorithm) throws Exception {
-        MessageDigest md = MessageDigest.getInstance(algorithm);
-        return md.digest(data);
+
+    /**
+     * Verifica che il digest calcolato corrisponda a quello atteso
+     */
+    public static boolean isVerifyDigest(MessageDigest md, byte[] dgContent, byte[] expectedDigest) {
+        if (dgContent == null || dgContent.length == 0 || expectedDigest == null) {
+            throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_DIGEST_SOD);
+        }
+        md.reset();
+        byte[] actualDigest = md.digest(dgContent);
+        return Arrays.equals(actualDigest, expectedDigest);
     }
 
-    public static Integer extractDgNumber(String filename) {
-        var p = java.util.regex.Pattern.compile("(?i)^(?:EF\\.)?DG0*(\\d+)(?:\\.[A-Za-z0-9]+)?$");
-        var m = p.matcher(filename);
-        var parsed = m.find() ? Integer.parseInt(m.group(1)) : null;
-        return parsed;
-    }
+//    public static Integer extractDgNumber(String filename) {
+//        var p = java.util.regex.Pattern.compile("(?i)^(?:EF\\.)?DG0*(\\d+)(?:\\.[A-Za-z0-9]+)?$");
+//        var m = p.matcher(filename);
+//        var parsed = m.find() ? Integer.parseInt(m.group(1)) : null;
+//        return parsed;
+//    }
 
     //creazione oggetto rappresentante EF.SOD -> decode_sod_hr.sh
     public static SodSummary decodeSodHr(byte[] sodBytes) throws Exception {

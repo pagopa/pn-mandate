@@ -19,6 +19,6 @@ public interface CieChecker {
     public boolean extractChallengeFromSignature(byte[] signature, byte[] pubKey,byte[] nis) throws NoSuchAlgorithmException, InvalidKeySpecException, CryptoException;
     public boolean verificationSodCie(CieIas cieIas);
     public boolean verifyDigitalSignatureMrtd(CieMrtd cieMrtd);
-    boolean verifyIntegrity(Path sodPath, List<Path> dgPaths);
+    ResultCieChecker verifyIntegrity(CieMrtd cieMrtd);
 
 }

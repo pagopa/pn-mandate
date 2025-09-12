@@ -51,18 +51,28 @@ public class CieCheckerImpl implements CieChecker {
     }
 
     @Override
-    public ResultCieChecker validateMandate(CieValidationData data) {
-       
+    public ResultCieChecker validateMandate(CieValidationData data)  {
+        try {
+            //16048-bis - NIS: nis_verify_sod.sh
+            verifyDigitalSignature(data.getCieIas().getSod(), data.getCieIas().getCscaAnchor());
 
-        //NIS: nis_verify_sod_passive_auth.sh
-        verificationSodCie(data.getCieIas());
+            //16049 NIS: nis_verify_sod_passive_auth.sh
+            verifySodPassiveAuthCie(data.getCieIas());
 
-        //MRTD: verify_integrity.sh
-        verifyIntegrity(data.getCieMrtd());
+            //16050 NIS: nis_verify_challenge.sh - verifica del nonce - verificare la firma di una challenge IAS
 
-        //MRTD: verify_signature.sh
-        verifyDigitalSignatureMrtd( data.getCieMrtd());
-        return ResultCieChecker.OK;
+            //16051 MRTD: verify_integrity.sh
+            verifyIntegrity(data.getCieMrtd());
+
+            //16052 MRTD: verify_signature.sh
+            //verifyDigitalSignature(data.getCieMrtd().getSod(), data.getCieMrtd().getCscaAnchor());
+
+            return ResultCieChecker.OK;
+
+        }catch (CieCheckerException e ){
+            System.err.println("CieCheckerException: " + e.getResult().getValue());
+            return e.getResult();
+        }
     }
 
     /**
@@ -115,7 +125,7 @@ public class CieCheckerImpl implements CieChecker {
      * @param cieIas CieIas
      * @return boolean
      */
-    public boolean verificationSodCie(CieIas cieIas) {
+    public boolean verifySodPassiveAuthCie(CieIas cieIas) {
 
         try {
             if (cieIas == null || cieIas.getSod() == null || cieIas.getNis() == null ) {
@@ -167,19 +177,20 @@ public class CieCheckerImpl implements CieChecker {
             /*******************************************************************
              **  PASSO 3: VERIFICA FINALE DELLA FIRMA DIGITALE
              ********************************************************************/
-        /* NB: LE DUE SEGUENTI VERIFICHE SONO USATE NELLO SCRIPT SHELL E QUI SOLO COME TEST
-        if (!ValidateUtils.veryfySignedAttrIsSet(cms)) {
-            //System.err.println("SignedAttribute content do not match the expected value");
-            return false;
-        }
-        if (!ValidateUtils.veryfySignatures(cms)) {
-            //System.err.println("Signature do not match the expected value");
-            return false;
-        }
-        */
-            return ValidateUtils.verifyDigitalSignature(cms);
+            /* NB: LE DUE SEGUENTI VERIFICHE SONO USATE NELLO SCRIPT SHELL E QUI SOLO COME TEST
+            if (!ValidateUtils.veryfySignedAttrIsSet(cms)) {
+                //System.err.println("SignedAttribute content do not match the expected value");
+                return false;
+            }
+            if (!ValidateUtils.veryfySignatures(cms)) {
+                //System.err.println("Signature do not match the expected value");
+                return false;
+            }
+            */
+            ResultCieChecker result = ValidateUtils.verifyDigitalSignature(cms);
+            return result.getValue().equals("OK");
 
-        } catch (CieCheckerException | CMSException | IOException | CertificateException | NoSuchAlgorithmException | OperatorCreationException e ){
+        } catch (CieCheckerException | CMSException | IOException | NoSuchAlgorithmException  e ){
             System.err.println("Error during verification SOD: " + e.getMessage());
             return false;
         }
@@ -215,7 +226,6 @@ public class CieCheckerImpl implements CieChecker {
             return ResultCieChecker.KO;
         }
     }
-
 
     /**
      * esegue la logica vera e propria e propaga le eccezioni.
@@ -260,38 +270,72 @@ public class CieCheckerImpl implements CieChecker {
     }
 
     /**
-     * Verifica la validità della firma e della catena di fiducia del SOD
-     * verify_signature.sh
+     * Verifica la validità della catena di fiducia del SOD
      *
-     * @param cieMrtd CieMrtd
-     * @return boolean
+     * @param cms CMSSignedData
+     * @param cscaAnchors List<byte[]>
+     * @return ResultCieChecker
      */
-    @Override
-    public boolean verifyDigitalSignatureMrtd(CieMrtd cieMrtd) {
+    public ResultCieChecker verifyTrustChain(CMSSignedData cms, List<byte[]> cscaAnchors) throws IOException {
         try {
-            if (cieMrtd == null || cieMrtd.getSod() == null || cieMrtd.getCscaAnchor() == null || cieMrtd.getCscaAnchor().isEmpty()) {
+            /*if (cieMrtd == null || cieMrtd.getSod() == null || cieMrtd.getCscaAnchor() == null || cieMrtd.getCscaAnchor().isEmpty()) {
                 throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
             }
             CMSSignedData cms = new CMSSignedData(cieMrtd.getSod());
+             */
             X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
             byte[] dscDer = holder.getEncoded();
-
             //verifica se il certificato contenuto in $DSC_DER_FILE è stato firmato da una delle autorità di certificazione presenti nel file $TRUST_BUNDLE_PEM.
-            if(!ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, cieMrtd.getCscaAnchor(), new Date())) {
-                System.err.println(EXC_NO_CERTIFICATE_NOT_SIGNED);
-                return false;
+            ResultCieChecker result = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, cscaAnchors, new Date());
+            if (!result.getValue().equals(OK)) {
+                System.err.println(EXC_CERTIFICATE_NOT_SIGNED);
+                //return ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED;
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED);
             }
             return ValidateUtils.verifyDigitalSignature(cms);
-
-        } catch (CMSException e) {
-            System.err.println("Error during verification SOD: " + e.getMessage());
-            return false;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (CertificateException e) {
+        }catch (CieCheckerException cce) {
+            return cce.getResult();
+        }
+        /*catch (CertificateException e) {
             throw new RuntimeException(e);
         } catch (OperatorCreationException e) {
             throw new RuntimeException(e);
+        }*/
+    }
+
+
+    /**
+     * Verifica la validità della firma e della catena di fiducia del SOD
+     * nis_verify_sod.sh / verify_signature.sh
+     *
+     * @param sod byte[]
+     * @param cscaTrustAnchors List<byte[]>
+     * @return boolean
+     */
+    @Override
+    public ResultCieChecker verifyDigitalSignature(byte[] sod, List<byte[]> cscaTrustAnchors) {
+
+        try {
+            //if (Objects.isNull(sod) || sod.length == 0 || Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty())
+            //    throw new CieCheckerException( ResultCieChecker.KO_INPUT_PARAMETER_NULL);
+            if (Objects.isNull(sod) || sod.length == 0) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
+            if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(NO_CSCA_ANCHORS_PROVIDED);
+
+            CMSSignedData cms = new CMSSignedData(sod);
+            ResultCieChecker result = verifyTrustChain(cms, cscaTrustAnchors);
+            if( !(result.getValue().equals(OK)) )
+                throw new CieCheckerException(result);
+            else
+                return result;
+        }catch(CieCheckerException cc){
+            System.err.println("CieCheckerException: " + cc.getMessage());
+            throw new CieCheckerException(cc.getMessage());
+        }catch(CMSException cmse){
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA);
+            //return ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA;
+        }catch(IOException ioe){
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION);
+            //return ResultCieChecker.KO_EXC_IOEXCEPTION;
         }
     }
 

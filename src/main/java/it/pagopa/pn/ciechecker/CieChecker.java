@@ -14,11 +14,12 @@ import java.util.List;
 public interface CieChecker {
 
     void init();
-    ResultCieChecker validateMandate(CieValidationData data);
+    ResultCieChecker validateMandate(CieValidationData data) throws Exception;
     boolean verifyChallengeFromSignature(byte[] signature, byte[] pubKey, byte[] nis) throws NoSuchAlgorithmException, InvalidKeySpecException, CryptoException;
     public boolean extractChallengeFromSignature(byte[] signature, byte[] pubKey,byte[] nis) throws NoSuchAlgorithmException, InvalidKeySpecException, CryptoException;
-    public boolean verificationSodCie(CieIas cieIas);
-    public boolean verifyDigitalSignatureMrtd(CieMrtd cieMrtd);
+    public boolean verifySodPassiveAuthCie(CieIas cieIas);
+    //public boolean verifyDigitalSignatureMrtd(CieMrtd cieMrtd);
     ResultCieChecker verifyIntegrity(CieMrtd cieMrtd);
 
+    ResultCieChecker verifyDigitalSignature(byte[] sod, List<byte[]> cscaAnchors);
 }

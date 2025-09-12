@@ -1,9 +1,7 @@
 package it.pagopa.pn.ciechecker.exception;
 
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
-import lombok.Getter;
 
-@Getter
 public class CieCheckerException extends RuntimeException{
 
     private ResultCieChecker result;
@@ -15,6 +13,10 @@ public class CieCheckerException extends RuntimeException{
     public CieCheckerException(ResultCieChecker result) {
         super(result.getValue());
         this.result = result;
+    }
+
+    public ResultCieChecker getResult() {
+        return result;
     }
 
 }

@@ -11,6 +11,7 @@ import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import net.visma.autopay.http.digest.DigestAlgorithm;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.cms.Attribute;
@@ -41,6 +42,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 
+import static it.pagopa.pn.ciechecker.CieCheckerConstants.OK;
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.X_509;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.decodeSodHr;
 import static org.junit.jupiter.api.Assertions.*;
@@ -135,7 +137,10 @@ class ValidateUtilsTest {
                 })
                 .collect(Collectors.toList());
 
-        Assertions.assertFalse(ValidateUtils.verifyDscAgainstTrustBundle(dscDer, wrongBundle, null));
+        //ResultCieChecker result = ValidateUtils.verifyDscAgainstTrustBundle(dscDer, wrongBundle, null);
+        //Assertions.assertFalse((result.getValue().equals("OK")));
+        Assertions.assertThrows(CieCheckerException.class,
+        () -> ValidateUtils.verifyDscAgainstTrustBundle(dscDer, wrongBundle, null));
     }
 
     @Test
@@ -151,9 +156,10 @@ class ValidateUtilsTest {
                 .collect(Collectors.joining());
         byte[] caBlob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
 
-        Assertions.assertTrue(
-                ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(caBlob), null)
-        );
+        ResultCieChecker resultCieChecker =
+                ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(caBlob), null);
+        System.out.println("TEST resultCieChecker: " + resultCieChecker.getValue());
+        Assertions.assertTrue(resultCieChecker.getValue().equals(OK));
     }
 
     @Test
@@ -168,9 +174,10 @@ class ValidateUtilsTest {
                 .collect(Collectors.joining());
         byte[] caBlob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
 
-        Assertions.assertTrue(
-                ValidateUtils.verifyDscAgainstAnchorBytes(dscPem, List.of(caBlob), null)
-        );
+        ResultCieChecker resultCieChecker =ValidateUtils.verifyDscAgainstAnchorBytes(dscPem, List.of(caBlob), null);
+        System.out.println("TEST resultCieChecker: " + resultCieChecker.getValue());
+
+        Assertions.assertTrue(resultCieChecker.getValue().equals(OK));
     }
 
     @Test
@@ -202,9 +209,10 @@ class ValidateUtilsTest {
         }
         Assertions.assertTrue(removed > 0);
 
-        Assertions.assertFalse(
-                ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, wrongAnchorBlobs, null)
-        );
+        //ResultCieChecker resultCieChecker = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, wrongAnchorBlobs, null);
+        //Assertions.assertFalse(resultCieChecker.getValue().equals(OK));
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, wrongAnchorBlobs, null));
     }
 
     @Test
@@ -215,32 +223,51 @@ class ValidateUtilsTest {
                 .collect(Collectors.joining());
         byte[] caBlob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
 
-        Assertions.assertFalse(ValidateUtils.verifyDscAgainstAnchorBytes(null, List.of(caBlob), null));
+        //Sod null
+        //ResultCieChecker resultSODNull =ValidateUtils.verifyDscAgainstAnchorBytes(null, List.of(caBlob), null);
+        //Assertions.assertFalse(resultSODNull.getValue().equals(OK));
+        Assertions.assertThrows(CieCheckerException.class,
+                () ->ValidateUtils.verifyDscAgainstAnchorBytes(null, List.of(caBlob), null));
 
-        // anchors null
+
+                // anchors null
         byte[] pkcs7 = extractCertificateByteArray();
         byte[] dscDer = ValidateUtils.extractDscCertDer(pkcs7).getEncoded();
-        Assertions.assertFalse(ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, null, null));
+        //ResultCieChecker resultNull = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, null, null);
+        //Assertions.assertFalse(resultNull.getValue().equals(OK));
+        Assertions.assertThrows(CieCheckerException.class,
+                        () ->ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, null, null));
+
 
         // anchors empty
-        Assertions.assertFalse(ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(), null));
+        //ResultCieChecker resultEmpty = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(), null);
+        //Assertions.assertFalse(resultEmpty.getValue().equals(OK));
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(), null));
 
         // anchor malformed
         byte[] malformed = "INVALID".getBytes(StandardCharsets.UTF_8);
-        Assertions.assertFalse(ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(malformed), null));
+        //ResultCieChecker resultMalformed = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(malformed), null);
+        //Assertions.assertFalse(resultMalformed.getValue().equals(OK));
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(malformed), null));
     }
 
     @Test
     void verify_invalid_inputs() {
-        // dsc non-parsable
+        System.out.println(" dsc non-parsable ");
         Assertions.assertThrows(CieCheckerException.class,
                 () -> ValidateUtils.verifyDscAgainstTrustBundle(new byte[]{0x01,0x02}, List.of(), null));
 
-        // dsc len 0 ⇒ false
-        Assertions.assertFalse(ValidateUtils.verifyDscAgainstTrustBundle(new byte[0], List.of(), null));
+        System.out.println(" dsc len 0 ⇒ false ");
+        //Assertions.assertFalse(ValidateUtils.verifyDscAgainstTrustBundle(new byte[0], List.of(), null));
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> ValidateUtils.verifyDscAgainstTrustBundle(new byte[0], List.of(), null));
 
-        // anchors null ⇒ false
-        Assertions.assertFalse(ValidateUtils.verifyDscAgainstTrustBundle(new byte[]{1}, null, null));
+        System.out.println(" anchors null ⇒ false ");
+        //Assertions.assertFalse(ValidateUtils.verifyDscAgainstTrustBundle(new byte[]{1}, null, null));
+        Assertions.assertThrows(CieCheckerException.class,
+                () ->ValidateUtils.verifyDscAgainstTrustBundle(new byte[]{1}, null, null));
     }
 
     // parseCscaAnchors
@@ -263,7 +290,7 @@ class ValidateUtilsTest {
 
 
     @Test
-    void extractPublicKeyFromHolder() throws IOException, DecoderException, CMSException, CertificateException {
+    void extractPublicKeyFromHolder() throws IOException, DecoderException, CMSException {
         System.out.println("TEST extractPublicKeyFromHolder - INIT");
         System.out.println(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
         String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
@@ -521,7 +548,8 @@ class ValidateUtilsTest {
         byte[] sodIasByteArray = hexFile(subString);
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
-        Assertions.assertTrue(ValidateUtils.verifyDigitalSignature(cms));
+        ResultCieChecker resultCieChecker = ValidateUtils.verifyDigitalSignature(cms);
+        Assertions.assertTrue(resultCieChecker.getValue().equals("OK"));
     }
 
     @Test
@@ -612,7 +640,49 @@ class ValidateUtilsTest {
         CieCheckerImpl cieChecker = new CieCheckerImpl();
         cieChecker.init();
 
-        Assertions.assertTrue(cieChecker.verifyDigitalSignatureMrtd(cieMrtd));
+        //Assertions.assertTrue(cieChecker.verifyDigitalSignatureMrtd(cieMrtd));
+        ResultCieChecker resultCieChecker = cieChecker.verifyDigitalSignature(efSod, List.of(blob));
+        System.out.println("TEST OK - resultCieChecker_2.getValue(): " + resultCieChecker.getValue());
+        Assertions.assertTrue(resultCieChecker.getValue().equals("OK"));
+
+        //ResultCieChecker resultCieChecker_1 = cieChecker.verifyDigitalSignature(null, List.of(blob));
+        //System.out.println("sod null - resultCieChecker_2.getValue(): " + resultCieChecker_1.getValue());
+        //Assertions.assertFalse(resultCieChecker_1.getValue().equals("OK"));
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> cieChecker.verifyDigitalSignature(null, List.of(blob)));
+
+        //ResultCieChecker resultCieChecker_2 = cieChecker.verifyDigitalSignature(efSod, null);
+        //System.out.println("cscaAnchors null - resultCieChecker_2.getValue(): " + resultCieChecker_2.getValue());
+        //Assertions.assertFalse(resultCieChecker_2.getValue().equals("OK"));
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> cieChecker.verifyDigitalSignature(efSod, null));
+
+        String efSodPem = """
+        -----BEGIN PUBLIC KEY-----
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAytYrOy71s5KcL8FpSOwC
+        MI/6+ZyaZkjMMbl/BDBtC59hlt8q5CptJihGqaRl5LeLJG7OqMfRteLtpHmsac5r
+        ZmTUncm+mCPMKy1p8EDpYscHneyFGnbbSyH9xKt8QLHV/O8d96dGl/iYNsk7wF8R
+        ihEy62qwfVUgeqhpaVNfEg1FYSOLLbR9OcBKRLamZcJrOqd5vuGNHZKyToqoWqhS
+        ZntbKyZIC93ibnLiQkhetPnrZoCm1s81v8EW6ASbhpWaJEcv3xwe9nZxqjr9tMkO
+        x9sOAT7gIN2hBQZasVxeCelfCZRjyh+P0j37DMpBaPCMlWLUeYQgKrd+aJty
+        /QIDAQAB
+        -----END PUBLIC KEY-----
+        """;
+        // WHEN: confronto gli encoding SPKI DER
+        byte[] efSodErrato = decodePublicKeyPemToDer(efSodPem);
+        //ResultCieChecker resultCieChecker_3 = cieChecker.verifyDigitalSignature(efSodErrato, List.of(blob));
+        //System.out.println("efSodErrato - resultCieChecker_3.getValue(): " + resultCieChecker_3.getValue());
+        //Assertions.assertFalse(resultCieChecker_3.getValue().equals("OK"));
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> cieChecker.verifyDigitalSignature(efSodErrato, List.of(blob)));
+
+
+        byte[] blobErrato = ArrayUtils.addAll(efSod, blob);
+        //ResultCieChecker resultCieChecker_4 = cieChecker.verifyDigitalSignature(efSod, List.of(blobErrato));
+        //System.out.println("blobErrato - resultCieChecker_4.getValue(): " + resultCieChecker_4.getValue());
+        //Assertions.assertFalse(resultCieChecker_4.getValue().equals("OK"));
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> cieChecker.verifyDigitalSignature(efSod, List.of(blobErrato)));
 
     }
 

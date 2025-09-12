@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: GXwT3uBZQ5VhQhxRV0L4Ixh06jrT+VKtcosYNeH8/rU=
+  version: nugbJIq1zkBwzbaHZvzyJE8oXs1Pl6jULsT/8tLG5Kc=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -291,36 +291,6 @@ components:
           description: valore del token QR-Code presente sull'avviso di avvenuta ricezione
           pattern: ^[ -~]*$
           maxLength: 300
-    FilterOptions:
-      type: array
-      maxItems: 5
-      description: >
-        Elenco di filtri distinti applicabili alla delega (massimo 5). Ogni
-        elemento rappresenta un filtro e i filtri sono combinati tra loro con
-        operatore AND. All'interno dello stesso filtro è applicato l'OR.
-      items:
-        type: object
-        properties:
-          iun:
-            type: array
-            items:
-              type: string
-            description: >
-              Lista di IUN/QRCode. Il QRCode è quello associato ad un AAR  e
-              permette l'individuazione di uno IUN
-          taxonomy:
-            type: array
-            items:
-              type: string
-            description: Codice tassonomico notifiche
-          sender:
-            type: array
-            items:
-              type: string
-            description: PA Id's
-      example:
-        - iun:
-            - IUN1234567890
     MandateDto:
       type: object
       properties:

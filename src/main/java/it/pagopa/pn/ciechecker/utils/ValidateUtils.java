@@ -213,10 +213,6 @@ public class ValidateUtils {
             signatures.add(signerInfo.getSignature());
         }
         // Restituisci la lista completa delle firme.
-        if (signatures.isEmpty()) {
-            throw new CMSException(CieCheckerConstants.EXC_NOFOUND_DIGITAL_SIGNATURE);
-        }
-
         return signatures;
     }
 
@@ -227,9 +223,8 @@ public class ValidateUtils {
      *
      * @param cms CMSSignedData
      * @return boolean
-     * @throws CMSException exception
      * @throws CieCheckerException exception
-     * @throws NoSuchAlgorithmException exception
+     *
      */
     public static boolean verifyMatchHashContent(CMSSignedData cms) throws CieCheckerException {
 
@@ -258,7 +253,7 @@ public class ValidateUtils {
      * @param firstOctetString byte[]
      * @param fiveOctetString ASN1OctetString
      * @return boolean
-     * @throws NoSuchAlgorithmException exception
+     *
      */
     public static boolean verifyOctetStrings(byte[] firstOctetString, ASN1OctetString fiveOctetString) throws CieCheckerException {
 
@@ -267,7 +262,7 @@ public class ValidateUtils {
             throw new CieCheckerException(EXC_NO_HASH_SIGNED_DATA);
         }
         if ( Objects.isNull(fiveOctetString)){
-            log.error("Error in verifyOctetStrings: ASN1OctetString fiveOctetString: ", fiveOctetString );
+            log.error("Error in verifyOctetStrings: ASN1OctetString fiveOctetString: {}", fiveOctetString );
             throw new CieCheckerException(EXC_NO_HASH_SIGNED_DATA);
         }
 
@@ -358,7 +353,7 @@ public class ValidateUtils {
      * Estrae la quinta OCTET STRING che contiene il digest (l'hash) dell'intera struttura di dati
      * @param signedData CMSSignedData
      * @return ASN1OctetString
-     * @throws CMSException e
+     * @throws CieCheckerException cce
      */
     public static ASN1OctetString extractHashSigned(CMSSignedData signedData) throws CieCheckerException {
         try {
@@ -431,8 +426,7 @@ public class ValidateUtils {
      * Estrazione della lista degli hash dei Data Group da un oggetto CMSSignedData
      * @param cmsData CMSSignedData
      * @return List<String>
-     * @throws CMSException e
-     * @throws IOException e
+     * @throws CieCheckerException e
      */
     public static List<String> extractDataGroupHashes(CMSSignedData cmsData) throws CieCheckerException {
         List<String> hashes = new ArrayList<>();
@@ -502,9 +496,7 @@ public class ValidateUtils {
      * @param nisSha256 byte[]
      * @return boolean
      * @throws CieCheckerException c
-     * @throws IOException ioe
-     * @throws CMSException ce
-     * @throws NoSuchAlgorithmException nsae
+     *
      */
     public static boolean verifyNisSha256FromDataGroup(CMSSignedData cmsData, byte[] nisSha256) throws CieCheckerException {
         if (Objects.isNull( nisSha256 ) || nisSha256.length == 0 ) {
@@ -514,7 +506,7 @@ public class ValidateUtils {
 
         String nisHexToCheck = calculateSha256(nisSha256);
         List<String> dataGroupList = extractDataGroupHashes(cmsData);
-        if(Objects.isNull(dataGroupList ) ) {
+        if(dataGroupList.isEmpty() ) {
             log.error("Error in verifyNisSha256FromDataGroup: " + EXC_NO_NIS_HASHES_DATAGROUP);
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_NIS_HASHES_DATAGROUP);
         }
@@ -527,7 +519,7 @@ public class ValidateUtils {
 
     }
 
-    public static boolean verifyNisPublicKeyFromDataGroup(CMSSignedData cmsData, byte[] nisSha256PublicKey) throws CieCheckerException, IOException, CMSException, NoSuchAlgorithmException {
+    public static boolean verifyNisPublicKeyFromDataGroup(CMSSignedData cmsData, byte[] nisSha256PublicKey) throws CieCheckerException {
         if (cmsData == null || nisSha256PublicKey == null) {
             throw new CieCheckerException("Input parameters NULL: CMSSignedData is " + cmsData + " - String is " + nisSha256PublicKey);
         }
@@ -677,9 +669,6 @@ public class ValidateUtils {
      * @param cms CMSSignedData
      * @return boolean
      * @throws CieCheckerException c
-     * @throws CMSException cx
-     * @throws CertificateException ce
-     * @throws OperatorCreationException ope
      */
     public static ResultCieChecker verifyDigitalSignature(CMSSignedData cms ) throws CieCheckerException {
         try {
@@ -781,7 +770,7 @@ public class ValidateUtils {
         return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
     }
 
-    public static byte[] extractPublicKeyFromSod(CMSSignedData cms) throws CMSException, PEMException {
+    public static byte[] extractPublicKeyFromSod(CMSSignedData cms) {
 
         X509CertificateHolder certHolder = extractDscCertDer(cms);
         PublicKey publicKey = extractPublicKeyFromHolder( certHolder);

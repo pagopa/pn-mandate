@@ -6,6 +6,7 @@ import it.pagopa.pn.ciechecker.CieCheckerConstants;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.SodSummary;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.icao.DataGroupHash;
@@ -42,8 +43,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.util.*;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ValidateUtils {
@@ -122,13 +121,13 @@ public class ValidateUtils {
 
      public static ResultCieChecker verifyDscAgainstAnchorBytes(byte[] dscDerOrPem,
                                                Collection<byte[]> cscaAnchorBlobs,
-                                               Date atTime) throws CieCheckerException{
+                                               Date atTime) throws CieCheckerException {
+        log.info("Invoke verifyDscAgainstAnchorBytes()");
         try {
             CertificateFactory x509Cf = CertificateFactory.getInstance(X_509);
             List<X509Certificate> anchors = parseCscaAnchors(cscaAnchorBlobs, x509Cf);
             return verifyDscAgainstTrustBundle(dscDerOrPem, anchors, atTime);
         } catch (CertificateException e) {
-            System.err.println("CertificateException: " + e.getMessage());
             log.error("Error in verifyDscAgainstAnchorBytes - CertificateException: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE);
         }
@@ -152,8 +151,8 @@ public class ValidateUtils {
     //************************************************
 
 
-    public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) {
-
+    public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) throws CieCheckerException {
+        log.info("Invoke extractDscCertDer() for cms signed content type OID={}", cms.getSignedContentTypeOID());
         Store<X509CertificateHolder> certStore = cms.getCertificates();
 
         Collection<X509CertificateHolder> matches = certStore.getMatches(null);
@@ -640,7 +639,8 @@ public class ValidateUtils {
      * @throws CertificateException ce
      * @throws OperatorCreationException ope
      */
-    public static ResultCieChecker verifyDigitalSignature(CMSSignedData cms ) {
+    public static ResultCieChecker verifyDigitalSignature(CMSSignedData cms ) throws CieCheckerException {
+        log.info("Invoke verifyDigitalSignature for cms signed content type OID={}", cms.getSignedContentTypeOID());
         try {
             SignerInformationStore signers = cms.getSignerInfos();
             Collection<SignerInformation> c = signers.getSigners();

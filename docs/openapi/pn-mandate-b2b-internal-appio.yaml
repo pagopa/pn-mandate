@@ -78,23 +78,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/MandateCreationResponse'
         '400':
-          description: Bad Request (QRCode non trovato o in formato non corretto)
+          description: Bad Request - QRCode non trovato o in formato non corretto
           content:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
+              examples:
+                createMandateInvalidQRError:
+                  $ref: '#/components/examples/CreateMandateInvalidQRError'
+                createMandateQRNotFoundError:
+                  $ref: '#/components/examples/CreateMandateQRNotFoundError'
+        '401':
+          description: Unauthorized - Token di autenticazione mancante o non valido
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+              example:
+                $ref: '#/components/examples/UnauthorizedError'
+        '403':
+          description: Forbidden - Utente non autorizzato
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+              example:
+                $ref: '#/components/examples/ForbiddenError'
         '409':
-          description: Conflict - There is already an active or pending mandate between the same delegator and delegate
+          description: Conflict - Esiste già una delega in stato attiva o pending tra il delegante e delegato per lo stesso IUN.
           content:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
+              example:
+                $ref: '#/components/examples/CreateMandateConflictError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
+              example:
+                $ref: '#/components/examples/InternalServerError'
 
 
   /mandate/api/v1/io/mandate/{mandateId}/cie/accept:
@@ -131,20 +156,41 @@ paths:
             schema:
               $ref: '#/components/schemas/CIEValidationData'
       responses:
-        '200':
+        '204':
           description: No Content
-        '403':
-          description: User not authorized (Verifiche CIE/NONCE non riuscite)
+        '401':
+          description: Unauthorized - Token di autenticazione mancante o non valido
           content:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
+              example:
+                $ref: '#/components/examples/UnauthorizedError'
+        '403':
+          description: Forbidden - Utente non autorizzato
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+              example:
+                $ref: '#/components/examples/ForbiddenError'
+        '422':
+          description: Unprocessable Entity - Verifiche CIE/NONCE non riuscite
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+              examples:
+                acceptMandateCIEValidationError:
+                  $ref: '#/components/examples/AcceptMandateCIEValidationError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
+              example:
+                $ref: '#/components/examples/InternalServerError'
 
 
 components:
@@ -299,6 +345,87 @@ components:
         sod:
           type: string
           nullable: false
+  examples:
+    UnauthorizedError:
+      summary: Example of a 401 Unauthorized response
+      value:
+        message: Unauthorized
+
+    ForbiddenError:
+      summary: Example of a 403 Forbidden response
+      value:
+        message: User is not authorized to access this resource with an explicit deny
+
+    CreateMandateInvalidQRError:
+      summary: Example of a 400 Bad Request response for Create Mandate
+      value:
+        type: "GENERIC_ERROR"
+        status: 400
+        title: "Handled error"
+        detail: "See logs for details in PN-MANDATE"
+        traceId: "trace_id:f474bb7c-e0cd-46b0-9ddf-8b0006fd33d4"
+        timestamp: "2025-09-15T14:49:27.179Z"
+        errors:
+          - code: "PN_MANDATE_AARQRCODE_NOT_VALID"
+            element: null
+            detail: "none"
+
+    CreateMandateQRNotFoundError:
+      summary: Example of a 422 Unprocessable Entity response for Create Mandate
+      value:
+        type: "GENERIC_ERROR"
+        status: 400
+        title: "Handled error"
+        detail: "See logs for details in PN-MANDATE"
+        traceId: "trace_id:f474bb7c-e0cd-46b0-9ddf-8b0006fd33d4"
+        timestamp: "2025-09-15T14:49:27.179Z"
+        errors:
+          - code: "PN_MANDATE_QR_TOKEN_NOT_FOUND"
+            element: null
+            detail: "none"
+
+    CreateMandateConflictError:
+      summary: Example of a 409 Conflict response for Create Mandate
+      value:
+        type: "GENERIC_ERROR"
+        status: 409
+        title: "Handled error"
+        detail: "See logs for details in PN-MANDATE"
+        traceId: "trace_id:de97fe15-f2b9-46c6-a029-1c18c9baec0c"
+        timestamp: "2025-09-15T14:53:22.304Z"
+        errors:
+          - code: "PN_MANDATE_ALREADYEXISTS"
+            element: null
+            detail: "none"
+
+    InternalServerError:
+      summary: Example of a 500 Internal Server Error response
+      value:
+        type: "GENERIC_ERROR"
+        status: 500
+        title: "Unhandled error"
+        detail: "See logs for details in PN-MANDATE"
+        traceId: "trace_id:f474bb7c-e0cd-46b0-9ddf-8b0006fd33d4"
+        timestamp: "2025-09-15T14:49:27.179Z"
+        errors:
+          - code: "PN_GENERIC_ERROR"
+            element: null
+            detail: "none"
+
+    AcceptMandateCIEValidationError:
+      summary: Example of a 422 Unprocessable Entity response for Accept Mandate
+      value:
+        type: "GENERIC_ERROR"
+        status: 422
+        title: "Handled error"
+        detail: "See logs for details in PN-MANDATE"
+        traceId: "trace_id:f474bb7c-e0cd-46b0-9ddf-8b0006fd33d4"
+        timestamp: "2025-09-15T14:49:27.179Z"
+        errors:
+          - code: "PN_MANDATE_CIE_VALIDATION_ERROR"
+            element: null
+            detail: "none"
+
 
   securitySchemes:
     ApiKeyAuth:

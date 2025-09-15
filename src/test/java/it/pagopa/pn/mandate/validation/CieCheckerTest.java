@@ -4,26 +4,20 @@ import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
-import it.pagopa.pn.ciechecker.model.SodSummary;
+import it.pagopa.pn.ciechecker.model.CieIas;
+import it.pagopa.pn.ciechecker.model.CieValidationData;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import lombok.extern.slf4j.Slf4j;
-import net.visma.autopay.http.digest.DigestAlgorithm;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-import org.bouncycastle.asn1.*;
-import org.bouncycastle.asn1.cms.ContentInfo;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -70,11 +64,27 @@ class CieCheckerTest {
 
     @Test
     void checkExtractChallengeTest() throws IOException, DecoderException, NoSuchAlgorithmException, InvalidKeySpecException, CryptoException {
-        byte[] nisChallenge = hexFile(cleanString(basePath.resolve("NIS_CHALLENGE.HEX")));
+        //byte[] nisChallenge = hexFile(cleanString(basePath.resolve("NIS_CHALLENGE.HEX")));
         byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
         byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
+        //byte[] sodBytesMalformed = hexFile(cleanString(basePath.resolve("EF_SOD.HEX")));
+        //byte[] sodBytes = hexFile(cleanString(basePath.resolve("SOD_IAS.HEX"))); //no
+        //byte[] sodBytes = hexFile(cleanString(basePath.resolve("SOD.HEX")));
 
-        Assertions.assertTrue(cieChecker.verifyChallengeFromSignature(nisSignature,nisPubKey,nisChallenge));
+        //String fileStringSod = Files.readString(basePath.resolve("SOD_IAS.HEX")).replaceAll("\\s+", "");
+        //String subString = fileStringSod.substring(8, fileStringSod.length());
+        //byte[] sodBytes = hexFile(subString);
+
+        CieValidationData data = new CieValidationData();
+        CieIas cieIas = new CieIas();
+        cieIas.setPublicKey(nisPubKey);
+        data.setCieIas(cieIas);
+        data.setSignedNonce(nisSignature);
+        data.setNonce("D3FFB7DE52E211AC69B9DE70996E46F5"); //nis_challenge.hex
+        //Assertions.assertTrue(cieChecker.verifyChallengeFromSignature(nisSignature, nisPubKey,nisChallenge));
+        ResultCieChecker result = cieChecker.verifyChallengeFromSignature(data);
+        Assertions.assertTrue(result.getValue().equals(OK));
+
     }
 
     @Test

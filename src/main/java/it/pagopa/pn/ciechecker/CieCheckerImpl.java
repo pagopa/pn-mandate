@@ -2,6 +2,7 @@ package it.pagopa.pn.ciechecker;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
@@ -10,11 +11,10 @@ import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.math.BigInteger;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.*;
 
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
@@ -26,13 +26,11 @@ import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
-import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Security;
-import java.security.cert.CertificateException;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
 import java.util.Date;
 import java.util.Hashtable;
@@ -42,64 +40,98 @@ import java.util.List;
 public class CieCheckerImpl implements CieChecker {
 
     private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
+    private List<byte[]> cscaAnchor;
 
     @Override
     public void init() {
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(new BouncyCastleProvider());
         }
+
+        // come recuperarlo  cscaAnchor
+
+    }
+
+    public List<byte[]> getCscaAnchor(){
+        return this.cscaAnchor;
     }
 
     @Override
     public ResultCieChecker validateMandate(CieValidationData data)  {
         try {
             //16048-bis - NIS: nis_verify_sod.sh
-            verifyDigitalSignature(data.getCieIas().getSod(), data.getCieIas().getCscaAnchor());
+            verifyDigitalSignature(data.getCieIas().getSod(), cscaAnchor); //data.getCieIas().getCscaAnchor());
 
             //16049 NIS: nis_verify_sod_passive_auth.sh
             verifySodPassiveAuthCie(data.getCieIas());
 
             //16050 NIS: nis_verify_challenge.sh - verifica del nonce - verificare la firma di una challenge IAS
+            verifyChallengeFromSignature(data);
 
             //16051 MRTD: verify_integrity.sh
             verifyIntegrity(data.getCieMrtd());
 
             //16052 MRTD: verify_signature.sh
-            //verifyDigitalSignature(data.getCieMrtd().getSod(), data.getCieMrtd().getCscaAnchor());
+            //verifyDigitalSignature(data.getCieMrtd().getSod(), this.getCscaAnchor());
 
             return ResultCieChecker.OK;
-
-        }catch (CieCheckerException e ){
-            System.err.println("CieCheckerException: " + e.getResult().getValue());
-            return e.getResult();
+        }catch (CieCheckerException cce ) {
+            System.err.println("CieCheckerException: " + cce.getMessage());
+            log.error("Validation error in validateMandate - CieCheckerException: {}", cce.getMessage());
+            throw new CieCheckerException(cce.getResult(), cce);
+        }catch (Exception e ) {
+            System.err.println("CieCheckerException: " + e.getMessage());
+            log.error("Validation error in validateMandate - Exception: {}", e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
         }
+
     }
 
     /**
-     *
-     * @param signature
-     * @param pubKey
-     * @param challenge
-     * @return
-     * @throws CryptoException
+     * @param data CieValidationData
+     * @return ResultCieChecker
      *
      *  Verifica il challenge (nonce) dalla signature, confrontandolo con quello estratto dalla firma.
+     *  Per la verifica si utilizzano : byte[] signature, byte[] pubKey, byte[] challenge
      */
-    public boolean verifyChallengeFromSignature(byte[] signature, byte[] pubKey, byte[] challenge) throws  CryptoException {
-        RSAEngine engine = new RSAEngine();
-        PKCS1Encoding engine2 = new PKCS1Encoding(engine);
-        // estrazione public key dall'oggetto firma
-        RSAKeyParameters publicKey = extractPublicKeyFromSignature(pubKey);
-        engine2.init(false, publicKey);
-        // estrae dalla signature i byte del nonce/challenge
-        byte[] recovered = engine2.processBlock(signature, 0, signature.length);
-        return Arrays.equals(recovered, challenge);
+    public ResultCieChecker verifyChallengeFromSignature(CieValidationData data) {
+
+        try {
+
+            RSAEngine engine = new RSAEngine();
+            PKCS1Encoding engine2 = new PKCS1Encoding(engine);
+            // estrazione public key dall'oggetto firma
+            RSAKeyParameters publicKey = extractPublicKeyFromSignature(data.getCieIas().getPublicKey());
+            engine2.init(false, publicKey);
+            // estrae dalla signature i byte del nonce/challenge
+            byte[] recovered = engine2.processBlock(data.getSignedNonce(), 0, data.getSignedNonce().length);
+            if (!(Arrays.equals(recovered, Hex.decodeHex(data.getNonce()))))
+                return ResultCieChecker.KO_NO_MATCH_NONCE_SIGNATURE;
+            else
+                return ResultCieChecker.OK;
+        }catch (IllegalArgumentException ie){
+            System.err.println("IllegalArgumentException: " + ie.getMessage() );
+            log.error("Error in verifyChallengeFromSignature - IllegalArgumentException: {}", ie.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_PUBLICKEY, ie);  //KO_EXC_GENERATE_OBJECT - illegal object in getInstance: org.bouncycastle.asn1.DLSequence
+        }catch( CryptoException cre){
+            System.err.println("CryptoException: " + cre.getMessage());
+            log.error("Error in verifyChallengeFromSignature - CryptoException: {}", cre.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CRYPTOGRAPHIC_OPERATION, cre);
+        } catch (DecoderException de) {
+            System.err.println("DecoderException: " + de.getMessage());
+            log.error("Error in verifyChallengeFromSignature - DecoderException: {}", de.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_HEX_BYTE, de);
+        }catch (Exception e){
+            log.error("Error in verifyChallengeFromSignature - Exception: {}", e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
+        }
     }
 
+    /*
     @Override
     public boolean extractChallengeFromSignature(byte[] signature, byte[] pubKey, byte[] nis) throws NoSuchAlgorithmException, InvalidKeySpecException, CryptoException {
         return false;
-    }
+    }*/
 
     /**
      *
@@ -190,9 +222,19 @@ public class CieCheckerImpl implements CieChecker {
             ResultCieChecker result = ValidateUtils.verifyDigitalSignature(cms);
             return result.getValue().equals("OK");
 
-        } catch (CieCheckerException | CMSException | IOException | NoSuchAlgorithmException  e ){
+
+        }catch(CMSException cmse){
+            System.err.println("CMSException: " + cmse.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, cmse);
+        }catch(NoSuchAlgorithmException nsae) {
+            System.err.println("NoSuchAlgorithmException: " + nsae.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_AVAILABLE_CRYPTOGRAPHIC_ALGORITHM, nsae);
+        }catch (CieCheckerException cce ) {
+            System.err.println("CieCheckerException: " + cce.getMessage());
+            throw new CieCheckerException(cce.getResult(), cce);
+        } catch (Exception  e ){
             System.err.println("Error during verification SOD: " + e.getMessage());
-            return false;
+            throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
     /**
@@ -276,7 +318,7 @@ public class CieCheckerImpl implements CieChecker {
      * @param cscaAnchors List<byte[]>
      * @return ResultCieChecker
      */
-    public ResultCieChecker verifyTrustChain(CMSSignedData cms, List<byte[]> cscaAnchors) throws IOException {
+    public ResultCieChecker verifyTrustChain(CMSSignedData cms, List<byte[]> cscaAnchors) {
         try {
             /*if (cieMrtd == null || cieMrtd.getSod() == null || cieMrtd.getCscaAnchor() == null || cieMrtd.getCscaAnchor().isEmpty()) {
                 throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
@@ -293,14 +335,14 @@ public class CieCheckerImpl implements CieChecker {
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED);
             }
             return ValidateUtils.verifyDigitalSignature(cms);
+        }catch(IOException ioe){
+            System.err.println("IOException: " + ioe.getMessage());
+            log.error("Error in verifyTrustChain - IOException: {}", ioe.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION);
         }catch (CieCheckerException cce) {
-            return cce.getResult();
+            log.error("Error in verifyTrustChain - CieCheckerException: {}", cce.getMessage());
+            throw new CieCheckerException(cce.getResult(), cce);
         }
-        /*catch (CertificateException e) {
-            throw new RuntimeException(e);
-        } catch (OperatorCreationException e) {
-            throw new RuntimeException(e);
-        }*/
     }
 
 
@@ -327,16 +369,30 @@ public class CieCheckerImpl implements CieChecker {
                 throw new CieCheckerException(result);
             else
                 return result;
+        }catch(CMSException cmse){
+            System.err.println("CMSException: " + cmse.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA);
+       /* }catch(IOException ioe){
+            System.err.println("IOException: " + ioe.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION);*/
         }catch(CieCheckerException cc){
             System.err.println("CieCheckerException: " + cc.getMessage());
             throw new CieCheckerException(cc.getMessage());
-        }catch(CMSException cmse){
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA);
-            //return ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA;
-        }catch(IOException ioe){
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION);
-            //return ResultCieChecker.KO_EXC_IOEXCEPTION;
         }
+    }
+
+
+    private PublicKey convertBytesToPublicKey(byte[] publicKeyBytes, String algorithm)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
+
+        // 1. Specifica il formato della chiave
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicKeyBytes);
+
+        // 2. Ottieni un'istanza di KeyFactory per l'algoritmo specificato
+        KeyFactory keyFactory = KeyFactory.getInstance(algorithm, BouncyCastleProvider.PROVIDER_NAME);
+
+        // 3. Genera l'oggetto PublicKey
+        return keyFactory.generatePublic(keySpec);
     }
 
 }

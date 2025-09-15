@@ -49,7 +49,7 @@ public enum ResultCieChecker {
     KO_EXC_ERROR_CREATE_VERIFIER(CieCheckerConstants.EXC_ERROR_CREATE_VERIFIER),
     KO_EXC_NOVALID_DIGITAL_SIGNATURE(CieCheckerConstants.EXC_NOVALID_DIGITAL_SIGNATURE);
 
-    private String value;
+    private final String value;
     public String getValue() {
         return value;
     }

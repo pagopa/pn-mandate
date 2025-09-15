@@ -88,7 +88,7 @@ public class CieCheckerImpl implements CieChecker {
     /**
      * @param data CieValidationData
      * @return ResultCieChecker
-     * @throw CieCheckerException
+     * @throws CieCheckerException
      *  Verifica il challenge (nonce) dalla signature, confrontandolo con quello estratto dalla firma.
      *  Per la verifica si utilizzano : byte[] signature, byte[] pubKey, byte[] challenge
      */
@@ -130,8 +130,8 @@ public class CieCheckerImpl implements CieChecker {
 
     /**
      *
-     * @param pubKey
-     * @return
+     * @param pubKey byte[]
+     * @return RSAKeyParameters result
      *
      * Converte la public key byte array in una public Key
      */
@@ -176,7 +176,7 @@ public class CieCheckerImpl implements CieChecker {
             }
             // - Estrazione delle firme di ogni firmatario dal SignedData
             List<byte[]> signatures = ValidateUtils.extractSignaturesFromSignedData(cms);
-            if ( Objects.isNull(signatures) || signatures.isEmpty() ) {
+            if ( signatures.isEmpty() ) {
                 log.error("Error in verifySodPassiveAuthCie: {}", EXC_NO_SIGNATURES_SIGNED_DATA);
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNATURES_SIGNED_DATA);
             }
@@ -246,13 +246,11 @@ public class CieCheckerImpl implements CieChecker {
     /**
      * accetta path EF.SOD e una lista variabile di path EF.DG* (varargs, così possiamo
      * passare un numero variabile di parametri senza dover creare un array a mano)
-     *
      * questo metodo replica il comportamento dello script verify_integrity.sh:
      * 1) decodifica il SOD (ValidateUtils.decodeSodHr)
      * 2) identifica l'algoritmo di hash
      * 3) verifica che sia compatibile
      * 4) per ogni DG passato ricalcola l'hash e lo confronta con quello nel SOD
-     *
      * In caso di eccezione ritorna false (puoi cambiare la gestione se preferisci lanciare eccezioni).
      */
     @Override
@@ -383,7 +381,7 @@ public class CieCheckerImpl implements CieChecker {
         }
     }
 
-
+/*
     private PublicKey convertBytesToPublicKey(byte[] publicKeyBytes, String algorithm)
             throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
 
@@ -396,5 +394,5 @@ public class CieCheckerImpl implements CieChecker {
         // 3. Genera l'oggetto PublicKey
         return keyFactory.generatePublic(keySpec);
     }
-
+*/
 }

@@ -94,32 +94,36 @@ paths:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
-              example:
-                $ref: '#/components/examples/UnauthorizedError'
+              examples:
+                unauthorizedError:
+                  $ref: '#/components/examples/UnauthorizedError'
         '403':
           description: Forbidden - Utente non autorizzato
           content:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
-              example:
-                $ref: '#/components/examples/ForbiddenError'
+              examples:
+                forbiddenError:
+                  $ref: '#/components/examples/ForbiddenError'
         '409':
           description: Conflict - Esiste già una delega in stato attiva o pending tra il delegante e delegato per lo stesso IUN.
           content:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
-              example:
-                $ref: '#/components/examples/CreateMandateConflictError'
+              examples:
+                createMandateConflictError:
+                  $ref: '#/components/examples/CreateMandateConflictError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
-              example:
-                $ref: '#/components/examples/InternalServerError'
+              examples:
+                internalServerError:
+                  $ref: '#/components/examples/InternalServerError'
 
 
   /mandate/api/v1/io/mandate/{mandateId}/cie/accept:
@@ -164,16 +168,18 @@ paths:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
-              example:
-                $ref: '#/components/examples/UnauthorizedError'
+              examples:
+                unauthorizedError:
+                  $ref: '#/components/examples/UnauthorizedError'
         '403':
           description: Forbidden - Utente non autorizzato
           content:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
-              example:
-                $ref: '#/components/examples/ForbiddenError'
+              examples:
+                forbiddenError:
+                  $ref: '#/components/examples/ForbiddenError'
         '422':
           description: Unprocessable Entity - Verifiche CIE/NONCE non riuscite
           content:
@@ -189,8 +195,9 @@ paths:
             application/json:
               schema:
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'
-              example:
-                $ref: '#/components/examples/InternalServerError'
+              examples:
+                internalServerError:
+                  $ref: '#/components/examples/InternalServerError'
 
 
 components:
@@ -357,7 +364,7 @@ components:
         message: User is not authorized to access this resource with an explicit deny
 
     CreateMandateInvalidQRError:
-      summary: Example of a 400 Bad Request response for Create Mandate
+      summary: Esempio di risposta 400 in caso di QRCode non valido
       value:
         type: "GENERIC_ERROR"
         status: 400
@@ -371,7 +378,7 @@ components:
             detail: "none"
 
     CreateMandateQRNotFoundError:
-      summary: Example of a 422 Unprocessable Entity response for Create Mandate
+      summary: Esempio di risposta 400 in caso di QRCode non trovato
       value:
         type: "GENERIC_ERROR"
         status: 400
@@ -385,7 +392,7 @@ components:
             detail: "none"
 
     CreateMandateConflictError:
-      summary: Example of a 409 Conflict response for Create Mandate
+      summary: Esempio di risposta 409 in caso di delega già esistente
       value:
         type: "GENERIC_ERROR"
         status: 409
@@ -399,7 +406,7 @@ components:
             detail: "none"
 
     InternalServerError:
-      summary: Example of a 500 Internal Server Error response
+      summary: Esempio di risposta 500 in caso di errore generico
       value:
         type: "GENERIC_ERROR"
         status: 500
@@ -413,7 +420,7 @@ components:
             detail: "none"
 
     AcceptMandateCIEValidationError:
-      summary: Example of a 422 Unprocessable Entity response for Accept Mandate
+      summary: Esempio di risposta 422 in caso di errore di validazione CIE
       value:
         type: "GENERIC_ERROR"
         status: 422

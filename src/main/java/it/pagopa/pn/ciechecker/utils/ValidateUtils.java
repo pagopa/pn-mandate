@@ -98,25 +98,17 @@ public class ValidateUtils {
             return ResultCieChecker.OK;
 
         } catch (CertificateException ce) {
-            System.err.println("CertificateException: " + ce.getMessage());
             log.error("Error in verifyDscAgainstTrustBundle - CertificateException: {}", ce.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE);
-            //return ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE;
         }catch (CertPathValidatorException cpe) {
-            System.err.println("CertPathValidatorException: " + cpe.getMessage());
             log.error("Error in verifyDscAgainstTrustBundle - CertPathValidatorException: {}", cpe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE);
-            //return ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE;
         }catch (NoSuchAlgorithmException nsae){
-            System.err.println("NoSuchAlgorithmException: " + nsae.getMessage());
             log.error("Error in verifyDscAgainstTrustBundle - NoSuchAlgorithmException: {}", nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR);
-            //return ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR;
         } catch ( InvalidAlgorithmParameterException e) {
-            System.err.println("InvalidAlgorithmParameterException: " + e.getMessage());
             log.error("Error in verifyDscAgainstTrustBundle - InvalidAlgorithmParameterException: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR);
-            //return ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR;
         }
     }
 
@@ -128,7 +120,6 @@ public class ValidateUtils {
             List<X509Certificate> anchors = parseCscaAnchors(cscaAnchorBlobs, x509Cf);
             return verifyDscAgainstTrustBundle(dscDerOrPem, anchors, atTime);
         } catch (CertificateException e) {
-            System.err.println("CertificateException: " + e.getMessage());
             log.error("Error in verifyDscAgainstAnchorBytes - CertificateException: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE);
         }
@@ -157,7 +148,7 @@ public class ValidateUtils {
         Store<X509CertificateHolder> certStore = cms.getCertificates();
 
         Collection<X509CertificateHolder> matches = certStore.getMatches(null);
-        System.out.println("matches sixe: " + matches.size());
+        log.info("matches sixe: " + matches.size());
         if (!matches.isEmpty()) {
             return matches.iterator().next();
         }
@@ -284,10 +275,10 @@ public class ValidateUtils {
         String fiveStr = getHexFromOctetString(fiveOctetString);
         //System.out.println("calculateSha256 --> firstStr: "+ firstStr + " - getHexFromOctetString --> fiveStr: " + fiveStr);
         if (firstStr.equalsIgnoreCase(fiveStr)) {
-            System.out.println("VERIFICA RIUSCITA: Gli hash corrispondono.");
+            log.info("VERIFICA RIUSCITA: Gli hash corrispondono.");
             return true;
         } else {
-            log.error("VERIFICA FALLITA: Gli hash non corrispondono.");
+            log.error("Error in verifyOctetStrings - VERIFICA FALLITA: Gli hash non corrispondono.");
             throw new CieCheckerException(CieCheckerConstants.EXC_NO_MATCH_NIS_HASHES_DATAGROUP);
         }
 
@@ -477,7 +468,7 @@ public class ValidateUtils {
 
                                     ASN1OctetString dgHash = ASN1OctetString.getInstance(hashEntry.getObjectAt(1));
                                     log.info("Founded hash for DataGroup ASN1Integer: " + dgNumber.getValue() + " - dgNumber.toString(): " + dgNumber);
-                                    System.out.println("Founded hash DataGroup ASN1OctetString: " + Hex.toHexString(dgHash.getOctets()).toUpperCase());
+                                    log.info("Founded hash DataGroup ASN1OctetString: " + Hex.toHexString(dgHash.getOctets()).toUpperCase());
                                     // Aggiungi l'hash alla lista in formato esadecimale.
                                     hashes.add(Hex.toHexString(dgHash.getOctets()).toUpperCase());
                                 }else {
@@ -545,7 +536,7 @@ public class ValidateUtils {
         if(dataGroupList.contains(nisSha256PublicKeyToCheck)){
             return true;
         }else{
-            System.err.println("The dataGroupList do not contains nisSha256PublicKey");
+            log.error("The dataGroupList do not contains nisSha256PublicKey");
             return false;
         }
     }

@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.validation;
 
 import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerImpl;
+import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.CieIas;
@@ -10,14 +11,20 @@ import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,9 +33,14 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 
 @Slf4j
@@ -43,6 +55,13 @@ class CieCheckerTest {
     private static final Path dg1FilesCorrupted = Paths.get("src/test/resources/DG1_CORROTTO.HEX");
     private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
+    private static final String SOD_HEX_IAS = "SOD_IAS.HEX";
+    private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
+    private static final String EF_SOD_HEX = "EF_SOD.HEX";
+    private static final Path BASE_PATH = Path.of("src","test","resources");
+
+
+
 
     @BeforeAll
     static void setUp() {
@@ -171,10 +190,110 @@ class CieCheckerTest {
         assertEquals(ResultCieChecker.KO_NOT_SAME_DIGEST, result, "DG11 corrotto deve dare KO");
     }
 
+    @ParameterizedTest(name = "Verifica digital signature con sorgente: {0}")
+    @MethodSource("cieSources")
+    void verifyDigitalSignature(String tipo, byte[] sodBytes) throws Exception {
+        System.out.println("=== INIZIO TEST [" + tipo + "] ===");
+
+        // concatenazione certificati DER in formato PEM
+        List<byte[]> ders = pickManyDerFromResources(-1);
+        String concatenatedPem = ders.stream()
+                .map(d -> new String(toPem(d), StandardCharsets.UTF_8))
+                .collect(Collectors.joining());
+        byte[] blob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
+
+        // caso ok
+        ResultCieChecker resultOk = cieChecker.verifyDigitalSignature(sodBytes, List.of(blob));
+        System.out.println("[" + tipo + "] - Risultato atteso OK -> " + resultOk.getValue());
+        Assertions.assertEquals("OK", resultOk.getValue());
+
+        // caso ko: SOD nullo
+        System.out.println("[" + tipo + "] - Test con SOD nullo");
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> cieChecker.verifyDigitalSignature(null, List.of(blob)));
+
+        // caso ko: anchors null
+        System.out.println("[" + tipo + "] - Test con anchors null");
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> cieChecker.verifyDigitalSignature(sodBytes, null));
+
+        // caso ko: SOD non corretto
+        System.out.println("[" + tipo + "] - Test con SOD non corretto");
+        String efSodPem = """
+        -----BEGIN PUBLIC KEY-----
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAytYrOy71s5KcL8FpSOwC
+        MI/6+ZyaZkjMMbl/BDBtC59hlt8q5CptJihGqaRl5LeLJG7OqMfRteLtpHmsac5r
+        ZmTUncm+mCPMKy1p8EDpYscHneyFGnbbSyH9xKt8QLHV/O8d96dGl/iYNsk7wF8R
+        ihEy62qwfVUgeqhpaVNfEg1FYSOLLbR9OcBKRLamZcJrOqd5vuGNHZKyToqoWqhS
+        ZntbKyZIC93ibnLiQkhetPnrZoCm1s81v8EW6ASbhpWaJEcv3xwe9nZxqjr9tMkO
+        x9sOAT7gIN2hBQZasVxeCelfCZRjyh+P0j37DMpBaPCMlWLUeYQgKrd+aJty
+        /QIDAQAB
+        -----END PUBLIC KEY-----
+        """;
+        byte[] sodErrato = decodePublicKeyPemToDer(efSodPem);
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> cieChecker.verifyDigitalSignature(sodErrato, List.of(blob)));
+
+        // caso ko: blob corrotto
+        System.out.println("[" + tipo + "] - Test con blob corrotto");
+        byte[] blobErrato = ArrayUtils.addAll(sodBytes, blob);
+        Assertions.assertThrows(CieCheckerException.class,
+                () -> cieChecker.verifyDigitalSignature(sodBytes, List.of(blobErrato)));
+
+        System.out.println("=== FINE TEST [" + tipo + "] ===");
+    }
+
+    private static Stream<Arguments> cieSources() throws IOException, DecoderException {
+        return Stream.of(
+                Arguments.of("CIE MRTD",loadSodBytes(BASE_PATH.resolve(EF_SOD_HEX))),
+                Arguments.of("CIE IAS", loadSodBytes(BASE_PATH.resolve(SOD_HEX_IAS)))
+        );
+    }
+
+    private static byte[] loadSodBytes(Path filePath) throws IOException, DecoderException {
+        String fileString = Files.readString(filePath).replaceAll("\\s+", "");
+        return hexFile(fileString.substring(8));
+    }
+
+
     @Test
     void validateMandateTest() {
         //TO BE IMPLEMENTED
         Assertions.assertTrue(true);
+    }
+
+    public static List<byte[]> pickManyDerFromResources(int n) throws Exception {
+        List<Path> ders = listDerFiles();
+        Assertions.assertTrue(ders.size() >= n);
+        List<byte[]> out = new ArrayList<>();
+        if ( n == -1 ){
+            for (Path der : ders) {
+                out.add(Files.readAllBytes(der));
+            }
+        } else {
+            for (int i = 0; i < n; i++) out.add(Files.readAllBytes(ders.get(i)));
+        }
+        return out;
+    }
+
+    public static byte[] toPem(byte[] der) {
+        String b64 = Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(der);
+        String pem = "-----BEGIN CERTIFICATE-----\n" + b64 + "\n-----END CERTIFICATE-----\n";
+        return pem.getBytes(StandardCharsets.US_ASCII);
+    }
+    private static List<Path> listDerFiles() throws Exception {
+        try (var s = Files.list(CSCA_DIR)) {
+            return s.filter(p -> p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".cer"))
+                    .collect(Collectors.toList());
+        }
+    }
+
+    public static byte[] decodePublicKeyPemToDer(String pem) {
+        // Strip header/footer and whitespace, then Base64-decode
+        String b64 = pem.replaceAll("-----BEGIN PUBLIC KEY-----", "")
+                .replaceAll("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s", "");
+        return Base64.getDecoder().decode(b64);
     }
 
 }

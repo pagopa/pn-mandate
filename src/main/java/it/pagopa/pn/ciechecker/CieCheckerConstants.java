@@ -40,5 +40,14 @@ public class CieCheckerConstants {
     public static final String EXC_NO_EXPECTED_HASHES_FOUND_SOD = "No expected hashes found in SOD";
     public static final String EXC_NOTFOUND_DIGEST = "One ore more digest not found.";
     public static final String EXC_NOTFOUND_MRTD_SOD = "Mrtd SOD is empty: must be present";
-}
+    public static final String EXC_GENERATE_PUBLICKEY = "Error in generating PublicKey Object";
+    public static final String NO_MATCH_NONCE_SIGNATURE = "Il challenge (nonce) dalla signature non matcha con quello estratto dalla firma";
+    public static final String EXC_PARSING_HEX_BYTE = "Errore di conversione da stringa a byte[]";
+    public static final String EXC_INVALID_CRYPTOGRAPHIC_OPERATION = "Unexpected or invalid state occurs during cryptographic operations";
+    public static final String EXC_NOT_AVAILABLE_CRYPTOGRAPHIC_ALGORITHM ="The cryptographic algorithm is not available";
+    public static final String EXC_NOT_AVAILABLE_SECURITY_PROVIDER ="The security provider is not available";
+    public static final String EXC_INVALID_KEY_SPECIFICATION ="Invalid key specifications";
+    public static final String EXC_NOFOUND_DIGITAL_SIGNATURE ="No digital signature found in the SignedData structure";
+    public static final String EXC_NOFOUND_SIGNER ="No signer found";
 
+}

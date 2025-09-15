@@ -15,6 +15,11 @@ public class CieCheckerException extends RuntimeException{
         this.result = result;
     }
 
+    public CieCheckerException(ResultCieChecker result, Exception cause) {
+        super(result.getValue(), cause);
+        this.result = result;
+    }
+
     public ResultCieChecker getResult() {
         return result;
     }

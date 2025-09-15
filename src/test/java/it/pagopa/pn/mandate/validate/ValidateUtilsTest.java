@@ -622,6 +622,8 @@ class ValidateUtilsTest {
     @Test
     void verifyDigitalSignatureMrtd() throws Exception {
         System.out.println("TEST verifyDigitalSignatureMrtd - INIT");
+        CieCheckerImpl cieChecker = new CieCheckerImpl();
+
         System.out.println(" - Leggo il file EF_SOD_HEX e decodifico in byte[] HEX");
         String fileString = Files.readString(BASE_PATH.resolve(EF_SOD_HEX)).replaceAll("\\s+", "");
         String subString = fileString.substring(8,fileString.length());
@@ -635,9 +637,6 @@ class ValidateUtilsTest {
                 .map(d->new String(toPem(d), StandardCharsets.UTF_8))
                 .collect(Collectors.joining());
         byte[] blob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
-        cieMrtd.setCscaAnchor(List.of(blob));
-
-        CieCheckerImpl cieChecker = new CieCheckerImpl();
         cieChecker.init();
 
         //Assertions.assertTrue(cieChecker.verifyDigitalSignatureMrtd(cieMrtd));
@@ -687,4 +686,14 @@ class ValidateUtilsTest {
     }
 
 
+    @Test
+    void verifyNisPublicKeyFromDataGroup() throws Exception {
+
+        byte[] sodByte = extractCertificateByteArray();
+        CMSSignedData cms = new CMSSignedData(sodByte);
+        byte[] NIS_HEX_TO_CHECK = hexFile("393130373138343634363534");
+
+        Assertions.assertTrue(ValidateUtils.verifyNisPublicKeyFromDataGroup( cms, NIS_HEX_TO_CHECK));
+
+    }
 }

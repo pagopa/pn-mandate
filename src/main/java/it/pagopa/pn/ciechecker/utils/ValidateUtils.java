@@ -2,6 +2,7 @@ package it.pagopa.pn.ciechecker.utils;
 
 import java.io.IOException;
 
+import it.pagopa.pn.ciechecker.CieCheckerConstants;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.SodSummary;
@@ -26,6 +27,7 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
+import org.bouncycastle.openssl.PEMException;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.util.Store;
 import org.bouncycastle.util.encoders.Hex;
@@ -41,6 +43,9 @@ import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.util.*;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class ValidateUtils {
 
     private ValidateUtils() {}
@@ -94,18 +99,22 @@ public class ValidateUtils {
 
         } catch (CertificateException ce) {
             System.err.println("CertificateException: " + ce.getMessage());
+            log.error("Error in verifyDscAgainstTrustBundle - CertificateException: {}", ce.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE);
             //return ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE;
         }catch (CertPathValidatorException cpe) {
             System.err.println("CertPathValidatorException: " + cpe.getMessage());
+            log.error("Error in verifyDscAgainstTrustBundle - CertPathValidatorException: {}", cpe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE);
             //return ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE;
         }catch (NoSuchAlgorithmException nsae){
             System.err.println("NoSuchAlgorithmException: " + nsae.getMessage());
+            log.error("Error in verifyDscAgainstTrustBundle - NoSuchAlgorithmException: {}", nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR);
             //return ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR;
         } catch ( InvalidAlgorithmParameterException e) {
             System.err.println("InvalidAlgorithmParameterException: " + e.getMessage());
+            log.error("Error in verifyDscAgainstTrustBundle - InvalidAlgorithmParameterException: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR);
             //return ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR;
         }
@@ -113,29 +122,28 @@ public class ValidateUtils {
 
      public static ResultCieChecker verifyDscAgainstAnchorBytes(byte[] dscDerOrPem,
                                                Collection<byte[]> cscaAnchorBlobs,
-                                               Date atTime) {
+                                               Date atTime) throws CieCheckerException{
         try {
             CertificateFactory x509Cf = CertificateFactory.getInstance(X_509);
             List<X509Certificate> anchors = parseCscaAnchors(cscaAnchorBlobs, x509Cf);
             return verifyDscAgainstTrustBundle(dscDerOrPem, anchors, atTime);
-            //return resultCieChecker.getValue().equals("OK");
-            //if(!resultCieChecker.getValue().equals("OK"))
-            //    throw new CieCheckerException(resultCieChecker);
         } catch (CertificateException e) {
             System.err.println("CertificateException: " + e.getMessage());
+            log.error("Error in verifyDscAgainstAnchorBytes - CertificateException: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE);
         }
     }
 
     public static boolean verifyDscAgainstTrustBundle(X509CertificateHolder dscHolder,
                                                       Collection<X509Certificate> cscaTrustAnchors,
-                                                      Date atTime) {
+                                                      Date atTime) throws CieCheckerException {
         try {
             if (dscHolder == null) return false;
             ResultCieChecker resultCieChecker = verifyDscAgainstTrustBundle(dscHolder.getEncoded(), cscaTrustAnchors, atTime);
             return resultCieChecker.getValue().equals("OK");
         } catch (IOException e) {
-            throw new CieCheckerException(e);
+            log.error("Error in verifyDscAgainstTrustBundle - IOException: {}", e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
 
@@ -149,6 +157,7 @@ public class ValidateUtils {
         Store<X509CertificateHolder> certStore = cms.getCertificates();
 
         Collection<X509CertificateHolder> matches = certStore.getMatches(null);
+        System.out.println("matches sixe: " + matches.size());
         if (!matches.isEmpty()) {
             return matches.iterator().next();
         }
@@ -169,6 +178,7 @@ public class ValidateUtils {
             throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
         }
         try {
+            System.out.println("certHolder: " + certHolder.getSubject().toString());
             // Per convertire X509CertificateHolder in un X509Certificate utilizzo la classe JcaX509CertificateConverter
             JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
             //converter.setProvider(BouncyCastleProvider.PROVIDER_NAME); java.security.cert.CertificateException: Errore durante la conversione del certificato per ottenere la chiave pubblica.
@@ -179,7 +189,8 @@ public class ValidateUtils {
             return certificate.getPublicKey();
         } catch (CertificateException e) {
             System.err.println(EXC_PARSING_CERTIFICATION);
-            throw new CieCheckerException(EXC_PARSING_CERTIFICATION);
+            log.error("Error in extractPublicKeyFromHolder - CertificateException: {}", e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_PARSING_CERTIFICATION, e);
         }
     }
 
@@ -199,7 +210,7 @@ public class ValidateUtils {
         Collection<SignerInformation> signers = signerInfos.getSigners();
         // Verifico che ci sia almeno un firmatario.
         if (signers.isEmpty()) {
-            throw new CMSException("Nessun firmatario trovato nella struttura SignedData.");
+            throw new CMSException(CieCheckerConstants.EXC_NOFOUND_SIGNER);
         }
 
         //Crea una lista per memorizzare le firme.
@@ -209,7 +220,7 @@ public class ValidateUtils {
         }
         // Restituisci la lista completa delle firme.
         if (signatures.isEmpty()) {
-            throw new CMSException("Nessuna firma digitale trovata nella struttura SignedData.");
+            throw new CMSException(CieCheckerConstants.EXC_NOFOUND_DIGITAL_SIGNATURE);
         }
 
         return signatures;
@@ -475,7 +486,19 @@ public class ValidateUtils {
         }
     }
 
-
+    public static boolean verifyNisPublicKeyFromDataGroup(CMSSignedData cmsData, byte[] nisSha256PublicKey) throws CieCheckerException, IOException, CMSException, NoSuchAlgorithmException {
+        if (cmsData == null || nisSha256PublicKey == null) {
+            throw new CieCheckerException("Input parameters NULL: CMSSignedData is " + cmsData + " - String is " + nisSha256PublicKey);
+        }
+        String nisSha256PublicKeyToCheck = calculateSha256(nisSha256PublicKey);
+        List<String> dataGroupList = extractDataGroupHashes(cmsData);
+        if(dataGroupList.contains(nisSha256PublicKeyToCheck)){
+            return true;
+        }else{
+            System.err.println("The dataGroupList do not contains nisSha256PublicKey");
+            return false;
+        }
+    }
 
     /*
     // NB: USATO NELLO SCRIPT SHELL SOLO COME TEST
@@ -715,5 +738,15 @@ public class ValidateUtils {
         return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
     }
 
+    public static byte[] extractPublicKeyFromSod(CMSSignedData cms) throws CMSException, PEMException {
+
+        X509CertificateHolder certHolder = extractDscCertDer(cms);
+        PublicKey publicKey = extractPublicKeyFromHolder( certHolder);
+
+        /*JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(new BouncyCastleProvider());
+        SubjectPublicKeyInfo pkInfo = certHolder.getSubjectPublicKeyInfo();
+        return converter.getPublicKey(pkInfo).getEncoded();*/
+        return publicKey.getEncoded();
+    }
 
 }

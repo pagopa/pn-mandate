@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: CtgqiTSuV5CBt41pJ7MndnuI2IQZVlyrbocxv+kLaBs=
+  version: shrutKQ4JSbw+5f5DFlnvzfnk0n32m+DucufhpBTaP4=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -45,13 +45,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MandateCreationResponse'
         '400':
-          description: Bad Request (QRCOde non trovato o delega esistente)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-        '403':
-          description: User not authorized
+          description: Bad Request (QRCode non trovato o in formato non corretto)
           content:
             application/json:
               schema:

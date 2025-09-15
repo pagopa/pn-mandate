@@ -10,8 +10,10 @@ import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
@@ -22,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
+import java.security.cert.CertificateException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
@@ -175,6 +178,27 @@ class CieCheckerTest {
     void validateMandateTest() {
         //TO BE IMPLEMENTED
         Assertions.assertTrue(true);
+    }
+
+
+    @Test
+    void verifySodPassiveAuthCie() throws IOException, DecoderException, CMSException, CertificateException, OperatorCreationException {
+        System.out.println("TEST verificationSodCie - INIT");
+        System.out.println(" - Leggo il file SOD_IAS_FILENAME e decodifico in byte[] HEX");
+        String fileString = Files.readString(basePath.resolve("SOD_IAS.HEX")).replaceAll("\\s+", "");
+        String subString = fileString.substring(8, fileString.length());
+        byte[] sodIasByteArray = hexFile(subString);
+
+        byte[] nisHexToCheck = hexFile("393130373138343634363534");
+
+        CieIas cie = new CieIas();
+        cie.setSod(sodIasByteArray);
+
+        System.out.println(" - Leggo il file NIS_IAS_FILENAME e decodifico in byte[] HEX");
+        //byte[] nisHexToCheck = hexFile(NIS_HEX_TO_CHECK);
+        //System.out.println("DECODED_NIS_STRING : " + nisHexToCheck);
+        cie.setNis(nisHexToCheck);
+        Assertions.assertTrue(cieChecker.verifySodPassiveAuthCie(cie));
     }
 
 }

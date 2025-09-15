@@ -3,19 +3,16 @@ package it.pagopa.pn.mandate.validate;
 
 import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.SodSummary;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
-import net.visma.autopay.http.digest.DigestAlgorithm;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.cms.Attribute;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.SignerInformationStore;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -24,8 +21,6 @@ import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -33,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.*;
@@ -46,8 +40,6 @@ import static it.pagopa.pn.ciechecker.CieCheckerConstants.OK;
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.X_509;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.decodeSodHr;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 class ValidateUtilsTest {
 

@@ -6,6 +6,7 @@ import it.pagopa.pn.ciechecker.CieCheckerConstants;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.SodSummary;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.icao.DataGroupHash;
@@ -42,8 +43,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.util.*;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ValidateUtils {
@@ -114,7 +113,8 @@ public class ValidateUtils {
 
      public static ResultCieChecker verifyDscAgainstAnchorBytes(byte[] dscDerOrPem,
                                                Collection<byte[]> cscaAnchorBlobs,
-                                               Date atTime) throws CieCheckerException{
+                                               Date atTime) throws CieCheckerException {
+        log.info("Invoke verifyDscAgainstAnchorBytes()");
         try {
             CertificateFactory x509Cf = CertificateFactory.getInstance(X_509);
             List<X509Certificate> anchors = parseCscaAnchors(cscaAnchorBlobs, x509Cf);
@@ -143,8 +143,8 @@ public class ValidateUtils {
     //************************************************
 
 
-    public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) {
-
+    public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) throws CieCheckerException {
+        log.info("Invoke extractDscCertDer() for cms signed content type OID={}", cms.getSignedContentTypeOID());
         Store<X509CertificateHolder> certStore = cms.getCertificates();
 
         Collection<X509CertificateHolder> matches = certStore.getMatches(null);
@@ -182,9 +182,6 @@ public class ValidateUtils {
         } catch (CertificateException ce) {
             log.error("Error in extractPublicKeyFromHolder - CertificateException: {}", ce.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_PARSING_CERTIFICATION, ce);
-        }catch (Exception e) {
-            log.error("Error in extractPublicKeyFromHolder - Exception: {}", e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
 
@@ -302,8 +299,10 @@ public class ValidateUtils {
      * @return String
      * @throws CieCheckerException exception
      */
-    private static String getHexFromOctetString(ASN1OctetString octetString) {
-
+    private static String getHexFromOctetString(ASN1OctetString octetString) throws CieCheckerException{
+        if (octetString == null) {
+            throw new CieCheckerException("ASN1OctetString octetString is null");
+        }
         byte[] digestBytes = octetString.getOctets();
         return bytesToHex(digestBytes);
     }
@@ -671,6 +670,7 @@ public class ValidateUtils {
      * @throws CieCheckerException c
      */
     public static ResultCieChecker verifyDigitalSignature(CMSSignedData cms ) throws CieCheckerException {
+        log.info("Invoke verifyDigitalSignature for cms signed content type OID={}", cms.getSignedContentTypeOID());
         try {
             SignerInformationStore signers = cms.getSignerInfos();
             Collection<SignerInformation> c = signers.getSigners();

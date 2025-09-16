@@ -72,7 +72,7 @@ public class CieCheckerImpl implements CieChecker {
             verifyIntegrity(data.getCieMrtd());
 
             //16052 MRTD: verify_signature.sh
-            //verifyDigitalSignature(data.getCieMrtd().getSod(), this.getCscaAnchor());
+            verifyDigitalSignature(data.getCieMrtd().getSod(), this.getCscaAnchor());
 
             return ResultCieChecker.OK;
         }catch (CieCheckerException cce ) {
@@ -82,7 +82,6 @@ public class CieCheckerImpl implements CieChecker {
             log.error("Validation error in validateMandate - Exception: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
-
     }
 
     /**
@@ -261,7 +260,6 @@ public class CieCheckerImpl implements CieChecker {
             }
             byte[] dg1 = mrtd.getDg1() != null ? mrtd.getDg1() : null;
             byte[] dg11 = mrtd.getDg11() != null ? mrtd.getDg11() : null;
-            System.out.println("DG11: "+dg11);
 
             return verifyIntegrityCore(mrtd.getSod(), dg1, dg11);
         } catch (CieCheckerException e) {
@@ -323,6 +321,7 @@ public class CieCheckerImpl implements CieChecker {
      * @return ResultCieChecker
      */
     public ResultCieChecker verifyTrustChain(CMSSignedData cms, List<byte[]> cscaAnchors) throws CieCheckerException {
+        log.info("Start verifyTrustChain() ...");
         try {
             /*if (cieMrtd == null || cieMrtd.getSod() == null || cieMrtd.getCscaAnchor() == null || cieMrtd.getCscaAnchor().isEmpty()) {
                 throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
@@ -334,7 +333,8 @@ public class CieCheckerImpl implements CieChecker {
             //verifica se il certificato contenuto in $DSC_DER_FILE è stato firmato da una delle autorità di certificazione presenti nel file $TRUST_BUNDLE_PEM.
             ResultCieChecker result = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, cscaAnchors, new Date());
             if (!result.getValue().equals(OK)) {
-                log.error("Error in verifyTrustChain: {}" , EXC_CERTIFICATE_NOT_SIGNED);
+                log.error("An error occoured in verifyTrustChain(). Error = {}",EXC_CERTIFICATE_NOT_SIGNED);
+                //return ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED;
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED);
             }
             return ValidateUtils.verifyDigitalSignature(cms);
@@ -354,8 +354,8 @@ public class CieCheckerImpl implements CieChecker {
      * @return boolean
      */
     @Override
-    public ResultCieChecker verifyDigitalSignature(byte[] sod, List<byte[]> cscaTrustAnchors) {
-
+    public ResultCieChecker verifyDigitalSignature(byte[] sod, List<byte[]> cscaTrustAnchors) throws CieCheckerException {
+        log.info("Start verifyDigitalSignature() ...");
         try {
             //if (Objects.isNull(sod) || sod.length == 0 || Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty())
             //    throw new CieCheckerException( ResultCieChecker.KO_INPUT_PARAMETER_NULL);
@@ -363,20 +363,17 @@ public class CieCheckerImpl implements CieChecker {
             if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(NO_CSCA_ANCHORS_PROVIDED);
 
             CMSSignedData cms = new CMSSignedData(sod);
+            log.info("verifyDigitalSignature() - CMS created, proceeding to verifyTrustChain()");
             ResultCieChecker result = verifyTrustChain(cms, cscaTrustAnchors);
-            if( !(result.getValue().equals(OK)) )
+            if( !(result.getValue().equals(OK)) ) {
                 throw new CieCheckerException(result);
-            else
+            } else {
+                log.info("verifyDigitalSignature() completed successfully.");
                 return result;
+            }
         }catch(CMSException cmse){
-            System.err.println("CMSException: " + cmse.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA);
-       /* }catch(IOException ioe){
-            System.err.println("IOException: " + ioe.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION);*/
-        }catch(CieCheckerException cc){
-            System.err.println("CieCheckerException: " + cc.getMessage());
-            return cc.getResult();
+            log.error("CMSException: {}", cmse.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, cmse);
         }
     }
 

@@ -3,16 +3,20 @@ package it.pagopa.pn.mandate.validate;
 
 import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
+
+import it.pagopa.pn.ciechecker.model.CieIas;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.SodSummary;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
+import net.visma.autopay.http.digest.DigestAlgorithm;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.cms.Attribute;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.SignerInformationStore;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -326,7 +330,7 @@ class ValidateUtilsTest {
 
     }
 
-    private static byte[] decodePublicKeyPemToDer(String pem) {
+    public static byte[] decodePublicKeyPemToDer(String pem) {
         // Strip header/footer and whitespace, then Base64-decode
         String b64 = pem.replaceAll("-----BEGIN PUBLIC KEY-----", "")
                 .replaceAll("-----END PUBLIC KEY-----", "")
@@ -583,7 +587,7 @@ class ValidateUtilsTest {
         return Hex.decodeHex(toHex);
     }
 
-    private static List<byte[]> pickManyDerFromResources(int n) throws Exception {
+    public static List<byte[]> pickManyDerFromResources(int n) throws Exception {
         List<Path> ders = listDerFiles();
         Assertions.assertTrue(ders.size() >= n);
         List<byte[]> out = new ArrayList<>();
@@ -597,7 +601,7 @@ class ValidateUtilsTest {
         return out;
     }
 
-    private static byte[] toPem(byte[] der) {
+    public static byte[] toPem(byte[] der) {
         String b64 = Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(der);
         String pem = "-----BEGIN CERTIFICATE-----\n" + b64 + "\n-----END CERTIFICATE-----\n";
         return pem.getBytes(StandardCharsets.US_ASCII);
@@ -610,72 +614,6 @@ class ValidateUtilsTest {
         }
     }
 
-
-    @Test
-    void verifyDigitalSignatureMrtd() throws Exception {
-        System.out.println("TEST verifyDigitalSignatureMrtd - INIT");
-        CieCheckerImpl cieChecker = new CieCheckerImpl();
-
-        System.out.println(" - Leggo il file EF_SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(EF_SOD_HEX)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8,fileString.length());
-        byte[] efSod = hexFile(subString);
-
-        CieMrtd cieMrtd = new CieMrtd();
-        cieMrtd.setSod(efSod);
-
-        List<byte[]> ders = pickManyDerFromResources(-1);
-        String concatenatedPem = ders.stream()
-                .map(d->new String(toPem(d), StandardCharsets.UTF_8))
-                .collect(Collectors.joining());
-        byte[] blob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
-        cieChecker.init();
-
-        //Assertions.assertTrue(cieChecker.verifyDigitalSignatureMrtd(cieMrtd));
-        ResultCieChecker resultCieChecker = cieChecker.verifyDigitalSignature(efSod, List.of(blob));
-        System.out.println("TEST OK - resultCieChecker_2.getValue(): " + resultCieChecker.getValue());
-        Assertions.assertTrue(resultCieChecker.getValue().equals("OK"));
-
-        //ResultCieChecker resultCieChecker_1 = cieChecker.verifyDigitalSignature(null, List.of(blob));
-        //System.out.println("sod null - resultCieChecker_2.getValue(): " + resultCieChecker_1.getValue());
-        //Assertions.assertFalse(resultCieChecker_1.getValue().equals("OK"));
-        Assertions.assertThrows(CieCheckerException.class,
-                () -> cieChecker.verifyDigitalSignature(null, List.of(blob)));
-
-        //ResultCieChecker resultCieChecker_2 = cieChecker.verifyDigitalSignature(efSod, null);
-        //System.out.println("cscaAnchors null - resultCieChecker_2.getValue(): " + resultCieChecker_2.getValue());
-        //Assertions.assertFalse(resultCieChecker_2.getValue().equals("OK"));
-        Assertions.assertThrows(CieCheckerException.class,
-                () -> cieChecker.verifyDigitalSignature(efSod, null));
-
-        String efSodPem = """
-        -----BEGIN PUBLIC KEY-----
-        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAytYrOy71s5KcL8FpSOwC
-        MI/6+ZyaZkjMMbl/BDBtC59hlt8q5CptJihGqaRl5LeLJG7OqMfRteLtpHmsac5r
-        ZmTUncm+mCPMKy1p8EDpYscHneyFGnbbSyH9xKt8QLHV/O8d96dGl/iYNsk7wF8R
-        ihEy62qwfVUgeqhpaVNfEg1FYSOLLbR9OcBKRLamZcJrOqd5vuGNHZKyToqoWqhS
-        ZntbKyZIC93ibnLiQkhetPnrZoCm1s81v8EW6ASbhpWaJEcv3xwe9nZxqjr9tMkO
-        x9sOAT7gIN2hBQZasVxeCelfCZRjyh+P0j37DMpBaPCMlWLUeYQgKrd+aJty
-        /QIDAQAB
-        -----END PUBLIC KEY-----
-        """;
-        // WHEN: confronto gli encoding SPKI DER
-        byte[] efSodErrato = decodePublicKeyPemToDer(efSodPem);
-        //ResultCieChecker resultCieChecker_3 = cieChecker.verifyDigitalSignature(efSodErrato, List.of(blob));
-        //System.out.println("efSodErrato - resultCieChecker_3.getValue(): " + resultCieChecker_3.getValue());
-        //Assertions.assertFalse(resultCieChecker_3.getValue().equals("OK"));
-        Assertions.assertThrows(CieCheckerException.class,
-                () -> cieChecker.verifyDigitalSignature(efSodErrato, List.of(blob)));
-
-
-        byte[] blobErrato = ArrayUtils.addAll(efSod, blob);
-        //ResultCieChecker resultCieChecker_4 = cieChecker.verifyDigitalSignature(efSod, List.of(blobErrato));
-        //System.out.println("blobErrato - resultCieChecker_4.getValue(): " + resultCieChecker_4.getValue());
-        //Assertions.assertFalse(resultCieChecker_4.getValue().equals("OK"));
-        Assertions.assertThrows(CieCheckerException.class,
-                () -> cieChecker.verifyDigitalSignature(efSod, List.of(blobErrato)));
-
-    }
 
 
     @Test

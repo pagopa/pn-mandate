@@ -334,8 +334,7 @@ public class CieCheckerImpl implements CieChecker {
             //verifica se il certificato contenuto in $DSC_DER_FILE è stato firmato da una delle autorità di certificazione presenti nel file $TRUST_BUNDLE_PEM.
             ResultCieChecker result = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, cscaAnchors, new Date());
             if (!result.getValue().equals(OK)) {
-                System.err.println(EXC_CERTIFICATE_NOT_SIGNED);
-                //return ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED;
+                log.error("Error in verifyTrustChain: {}" , EXC_CERTIFICATE_NOT_SIGNED);
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED);
             }
             return ValidateUtils.verifyDigitalSignature(cms);

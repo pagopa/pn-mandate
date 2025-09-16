@@ -21,6 +21,7 @@ public class PnMandateConfig {
 
     private String clientExtregBasepath;
     private String clientDatavaultBasepath;
+    private String clientDeliveryBasepath;
 
     @Value("${aws.dynamodb_table:}")
     private String dynamodbTable;

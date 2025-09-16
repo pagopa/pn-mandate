@@ -6,13 +6,37 @@ components:
     ############################################################################################
     cxTypeAuthFleet:
       $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/c9c82e5d702ad98f61c456c591ce57c9571ce2fd/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/cxTypeAuthFleet'
+    cxTaxIdAuthFleet:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/c9c82e5d702ad98f61c456c591ce57c9571ce2fd/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/cxTaxIdAuthFleet'
     cxIdAuthFleet:
       $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/c9c82e5d702ad98f61c456c591ce57c9571ce2fd/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/cxIdAuthFleet'
     cxGroupsAuthFleet:
       $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/c9c82e5d702ad98f61c456c591ce57c9571ce2fd/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/cxGroupsAuthFleet'
     uidAuthFleet:
       $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/c9c82e5d702ad98f61c456c591ce57c9571ce2fd/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/uidAuthFleet'
-
+    
+    ############################################################################################
+    ###                     PARAMETRI DI AUTENTICAZIONE LOLLIPOP                             ###
+    ############################################################################################
+    lollipopOriginalUrl:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopOriginalUrl'
+    lollipopOriginalMethod:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopOriginalMethod'
+    lollipopPublicKey:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopPublicKey'
+    lollipopAssertionRef:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopAssertionRef'
+    lollipopAssertionType:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopAssertionType'
+    lollipopAuthJwt:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopAuthJwt'
+    lollipopUserId:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopUserId'
+    lollipopSignatureInput:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopSignatureInput'
+    lollipopSignature:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopSignature'
+  
   schemas:
 
     ############################################################################################

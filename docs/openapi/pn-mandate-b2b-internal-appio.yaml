@@ -56,15 +56,15 @@ paths:
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'                         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'                       # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopAssertionRef'                                    # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopAssertionType'                                   # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopAuthJwt'                                         # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
+      #       - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
+      #       - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
+      #       - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
+      #       - $ref: '#/components/parameters/lollipopAssertionRef'                                    # ONLY EXTERNAL
+      #       - $ref: '#/components/parameters/lollipopAssertionType'                                   # ONLY EXTERNAL
+      #       - $ref: '#/components/parameters/lollipopAuthJwt'                                         # ONLY EXTERNAL
+      #       - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
+      #       - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
+      #       - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
       requestBody:
         content:
           application/json:
@@ -138,15 +138,15 @@ paths:
         - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'                       # NO EXTERNAL
         - $ref: '#/components/parameters/cxRoleAuthFleet'                                         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopAssertionRef'                                    # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopAssertionType'                                   # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopAuthJwt'                                         # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
-#       - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
+        #       - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
+        #       - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
+        #       - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
+        #       - $ref: '#/components/parameters/lollipopAssertionRef'                                    # ONLY EXTERNAL
+        #       - $ref: '#/components/parameters/lollipopAssertionType'                                   # ONLY EXTERNAL
+        #       - $ref: '#/components/parameters/lollipopAuthJwt'                                         # ONLY EXTERNAL
+        #       - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
+        #       - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
+        #       - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
         - name: mandateId
           in: path
           required: true
@@ -249,7 +249,7 @@ components:
       $ref: 'remote-refs.yaml#/components/parameters/lollipopSignatureInput'                        # ONLY EXTERNAL
     lollipopSignature: # ONLY EXTERNAL
       $ref: 'remote-refs.yaml#/components/parameters/lollipopSignature'                             # ONLY EXTERNAL
-    
+
 
   schemas:
     MandateCreationRequest:
@@ -430,5 +430,5 @@ components:
       name: x-api-key
 
 security:
-  - ApiKeyAuth: [] # use the same name as under securitySchemes
+  - ApiKeyAuth: [ ] # use the same name as under securitySchemes
   

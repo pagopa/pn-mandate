@@ -12,9 +12,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.math.BigInteger;
 import java.security.*;
-
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
@@ -28,7 +25,6 @@ import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Security;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
@@ -55,10 +51,15 @@ public class CieCheckerImpl implements CieChecker {
     public List<byte[]> getCscaAnchor(){
         return this.cscaAnchor;
     }
+    public void setCscaAnchor(List<byte[]> cscaAnchor){
+        this.cscaAnchor = cscaAnchor;
+    }
 
     @Override
     public ResultCieChecker validateMandate(CieValidationData data) throws CieCheckerException {
         try {
+            if (Objects.isNull(data) ) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
+
             //16048-bis - NIS: nis_verify_sod.sh
             verifyDigitalSignature(data.getCieIas().getSod(), cscaAnchor); //data.getCieIas().getCscaAnchor());
 
@@ -253,7 +254,7 @@ public class CieCheckerImpl implements CieChecker {
      * In caso di eccezione ritorna false (puoi cambiare la gestione se preferisci lanciare eccezioni).
      */
     @Override
-    public ResultCieChecker verifyIntegrity(CieMrtd mrtd) {
+    public ResultCieChecker verifyIntegrity(CieMrtd mrtd) throws CieCheckerException {
         try {
             if(mrtd.getSod() == null){
                 throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_MRTD_SOD);
@@ -262,12 +263,13 @@ public class CieCheckerImpl implements CieChecker {
             byte[] dg11 = mrtd.getDg11() != null ? mrtd.getDg11() : null;
 
             return verifyIntegrityCore(mrtd.getSod(), dg1, dg11);
-        } catch (CieCheckerException e) {
-            log.error("Validation error in verifyIntegrity: {}", e.getMessage());
-            return e.getResult();
+        } catch (CieCheckerException ce) {
+            log.error("Validation error in verifyIntegrity: {}", ce.getMessage());
+            throw new CieCheckerException(ce.getResult(), ce);
         } catch (Exception e) {
             log.error("Unexpected error in verifyIntegrity: {}", e.getMessage());
-            return ResultCieChecker.KO;
+            //return ResultCieChecker.KO;
+            throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
 

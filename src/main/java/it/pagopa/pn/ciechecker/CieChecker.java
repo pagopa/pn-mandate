@@ -19,4 +19,6 @@ public interface CieChecker {
     ResultCieChecker verifyIntegrity(CieMrtd cieMrtd);
 
     ResultCieChecker verifyDigitalSignature(byte[] sod, List<byte[]> cscaAnchors);
+
+    void setCscaAnchor(List<byte[]> cscaAnchor);
 }

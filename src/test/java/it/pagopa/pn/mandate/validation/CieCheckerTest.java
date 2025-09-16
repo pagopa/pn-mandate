@@ -42,9 +42,6 @@ import java.util.stream.Stream;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 
 
 @Slf4j
@@ -261,9 +258,44 @@ class CieCheckerTest {
 
 
     @Test
-    void validateMandateTest() {
-        //TO BE IMPLEMENTED
-        Assertions.assertTrue(true);
+    void validateMandateTest() throws Exception {
+
+        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
+        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
+        byte[] nisHexToCheck = hexFile("393130373138343634363534");
+        String nonce = "D3FFB7DE52E211AC69B9DE70996E46F5";
+        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8, fileString.length());
+        byte[] sodIasByteArray = hexFile(subString);
+        byte[] sodMrtd = Files.readAllBytes(sodFile);
+        byte[] dg1 = Files.readAllBytes(dg1Files);
+        byte[] dg11 = Files.readAllBytes(dg11Files);
+
+        CieValidationData validationData = new CieValidationData();
+        CieIas cIas = new CieIas();
+        cIas.setPublicKey(nisPubKey);
+        cIas.setNis(nisHexToCheck);
+        cIas.setSod(sodIasByteArray);
+
+        CieMrtd cMrtd = new CieMrtd();
+        cMrtd.setSod(sodMrtd);
+        cMrtd.setDg1(dg1);
+        cMrtd.setDg11(dg11);
+
+        validationData.setCieIas(cIas);
+        validationData.setSignedNonce(nisSignature);
+        validationData.setNonce(nonce); //nis_challenge.hex
+        validationData.setCieMrtd(cMrtd);
+
+        List<byte[]> ders = pickManyDerFromResources(-1);
+        String concatenatedPem = ders.stream()
+                .map(d->new String(toPem(d), StandardCharsets.UTF_8))
+                .collect(Collectors.joining());
+        byte[] blob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
+
+        cieChecker.setCscaAnchor(List.of(blob));
+        ResultCieChecker result = cieChecker.validateMandate( validationData);
+        Assertions.assertTrue(result.getValue().equals(ResultCieChecker.OK));
     }
 
     public static List<byte[]> pickManyDerFromResources(int n) throws Exception {

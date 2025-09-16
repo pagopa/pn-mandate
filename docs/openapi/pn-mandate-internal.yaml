@@ -183,6 +183,78 @@ paths:
             application/json:                                                                     # NO EXTERNAL
               schema:                                                                             # NO EXTERNAL
                 $ref: 'remote-refs.yaml#/components/schemas/Problem'                              # NO EXTERNAL
+  /mandate-private/api/v2/mandates-by-internaldelegate/{internaluserId}:                          # NO EXTERNAL
+    get:                                                                                          # NO EXTERNAL
+      tags:                                                                                       # NO EXTERNAL
+        - mandate-private-service-v2                                                              # NO EXTERNAL
+      summary: Return only active and valid mandates for delegate, filtered by given filters      # NO EXTERNAL
+      operationId: listMandatesByDelegateV2                                                       # NO EXTERNAL
+      parameters:                                                                                 # NO EXTERNAL
+        - name: x-pagopa-pn-cx-type                                                               # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          description: cx-type (PF, PG, PA)                                                       # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            $ref: '#/components/schemas/cxTypeAuthFleet'                                          # NO EXTERNAL
+        - name: internaluserId                                                                    # NO EXTERNAL
+          in: path                                                                                # NO EXTERNAL
+          required: true                                                                          # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            type: string                                                                          # NO EXTERNAL
+            # ASCII printable characters                                                          # NO EXTERNAL
+            maxLength: 39                                                                         # NO EXTERNAL
+            pattern: ^[ -~ ]*$                                                                    # NO EXTERNAL
+        - name: mandateId                                                                         # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            type: string                                                                          # NO EXTERNAL
+            maxLength: 36                                                                         # NO EXTERNAL
+            pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$    # NO EXTERNAL
+        - name: x-pagopa-pn-cx-groups                                                             # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            type: array                                                                           # NO EXTERNAL
+            items:                                                                                # NO EXTERNAL
+              type: string                                                                        # NO EXTERNAL
+              # ASCII printable characters                                                        # NO EXTERNAL
+              maxLength: 1024                                                                     # NO EXTERNAL
+              pattern: ^[ -~ ]*$                                                                  # NO EXTERNAL
+        - name: notificationSentAt                                                                # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          description: filter mandates with start validation date lower than or equal to this value (ISO 8601 format)  # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            type: string                                                                          # NO EXTERNAL
+            format: date-time                                                                     # NO EXTERNAL
+        - name: iun                                                                               # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          description: filter mandates which are associated to this iun                           # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            type: string                                                                          # NO EXTERNAL
+        - name: rootSenderId                                                                      # NO EXTERNAL
+          in: query                                                                               # NO EXTERNAL
+          description: filter mandates with visibilityId that is null or contains this rootSenderId # NO EXTERNAL
+          schema:                                                                                 # NO EXTERNAL
+            type: string                                                                          # NO EXTERNAL
+      responses:                                                                                  # NO EXTERNAL
+        '200':                                                                                    # NO EXTERNAL
+          description: OK                                                                         # NO EXTERNAL
+          content:                                                                                # NO EXTERNAL
+            application/json:                                                                     # NO EXTERNAL
+              schema:                                                                             # NO EXTERNAL
+                type: array                                                                       # NO EXTERNAL
+                items:                                                                            # NO EXTERNAL
+                  $ref: '#/components/schemas/InternalMandateDto'                                 # NO EXTERNAL
+        '400':                                                                                    # NO EXTERNAL
+          description: Bad Request                                                                # NO EXTERNAL
+          content:                                                                                # NO EXTERNAL
+            application/json:                                                                     # NO EXTERNAL
+              schema:                                                                             # NO EXTERNAL
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'                              # NO EXTERNAL
+        '500':                                                                                    # NO EXTERNAL
+          description: Internal Server Error                                                      # NO EXTERNAL
+          content:                                                                                # NO EXTERNAL
+            application/json:                                                                     # NO EXTERNAL
+              schema:                                                                             # NO EXTERNAL
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'                              # NO EXTERNAL
   /mandate/api/v1/count-by-delegate:
     get:
       tags:
@@ -540,6 +612,16 @@ components:
           type: string                                                                # NO EXTERNAL
           description: ISO 8601 format                                                # NO EXTERNAL
         groups:                                                                       # NO EXTERNAL
+          type: array                                                                 # NO EXTERNAL
+          items:                                                                      # NO EXTERNAL
+            type: string                                                              # NO EXTERNAL
+        workflowType:                                                                 # NO EXTERNAL
+          type: string                                                                # NO EXTERNAL
+          enum:                                                                       # NO EXTERNAL
+            - STANDARD                                                                # NO EXTERNAL
+            - REVERSE                                                                 # NO EXTERNAL
+            - CIE                                                                     # NO EXTERNAL
+        iuns:                                                                         # NO EXTERNAL
           type: array                                                                 # NO EXTERNAL
           items:                                                                      # NO EXTERNAL
             type: string                                                              # NO EXTERNAL

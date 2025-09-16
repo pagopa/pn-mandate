@@ -57,4 +57,5 @@ public class CieCheckerConstants {
     public static final String EXC_NO_NIS_HASHES_DATAGROUP ="The NIS hashes DataGroup List is null";
     public static final String EXC_ERROR_CREATE_VERIFIER = "Unable to create verifier";
     public static final String EXC_NOVALID_DIGITAL_SIGNATURE = "No valid digital signature ";
+    public static final String EXC_NOT_SAME_DIGEST = "Digest mismatch between expected and actual DG";
 }

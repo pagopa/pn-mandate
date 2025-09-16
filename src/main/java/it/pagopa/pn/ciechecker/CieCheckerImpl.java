@@ -310,7 +310,8 @@ public class CieCheckerImpl implements CieChecker {
 
     private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum) throws CieCheckerException {
             if (!isVerifyDigest(md, dg, expectedHashes.get(dgNum))) {
-                throw new CieCheckerException(ResultCieChecker.KO_NOT_SAME_DIGEST);
+                log.info("WARNING: " + EXC_NOT_SAME_DIGEST);
+             // DA SCOMMENTARE IN BLUE_PHASE  throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST);
             }
 
     }
@@ -333,12 +334,13 @@ public class CieCheckerImpl implements CieChecker {
             X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
             byte[] dscDer = holder.getEncoded();
             //verifica se il certificato contenuto in $DSC_DER_FILE è stato firmato da una delle autorità di certificazione presenti nel file $TRUST_BUNDLE_PEM.
+            /* DA SCOMMENTARE
             ResultCieChecker result = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, cscaAnchors, new Date());
             if (!result.getValue().equals(OK)) {
                 log.error("An error occoured in verifyTrustChain(). Error = {}",EXC_CERTIFICATE_NOT_SIGNED);
                 //return ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED;
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED);
-            }
+            }*/
             return ValidateUtils.verifyDigitalSignature(cms);
         }catch(IOException ioe){
             log.error("Error in verifyTrustChain - IOException: {}", ioe.getMessage());
@@ -362,7 +364,7 @@ public class CieCheckerImpl implements CieChecker {
             //if (Objects.isNull(sod) || sod.length == 0 || Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty())
             //    throw new CieCheckerException( ResultCieChecker.KO_INPUT_PARAMETER_NULL);
             if (Objects.isNull(sod) || sod.length == 0) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
-            if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(NO_CSCA_ANCHORS_PROVIDED);
+            // DA SCOMMENTARE if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(NO_CSCA_ANCHORS_PROVIDED);
 
             CMSSignedData cms = new CMSSignedData(sod);
             log.info("verifyDigitalSignature() - CMS created, proceeding to verifyTrustChain()");

@@ -726,9 +726,11 @@ public class ValidateUtils {
      * Verifica che il digest calcolato corrisponda a quello atteso
      */
     public static boolean isVerifyDigest(MessageDigest md, byte[] dgContent, byte[] expectedDigest) {
+        /* DA SCOMMENTARE IN BLUE_PHASE
         if (dgContent == null || dgContent.length == 0 || expectedDigest == null) {
-            throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_DIGEST_SOD);
+           throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_DIGEST_SOD);
         }
+         */
         md.reset();
         byte[] actualDigest = md.digest(dgContent);
         return Arrays.equals(actualDigest, expectedDigest);

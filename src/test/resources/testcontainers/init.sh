@@ -63,12 +63,14 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     --provisioned-throughput \
         ReadCapacityUnits=10,WriteCapacityUnits=5
 
+aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
+    ssm put-parameter \
+    --name "AARQrUrlConfigs" \
+    --type String \
+    --value "{\"1.0.0\": {\"directAccessUrlTemplatePhysical\": \"https://cittadini.dev.notifichedigitali.it/\",\"directAccessUrlTemplateLegal\": \"https://imprese.dev.notifichedigitali.it/\",\"quickAccessUrlAarDetailSuffix\": \"?aar\"}}"
 
 
 echo "Initialization terminated"
-
-echo "Initialization terminated"
-
 
 
 

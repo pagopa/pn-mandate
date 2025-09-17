@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CIEValidationData;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RestController
 @lombok.CustomLog
 @AllArgsConstructor
@@ -19,7 +22,12 @@ public class MandateAppIoController implements AppIoPnMandateCreateApi {
     private final MandateService mandateService;
 
     @Override
-    public Mono<ResponseEntity<MandateCreationResponse>> createIOMandate(String xPagopaPnUid, String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, Mono<MandateCreationRequest> mandateCreationRequest, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Void>> acceptIOMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String xPagopaCxTaxid, String mandateId, List<String> xPagopaPnCxGroups, String xPagopaPnCxRole, Mono<CIEValidationData> ciEValidationData, ServerWebExchange exchange) {
+        return null;
+    }
+
+    @Override
+    public Mono<ResponseEntity<MandateCreationResponse>> createIOMandate(String xPagopaPnUid, String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String xPagopaCxTaxid, List<String> xPagopaPnCxGroups, Mono<MandateCreationRequest> mandateCreationRequest,  final ServerWebExchange exchange) {
         return mandateService.createMandateAppIo(xPagopaPnUid,xPagopaPnCxId,xPagopaPnCxType,mandateCreationRequest)
                 .map(response ->ResponseEntity.status(HttpStatus.CREATED).body(response));
     }

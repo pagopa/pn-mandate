@@ -11,6 +11,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -32,6 +34,8 @@ class MandateAppIoControllerTest {
         String uid = "testUid";
         String cxId = "testCxId";
         CxTypeAuthFleet cxType = CxTypeAuthFleet.PA;
+        String xPagopaCxTaxid = "cxTaxId";
+        List<String> xPagopaPnCxGroups = List.of("group1");
         MandateCreationRequest request = new MandateCreationRequest();
         MandateCreationResponse response = new MandateCreationResponse();
 
@@ -39,7 +43,7 @@ class MandateAppIoControllerTest {
                 .thenReturn(Mono.just(response));
 
         Mono<ResponseEntity<MandateCreationResponse>> result = controller.createIOMandate(
-                uid, cxId, cxType, Mono.just(request), mock(ServerWebExchange.class)
+                uid, cxId, cxType, xPagopaCxTaxid ,xPagopaPnCxGroups ,Mono.just(request), mock(ServerWebExchange.class)
         );
 
         StepVerifier.create(result)

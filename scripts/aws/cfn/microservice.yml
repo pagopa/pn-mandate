@@ -314,6 +314,7 @@ Resources:
         ContainerEnvEntry9: !Sub 'PN_MANDATE_PENDINGDURATION=${PendingDuration}'
         ContainerEnvEntry10: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
         ContainerEnvEntry11: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
+        ContainerEnvEntry12: !Sub 'PN_MANDATE_CLIENT_DELIVERY_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -370,6 +371,7 @@ Resources:
               - ssm:GetParameters
             Resource:
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
+              - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/AARQrUrlConfigs'
 
   # Expose PN-Mandate microservice public API with API-GW for B2BPG usage
   MandateMicroserviceB2BPGApi:

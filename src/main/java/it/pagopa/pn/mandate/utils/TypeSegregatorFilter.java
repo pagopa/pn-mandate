@@ -1,0 +1,72 @@
+package it.pagopa.pn.mandate.utils;
+
+import it.pagopa.pn.mandate.model.WorkFlowType;
+import lombok.Getter;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+@Getter
+public enum TypeSegregatorFilter {
+    STANDARD(WorkFlowType.STANDARD, WorkFlowType.REVERSE) {
+        @Override
+        public String buildExpression(Map<String, AttributeValue> expressionValues) {
+            return "(attribute_not_exists(s_workflowtype) OR " + super.buildExpression(expressionValues) + ")";
+        }
+    },
+    CIE(WorkFlowType.CIE),
+    ALL(WorkFlowType.values()) {
+        @Override
+        public String buildExpression(Map<String, AttributeValue> expressionValues) {
+            return "(attribute_not_exists(s_workflowtype) OR " + super.buildExpression(expressionValues) + ")";
+        }
+    }; // Include tutti i tipi di workflow;
+
+    private final List<WorkFlowType> types;
+
+    TypeSegregatorFilter(WorkFlowType... types) {
+        this.types = List.of(types);
+    }
+
+    /**
+     * Restituisce il segregatore da utilizzare in base al workflowType.
+     * Se il workflowType è null, restituisce il filtro STANDARD.
+     *
+     * @param workFlowType the WorkFlowType to find the filter for
+     * @return the corresponding WorkflowTypeFilter
+     * @throws IllegalArgumentException if the WorkFlowType is unknown
+     */
+    public static TypeSegregatorFilter fromWorkflowType(WorkFlowType workFlowType) {
+        if(workFlowType == null) {
+            return STANDARD; // Default to STANDARD if workFlowType is null
+        }
+        for (TypeSegregatorFilter filter : values()) {
+            if (filter.getTypes().contains(workFlowType)) {
+                return filter;
+            }
+        }
+
+        throw new IllegalArgumentException("Unknown WorkFlowType: " + workFlowType);
+    }
+
+    /**
+     * Costruisce l'espressione di filtro per DynamoDB in base ai tipi di workflow associati al filtro.
+     * Popola la mappa expressionValues con i valori necessari per l'espressione.
+     *
+     * @param expressionValues la mappa da popolare con i valori dell'espressione
+     * @return l'espressione di filtro come stringa
+     */
+    public String buildExpression(Map<String, AttributeValue> expressionValues) {
+        return IntStream.range(0, this.getTypes().size())
+                .mapToObj(i -> {
+                    WorkFlowType type = this.getTypes().get(i);
+                    String paramName = ":type" + i;
+                    expressionValues.put(paramName, AttributeValue.builder().s(type.name()).build());
+                    return "s_workflowtype = " + paramName;
+                })
+                .collect(Collectors.joining(" OR "));
+    }
+}

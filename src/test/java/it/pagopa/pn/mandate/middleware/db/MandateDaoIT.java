@@ -12,6 +12,7 @@ import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,6 +79,81 @@ public class MandateDaoIT {
             Assertions.assertEquals( mandateToInsert, elementFromDb);
         } catch (Exception e) {
            fail(e);
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void createMandateAppIo() {
+        //Given
+        MandateEntity mandateToInsert = newMandateAppIo(false);
+        MandateSupportEntity mandateSupport = newMandateSupport(mandateToInsert);
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        mandateDao.createMandate(mandateToInsert).block(d);
+
+        //Then
+        try {
+            MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            MandateSupportEntity elementSupportFromDb = testDao.getSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+            Assertions.assertNotNull(elementSupportFromDb);
+            Assertions.assertEquals( mandateSupport, elementSupportFromDb);
+            Assertions.assertNotNull( elementFromDb);
+            Assertions.assertEquals( mandateToInsert, elementFromDb);
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void createMandateAppioAlreadyExists() {
+        //Given
+        MandateEntity mandateToInsert = newMandateAppIo(false);
+        MandateEntity mandateToInsert1 = newMandateAppIo(false);
+        mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_2");
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert1.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        mandateDao.createMandate(mandateToInsert).block(d);
+        Mono<MandateEntity> mono = mandateDao.createMandate(mandateToInsert1);
+        assertThrows(PnMandateAlreadyExistsException.class, () -> mono.block(d));
+
+
+        //Then
+        try {
+            MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            MandateEntity elementFromDb1 = testDao.get(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+
+            Assertions.assertNotNull( elementFromDb);
+            Assertions.assertNull( elementFromDb1);
+            Assertions.assertEquals( mandateToInsert, elementFromDb);
+        } catch (Exception e) {
+            fail(e);
         } finally {
             try {
                 testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
@@ -182,6 +258,22 @@ public class MandateDaoIT {
         m.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING));
         m.setValidationcode("12345");
         m.setVisibilityIds(null);
+        return m;
+    }
+
+    public static MandateEntity newMandateAppIo(boolean withValidtoSetted) {
+        MandateEntity m = new MandateEntity();
+        m.setMandateId("f271e4bf-0d69-4ed6-a39f-4ef2f01f2fd1");
+        m.setDelegatorUid("f271e4bf-0d69-4ed6-a39f-4efdelegator");
+        m.setDelegator("PF-f271e4bf-0d69-4ed6-a39f-4efdelegator");
+        m.setDelegate("PF-f271e4bf-0d69-4ed6-a39f-4ef2delegate");
+        m.setDelegatorisperson(true);
+        m.setDelegateisperson(true);
+        m.setValidfrom(ZonedDateTime.of(LocalDateTime.of(2021, Month.DECEMBER, 14, 0, 0), ZoneId.of("Europe/Rome")).toInstant());
+        m.setValidto(withValidtoSetted?Instant.now().plus(Duration.ofDays(3)):null);
+        m.setValidationcode("12345");
+        m.setWorkflowType(WorkFlowType.CIE);
+        m.setIuns(Set.of("QDYU-PUAD-QMQA-202305-G-3"));
         return m;
     }
 

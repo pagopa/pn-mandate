@@ -13,11 +13,14 @@ import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnu
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -59,6 +62,7 @@ public class MandateDao extends BaseDao {
 
     String table;
     Duration pendingExpire;
+    Duration ciePendingExpire;
 
     public MandateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                       DynamoDbAsyncClient dynamoDbAsyncClient,
@@ -70,6 +74,7 @@ public class MandateDao extends BaseDao {
         this.dynamoDbAsyncClient = dynamoDbAsyncClient;
         this.dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient;
         this.pendingExpire = awsConfigs.getPendingDuration();
+        this.ciePendingExpire= awsConfigs.getCiePendingDuration();
     }
 
     //#region public methods
@@ -427,7 +432,13 @@ public class MandateDao extends BaseDao {
                 .build();
         return Mono.fromFuture(dynamoDbEnhancedAsyncClient.transactWriteItems(transaction)).thenReturn(mandate);
     }
-
+    private Duration chooseExpiredConfig(WorkFlowType workFlowType)
+    {
+        if(workFlowType == null || workFlowType == WorkFlowType.STANDARD || workFlowType == WorkFlowType.REVERSE)
+            return pendingExpire;
+        else
+            return ciePendingExpire;
+    }
 
     private CompletableFuture<Void> savePendingWithExpireSupport(MandateEntity mandate) {
         // Prevedo un record di supporto con TTL con impostata la scadenza relativa all'accettazione della delega
@@ -436,7 +447,9 @@ public class MandateDao extends BaseDao {
         if (mandate.getCreated() == null) {
             mandate.setCreated(Instant.now());
         }
-        Instant pendingExpiredInstant = mandate.getCreated().plus(this.pendingExpire);
+        Instant created = mandate.getCreated() != null ? mandate.getCreated() : Instant.now();
+        Instant pendingExpiredInstant = created.plus(this.chooseExpiredConfig(mandate.getWorkflowType()));
+
         MandateSupportEntity support;
         if (mandate.getValidto() != null && pendingExpiredInstant.isBefore(mandate.getValidto())){
             support = new MandateSupportEntity(mandate, pendingExpiredInstant);
@@ -622,9 +635,14 @@ public class MandateDao extends BaseDao {
      * @return oggetto delega creato
      */
     public Mono<MandateEntity> createMandate(MandateEntity mandate) {
+        return createMandate(mandate,TypeSegregatorFilter.STANDARD);
+    }
+
+    public Mono<MandateEntity> createMandate(MandateEntity mandate,TypeSegregatorFilter typeSegregatorFilter)
+    {
         String logMessage = String.format("create mandate mandate=%s", mandate);
 
-        return Mono.fromFuture(countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate())
+        return Mono.fromFuture(countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate(),typeSegregatorFilter,mandate.getIuns())
                         .thenCompose(total -> {
                             if (total == 0 || isSelfPgMandate(mandate)) {
                                 log.info("no current mandate for delegator-delegate pair, can proceed to create mandate");
@@ -733,7 +751,7 @@ public class MandateDao extends BaseDao {
      * @param delegateInternaluserid  internaluserid del delegato
      * @return future contenente il conteggio delle deleghe
      */
-    private CompletableFuture<Integer> countMandateForDelegateAndDelegator(String delegatorInternaluserid, String delegateInternaluserid) {
+    private CompletableFuture<Integer> countMandateForDelegateAndDelegator(String delegatorInternaluserid, String delegateInternaluserid, TypeSegregatorFilter typeSegregatorFilter, Set<String> iuns) {
         // qui ho entrambi gli id, mi serve sapere se ho già una delega per la coppia delegante-delegato, in pending/attiva e non scaduta ovviamente.
 
         // uso l'expression filter per filtrare le deleghe valide per il delegato
@@ -745,11 +763,13 @@ public class MandateDao extends BaseDao {
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
         expressionValues.put(":status", AttributeValue.builder().n(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE) + "").build());
 
+        String workFlowTypeExpression = typeSegregatorFilter.buildExpression(expressionValues);
+
         QueryRequest qeRequest = QueryRequest
                 .builder()
                 .select(Select.COUNT)
                 .tableName(table)
-                .filterExpression(getValidToFilterExpression() + AND + getStatusFilterExpression(true) + " AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)")
+                .filterExpression(getValidToFilterExpression() + AND + getStatusFilterExpression(true) + " AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)" + AND + workFlowTypeExpression + getIunsFilterExpression(iuns,expressionValues))
                 .keyConditionExpression(MandateEntity.COL_PK + " = :delegator AND begins_with(" + MandateEntity.COL_SK + ", :mandateprefix)")
                 .expressionAttributeValues(expressionValues)
                 .build();
@@ -781,6 +801,28 @@ public class MandateDao extends BaseDao {
     private String getValidToFilterExpression() {
         return "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) ";
     }
+
+    private String getIunsFilterExpression(Set<String> iuns, Map<String, AttributeValue> expressionValues) {
+        if (iuns != null && !iuns.isEmpty()) {
+            StringBuilder sb = new StringBuilder(AND + " (");
+            int idx = 0;
+            for (String iun : iuns) {
+                if (idx > 0) {
+                    sb.append(" OR ");
+                }
+                String placeholder = ":iun" + idx;
+                sb.append("contains(")
+                        .append(MandateEntity.COL_A_IUNS)
+                        .append(", ").append(placeholder).append(")");
+                expressionValues.put(placeholder, AttributeValue.builder().s(iun).build());
+                idx++;
+            }
+            sb.append(")");
+            return sb.toString();
+        }
+        return "";
+    }
+
 
     private String getStatusFilterExpression(boolean lessEqualThan) {
         return " (" + MandateEntity.COL_I_STATE + " " + (lessEqualThan ? "<=" : "=") + " :status) ";

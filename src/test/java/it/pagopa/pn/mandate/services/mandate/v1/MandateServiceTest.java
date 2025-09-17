@@ -2,29 +2,35 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
 import it.pagopa.pn.commons.utils.ValidateUtils;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.RecipientTypeDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.delivery.v1.dto.UserInfoDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.delivery.v1.dto.UserInfoQrCodeDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
-import it.pagopa.pn.mandate.mapper.ReverseMandateEntityMandateDtoMapper;
-import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
-import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
+import it.pagopa.pn.mandate.mapper.*;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
+import it.pagopa.pn.mandate.middleware.msclient.PnDeliveryClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
+import it.pagopa.pn.mandate.springbootcfg.QrUrlCodecConsumerActivation;
+import it.pagopa.pn.mandate.utils.AarQrUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +43,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
@@ -47,6 +54,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOT_VALID_AARQRCODE_ERROR;
+import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_QR_TOKEN_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -77,6 +86,18 @@ class MandateServiceTest {
     private UserEntityMandateCountsDtoMapper userEntityMandateCountsDtoMapper;
 
     @Mock
+    private MandateEntityAppIoMandateDtoMapper mandateEntityAppIoMandateDtoMapper;
+
+    @Mock
+    private PnDeliveryClient pnDeliveryClient;
+
+    @Mock
+    private AarQrUtils aarQrUtils;
+
+    @Mock
+    private MandateEntityBuilderMapper mandateEntityBuilderMapper;
+
+    @Mock
     private PnInfoPaClient pnInfoPaClient;
 
     @Mock
@@ -102,7 +123,7 @@ class MandateServiceTest {
     public void init() {
         MockitoAnnotations.openMocks(this);
         MandateValidationUtils mandateValidationUtils = Mockito.spy(new MandateValidationUtils(validateUtils, pnExtRegPrvtClient));
-        mandateService = new MandateService(mandateDao, delegateDao, mapper, mapperB2b, userEntityMandateCountsDtoMapper, pnInfoPaClient, pnDatavaultClient, sqsService, mandateValidationUtils, mandateSearchService, pnMandateConfig);
+        mandateService = new MandateService(mandateDao, delegateDao, mapper, mapperB2b, userEntityMandateCountsDtoMapper, pnInfoPaClient, pnDatavaultClient, sqsService, mandateValidationUtils, mandateSearchService, pnMandateConfig,pnDeliveryClient,mandateEntityAppIoMandateDtoMapper,aarQrUtils,mandateEntityBuilderMapper);
     }
 
     @Test
@@ -1894,4 +1915,111 @@ class MandateServiceTest {
         assertSame(page, responseDto.getResultsPage());
         assertSame(lek, responseDto.getNextPagesKey());
     }
+
+    @Test
+    void createMandateAppIo_success() {
+        // Given
+        String xPagopaPnUid = "uid";
+        String xPagopaPnCxId = "cxId";
+        String iun = "QDYU-PUAD-QMQA-202305-G-3";
+        it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType =
+                it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF;
+        MandateCreationRequest request = new MandateCreationRequest();
+        request.setAarQrCodeValue("qrCodeValue");
+
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setTaxId("TAXID123");
+        userInfoDto.setDenomination("Danilo Longobaldi");
+
+        String decodedQr = "decodedQr";
+        UserInfoQrCodeDto userInfoQrCodeDto = new UserInfoQrCodeDto();
+        userInfoQrCodeDto.setIun(iun);
+        userInfoQrCodeDto.setRecipientInfo(userInfoDto);
+
+        String delegatorInternalUserId = "internalUserId";
+        MandateEntity entity = new MandateEntity();
+        entity.setMandateId("mandateId");
+        MandateCreationResponse response = new MandateCreationResponse();
+
+        // Mock
+        when(aarQrUtils.decodeQr(eq("qrCodeValue"))).thenReturn(decodedQr);
+        when(pnDeliveryClient.decodeAarQrCode(eq(decodedQr))).thenReturn(Mono.just(userInfoQrCodeDto));
+        when(pnDatavaultClient.ensureRecipientByExternalId(eq(true), eq("TAXID123"))).thenReturn(Mono.just(delegatorInternalUserId));
+        when(mandateEntityBuilderMapper.buildMandateEntity(
+                eq(delegatorInternalUserId),
+                eq(userInfoQrCodeDto),
+                anyString(),
+                eq(xPagopaPnCxId)
+        )).thenReturn(entity);
+        when(mandateDao.createMandate(eq(entity), eq(TypeSegregatorFilter.CIE))).thenReturn(Mono.just(entity));
+        when(mandateEntityAppIoMandateDtoMapper.toDto(eq(entity))).thenReturn(response);
+
+        // When
+        MandateCreationResponse result = mandateService.createMandateAppIo(
+                xPagopaPnUid,
+                xPagopaPnCxId,
+                xPagopaPnCxType,
+                Mono.just(request)
+        ).block(D);
+
+        // Then
+        assertNotNull(result);
+        assertSame(response, result);
+        verify(aarQrUtils).decodeQr("qrCodeValue");
+        verify(pnDeliveryClient).decodeAarQrCode(decodedQr);
+        verify(pnDatavaultClient).ensureRecipientByExternalId(true, "TAXID123");
+        verify(mandateEntityBuilderMapper).buildMandateEntity(eq(delegatorInternalUserId), eq(userInfoQrCodeDto), anyString(), eq(xPagopaPnCxId));
+        verify(mandateDao).createMandate(entity, TypeSegregatorFilter.CIE);
+        verify(mandateEntityAppIoMandateDtoMapper).toDto(entity);
+    }
+
+
+    @Test
+    void createMandateAppIo_shouldReturn500_whenInternalError() {
+        // Given
+        MandateCreationRequest request = new MandateCreationRequest();
+        request.setAarQrCodeValue("qrCodeValue");
+
+        String decodedQr = "decodedQr";
+        UserInfoQrCodeDto userInfoQrCodeDto = new UserInfoQrCodeDto();
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setTaxId("TAXID123");
+        userInfoQrCodeDto.setRecipientInfo(userInfoDto);
+        String delegatorInternalUserId = "internalUserId";
+        MandateEntity entity = new MandateEntity();
+
+        when(aarQrUtils.decodeQr(eq("qrCodeValue"))).thenReturn(decodedQr);
+        when(pnDeliveryClient.decodeAarQrCode(eq(decodedQr))).thenReturn(Mono.just(userInfoQrCodeDto));
+        when(pnDatavaultClient.ensureRecipientByExternalId(eq(true), eq("TAXID123"))).thenReturn(Mono.just(delegatorInternalUserId));
+        when(mandateEntityBuilderMapper.buildMandateEntity(
+                eq(delegatorInternalUserId),
+                eq(userInfoQrCodeDto),
+                anyString(),
+                eq("cxId")
+        )).thenReturn(entity);
+        when(mandateDao.createMandate(eq(entity), eq(TypeSegregatorFilter.CIE)))
+                .thenReturn(Mono.error(new RuntimeException("Internal error")));
+
+        Mono<MandateCreationResponse> result = mandateService.createMandateAppIo(
+                "uid", "cxId", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)
+        );
+
+        StepVerifier.create(result)
+                .expectError(RuntimeException.class)
+                .verify();
+    }
+
+
+    @Test
+    void createMandateAppIo_nullQrCode() {
+
+        // aarQrCodeValue nullo
+        MandateCreationRequest request = new MandateCreationRequest();
+        request.setAarQrCodeValue(null);
+
+        assertThrows(NullPointerException.class, () ->
+                mandateService.createMandateAppIo("uid", "cxId", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)).block(D)
+        );
+    }
+
 }

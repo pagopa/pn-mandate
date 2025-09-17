@@ -669,7 +669,7 @@ public class MandateDaoIT {
                 .cxType(CxTypeAuthFleet.PF)
                 .iun(iun)
                 .build();
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, null).collectList().block(d);
 
         /*
             Then
@@ -736,7 +736,7 @@ public class MandateDaoIT {
                 .cxType(CxTypeAuthFleet.PF)
                 .iun("OTHER_IUN_0987654321")
                 .build();
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, null).collectList().block(d);
 
         /*
             Then
@@ -792,7 +792,7 @@ public class MandateDaoIT {
                 .cxType(CxTypeAuthFleet.PF)
                 .notificationSentAt(notificationSentAt)
                 .build();
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, null).collectList().block(d);
 
         /*
             Then
@@ -844,7 +844,7 @@ public class MandateDaoIT {
                 .cxType(CxTypeAuthFleet.PF)
                 .notificationSentAt(notificationSentAt)
                 .build();
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, null).collectList().block(d);
 
         /*
             Then
@@ -896,7 +896,7 @@ public class MandateDaoIT {
                 .cxType(CxTypeAuthFleet.PF)
                 .rootSenderId("ID_2")
                 .build();
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, null).collectList().block(d);
 
         /*
             Then
@@ -948,7 +948,7 @@ public class MandateDaoIT {
                 .cxType(CxTypeAuthFleet.PF)
                 .rootSenderId("NON_EXISTING_ID")
                 .build();
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, null).collectList().block(d);
 
         /*
             Then
@@ -957,8 +957,8 @@ public class MandateDaoIT {
          */
         try {
             Assertions.assertNotNull(results);
-            Assertions.assertEquals(1, results.size());
-            Assertions.assertTrue(results.contains(mandateToInsert1));
+            Assertions.assertEquals(0, results.size());
+            Assertions.assertTrue(results.isEmpty());
         } catch (Exception e) {
             throw new RuntimeException();
         } finally {

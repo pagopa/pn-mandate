@@ -7,7 +7,7 @@ public class CieCheckerConstants {
     // constants
     public static final String X_509 = "X.509";
     public static final String PKIX = "PKIX";
-    public static final String BOUNCY_CASTLE_PROVIDER = "BC";
+    //public static final String BOUNCY_CASTLE_PROVIDER = "BC";
     public static final String SHA_1 = "SHA-1";
     public static final String SHA_256 = "SHA-256";
     public static final String SHA_384 = "SHA-384";
@@ -23,7 +23,7 @@ public class CieCheckerConstants {
     public static final String EXC_NO_SIGNATURES_SIGNED_DATA="No signatures found in Signed Data";
     public static final String EXC_NO_HASH_CONTENT_MATCH="No HashContent match";
     public static final String EXC_NO_HASH_SIGNED_DATA = "No hash of Signed Data found";
-    public static final String EXC_NO_SIGNED_ATTRIBUTE = "No signed Attributes found";
+    public static final String EXC_NO_SIGNED_ATTRIBUTE = "No Signed Attributes found";
     public static final String EXC_NO_MATCH_NIS_HASHES_DATAGROUP ="The NIS hashes DataGroup do not match with the expected value";
     public static final String EXC_CERTIFICATE_NOT_SIGNED = "The certificate has not been signed";
     public static final String EXC_NO_SIGNERINFORMATION = "SignerInformation is null";
@@ -41,6 +41,7 @@ public class CieCheckerConstants {
     public static final String EXC_NOTFOUND_DIGEST = "One ore more digest not found.";
     public static final String EXC_NOTFOUND_MRTD_SOD = "Mrtd SOD is empty: must be present";
     public static final String EXC_GENERATE_PUBLICKEY = "Error in generating PublicKey Object";
+    public static final String EXC_EXTRACTION_PUBLICKEY = "Error in extraction PublicKey Object";
     public static final String NO_MATCH_NONCE_SIGNATURE = "Il challenge (nonce) dalla signature non matcha con quello estratto dalla firma";
     public static final String EXC_PARSING_HEX_BYTE = "Errore di conversione da stringa a byte[]";
     public static final String EXC_INVALID_CRYPTOGRAPHIC_OPERATION = "Unexpected or invalid state occurs during cryptographic operations";
@@ -49,5 +50,12 @@ public class CieCheckerConstants {
     public static final String EXC_INVALID_KEY_SPECIFICATION ="Invalid key specifications";
     public static final String EXC_NOFOUND_DIGITAL_SIGNATURE ="No digital signature found in the SignedData structure";
     public static final String EXC_NOFOUND_SIGNER ="No signer found";
-
+    public static final String EXC_NO_CMSTYPEDDATA = "Invalid or unavailable signed content"; //""Contenuto firmato non valido o non disponibile.";
+    public static final String EXC_NO_SIGNERINFORMATIONSTORE ="SignerInformationStore is null";
+    public static final String EXC_NO_MESSAGEDIGESTSPI_SUPPORTED = "No Provider supports a MessageDigestSpi implementation for the specified algorithm";
+    public static final String EXC_INVALID_CMSTYPEDDATA = "The signed content is not a valid hash sequence.";
+    public static final String EXC_NO_NIS_HASHES_DATAGROUP ="The NIS hashes DataGroup List is null";
+    public static final String EXC_ERROR_CREATE_VERIFIER = "Unable to create verifier";
+    public static final String EXC_NOVALID_DIGITAL_SIGNATURE = "No valid digital signature ";
+    public static final String EXC_NOT_SAME_DIGEST = "Digest mismatch between expected and actual DG";
 }

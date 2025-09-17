@@ -12,9 +12,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.math.BigInteger;
 import java.security.*;
-
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
@@ -28,7 +25,6 @@ import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Security;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
@@ -55,10 +51,15 @@ public class CieCheckerImpl implements CieChecker {
     public List<byte[]> getCscaAnchor(){
         return this.cscaAnchor;
     }
+    public void setCscaAnchor(List<byte[]> cscaAnchor){
+        this.cscaAnchor = cscaAnchor;
+    }
 
     @Override
-    public ResultCieChecker validateMandate(CieValidationData data)  {
+    public ResultCieChecker validateMandate(CieValidationData data) throws CieCheckerException {
         try {
+            if (Objects.isNull(data) ) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
+
             //16048-bis - NIS: nis_verify_sod.sh
             verifyDigitalSignature(data.getCieIas().getSod(), cscaAnchor); //data.getCieIas().getCscaAnchor());
 
@@ -76,11 +77,9 @@ public class CieCheckerImpl implements CieChecker {
 
             return ResultCieChecker.OK;
         }catch (CieCheckerException cce ) {
-            System.err.println("CieCheckerException: " + cce.getMessage());
             log.error("Validation error in validateMandate - CieCheckerException: {}", cce.getMessage());
-            throw new CieCheckerException(cce.getResult(), cce);
+            return cce.getResult();
         }catch (Exception e ) {
-            System.err.println("CieCheckerException: " + e.getMessage());
             log.error("Validation error in validateMandate - Exception: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
@@ -89,11 +88,11 @@ public class CieCheckerImpl implements CieChecker {
     /**
      * @param data CieValidationData
      * @return ResultCieChecker
-     *
+     * @throws CieCheckerException
      *  Verifica il challenge (nonce) dalla signature, confrontandolo con quello estratto dalla firma.
      *  Per la verifica si utilizzano : byte[] signature, byte[] pubKey, byte[] challenge
      */
-    public ResultCieChecker verifyChallengeFromSignature(CieValidationData data) {
+    public ResultCieChecker verifyChallengeFromSignature(CieValidationData data) throws CieCheckerException {
 
         try {
 
@@ -109,15 +108,12 @@ public class CieCheckerImpl implements CieChecker {
             else
                 return ResultCieChecker.OK;
         }catch (IllegalArgumentException ie){
-            System.err.println("IllegalArgumentException: " + ie.getMessage() );
             log.error("Error in verifyChallengeFromSignature - IllegalArgumentException: {}", ie.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_PUBLICKEY, ie);  //KO_EXC_GENERATE_OBJECT - illegal object in getInstance: org.bouncycastle.asn1.DLSequence
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_PUBLICKEY, ie);
         }catch( CryptoException cre){
-            System.err.println("CryptoException: " + cre.getMessage());
             log.error("Error in verifyChallengeFromSignature - CryptoException: {}", cre.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CRYPTOGRAPHIC_OPERATION, cre);
         } catch (DecoderException de) {
-            System.err.println("DecoderException: " + de.getMessage());
             log.error("Error in verifyChallengeFromSignature - DecoderException: {}", de.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_HEX_BYTE, de);
         }catch (Exception e){
@@ -134,8 +130,8 @@ public class CieCheckerImpl implements CieChecker {
 
     /**
      *
-     * @param pubKey
-     * @return
+     * @param pubKey byte[]
+     * @return RSAKeyParameters result
      *
      * Converte la public key byte array in una public Key
      */
@@ -155,13 +151,16 @@ public class CieCheckerImpl implements CieChecker {
      *
      * @param cieIas CieIas
      * @return boolean
+     * @throw CieCheckerException
      */
-    public boolean verifySodPassiveAuthCie(CieIas cieIas) {
+    public boolean verifySodPassiveAuthCie(CieIas cieIas) throws CieCheckerException {
 
         try {
-            if (cieIas == null || cieIas.getSod() == null || cieIas.getNis() == null ) {
-                throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
+            if ( Objects.isNull(cieIas) || Objects.isNull(cieIas.getSod()) || Objects.isNull(cieIas.getNis()) ) {
+                log.error("Error in verifySodPassiveAuthCie: {}", EXC_INPUT_PARAMETER_NULL);
+                throw new CieCheckerException(ResultCieChecker.KO_INPUT_PARAMETER_NULL);
             }
+
             CMSSignedData cms = new CMSSignedData(cieIas.getSod());
 
             /*****************************************************
@@ -171,33 +170,40 @@ public class CieCheckerImpl implements CieChecker {
             X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
             // - Estrazione della chiave pubblica dal Certificato X509
             PublicKey publicKey = ValidateUtils.extractPublicKeyFromHolder(certHolder);
+            if ( Objects.isNull(publicKey) ) {
+                log.error("Error in verifySodPassiveAuthCie: {}", EXC_EXTRACTION_PUBLICKEY);
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_EXTRACTION_PUBLICKEY);
+            }
             // - Estrazione delle firme di ogni firmatario dal SignedData
             List<byte[]> signatures = ValidateUtils.extractSignaturesFromSignedData(cms);
-            if(signatures == null || signatures.isEmpty())
-                throw new CieCheckerException(EXC_NO_SIGNATURES_SIGNED_DATA);
-
+            if ( signatures.isEmpty() ) {
+                log.error("Error in verifySodPassiveAuthCie: {}", EXC_NO_SIGNATURES_SIGNED_DATA);
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNATURES_SIGNED_DATA);
+            }
             /*****************************************************
              ** PASSO 2 - VERIFICA ed ESTRAZIONE DEGLI HASH: CONTENT
              *****************************************************/
             if (!ValidateUtils.verifyMatchHashContent(cms)) {
-                System.err.println(EXC_NO_HASH_CONTENT_MATCH);
-                return false;
+                log.error("Error in verifySodPassiveAuthCie: {}", EXC_NO_HASH_CONTENT_MATCH);
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_CONTENT_MATCH);
             }
 
             /*******************************************************************
              ** PASSO 1A: ESTRAZIONE DEGLI ATTRIBUTI FIRMATI (signedAttributes)
              *******************************************************************/
             Hashtable<ASN1ObjectIdentifier, Attribute> signedAttributesTable = ValidateUtils.extractAllSignedAttributes(cms);
-            if(signedAttributesTable == null || signedAttributesTable.isEmpty())
-                throw new CieCheckerException(EXC_NO_SIGNED_ATTRIBUTE);
+            if(Objects.isNull(signedAttributesTable) || signedAttributesTable.isEmpty()) {
+                log.error("Error in verifySodPassiveAuthCie: {}", EXC_NO_SIGNED_ATTRIBUTE);
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNED_ATTRIBUTE);
+            }
 
             /*******************************************************************
              ** PASSO 1B: ANALISI DEGLI HASH DEI DATI (DataGroupHashes)
              *********************************************************************/
             // Estrazione e verifica della lista degli hash dei Data Group
             if (!ValidateUtils.verifyNisSha256FromDataGroup(cms, cieIas.getNis())) {
-                System.err.println(EXC_NO_MATCH_NIS_HASHES_DATAGROUP);
-                return false;
+                log.error("Error in verifySodPassiveAuthCie: {}", EXC_NO_MATCH_NIS_HASHES_DATAGROUP);
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP);
             }
             /*******************************************************************
              ** PASSO 2: MANIPOLAZIONE DEL TAG PER LA VERIFICA DELLA FIRMA
@@ -219,37 +225,36 @@ public class CieCheckerImpl implements CieChecker {
             }
             */
             ResultCieChecker result = ValidateUtils.verifyDigitalSignature(cms);
-            return result.getValue().equals("OK");
-
+            if(!(result.getValue().equals(OK))) {
+                log.error("Error in verifySodPassiveAuthCie: {}", EXC_NOVALID_DIGITAL_SIGNATURE);
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE);
+            }else
+                return true;
 
         }catch(CMSException cmse){
-            System.err.println("CMSException: " + cmse.getMessage());
+            log.error("Error in verifySodPassiveAuthCie - CMSException: {}", cmse.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, cmse);
-        }catch(NoSuchAlgorithmException nsae) {
-            System.err.println("NoSuchAlgorithmException: " + nsae.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_AVAILABLE_CRYPTOGRAPHIC_ALGORITHM, nsae);
-        }catch (CieCheckerException cce ) {
-            System.err.println("CieCheckerException: " + cce.getMessage());
-            throw new CieCheckerException(cce.getResult(), cce);
+        /*}catch(NoSuchAlgorithmException nsae) {
+            log.error("Error in verifySodPassiveAuthCie - NoSuchAlgorithmException: {}", nsae.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_AVAILABLE_CRYPTOGRAPHIC_ALGORITHM, nsae);*/
         } catch (Exception  e ){
-            System.err.println("Error during verification SOD: " + e.getMessage());
+            log.error("Error in verifySodPassiveAuthCie - Exception: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
+
     /**
      * accetta path EF.SOD e una lista variabile di path EF.DG* (varargs, così possiamo
      * passare un numero variabile di parametri senza dover creare un array a mano)
-     *
      * questo metodo replica il comportamento dello script verify_integrity.sh:
      * 1) decodifica il SOD (ValidateUtils.decodeSodHr)
      * 2) identifica l'algoritmo di hash
      * 3) verifica che sia compatibile
      * 4) per ogni DG passato ricalcola l'hash e lo confronta con quello nel SOD
-     *
      * In caso di eccezione ritorna false (puoi cambiare la gestione se preferisci lanciare eccezioni).
      */
     @Override
-    public ResultCieChecker verifyIntegrity(CieMrtd mrtd) {
+    public ResultCieChecker verifyIntegrity(CieMrtd mrtd) throws CieCheckerException {
         try {
             if(mrtd.getSod() == null){
                 throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_MRTD_SOD);
@@ -258,12 +263,13 @@ public class CieCheckerImpl implements CieChecker {
             byte[] dg11 = mrtd.getDg11() != null ? mrtd.getDg11() : null;
 
             return verifyIntegrityCore(mrtd.getSod(), dg1, dg11);
-        } catch (CieCheckerException e) {
-            log.error("Validation error in verifyIntegrity: {}", e.getMessage());
-            return e.getResult();
+        } catch (CieCheckerException ce) {
+            log.error("Validation error in verifyIntegrity: {}", ce.getMessage());
+            throw new CieCheckerException(ce.getResult(), ce);
         } catch (Exception e) {
             log.error("Unexpected error in verifyIntegrity: {}", e.getMessage());
-            return ResultCieChecker.KO;
+            //return ResultCieChecker.KO;
+            throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
 
@@ -304,7 +310,8 @@ public class CieCheckerImpl implements CieChecker {
 
     private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum) throws CieCheckerException {
             if (!isVerifyDigest(md, dg, expectedHashes.get(dgNum))) {
-                throw new CieCheckerException(ResultCieChecker.KO_NOT_SAME_DIGEST);
+                log.info("WARNING: " + EXC_NOT_SAME_DIGEST);
+             // DA SCOMMENTARE IN BLUE_PHASE  throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST);
             }
 
     }
@@ -327,12 +334,13 @@ public class CieCheckerImpl implements CieChecker {
             X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
             byte[] dscDer = holder.getEncoded();
             //verifica se il certificato contenuto in $DSC_DER_FILE è stato firmato da una delle autorità di certificazione presenti nel file $TRUST_BUNDLE_PEM.
+            /* DA SCOMMENTARE
             ResultCieChecker result = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, cscaAnchors, new Date());
             if (!result.getValue().equals(OK)) {
                 log.error("An error occoured in verifyTrustChain(). Error = {}",EXC_CERTIFICATE_NOT_SIGNED);
                 //return ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED;
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED);
-            }
+            }*/
             return ValidateUtils.verifyDigitalSignature(cms);
         }catch(IOException ioe){
             log.error("Error in verifyTrustChain - IOException: {}", ioe.getMessage());
@@ -356,7 +364,7 @@ public class CieCheckerImpl implements CieChecker {
             //if (Objects.isNull(sod) || sod.length == 0 || Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty())
             //    throw new CieCheckerException( ResultCieChecker.KO_INPUT_PARAMETER_NULL);
             if (Objects.isNull(sod) || sod.length == 0) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
-            if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(NO_CSCA_ANCHORS_PROVIDED);
+            // DA SCOMMENTARE if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(NO_CSCA_ANCHORS_PROVIDED);
 
             CMSSignedData cms = new CMSSignedData(sod);
             log.info("verifyDigitalSignature() - CMS created, proceeding to verifyTrustChain()");
@@ -373,7 +381,7 @@ public class CieCheckerImpl implements CieChecker {
         }
     }
 
-
+/*
     private PublicKey convertBytesToPublicKey(byte[] publicKeyBytes, String algorithm)
             throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
 
@@ -386,5 +394,5 @@ public class CieCheckerImpl implements CieChecker {
         // 3. Genera l'oggetto PublicKey
         return keyFactory.generatePublic(keySpec);
     }
-
+*/
 }

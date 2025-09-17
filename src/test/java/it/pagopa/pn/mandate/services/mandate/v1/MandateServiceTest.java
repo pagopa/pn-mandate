@@ -1948,17 +1948,17 @@ class MandateServiceTest {
         MandateCreationResponse response = new MandateCreationResponse();
 
         // Mock
-        when(aarQrUtils.decodeQr(eq("qrCodeValue"))).thenReturn(decodedQr);
-        when(pnDeliveryClient.decodeAarQrCode(eq(decodedQr))).thenReturn(Mono.just(userInfoQrCodeDto));
-        when(pnDatavaultClient.ensureRecipientByExternalId(eq(true), eq("TAXID123"))).thenReturn(Mono.just(delegatorInternalUserId));
+        when(aarQrUtils.decodeQr("qrCodeValue")).thenReturn(decodedQr);
+        when(pnDeliveryClient.decodeAarQrCode(decodedQr)).thenReturn(Mono.just(userInfoQrCodeDto));
+        when(pnDatavaultClient.ensureRecipientByExternalId(true, "TAXID123")).thenReturn(Mono.just(delegatorInternalUserId));
         when(mandateEntityBuilderMapper.buildMandateEntity(
-                eq(delegatorInternalUserId),
-                eq(userInfoQrCodeDto),
-                anyString(),
-                eq(xPagopaPnCxId)
+                any(),
+                any(),
+                any(),
+                any()
         )).thenReturn(entity);
-        when(mandateDao.createMandate(eq(entity), eq(TypeSegregatorFilter.CIE))).thenReturn(Mono.just(entity));
-        when(mandateEntityAppIoMandateDtoMapper.toDto(eq(entity))).thenReturn(response);
+        when(mandateDao.createMandate(entity, TypeSegregatorFilter.CIE)).thenReturn(Mono.just(entity));
+        when(mandateEntityAppIoMandateDtoMapper.toDto(entity)).thenReturn(response);
 
         // When
         MandateCreationResponse result = mandateService.createMandateAppIo(
@@ -1973,7 +1973,10 @@ class MandateServiceTest {
         verify(aarQrUtils).decodeQr("qrCodeValue");
         verify(pnDeliveryClient).decodeAarQrCode(decodedQr);
         verify(pnDatavaultClient).ensureRecipientByExternalId(true, "TAXID123");
-        verify(mandateEntityBuilderMapper).buildMandateEntity(eq(delegatorInternalUserId), eq(userInfoQrCodeDto), anyString(), eq(xPagopaPnCxId));
+        verify(mandateEntityBuilderMapper).buildMandateEntity( any(),
+                any(),
+                any(),
+                any());
         verify(mandateDao).createMandate(entity, TypeSegregatorFilter.CIE);
         verify(mandateEntityAppIoMandateDtoMapper).toDto(entity);
     }

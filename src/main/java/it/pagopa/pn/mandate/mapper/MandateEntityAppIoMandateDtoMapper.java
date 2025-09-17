@@ -12,14 +12,11 @@ public class MandateEntityAppIoMandateDtoMapper implements BaseMapperInterface<M
 
     @Override
     public MandateCreationResponse toDto(MandateEntity entity) {
-        final MandateCreationResponse target= new MandateCreationResponse();
-        MandateDto mandateDto= new MandateDto();
+        final MandateCreationResponse target = new MandateCreationResponse();
+        MandateDto mandateDto = new MandateDto();
         mandateDto.setMandateId(entity.getMandateId());
-        if (entity.getValidto() != null) {
-            mandateDto.dateTo(entity.getValidto().toString());
-            target.setRequestTTL((int) entity.getValidto().getEpochSecond());
-        }
-        mandateDto.setVerificationCode(String.valueOf(entity.getValidationcode()));
+        mandateDto.dateTo(entity.getValidto() != null ? entity.getValidto().toString() : null);
+        mandateDto.setVerificationCode(entity.getValidationcode());
         target.setMandate(mandateDto);
         target.setRequestTTL(entity.getValidto() != null ? (int) entity.getValidto().getEpochSecond() : null);
         return target;

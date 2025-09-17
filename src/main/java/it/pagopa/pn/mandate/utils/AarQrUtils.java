@@ -12,7 +12,7 @@ import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE
 public class AarQrUtils {
     private final QrUrlCodecConsumerActivation qrUrlCodecConsumerActivation;
 
-    public String decodeQr(String url){
+    public String extractQrToken(String url){
         try{
             return qrUrlCodecConsumerActivation.decode(url);
         }

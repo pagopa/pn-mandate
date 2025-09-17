@@ -171,10 +171,10 @@ public class MandateService {
         return Mono.defer(() -> mandateCreationRequest)
                 .map(MandateCreationRequest::getAarQrCodeValue)
                 .doOnNext(qr -> log.debug("Extracted aarQrCodeValue: {}", qr))
-                .map(aarQrUtils::decodeQr)
-                .doOnNext(decoded -> log.debug("Decoded QR: {}", decoded))
+                .map(aarQrUtils::extractQrToken)
+                .doOnNext(token -> log.debug("Extracted Token: {}", token))
                 .flatMap(pnDeliveryClient::decodeAarQrCode)
-                .doOnNext(dto -> log.debug("Decoded AarQrCode, recipientInfo: {}", dto.getRecipientInfo()))
+                .doOnNext(dto -> log.debug("Decoded AarQrCode, iun: {}", dto.getIun()))
                 .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(true, dto.getRecipientInfo().getTaxId())
                                 .doOnNext(delegatorInternalUserId -> log.debug("Retrieved delegatorInternalUserId: {}", delegatorInternalUserId))
                                 .map(delegatorInternalUserId -> {

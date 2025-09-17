@@ -26,6 +26,7 @@ import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import it.pagopa.pn.mandate.utils.PgUtils;
+import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.lang.Nullable;
@@ -292,8 +293,15 @@ public class MandateService {
         }
 
         Integer finalIStatus = iStatus;
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(internaluserId)
+                .status(finalIStatus)
+                .cxType(xPagopaPnCxType)
+                .groups(xPagopaPnCxGroups)
+                .build();
+
         return validaAccessoOnlyGroupAdmin(xPagopaPnCxType,xPagopaPnCxRole,xPagopaPnCxGroups)
-                .flatMapMany(obj -> mandateDao.listMandatesByDelegate(internaluserId, finalIStatus, null, xPagopaPnCxType, xPagopaPnCxGroups))   // (1)
+                .flatMapMany(obj -> mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD))   // (1)
                 .map(ent -> {
                     ent.setValidationcode(null);   // (2)
                     return ent;

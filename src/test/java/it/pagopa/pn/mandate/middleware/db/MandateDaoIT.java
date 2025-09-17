@@ -1,18 +1,22 @@
 package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.commons.log.PnAuditLogBuilder;
 import it.pagopa.pn.mandate.LocalStackTestConfig;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.DelegateType;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateByDelegatorRequestDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.mandate.model.InputSearchMandateDto;
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -243,7 +247,12 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, null, CxTypeAuthFleet.PG, List.of("RECLAMI"))
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(mandateToInsert.getDelegate())
+                .cxType(CxTypeAuthFleet.PG)
+                .groups(List.of("RECLAMI"))
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD)
                 .collectList()
                 .block(d);
 
@@ -299,7 +308,11 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, null, CxTypeAuthFleet.PF,null).collectList().block(d);
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(mandateToInsert.getDelegate())
+                .cxType(CxTypeAuthFleet.PF)
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
 
         //Then
         try {
@@ -353,7 +366,12 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), null, mandateToInsert1.getMandateId(), CxTypeAuthFleet.PF, null).collectList().block(d);
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(mandateToInsert.getDelegate())
+                .mandateId(mandateToInsert1.getMandateId())
+                .cxType(CxTypeAuthFleet.PF)
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
 
         //Then
         try {
@@ -406,7 +424,12 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert2.getDelegate(), null, mandateToInsert2.getMandateId(), CxTypeAuthFleet.PF, null).collectList().block(d);
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(mandateToInsert2.getDelegate())
+                .mandateId(mandateToInsert2.getMandateId())
+                .cxType(CxTypeAuthFleet.PF)
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
 
         //Then
         try {
@@ -459,7 +482,12 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert2.getDelegate(), null, mandateToInsert2.getMandateId(),CxTypeAuthFleet.PF, null).collectList().block(d);
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(mandateToInsert2.getDelegate())
+                .mandateId(mandateToInsert2.getMandateId())
+                .cxType(CxTypeAuthFleet.PF)
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
 
         //Then
         try {
@@ -510,7 +538,12 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null, CxTypeAuthFleet.PF,null).collectList().block(d);
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(mandateToInsert.getDelegate())
+                .status(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE))
+                .cxType(CxTypeAuthFleet.PF)
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
 
         //Then
         try {
@@ -566,7 +599,12 @@ public class MandateDaoIT {
         }
 
         //When
-        List<MandateEntity> results = mandateDao.listMandatesByDelegate(mandateToInsert.getDelegate(), StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE), null, CxTypeAuthFleet.PF, null).collectList().block(d);
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(mandateToInsert.getDelegate())
+                .status(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE))
+                .cxType(CxTypeAuthFleet.PF)
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
 
         //Then
         try {
@@ -584,6 +622,348 @@ public class MandateDaoIT {
                 testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
                 testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
                 testDao.delete(mandateToInsert3.getDelegator(), mandateToInsert3.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void listMandatesByDelegateV2_caseIuns_Ok() {
+        /*
+            Given
+            2 Deleghe attive:
+            - una senza workflowType (considerabile come STANDARD)
+            - una con workflowType di tipo CIE e legata ad uno specifico IUN
+        */
+        String iun = "TEST_IUN_1234567890";
+        MandateEntity mandateToInsert1 = newMandate(false);
+        String delegate = mandateToInsert1.getDelegate();
+        mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
+        mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
+        mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        MandateEntity mandateToInsert2 = newMandate(false);
+        mandateToInsert2.setDelegator(mandateToInsert2.getDelegator() + "_2");
+        mandateToInsert2.setMandateId(mandateToInsert2.getMandateId() + "_2");
+        mandateToInsert2.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        mandateToInsert2.setWorkflowType(WorkFlowType.CIE);
+        mandateToInsert2.setIuns(Set.of(iun));
+
+        try {
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+            testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            mandateDao.createMandate(mandateToInsert2).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        /*
+            When
+            La ricerca viene effettuata specificando lo IUN legato alla Delega con workflowType CIE
+            e lo status ACTIVE.
+         */
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(delegate)
+                .status(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE))
+                .cxType(CxTypeAuthFleet.PF)
+                .iun(iun)
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+
+        /*
+            Then
+            Vengono ritornate entrambe le deleghe attive in quanto:
+            - la prima delega senza workflowType viene sempre considerata come STANDARD e quindi ricade nei criteri di ricerca
+            - la seconda delega con workflowType CIE viene considerata in quanto lo IUN specificato nella ricerca
+              corrisponde a quello associato alla delega stessa
+         */
+        try {
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals(2, results.size());
+            Assertions.assertTrue(results.contains(mandateToInsert1));
+            Assertions.assertTrue(results.contains(mandateToInsert2));
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+                testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void listMandatesByDelegateV2_caseIuns_Ko() {
+        /*
+            Given
+            2 Deleghe attive:
+            - una senza workflowType (considerabile come STANDARD)
+            - una con workflowType di tipo CIE e legata ad uno specifico IUN
+        */
+        String iun = "TEST_IUN_1234567890";
+        MandateEntity mandateToInsert1 = newMandate(false);
+        String delegate = mandateToInsert1.getDelegate();
+        mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
+        mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
+        mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        MandateEntity mandateToInsert2 = newMandate(false);
+        mandateToInsert2.setDelegator(mandateToInsert2.getDelegator() + "_2");
+        mandateToInsert2.setMandateId(mandateToInsert2.getMandateId() + "_2");
+        mandateToInsert2.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        mandateToInsert2.setWorkflowType(WorkFlowType.CIE);
+        mandateToInsert2.setIuns(Set.of(iun));
+
+        try {
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+            testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            mandateDao.createMandate(mandateToInsert2).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        /*
+            When
+            La ricerca viene effettuata specificando uno IUN NON legato alla Delega con workflowType CIE
+            e lo status ACTIVE.
+         */
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(delegate)
+                .status(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE))
+                .cxType(CxTypeAuthFleet.PF)
+                .iun("OTHER_IUN_0987654321")
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+
+        /*
+            Then
+            Viene ritornata solo la prima delega attiva in quanto:
+            - la prima delega senza workflowType viene sempre considerata come STANDARD e quindi ricade nei criteri di ricerca
+            - la seconda delega con workflowType CIE non viene considerata in quanto lo IUN specificato nella ricerca
+              NON corrisponde a quello associato alla delega stessa
+         */
+        try {
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals(1, results.size());
+            Assertions.assertTrue(results.contains(mandateToInsert1));
+            Assertions.assertFalse(results.contains(mandateToInsert2));
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+                testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void listMandatesByDelegateV2_caseNotificationSentAt_Ok() {
+        /*
+            Given
+            1 Delega attiva senza workflowType (considerabile come STANDARD)
+        */
+        MandateEntity mandateToInsert1 = newMandate(false);
+        String delegate = mandateToInsert1.getDelegate();
+        mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
+        mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
+        mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+
+        try {
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        /*
+            When
+            La ricerca viene effettuata specificando il notificationSentAt legato ad una notifica
+         */
+        Instant notificationSentAt = mandateToInsert1.getValidfrom().plus(Duration.ofDays(2)); // Data successiva alla validFrom della delega
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(delegate)
+                .status(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE))
+                .cxType(CxTypeAuthFleet.PF)
+                .notificationSentAt(notificationSentAt)
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+
+        /*
+            Then
+            Viene ritornata la delega in quanto la delega attiva esistente ha una validFrom precedente rispetto
+            alla data di notificationSentAt specificata nella ricerca.
+         */
+        try {
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals(1, results.size());
+            Assertions.assertTrue(results.contains(mandateToInsert1));
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void listMandatesByDelegateV2_caseNotificationSentAt_Ko() {
+        /*
+            Given
+            1 Delega attiva senza workflowType (considerabile come STANDARD)
+        */
+        MandateEntity mandateToInsert1 = newMandate(false);
+        String delegate = mandateToInsert1.getDelegate();
+        mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
+        mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
+        mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+
+        try {
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        /*
+            When
+            La ricerca viene effettuata specificando il notificationSentAt legato ad una notifica
+         */
+        Instant notificationSentAt = mandateToInsert1.getValidfrom().minus(Duration.ofDays(2)); // Data precedente alla validFrom della delega
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(delegate)
+                .status(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE))
+                .cxType(CxTypeAuthFleet.PF)
+                .notificationSentAt(notificationSentAt)
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+
+        /*
+            Then
+            Non viene ritornata nessuna delega in quanto la delega attiva esistente ha una validFrom successiva rispetto
+            alla data di notificationSentAt specificata nella ricerca.
+         */
+        try {
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals(0, results.size());
+            Assertions.assertTrue(results.isEmpty());
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void listMandatesByDelegateV2_caseVisibilityIds_Ok() {
+        /*
+            Given
+            1 Delega attiva senza workflowType (considerabile come STANDARD)
+        */
+        MandateEntity mandateToInsert1 = newMandate(false);
+        String delegate = mandateToInsert1.getDelegate();
+        mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
+        mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
+        mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        mandateToInsert1.setVisibilityIds(Set.of("ID_1", "ID_2", "ID_3"));
+
+        try {
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        /*
+            When
+            La ricerca viene effettuata specificando un rootSenderId (mittente) legato alla visibilità della delega
+         */
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(delegate)
+                .status(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE))
+                .cxType(CxTypeAuthFleet.PF)
+                .rootSenderId("ID_2")
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+
+        /*
+            Then
+            Viene ritornata la delega in quanto la delega attiva esistente ha tra i suoi visibilityIds l'ID specificato
+            nella ricerca.
+         */
+        try {
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals(1, results.size());
+            Assertions.assertTrue(results.contains(mandateToInsert1));
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void listMandatesByDelegateV2_caseVisibilityIds_Ko() {
+        /*
+            Given
+            1 Delega attiva senza workflowType (considerabile come STANDARD)
+        */
+        MandateEntity mandateToInsert1 = newMandate(false);
+        String delegate = mandateToInsert1.getDelegate();
+        mandateToInsert1.setDelegator(mandateToInsert1.getDelegator() + "_1");
+        mandateToInsert1.setMandateId(mandateToInsert1.getMandateId() + "_1");
+        mandateToInsert1.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        mandateToInsert1.setVisibilityIds(Set.of("ID_1", "ID_2", "ID_3"));
+
+        try {
+            testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
+            mandateDao.createMandate(mandateToInsert1).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        /*
+            When
+            La ricerca viene effettuata specificando un rootSenderId (mittente) legato alla visibilità della delega
+         */
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(delegate)
+                .status(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE))
+                .cxType(CxTypeAuthFleet.PF)
+                .rootSenderId("NON_EXISTING_ID")
+                .build();
+        List<MandateEntity> results = mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD).collectList().block(d);
+
+        /*
+            Then
+            Non viene ritornata nessuna delega in quanto la delega attiva esistente non ha tra i suoi visibilityIds l'ID specificato
+            nella ricerca.
+         */
+        try {
+            Assertions.assertNotNull(results);
+            Assertions.assertEquals(1, results.size());
+            Assertions.assertTrue(results.contains(mandateToInsert1));
+        } catch (Exception e) {
+            throw new RuntimeException();
+        } finally {
+            try {
+                testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
             } catch (Exception e) {
                 System.out.println("Nothing to remove");
             }

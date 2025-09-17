@@ -21,8 +21,6 @@ class MandateUtilsTest {
         MandateUtils utils = new MandateUtils();
         String code1 = utils.generateRandomCode();
         String code2 = utils.generateRandomCode();
-
-        // Non è garantito che siano diversi, ma è molto probabile
         assertNotEquals(code1, code2);
     }
 }

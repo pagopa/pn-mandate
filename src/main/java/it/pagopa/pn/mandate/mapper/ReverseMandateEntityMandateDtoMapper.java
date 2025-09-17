@@ -7,8 +7,6 @@ import it.pagopa.pn.mandate.utils.MandateUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.security.SecureRandom;
-
 @Component
 @AllArgsConstructor
 public class ReverseMandateEntityMandateDtoMapper {

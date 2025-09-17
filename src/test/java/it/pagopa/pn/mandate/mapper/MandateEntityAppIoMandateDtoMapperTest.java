@@ -31,6 +31,7 @@ class MandateEntityAppIoMandateDtoMapperTest {
 
     @Test
     void toEntity_shouldThrowUnsupportedOperationException() {
-        assertThrows(UnsupportedOperationException.class, () -> mapper.toEntity(new MandateCreationResponse()));
+       MandateCreationResponse response = new MandateCreationResponse();
+       assertThrows(UnsupportedOperationException.class, () -> mapper.toEntity(response));
     }
 }

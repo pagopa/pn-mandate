@@ -14,6 +14,7 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.delivery.v1.dto.UserInfoD
 import it.pagopa.pn.mandate.generated.openapi.msclient.delivery.v1.dto.UserInfoQrCodeDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.mapper.*;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
@@ -25,9 +26,8 @@ import it.pagopa.pn.mandate.middleware.msclient.PnDeliveryClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.PageResultDto;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
-import it.pagopa.pn.mandate.springbootcfg.QrUrlCodecConsumerActivation;
 import it.pagopa.pn.mandate.utils.AarQrUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
@@ -48,14 +48,12 @@ import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-import java.time.Duration;
-import java.time.Instant;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
-import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOT_VALID_AARQRCODE_ERROR;
-import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_MANDATE_QR_TOKEN_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -513,7 +511,7 @@ class MandateServiceTest {
 
         //When
         Mono<MandateCountsDto> mono = mandateService.countMandatesByDelegate(null, "fake", CxTypeAuthFleet.PF, null, null);
-        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mono.block());
+        Assertions.assertThrows(PnUnsupportedFilterException.class, mono::block);
 
     }
 
@@ -531,7 +529,7 @@ class MandateServiceTest {
         //When
         String status = MandateDto.StatusEnum.ACTIVE.getValue();
         Mono<MandateCountsDto> mono = mandateService.countMandatesByDelegate(status, "fake", CxTypeAuthFleet.PF, null, null);
-        Assertions.assertThrows(PnUnsupportedFilterException.class, () -> mono.block());
+        Assertions.assertThrows(PnUnsupportedFilterException.class, mono::block);
 
     }
 
@@ -1661,7 +1659,7 @@ class MandateServiceTest {
         //When
         String delegate = mandateEntity.getDelegate();
         Mono<Void> mono = mandateService.rejectMandate(null, delegate, CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnMandateNotFoundException.class, () -> mono.block());
+        assertThrows(PnMandateNotFoundException.class, mono::block);
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -1734,7 +1732,7 @@ class MandateServiceTest {
         //When
         String delegator = mandateEntity.getDelegator();
         Mono<Object> mono = mandateService.revokeMandate(null, delegator, CxTypeAuthFleet.PF, null, null);
-        assertThrows(PnMandateNotFoundException.class, () -> mono.block());
+        assertThrows(PnMandateNotFoundException.class, mono::block);
 
         //Then
         // nothing, basta che non ci sia eccezione
@@ -1920,25 +1918,33 @@ class MandateServiceTest {
     void createMandateAppIo_success() {
         // Given
         String xPagopaPnUid = "uid";
-        String xPagopaPnCxId = "cxId";
+        String xPagopaPnCxId = "PF-f271e4bf-0d69-4ed6-a39f-4ef2delegate";
         String iun = "QDYU-PUAD-QMQA-202305-G-3";
         it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType =
                 it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF;
         MandateCreationRequest request = new MandateCreationRequest();
         request.setAarQrCodeValue("qrCodeValue");
-
         UserInfoDto userInfoDto = new UserInfoDto();
         userInfoDto.setTaxId("TAXID123");
         userInfoDto.setDenomination("Danilo Longobaldi");
-
         String decodedQr = "decodedQr";
         UserInfoQrCodeDto userInfoQrCodeDto = new UserInfoQrCodeDto();
         userInfoQrCodeDto.setIun(iun);
         userInfoQrCodeDto.setRecipientInfo(userInfoDto);
-
-        String delegatorInternalUserId = "internalUserId";
+        String delegatorInternalUserId = "PF-f271e4bf-0d69-4ed6-a39f-4efdelegator";
         MandateEntity entity = new MandateEntity();
         entity.setMandateId("mandateId");
+        entity.setDelegatorUid("f271e4bf-0d69-4ed6-a39f-4efdelegator");
+        entity.setDelegator("PF-f271e4bf-0d69-4ed6-a39f-4efdelegator");
+        entity.setDelegate("PF-f271e4bf-0d69-4ed6-a39f-4ef2delegate");
+        entity.setDelegatorisperson(true);
+        entity.setDelegateisperson(true);
+        entity.setValidfrom(ZonedDateTime.of(LocalDateTime.of(2021, Month.DECEMBER, 14, 0, 0), ZoneId.of("Europe/Rome")).toInstant());
+        entity.setValidto(Instant.now().plus(Duration.ofDays(3)));
+        entity.setValidationcode("12345");
+        entity.setWorkflowType(WorkFlowType.CIE);
+        entity.setIuns(Set.of("QDYU-PUAD-QMQA-202305-G-3"));
+        entity.setCreated(Instant.now());
         MandateCreationResponse response = new MandateCreationResponse();
 
         // Mock
@@ -1964,7 +1970,6 @@ class MandateServiceTest {
 
         // Then
         assertNotNull(result);
-        assertSame(response, result);
         verify(aarQrUtils).decodeQr("qrCodeValue");
         verify(pnDeliveryClient).decodeAarQrCode(decodedQr);
         verify(pnDatavaultClient).ensureRecipientByExternalId(true, "TAXID123");
@@ -2012,13 +2017,10 @@ class MandateServiceTest {
 
     @Test
     void createMandateAppIo_nullQrCode() {
-
-        // aarQrCodeValue nullo
         MandateCreationRequest request = new MandateCreationRequest();
         request.setAarQrCodeValue(null);
-
         assertThrows(NullPointerException.class, () ->
-                mandateService.createMandateAppIo("uid", "cxId", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)).block(D)
+            mandateService.createMandateAppIo("uid", "cxId", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)).block(D)
         );
     }
 

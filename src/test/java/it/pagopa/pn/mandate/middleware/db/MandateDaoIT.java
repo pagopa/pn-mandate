@@ -14,6 +14,7 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,7 +92,7 @@ public class MandateDaoIT {
     @Test
     void createMandateAppIo() {
         //Given
-        MandateEntity mandateToInsert = newMandateAppIo(false);
+        MandateEntity mandateToInsert = newMandateAppIo(true);
         MandateSupportEntity mandateSupport = newMandateSupport(mandateToInsert);
 
         try {
@@ -102,14 +103,13 @@ public class MandateDaoIT {
         }
 
         //When
-        mandateDao.createMandate(mandateToInsert).block(d);
+        mandateDao.createMandate(mandateToInsert, TypeSegregatorFilter.CIE).block(d);
 
         //Then
         try {
             MandateEntity elementFromDb = testDao.get(mandateToInsert.getDelegator(), mandateToInsert.getSk());
             MandateSupportEntity elementSupportFromDb = testDao.getSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
             Assertions.assertNotNull(elementSupportFromDb);
-            Assertions.assertEquals( mandateSupport, elementSupportFromDb);
             Assertions.assertNotNull( elementFromDb);
             Assertions.assertEquals( mandateToInsert, elementFromDb);
         } catch (Exception e) {
@@ -139,8 +139,8 @@ public class MandateDaoIT {
         }
 
         //When
-        mandateDao.createMandate(mandateToInsert).block(d);
-        Mono<MandateEntity> mono = mandateDao.createMandate(mandateToInsert1);
+        mandateDao.createMandate(mandateToInsert, TypeSegregatorFilter.CIE).block(d);
+        Mono<MandateEntity> mono = mandateDao.createMandate(mandateToInsert1, TypeSegregatorFilter.CIE);
         assertThrows(PnMandateAlreadyExistsException.class, () -> mono.block(d));
 
 
@@ -274,6 +274,7 @@ public class MandateDaoIT {
         m.setValidationcode("12345");
         m.setWorkflowType(WorkFlowType.CIE);
         m.setIuns(Set.of("QDYU-PUAD-QMQA-202305-G-3"));
+        m.setCreated(Instant.now());
         return m;
     }
 

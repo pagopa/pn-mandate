@@ -294,6 +294,12 @@ public class MandateDao extends BaseDao {
             expressionValues.put(":isPerson", AttributeValue.builder().bool(DelegateType.PF == delegateType).build());
         }
 
+        TypeSegregatorFilter typeSegregatorFilter = TypeSegregatorFilter.STANDARD;
+        String workflowTypeExpression = typeSegregatorFilter.buildExpression(expressionValues);
+        if (!workflowTypeExpression.isEmpty()) {
+            filterexp += AND + workflowTypeExpression;
+        }
+
         Expression exp = Expression.builder()
                 .expression(filterexp)
                 .expressionValues(expressionValues)

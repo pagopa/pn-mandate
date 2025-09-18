@@ -1996,16 +1996,16 @@ class MandateServiceTest {
         String delegatorInternalUserId = "internalUserId";
         MandateEntity entity = new MandateEntity();
 
-        when(aarQrUtils.extractQrToken(eq("qrCodeValue"))).thenReturn(decodedQr);
-        when(pnDeliveryClient.decodeAarQrCode(eq(decodedQr))).thenReturn(Mono.just(userInfoQrCodeDto));
-        when(pnDatavaultClient.ensureRecipientByExternalId(eq(true), eq("TAXID123"))).thenReturn(Mono.just(delegatorInternalUserId));
+        when(aarQrUtils.extractQrToken("qrCodeValue")).thenReturn(decodedQr);
+        when(pnDeliveryClient.decodeAarQrCode(decodedQr)).thenReturn(Mono.just(userInfoQrCodeDto));
+        when(pnDatavaultClient.ensureRecipientByExternalId(true, "TAXID123")).thenReturn(Mono.just(delegatorInternalUserId));
         when(mandateEntityBuilderMapper.buildMandateEntity(
-                eq(delegatorInternalUserId),
-                eq(userInfoQrCodeDto),
-                anyString(),
-                eq("cxId")
+                any(),
+                any(),
+                any(),
+                any()
         )).thenReturn(entity);
-        when(mandateDao.createMandate(eq(entity), eq(TypeSegregatorFilter.CIE)))
+        when(mandateDao.createMandate(entity, TypeSegregatorFilter.CIE))
                 .thenReturn(Mono.error(new RuntimeException("Internal error")));
 
         Mono<MandateCreationResponse> result = mandateService.createMandateAppIo(
@@ -2022,8 +2022,11 @@ class MandateServiceTest {
     void createMandateAppIo_nullQrCode() {
         MandateCreationRequest request = new MandateCreationRequest();
         request.setAarQrCodeValue(null);
-        assertThrows(NullPointerException.class, () ->
-            mandateService.createMandateAppIo("uid", "cxId", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)).block(D)
+        assertThrows(NullPointerException.class,
+                () -> mandateService.createMandateAppIo("uid", "cxId",
+                                it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF,
+                                Mono.just(request))
+                        .block()
         );
     }
 

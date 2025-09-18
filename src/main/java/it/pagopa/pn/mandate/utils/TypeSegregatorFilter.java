@@ -9,19 +9,21 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static it.pagopa.pn.mandate.middleware.db.entities.MandateEntity.COL_S_WORKFLOW_TYPE;
+
 @Getter
 public enum TypeSegregatorFilter {
     STANDARD(WorkFlowType.STANDARD, WorkFlowType.REVERSE) {
         @Override
         public String buildExpression(Map<String, AttributeValue> expressionValues) {
-            return "(attribute_not_exists(s_workflowtype) OR " + super.buildExpression(expressionValues) + ")";
+            return "(attribute_not_exists("+ COL_S_WORKFLOW_TYPE + ") OR " + super.buildExpression(expressionValues) + ")";
         }
     },
     CIE(WorkFlowType.CIE),
     ALL(WorkFlowType.values()) {
         @Override
         public String buildExpression(Map<String, AttributeValue> expressionValues) {
-            return "(attribute_not_exists(s_workflowtype) OR " + super.buildExpression(expressionValues) + ")";
+            return "(attribute_not_exists(" + COL_S_WORKFLOW_TYPE + ") OR " + super.buildExpression(expressionValues) + ")";
         }
     }; // Include tutti i tipi di workflow;
 
@@ -65,7 +67,7 @@ public enum TypeSegregatorFilter {
                     WorkFlowType type = this.getTypes().get(i);
                     String paramName = ":type" + i;
                     expressionValues.put(paramName, AttributeValue.builder().s(type.name()).build());
-                    return "s_workflowtype = " + paramName;
+                    return COL_S_WORKFLOW_TYPE + " = " + paramName;
                 })
                 .collect(Collectors.joining(" OR "));
     }

@@ -276,6 +276,15 @@ Parameters:
     Type: String
     Default: '-'
     Description: Cron for which you send the metric to CloudWatch
+  
+  IoApiDnsName:
+    Type: String
+    Description: "The DNS name used for IO rest API."
+  
+  IOBackendCidrs:
+    Type: String
+    Default: ''
+
 
 Resources:
 
@@ -402,6 +411,35 @@ Resources:
         APIGatewayARNs: !GetAtt MandateMicroserviceB2BPGApi.Outputs.APIGatewayARN
         Limit: !Ref B2bPgLimit
         ExcludedRule0: CrossSiteScripting_BODY,SizeRestrictions_BODY
+  
+  # Expose PN-MANDATE microservice public API with API-GW for IO Backend usage
+  MandateMicroservicePublicIoAPI:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service-openapi.yaml"
+      Parameters:
+        MicroServiceUniqueName: !Sub "${ProjectName}-mandate"
+        IntendedUsage: IO
+        DnsName: !Ref IoApiDnsName
+        ProjectName: !Ref ProjectName
+        ServiceApiPath: "mandate"
+        NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
+        ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
+        OpenApiBucketName: !Ref MicroserviceBucketName
+        OpenApiBucketKey: !Sub ${MicroserviceBucketBaseKey}/docs/openapi/aws/api-mandate-IO-aws.yaml
+  
+  MandateMicroservicePublicIoApiWaf:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
+      Parameters:
+        WAFName: !Sub "${ProjectName}-mandate-io"
+        IntendedUsage: IO
+        APIGatewayARNs: !GetAtt MandateMicroservicePublicIoAPI.Outputs.APIGatewayARN
+        Limit: 0 # disable IP limit based rule
+        AllowedCidrs: !Ref IOBackendCidrs
 
   MandateMicroserviceCloudWatchDashboard:
     Type: AWS::CloudFormation::Stack

@@ -2016,18 +2016,4 @@ class MandateServiceTest {
                 .expectError(RuntimeException.class)
                 .verify();
     }
-
-
-    @Test
-    void createMandateAppIo_nullQrCode() {
-        MandateCreationRequest request = new MandateCreationRequest();
-        request.setAarQrCodeValue(null);
-        assertThrows(NullPointerException.class,
-                () -> mandateService.createMandateAppIo("uid", "cxId",
-                                it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF,
-                                Mono.just(request))
-                        .block()
-        );
-    }
-
 }

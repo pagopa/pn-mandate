@@ -14,6 +14,7 @@ import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
@@ -268,6 +269,12 @@ public class MandateDao extends BaseDao {
         if (delegateType != null) {
             filterexp += AND + getDelegateIsPersonExpression();
             expressionValues.put(":isPerson", AttributeValue.builder().bool(DelegateType.PF == delegateType).build());
+        }
+
+        TypeSegregatorFilter typeSegregatorFilter = TypeSegregatorFilter.STANDARD;
+        String workflowTypeExpression = typeSegregatorFilter.buildExpression(expressionValues);
+        if (!workflowTypeExpression.isEmpty()) {
+            filterexp += AND + workflowTypeExpression;
         }
 
         Expression exp = Expression.builder()

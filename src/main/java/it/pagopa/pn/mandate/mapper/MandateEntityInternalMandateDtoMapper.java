@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.mapper;
 
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.WorkflowType;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.InternalMandateDto;
 import org.springframework.stereotype.Component;
@@ -33,6 +34,15 @@ public class MandateEntityInternalMandateDtoMapper implements BaseMapperInterfac
         } else {
             target.setVisibilityIds(new ArrayList<>());
         }
+        if(entity.getWorkflowType() != null) {
+            target.setWorkflowType(WorkflowType.fromValue(entity.getWorkflowType().name()));
+        }
+        if(entity.getIuns() != null) {
+            target.setIuns(new ArrayList<>(entity.getIuns()));
+        } else {
+            target.setIuns(new ArrayList<>());
+        }
+
         return target;
     } 
  

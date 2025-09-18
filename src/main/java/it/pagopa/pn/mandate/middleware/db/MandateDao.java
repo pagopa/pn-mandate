@@ -20,7 +20,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -638,7 +637,7 @@ public class MandateDao extends BaseDao {
         return createMandate(mandate,TypeSegregatorFilter.STANDARD);
     }
 
-    public Mono<MandateEntity> createMandate(MandateEntity mandate,TypeSegregatorFilter typeSegregatorFilter)
+    public Mono<MandateEntity> createMandate(MandateEntity mandate, TypeSegregatorFilter typeSegregatorFilter)
     {
         String logMessage = String.format("create mandate mandate=%s", mandate);
 

@@ -1948,7 +1948,7 @@ class MandateServiceTest {
         MandateCreationResponse response = new MandateCreationResponse();
 
         // Mock
-        when(aarQrUtils.decodeQr("qrCodeValue")).thenReturn(decodedQr);
+        when(aarQrUtils.extractQrToken("qrCodeValue")).thenReturn(decodedQr);
         when(pnDeliveryClient.decodeAarQrCode(decodedQr)).thenReturn(Mono.just(userInfoQrCodeDto));
         when(pnDatavaultClient.ensureRecipientByExternalId(true, "TAXID123")).thenReturn(Mono.just(delegatorInternalUserId));
         when(mandateEntityBuilderMapper.buildMandateEntity(
@@ -1970,7 +1970,7 @@ class MandateServiceTest {
 
         // Then
         assertNotNull(result);
-        verify(aarQrUtils).decodeQr("qrCodeValue");
+        verify(aarQrUtils).extractQrToken("qrCodeValue");
         verify(pnDeliveryClient).decodeAarQrCode(decodedQr);
         verify(pnDatavaultClient).ensureRecipientByExternalId(true, "TAXID123");
         verify(mandateEntityBuilderMapper).buildMandateEntity( any(),
@@ -1996,7 +1996,7 @@ class MandateServiceTest {
         String delegatorInternalUserId = "internalUserId";
         MandateEntity entity = new MandateEntity();
 
-        when(aarQrUtils.decodeQr(eq("qrCodeValue"))).thenReturn(decodedQr);
+        when(aarQrUtils.extractQrToken(eq("qrCodeValue"))).thenReturn(decodedQr);
         when(pnDeliveryClient.decodeAarQrCode(eq(decodedQr))).thenReturn(Mono.just(userInfoQrCodeDto));
         when(pnDatavaultClient.ensureRecipientByExternalId(eq(true), eq("TAXID123"))).thenReturn(Mono.just(delegatorInternalUserId));
         when(mandateEntityBuilderMapper.buildMandateEntity(

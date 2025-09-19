@@ -7,7 +7,7 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.utils.DateUtils;
-import lombok.extern.slf4j.Slf4j;
+import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
@@ -56,6 +56,14 @@ public class DelegateDao extends BaseDao {
 
         if(CxTypeAuthFleet.PG.equals(cxTypeAuthFleet) && cxGroups!=null && !cxGroups.isEmpty())
             expression += " AND " + buildExpressionGroupFilter(cxGroups, expressionValues);
+
+        TypeSegregatorFilter.STANDARD.buildExpression(expressionValues);
+
+        TypeSegregatorFilter typeSegregatorFilter = TypeSegregatorFilter.STANDARD;
+        String workflowTypeExpression = typeSegregatorFilter.buildExpression(expressionValues);
+        if (!workflowTypeExpression.isEmpty()) {
+            expression += " AND " + workflowTypeExpression;
+        }
 
         QueryRequest qeRequest = QueryRequest
                 .builder()

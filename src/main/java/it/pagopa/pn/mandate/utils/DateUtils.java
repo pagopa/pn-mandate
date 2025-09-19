@@ -12,6 +12,7 @@ public class DateUtils {
 
     private DateUtils(){}
 
+    public static final Instant PN_EPOCH = Instant.ofEpochSecond( 1651399200 ); // 2022-05-01T12:00:00.000 GMT+2:00
 
     public static String formatDate(Instant instant)
     {

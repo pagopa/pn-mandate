@@ -26,7 +26,7 @@ import static org.mockserver.model.HttpResponse.response;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "pn.mandate.client_datavault_basepath=http://localhost:9998"
+        "pn.mandate.client_datavault_basepath=http://localhost:9997"
 })
 class PnDataVaultClientTest {
 
@@ -37,7 +37,7 @@ class PnDataVaultClientTest {
 
     @BeforeAll
     public static void startMockServer() {
-        mockServer = startClientAndServer(9998);
+        mockServer = startClientAndServer(9997);
     }
 
     @AfterAll
@@ -54,7 +54,7 @@ class PnDataVaultClientTest {
         List<String> list = new ArrayList<>();
         list.add(iuid);
 
-        new MockServerClient("localhost", 9998)
+        new MockServerClient("localhost", 9997)
                 .when(request()
                         .withMethod("GET")
                         .withQueryStringParameter("internalId", iuid)
@@ -83,7 +83,7 @@ class PnDataVaultClientTest {
         String iuid= "abcd-123-fghi";
 
 
-        new MockServerClient("localhost", 9998)
+        new MockServerClient("localhost", 9997)
                 .when(request()
                         .withMethod("POST")
                         .withBody(cf)
@@ -110,7 +110,7 @@ class PnDataVaultClientTest {
         String ragionesociale= "mr srl";
 
 
-        new MockServerClient("localhost", 9998)
+        new MockServerClient("localhost", 9997)
                 .when(request()
                         .withMethod("PUT")
                         .withPath("/datavault-private/v1/mandates/{mandateId}".replace("{mandateId}",mandateid)))
@@ -132,7 +132,7 @@ class PnDataVaultClientTest {
         String mandateid = "f271e4bf-0d69-4ed6-a39f-4ef2f01f2fd1";
 
 
-        new MockServerClient("localhost", 9998)
+        new MockServerClient("localhost", 9997)
                 .when(request()
                         .withMethod("DELETE")
                         .withPath("/datavault-private/v1/mandates/{mandateId}".replace("{mandateId}",mandateid)))
@@ -156,8 +156,7 @@ class PnDataVaultClientTest {
 
         List<String> list = new ArrayList<>();
         list.add(mandateid);
-
-        new MockServerClient("localhost", 9998)
+        new MockServerClient("localhost", 9997)
                 .when(request()
                         .withMethod("GET")
                         .withQueryStringParameter("mandateId", mandateid)

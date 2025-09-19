@@ -23,9 +23,9 @@ public class PnDeliveryClient {
 
     public Mono<UserInfoQrCodeDto> decodeAarQrCode(String qrToken){
         RequestDecodeQrDtoDto requestDecodeQrDtoDto= new RequestDecodeQrDtoDto();
-        requestDecodeQrDtoDto.setAarQrCodeValue(qrToken);
+        requestDecodeQrDtoDto.setAarTokenValue(qrToken);
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DELIVERY, "Retrieving IUN and recipient information");
-        return internalOnlyApi.decodeAarQrCode(requestDecodeQrDtoDto)
+        return internalOnlyApi.decodeAarToken(requestDecodeQrDtoDto)
                 .onErrorResume(e -> {
                     if(e instanceof WebClientResponseException && ((WebClientResponseException) e).getStatusCode() == HttpStatus.BAD_REQUEST){
                         throw new PnInvalidQrCodeException("Qr Token non trovato","Token non è stato trovato",ERROR_CODE_MANDATE_QR_TOKEN_NOT_FOUND);

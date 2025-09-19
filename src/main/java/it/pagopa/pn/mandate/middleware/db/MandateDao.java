@@ -10,7 +10,6 @@ import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.DelegateType;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateByDelegatorRequestDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.WorkflowType;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
@@ -206,7 +205,8 @@ public class MandateDao extends BaseDao {
         }
 
         addNewFilterExpression(filterExpression);
-        addWorkflowTypeStandardOrNotExistsFilter(List.of(WorkflowType.STANDARD.name(), WorkflowType.REVERSE.name()),MandateEntity.COL_S_WORKFLOW_TYPE, ":type", expressionBuilder, filterExpression);
+        List<String> workflowTypesToSegregate = TypeSegregatorFilter.STANDARD.getTypes().stream().map(Enum::name).toList();
+        addWorkflowTypeStandardOrNotExistsFilter(workflowTypesToSegregate, MandateEntity.COL_S_WORKFLOW_TYPE, ":type", expressionBuilder, filterExpression);
 
         if (!filterExpression.isEmpty()) {
             expressionBuilder.expression(filterExpression.toString());

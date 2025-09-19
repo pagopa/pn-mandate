@@ -255,7 +255,7 @@ public class MandateDao extends BaseDao {
     }
 
     private void addEqFilterExpression(String field, String prefix, int idx, StringBuilder expression) {
-        expression.append(field).append(EQ).append(prefix).append(idx).append(" OR ").append(field);
+        expression.append(field).append(EQ).append(prefix).append(idx);
     }
 
     private void addWorkflowTypeStandardOrNotExistsFilter(List<String> values, String field, String prefix,

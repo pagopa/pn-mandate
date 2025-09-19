@@ -336,8 +336,15 @@ public class MandateService {
         }
 
         Integer finalIStatus = iStatus;
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(internaluserId)
+                .status(finalIStatus)
+                .cxType(xPagopaPnCxType)
+                .groups(xPagopaPnCxGroups)
+                .build();
+
         return validaAccessoOnlyGroupAdmin(xPagopaPnCxType,xPagopaPnCxRole,xPagopaPnCxGroups)
-                .flatMapMany(obj -> mandateDao.listMandatesByDelegate(internaluserId, finalIStatus, null, xPagopaPnCxType, xPagopaPnCxGroups))   // (1)
+                .flatMapMany(obj -> mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD))   // (1)
                 .map(ent -> {
                     ent.setValidationcode(null);   // (2)
                     return ent;

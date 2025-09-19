@@ -1322,7 +1322,7 @@ class MandateServiceTest {
         List<MandateEntity> listFromDb = new ArrayList<>();
         listFromDb.add(entity);
 
-        when(mandateDao.listMandatesByDelegate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
+        when(mandateDao.listMandatesByDelegate(Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
         when(pnDatavaultClient.getRecipientDenominationByInternalId(Mockito.any())).thenReturn(Flux.empty());
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.empty());
         when(pnInfoPaClient.getManyPa(Mockito.anyList())).thenReturn(Flux.fromIterable(List.of(new PaSummaryDto())));
@@ -1371,7 +1371,7 @@ class MandateServiceTest {
         List<MandateEntity> listFromDb = new ArrayList<>();
         listFromDb.add(entity);
 
-        when(mandateDao.listMandatesByDelegate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
+        when(mandateDao.listMandatesByDelegate(Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
         when(pnDatavaultClient.getRecipientDenominationByInternalId(Mockito.any())).thenReturn(Flux.empty());
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.empty());
         when(pnInfoPaClient.getManyPa(Mockito.anyList())).thenReturn(Flux.fromIterable(List.of(new PaSummaryDto())));
@@ -1383,7 +1383,7 @@ class MandateServiceTest {
         Assertions.assertThrows(PnForbiddenException.class, () -> mono.block(D));
 
         //Then
-        Mockito.verify(mandateDao, Mockito.never()).listMandatesByDelegate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(mandateDao, Mockito.never()).listMandatesByDelegate(Mockito.any(), Mockito.any());
 
     }
 
@@ -1422,7 +1422,7 @@ class MandateServiceTest {
         List<MandateEntity> listFromDb = new ArrayList<>();
         listFromDb.add(entity);
 
-        when(mandateDao.listMandatesByDelegate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
+        when(mandateDao.listMandatesByDelegate(Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
         when(pnDatavaultClient.getRecipientDenominationByInternalId(Mockito.any())).thenReturn(Flux.empty());
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.empty());
         when(pnInfoPaClient.getManyPa(Mockito.anyList())).thenReturn(Flux.fromIterable(List.of(new PaSummaryDto())));
@@ -1483,7 +1483,7 @@ class MandateServiceTest {
         denominations.get(0).setRecipientType(RecipientTypeDto.PF);
         denominations.get(0).setTaxId("TAXIDDELEGATOR");
 
-        when(mandateDao.listMandatesByDelegate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
+        when(mandateDao.listMandatesByDelegate(Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
         when(pnDatavaultClient.getRecipientDenominationByInternalId(Mockito.any())).thenReturn(Flux.fromIterable(denominations));
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.empty());
         when(pnInfoPaClient.getManyPa(Mockito.anyList())).thenReturn(Flux.fromIterable(List.of(new PaSummaryDto())));
@@ -1531,7 +1531,7 @@ class MandateServiceTest {
         List<MandateEntity> listFromDb = new ArrayList<>();
         listFromDb.add(entity);
 
-        when(mandateDao.listMandatesByDelegate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
+        when(mandateDao.listMandatesByDelegate(Mockito.any(), Mockito.any())).thenReturn(Flux.fromIterable(listFromDb));
         when(pnDatavaultClient.getRecipientDenominationByInternalId(Mockito.any())).thenReturn(Flux.empty());
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.empty());
         when(pnInfoPaClient.getManyPa(Mockito.anyList())).thenReturn(Flux.fromIterable(List.of(new PaSummaryDto())));

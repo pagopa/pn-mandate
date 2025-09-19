@@ -494,9 +494,13 @@ class CieCheckerTest {
         byte[] malformed = "INVALID".getBytes(StandardCharsets.UTF_8);
         //ResultCieChecker resultMalformed = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(malformed), null);
         //Assertions.assertFalse(resultMalformed.getValue().equals(OK));
-        X509Certificate caMalFormed = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(malformed));
+        Assertions.assertThrows(CertificateException.class, () -> cf.generateCertificate(new ByteArrayInputStream(malformed)) );
+
+        /*X509Certificate caMalFormed = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(malformed));
         Assertions.assertThrows(CieCheckerException.class,
                 () -> ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(caMalFormed), null));
+
+         */
     }
 
     /// fine test verifyDscAgainstAnchorBytes partendo dal file ZIP

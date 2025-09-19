@@ -1,9 +1,7 @@
 package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.commons.log.PnAuditLogBuilder;
 import it.pagopa.pn.mandate.LocalStackTestConfig;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
@@ -12,6 +10,7 @@ import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -1579,6 +1578,43 @@ public class MandateDaoIT {
             try {
                 testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
                 testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void searchByDelegateExcludesCIEWorkflowType() {
+        // Inserisce una delega STANDARD
+        MandateEntity mandateStandard = newMandate(false);
+        mandateStandard.setWorkflowType(WorkFlowType.STANDARD);
+        // Inserisce una delega CIE
+        MandateEntity mandateCIE = newMandate(false);
+        mandateCIE.setMandateId(mandateStandard.getMandateId() + "-CIE");
+        mandateCIE.setDelegator(mandateStandard.getDelegator() + "-CIE");
+        mandateCIE.setWorkflowType(WorkFlowType.CIE);
+
+        try {
+            testDao.delete(mandateStandard.getDelegator(), mandateStandard.getSk());
+            testDao.delete(mandateCIE.getDelegator(), mandateCIE.getSk());
+            mandateDao.createMandate(mandateStandard).block(d);
+            mandateDao.createMandate(mandateCIE).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        String delegateId = mandateStandard.getDelegate();
+        try {
+            Page<MandateEntity> result = mandateDao.searchByDelegate(delegateId, null, null, null, 10, null).block(d);
+            Assertions.assertNotNull(result);
+            Assertions.assertEquals(1, result.items().size());
+            Assertions.assertTrue(result.items().contains(mandateStandard));
+            Assertions.assertFalse(result.items().contains(mandateCIE));
+        } finally {
+            try {
+                testDao.delete(mandateStandard.getDelegator(), mandateStandard.getSk());
+                testDao.delete(mandateCIE.getDelegator(), mandateCIE.getSk());
             } catch (Exception e) {
                 System.out.println("Nothing to remove");
             }

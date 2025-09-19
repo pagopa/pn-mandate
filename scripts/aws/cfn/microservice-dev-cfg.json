@@ -8,6 +8,7 @@
     "MaxTasksNumber": "3",
     "AutoscalingThreshold": "1300",
     "PendingDuration": "15m",
+    "CiePendingDuration": "15m",
     "EnhancedWebSecurityEnabled": "true",
     "MountEfs": "false",
     "PnCronAnalyzer": "-",

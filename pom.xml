@@ -50,7 +50,7 @@
 		<dependency>
 			<groupId>it.pagopa.pn</groupId>
 			<artifactId>pn-commons</artifactId>
-			<version>2.14.0-SNAPSHOT</version>
+			<version>2.14.0</version>
 			<exclusions>
 				<!-- esclude vecchia linea BC jdk15on e FIPS per evitare mix -->
 				<exclusion>
@@ -400,7 +400,7 @@
                         </goals>
                         <phase>generate-resources</phase>
                         <configuration>
-                            <inputSpec>https://raw.githubusercontent.com/pagopa/pn-delivery/3b2cf3ac763ec20b3aae1710994b057a2d8349ce/docs/openapi/api-private.yaml</inputSpec>
+                            <inputSpec>https://raw.githubusercontent.com/pagopa/pn-delivery/199af3270d639627b731b6327165b19e9457e8f7/docs/openapi/api-private.yaml</inputSpec>
                             <generatorName>java</generatorName>
                             <library>webclient</library>
                             <generateApiDocumentation>false</generateApiDocumentation>

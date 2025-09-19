@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: j/caiDyqYFreHqITkf9mpphfENQLAmHB2GnEprSII6Q=
+  version: wu/0pKb7mzr+ozvulwsbEtK4VuZHCSESk2aQTbJLLCY=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -60,7 +60,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 unauthorizedError:
                   $ref: '#/components/examples/UnauthorizedError'
@@ -69,7 +69,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 forbiddenError:
                   $ref: '#/components/examples/ForbiddenError'
@@ -166,7 +166,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 unauthorizedError:
                   $ref: '#/components/examples/UnauthorizedError'
@@ -175,7 +175,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 forbiddenError:
                   $ref: '#/components/examples/ForbiddenError'
@@ -414,6 +414,12 @@ components:
         sod:
           type: string
           nullable: false
+    AuthError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Unauthorized
     ProblemError:
       properties:
         code:

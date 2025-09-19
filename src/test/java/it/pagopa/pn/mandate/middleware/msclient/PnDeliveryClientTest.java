@@ -49,7 +49,7 @@ class PnDeliveryClientTest {
                         org.mockserver.model.HttpRequest.request()
                                 .withMethod("POST")
                                 .withPath("/delivery-private/notifications/qr-code/decode")
-                                .withBody("{\"aarQrCodeValue\":\"" + token + "\"}")
+                                .withBody("{\"aarTokenValue\":\"" + token + "\"}")
                 )
                 .respond(
                         org.mockserver.model.HttpResponse.response()
@@ -77,7 +77,7 @@ class PnDeliveryClientTest {
                         org.mockserver.model.HttpRequest.request()
                                 .withMethod("POST")
                                 .withPath("/delivery-private/notifications/qr-code/decode")
-                                .withBody("{\"aarQrCodeValue\":\"" + token + "\"}")
+                                .withBody("{\"aarTokenValue\":\"" + token + "\"}")
                 )
                 .respond(
                         org.mockserver.model.HttpResponse.response()
@@ -96,7 +96,7 @@ class PnDeliveryClientTest {
                         org.mockserver.model.HttpRequest.request()
                                 .withMethod("POST")
                                 .withPath("/delivery-private/notifications/qr-code/decode")
-                                .withBody("{\"aarQrCodeValue\":\"" + token + "\"}")
+                                .withBody("{\"aarTokenValue\":\"" + token + "\"}")
                 )
                 .respond(
                         org.mockserver.model.HttpResponse.response()

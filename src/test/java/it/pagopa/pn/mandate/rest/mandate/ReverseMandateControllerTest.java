@@ -6,6 +6,7 @@ import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDtoRequest;
 import it.pagopa.pn.mandate.mapper.ReverseMandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
+import it.pagopa.pn.mandate.utils.MandateUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
 @WebFluxTest(controllers = {ReverseMandateController.class})
-@Import({ReverseMandateEntityMandateDtoMapper.class})
+@Import({ReverseMandateEntityMandateDtoMapper.class, MandateUtils.class})
 class ReverseMandateControllerTest {
 
     public static final String PN_PAGOPA_USER_ID = "x-pagopa-pn-uid";

@@ -93,7 +93,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 unauthorizedError:
                   $ref: '#/components/examples/UnauthorizedError'
@@ -102,7 +102,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 forbiddenError:
                   $ref: '#/components/examples/ForbiddenError'
@@ -167,7 +167,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 unauthorizedError:
                   $ref: '#/components/examples/UnauthorizedError'
@@ -176,7 +176,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 forbiddenError:
                   $ref: '#/components/examples/ForbiddenError'
@@ -352,6 +352,17 @@ components:
         sod:
           type: string
           nullable: false
+
+    ############################################################################################
+    ###                     SCHEMA DI PROBLEMA AUTORIZZATIVO/AUTENTICATIVO                   ###
+    ############################################################################################
+
+    AuthError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Unauthorized
   examples:
     UnauthorizedError:
       summary: Example of a 401 Unauthorized response

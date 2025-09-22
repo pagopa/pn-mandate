@@ -2125,6 +2125,43 @@ public class MandateDaoIT {
     }
 
     @Test
+    void searchByDelegateExcludesCIEWorkflowType() {
+        // Inserisce una delega STANDARD
+        MandateEntity mandateStandard = newMandate(false);
+        mandateStandard.setWorkflowType(WorkFlowType.STANDARD);
+        // Inserisce una delega CIE
+        MandateEntity mandateCIE = newMandate(false);
+        mandateCIE.setMandateId(mandateStandard.getMandateId() + "-CIE");
+        mandateCIE.setDelegator(mandateStandard.getDelegator() + "-CIE");
+        mandateCIE.setWorkflowType(WorkFlowType.CIE);
+
+        try {
+            testDao.delete(mandateStandard.getDelegator(), mandateStandard.getSk());
+            testDao.delete(mandateCIE.getDelegator(), mandateCIE.getSk());
+            mandateDao.createMandate(mandateStandard).block(d);
+            mandateDao.createMandate(mandateCIE).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        String delegateId = mandateStandard.getDelegate();
+        try {
+            Page<MandateEntity> result = mandateDao.searchByDelegate(delegateId, null, null, null, 10, null).block(d);
+            Assertions.assertNotNull(result);
+            Assertions.assertEquals(1, result.items().size());
+            Assertions.assertTrue(result.items().contains(mandateStandard));
+            Assertions.assertFalse(result.items().contains(mandateCIE));
+        } finally {
+            try {
+                testDao.delete(mandateStandard.getDelegator(), mandateStandard.getSk());
+                testDao.delete(mandateCIE.getDelegator(), mandateCIE.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
     void createMandateWithCreated() {
         //Given
         MandateEntity mandateToInsert = newMandate(true);

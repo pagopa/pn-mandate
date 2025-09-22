@@ -203,6 +203,11 @@ public class MandateDao extends BaseDao {
             addNewFilterExpression(filterExpression);
             addFilterExpression(delegatorIds, MandateEntity.COL_PK, ":d", EQ, expressionBuilder, filterExpression);
         }
+
+        addNewFilterExpression(filterExpression);
+        List<String> workflowTypesToSegregate = TypeSegregatorFilter.STANDARD.getTypes().stream().map(Enum::name).toList();
+        addWorkflowTypeStandardOrNotExistsFilter(workflowTypesToSegregate, MandateEntity.COL_S_WORKFLOW_TYPE, ":type", expressionBuilder, filterExpression);
+
         if (!filterExpression.isEmpty()) {
             expressionBuilder.expression(filterExpression.toString());
         }
@@ -251,6 +256,19 @@ public class MandateDao extends BaseDao {
 
     private void addEqFilterExpression(String field, String prefix, int idx, StringBuilder expression) {
         expression.append(field).append(EQ).append(prefix).append(idx);
+    }
+
+    private void addWorkflowTypeStandardOrNotExistsFilter(List<String> values, String field, String prefix,
+                                                          Expression.Builder expressionBuilder, StringBuilder expression) {
+        expression.append("(attribute_not_exists(").append(field).append(") OR (");
+        for (int i = 0; i < values.size(); i++) {
+            expression.append(field).append(EQ).append(prefix).append(i);
+            if (i < values.size() - 1) {
+                expression.append(" OR ");
+            }
+            expressionBuilder.putExpressionValue(prefix + i, AttributeValue.builder().s(values.get(i)).build());
+        }
+        expression.append("))");
     }
 
     private void addNewFilterExpression(StringBuilder expression) {

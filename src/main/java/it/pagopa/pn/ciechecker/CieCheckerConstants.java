@@ -17,11 +17,13 @@ public class CieCheckerConstants {
     public static final String OK = "OK";
 
     // exception messages
-    public static final String EXC_NOTFOUND_CERTIFICATES="No certificates found in PKCS7";
+    public static final String EXC_KO = "Error";
+    public static final String EXC_NOTFOUND_CERTIFICATES ="No certificates found in PKCS7";
+    public static final String EXC_NOTFOUND_CMSSIGNEDDATA = "Not found CMSSignedData";
     public static final String EXC_PARSED_ZERO_CSCA_CERTIFICATES="Parsed 0 CSCA certificates";
     public static final String EXC_NO_CSCA_ANCHORS_PROVIDED= "No CSCA anchors provided";
     public static final String EXC_INPUT_PARAMETER_NULL="One or more input parameters are null";
-    public static final String EXC_NO_SIGNATURES_SIGNED_DATA="No signatures found in Signed Data";
+    public static final String EXC_NO_SIGNATURES_SIGNED_DATA="No signatures found in SignedData";
     public static final String EXC_NO_HASH_CONTENT_MATCH="No HashContent match";
     public static final String EXC_NO_HASH_SIGNED_DATA = "No hash of SignedData found";
     public static final String EXC_NO_SIGNED_ATTRIBUTE = "No SignedAttributes found";
@@ -60,10 +62,12 @@ public class CieCheckerConstants {
     public static final String EXC_NOVALID_DIGITAL_SIGNATURE = "No valid digital Signature";
     public static final String EXC_NOT_SAME_DIGEST = "Digest mismatch between expected and actual DG";
     public static final String EXC_DIGEST_NOT_VERIFIED = "Digest are different, validation of integrity not passed";
-    public static final String EXC_INVALID_PARAMETER_CIESOD = "Input parameters SOD CIE is null";
-    public static final String EXC_INVALID_PARAMETER_MRTDSOD = "Input parameters SOD MRTD is null";
-    public static final String EXC_INVALID_PARAMETER_CIENIS = "Input parameters NIS CIE is null";
-    public static final String EXC_INVALID_PARAMETER_PUBLICKEY = "Input parameters PUBLICKEY CIE is null";
-    public static final String EXC_INVALID_PARAMETER_SIGNEDNONCE = "Input parameters SIGNED NONCE CIE is null";
-    public static final String EXC_INVALID_PARAMETER_NONCE = "Input parameters NONCE CIE is null";
+    public static final String EXC_INVALID_PARAMETER_CIESOD = "Input parameter SOD CIE is null";
+    public static final String EXC_INVALID_PARAMETER_MRTDSOD = "Input parameter SOD MRTD is null";
+    public static final String EXC_INVALID_PARAMETER_CIENIS = "Input parameter NIS CIE is null";
+    public static final String EXC_INVALID_PARAMETER_PUBLICKEY = "Input parameter PUBLICKEY CIE is null";
+    public static final String EXC_INVALID_PARAMETER_SIGNEDNONCE = "Input parameter SIGNED NONCE CIE is null";
+    public static final String EXC_INVALID_PARAMETER_NONCE = "Input parameter NONCE CIE is null";
+    public static final String EXC_INVALID_PARAMETER_MRTDDG1 = "Input parameter DG11 MRTD is null";
+    public static final String EXC_INVALID_PARAMETER_MRTDDG11 = "Input parameter DG11 MRTD is null";
 }

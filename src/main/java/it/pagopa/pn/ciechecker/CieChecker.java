@@ -13,13 +13,12 @@ import java.util.List;
 public interface CieChecker {
 
     void init();
+
+    boolean validateDataInput(CieValidationData data) throws CieCheckerException;
     ResultCieChecker validateMandate(CieValidationData data) throws CieCheckerException;
     ResultCieChecker verifyChallengeFromSignature(CieValidationData data) throws CieCheckerException;
-
     boolean verifySodPassiveAuthCie(CMSSignedData cms, byte[] cieIasNis) throws CieCheckerException;
-
     ResultCieChecker verifyIntegrity(CieMrtd cieMrtd) throws CieCheckerException;
-
     ResultCieChecker verifyDigitalSignature(CMSSignedData cms) throws CieCheckerException;
 
     void setCscaAnchor(List<X509Certificate> cscaAnchor);

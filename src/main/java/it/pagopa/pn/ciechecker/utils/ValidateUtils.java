@@ -56,9 +56,9 @@ public class ValidateUtils {
     private static final String MASTERLIST_CSCAS_FILENAME_ZIP = "IT_MasterListCSCA.zip";
 
 
-    public static ResultCieChecker verifyDscAgainstTrustBundle(byte[] dscDer, Collection<X509Certificate> cscaTrustAnchors, Date atTime) {
+    public static ResultCieChecker verifyDscAgainstTrustBundle(byte[] dscDer, Collection<X509Certificate> cscaTrustAnchors, Date atTime) throws CieCheckerException{
 
-        if (Objects.isNull(dscDer) || dscDer.length == 0) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
+        if (Objects.isNull(dscDer) || dscDer.length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_CERTIFICATION);
         if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
 
         try {
@@ -78,49 +78,22 @@ public class ValidateUtils {
 
         } catch (CertificateException ce) {
             log.error("Error in verifyDscAgainstTrustBundle - CertificateException: {}", ce.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE, ce);
         }catch (CertPathValidatorException cpe) {
             log.error("Error in verifyDscAgainstTrustBundle - CertPathValidatorException: {}", cpe.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE, cpe);
         }catch (NoSuchAlgorithmException nsae){
             log.error("Error in verifyDscAgainstTrustBundle - NoSuchAlgorithmException: {}", nsae.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR);
-        } catch ( InvalidAlgorithmParameterException e) {
-            log.error("Error in verifyDscAgainstTrustBundle - InvalidAlgorithmParameterException: {}", e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR, nsae);
+        } catch ( InvalidAlgorithmParameterException ie) {
+            log.error("Error in verifyDscAgainstTrustBundle - InvalidAlgorithmParameterException: {}", ie.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR, ie);
+        } catch (Exception e){
+            log.error("Error in verifyDscAgainstTrustBundle - Exception: {}", e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_EXCEPTION, e);
         }
     }
 
-
-    /*
-     public static ResultCieChecker verifyDscAgainstAnchorBytesOld(byte[] dscDerOrPem,
-                                               Collection<byte[]> cscaAnchorBlobs,
-                                               Date atTime) throws CieCheckerException {
-        log.info("Invoke verifyDscAgainstAnchorBytes()");
-        try {
-            CertificateFactory x509Cf = CertificateFactory.getInstance(X_509);
-            List<X509Certificate> anchors = parseCscaAnchors(cscaAnchorBlobs, x509Cf);
-            return verifyDscAgainstTrustBundle(dscDerOrPem, anchors, atTime);
-        } catch (CertificateException e) {
-            log.error("Error in verifyDscAgainstAnchorBytes - CertificateException: {}", e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE);
-        }
-    }
-    */
-
-    /*
-    public static boolean verifyDscAgainstTrustBundle(X509CertificateHolder dscHolder,
-                                                      Collection<X509Certificate> cscaTrustAnchors,
-                                                      Date atTime) throws CieCheckerException {
-        try {
-            if (dscHolder == null) return false;
-            ResultCieChecker resultCieChecker = verifyDscAgainstTrustBundle(dscHolder.getEncoded(), cscaTrustAnchors, atTime);
-            return resultCieChecker.getValue().equals("OK");
-        } catch (IOException e) {
-            log.error("Error in verifyDscAgainstTrustBundle - IOException: {}", e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO, e);
-        }
-    }*/
 
     //***********************************************
     //    nis_verify_sod_passive_auth.sh
@@ -128,15 +101,19 @@ public class ValidateUtils {
 
     public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) throws CieCheckerException {
 
-        if(Objects.isNull(cms)) throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES);
+        if(Objects.isNull(cms)) throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CMSSIGNEDDATA);
+        try {
+            log.info("Invoke extractDscCertDer() for cms signed content type OID={}", cms.getSignedContentTypeOID());
+            Store<X509CertificateHolder> certStore = cms.getCertificates();
 
-        log.info("Invoke extractDscCertDer() for cms signed content type OID={}", cms.getSignedContentTypeOID());
-        Store<X509CertificateHolder> certStore = cms.getCertificates();
-
-        Collection<X509CertificateHolder> matches = certStore.getMatches(null);
-        log.info("matches sixe: {}", matches.size());
-        if (!matches.isEmpty()) {
-            return matches.iterator().next();
+            Collection<X509CertificateHolder> matches = certStore.getMatches(null);
+            log.info("matches sixe: {}", matches.size());
+            if (!matches.isEmpty()) {
+                return matches.iterator().next();
+            }
+        }catch (Exception e){
+            log.error("Error in extractDscCertDer - Exception: {}", ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES, e);
         }
         throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES);
     }
@@ -272,8 +249,9 @@ public class ValidateUtils {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(octetByte);
-            return Hex.toHexString(hashBytes).toString().toUpperCase(); //bytesToHex(hashBytes);
+            return Hex.toHexString(hashBytes).toString().toUpperCase();
         }catch(NoSuchAlgorithmException nsae){
+            log.error("Error in calculateSha256 - NoSuchAlgorithmException: {}", nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MESSAGEDIGESTSPI_SUPPORTED, nsae);
         }
     }
@@ -359,8 +337,8 @@ public class ValidateUtils {
             // Estrai l'OCTET STRING che contiene il valore dell'hash
             return (ASN1OctetString) messageDigestAttribute.getAttrValues().getObjectAt(0);
         }catch(Exception e){
-            log.error("Error in extractHashSigned: {}", e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO, e);
+            log.error("Error in extractHashSigned - Exception: {}", e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_EXCEPTION, e);
         }
     }
     // END ESTRAZIONE DEGLI HASH: CONTENT
@@ -483,10 +461,10 @@ public class ValidateUtils {
      *
      */
     public static boolean verifyNisSha256FromDataGroup(CMSSignedData cmsData, byte[] nisSha256) throws CieCheckerException {
-        if (Objects.isNull( nisSha256 ) || nisSha256.length == 0 ) {
-            log.error("Error in verifyNisSha256FromDataGroup : Input parameters null: CMSSignedData is {} ", cmsData , " - byte[] nisSha256 is {}", nisSha256);
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
-        }
+//        if (Objects.isNull( nisSha256 ) || nisSha256.length == 0 ) {
+//            log.error("Error in verifyNisSha256FromDataGroup : Input parameters null: CMSSignedData is {} ", cmsData , " - byte[] nisSha256 is {}", nisSha256);
+//            throw new CieCheckerException(ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
+//        }
 
         String nisHexToCheck = calculateSha256(nisSha256);
         List<String> dataGroupList = extractDataGroupHashes(cmsData);
@@ -503,46 +481,6 @@ public class ValidateUtils {
 
     }
 
-
-
-    /*
-    // NB: USATO NELLO SCRIPT SHELL SOLO COME TEST
-    public static boolean verifyNisPublicKeyFromDataGroup(CMSSignedData cmsData, byte[] nisSha256PublicKey) throws CieCheckerException, IOException, CMSException, NoSuchAlgorithmException {
-        if (cmsData == null || nisSha256PublicKey == null) {
-            throw new CieCheckerException("Input parameters NULL: CMSSignedData is " + cmsData + " - String is " + nisSha256PublicKey);
-        }
-        String nisSha256PublicKeyToCheck = calculateSha256(nisSha256PublicKey);
-        List<String> dataGroupList = extractDataGroupHashes(cmsData);
-        if(dataGroupList.contains(nisSha256PublicKeyToCheck)){
-            return true;
-        }else{
-            log.error("The dataGroupList do not contains nisSha256PublicKey");
-            return false;
-        }
-    }
-    */
-
-
-    /*
-    // NB: USATO NELLO SCRIPT SHELL SOLO COME TEST
-    public static boolean verifyDataGroupHashes(CMSSignedData cmsData, byte[] nisSha256, byte[] nisSha256PublicKey) throws CieCheckerException, IOException, CMSException {
-        if (cmsData == null) {
-            throw new CieCheckerException("CMSSignedData is null");
-        }
-        try {
-            if(!ValidateUtils.verifyNisSha256FromDataGroup(cmsData, nisSha256))
-                return false;
-
-            if(!ValidateUtils.verifyNisPublicKeyFromDataGroup(cmsData, nisSha256PublicKey))
-                return false;
-
-            return true;
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-     */
     // END : ESTRAZIONE DEGLI HASH: CONTENT
 
     /**
@@ -597,12 +535,6 @@ public class ValidateUtils {
         };
     }
 
-    public static int extractDataGroupNumber(String fileName) {
-        // supponiamo formati tipo EF.DG1.bin → prende il numero
-        String digits = fileName.replaceAll("\\D+", "");
-        return Integer.parseInt(digits);
-    }
-
 
     /**
      * Verifica che il digest calcolato corrisponda a quello atteso
@@ -647,51 +579,7 @@ public class ValidateUtils {
         return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
     }
 
-    public static byte[] extractPublicKeyFromSod(CMSSignedData cms) {
 
-        X509CertificateHolder certHolder = extractDscCertDer(cms);
-        PublicKey publicKey = extractPublicKeyFromHolder( certHolder);
-
-        /*JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(new BouncyCastleProvider());
-        SubjectPublicKeyInfo pkInfo = certHolder.getSubjectPublicKeyInfo();
-        return converter.getPublicKey(pkInfo).getEncoded();*/
-        return publicKey.getEncoded();
-    }
-
-
-//    /**
-//     * Estrae la lista di certificati da un archivio ZIP
-//     * Cerca i file con estensione .pem e li converte in X509Certificate
-//     *
-//     * @param zipStream InputStream L'InputStream del file ZIP.
-//     * @return List<X509Certificate> List of X509Certificate
-//     * @throws CieCheckerException Se si verifica un errore durante la lettura dello ZIP.
-//     */
-/*    public static List<X509Certificate> getX509CertListFromZipFile(InputStream zipStream) throws CieCheckerException {
-        List<X509Certificate> x509List;
-
-        try {
-            x509List = new ArrayList<X509Certificate>();
-            ZipInputStream zis = new ZipInputStream(zipStream);
-            ZipEntry entry;
-
-            while ((entry = zis.getNextEntry()) != null) {
-                // Controlla il nome del file all'interno dello ZIP
-                if (entry.getName().toLowerCase().endsWith(".pem")) {
-                    // Ritorna l'InputStream del file .pem
-                    log.info("FILE NAME : {}", entry.getName().toLowerCase());
-                    byte[] fileBytes = zis.readAllBytes();
-
-                    x509List.add(readCertificateFromPem( new ByteArrayInputStream(fileBytes)));
-                }
-            }
-            return x509List;
-        }catch (Exception e ){
-            log.error("Error in getX509CertListFromZipFile: {}", e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e); // File .ml non trovato nello ZIP
-        }
-    }
-*/
 
     public static List<X509Certificate> extractCscaAnchorFromZip() throws CieCheckerException {
 
@@ -708,63 +596,7 @@ public class ValidateUtils {
         }
     }
 
-    public static X509Certificate readCertificateFromPem(InputStream pemStream) throws Exception {
 
-        try (PEMParser parser = new PEMParser(new InputStreamReader(pemStream, StandardCharsets.UTF_8))) {
-            Object parsedObject = parser.readObject();
-
-            if (parsedObject instanceof X509CertificateHolder) {
-                // Converte l'oggetto BouncyCastle in un certificato Java standard
-                return new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider())
-                        .getCertificate((org.bouncycastle.cert.X509CertificateHolder) parsedObject);
-            }
-        }
-        return null;
-    }
-
-    public static List<byte[]> getCertsFromCms(CMSSignedData cmsData) throws CMSException, IOException {
-        List<byte[]> cscaCerts = new ArrayList<>();
-        Store<X509CertificateHolder> certs = cmsData.getCertificates();
-        //Collection<X509CertificateHolder> certificateHolders = certs.getMatches(null);
-        SignerInformationStore signers = cmsData.getSignerInfos();
-        Collection c = signers.getSigners();
-        Iterator it = c.iterator();
-
-        //the following array will contain the content of xml document
-        byte[] data = null;
-
-        while (it.hasNext()) {
-            SignerInformation signer = (SignerInformation) it.next();
-            Collection certCollection = certs.getMatches(signer.getSID());
-            Iterator certIt = certCollection.iterator();
-            X509CertificateHolder cert = (X509CertificateHolder) certIt.next();
-
-            CMSProcessable sc = cmsData.getSignedContent();
-            data = (byte[]) sc.getContent();
-            cscaCerts.add(data);
-        }
-        log.info("CA CERT SIZE : {}" , cscaCerts.size());
-        return cscaCerts;
-    }
-
-///////////////////////////////
-
-    public static boolean isSelfSigned(X509Certificate cert) {
-        try {
-            // Confronto Subject e Issuer
-            if (!cert.getSubjectX500Principal().equals(cert.getIssuerX500Principal())) {
-                return false;
-            }
-
-            // Verifica firma con la sua stessa chiave pubblica
-            PublicKey key = cert.getPublicKey();
-            cert.verify(key);  // Solleva eccezione se la firma non è valida
-            return true;
-        } catch (Exception e) {
-            // Se la verifica fallisce, non è self-signed
-            return false;
-        }
-    }
     /**
      * Estrae la lista di certificati da un archivio ZIP
      * Cerca i file con estensione .pem e li converte in X509Certificate
@@ -823,6 +655,23 @@ public class ValidateUtils {
         }catch (Exception e ){
             log.error("Error in getX509CertListFromZipFile: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e); // File .ml non trovato nello ZIP
+        }
+    }
+
+    public static boolean isSelfSigned(X509Certificate cert) {
+        try {
+            // Confronto Subject e Issuer
+            if (!cert.getSubjectX500Principal().equals(cert.getIssuerX500Principal())) {
+                return false;
+            }
+
+            // Verifica firma con la sua stessa chiave pubblica
+            PublicKey key = cert.getPublicKey();
+            cert.verify(key);  // Solleva eccezione se la firma non è valida
+            return true;
+        } catch (Exception e) {
+            // Se la verifica fallisce, non è self-signed
+            return false;
         }
     }
 

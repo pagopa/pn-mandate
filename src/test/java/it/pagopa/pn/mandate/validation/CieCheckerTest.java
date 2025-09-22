@@ -96,8 +96,8 @@ class CieCheckerTest {
         cMrtd.setDg1(dg1);
         cMrtd.setDg11(dg11);
         validationData.setCieMrtd(cMrtd);
-
-        Assertions.assertNotNull(validationData);
+        //Assertions.assertNotNull(validationData);
+        Assertions.assertTrue(cieChecker.validateDataInput(validationData));
     }
 
     private static byte[] hexFile(String toHex) throws DecoderException {

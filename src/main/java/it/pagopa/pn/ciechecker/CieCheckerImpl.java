@@ -1,5 +1,7 @@
 package it.pagopa.pn.ciechecker;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.DecoderException;
@@ -37,6 +39,8 @@ import java.util.List;
 public class CieCheckerImpl implements CieChecker {
 
     private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
+    @Setter
+    @Getter
     private List<X509Certificate> cscaAnchor;
     private CMSSignedData cms;
 
@@ -49,24 +53,19 @@ public class CieCheckerImpl implements CieChecker {
         cscaAnchor = extractCscaAnchor();
     }
 
-    public List<X509Certificate> getCscaAnchor(){
-        return this.cscaAnchor;
-    }
-    public void setCscaAnchor(List<X509Certificate> cscaAnchor){
-        this.cscaAnchor = cscaAnchor;
-    }
     public List<X509Certificate> extractCscaAnchor() throws CieCheckerException {
         return ValidateUtils.extractCscaAnchorFromZip();
     }
 
     @Override
     public ResultCieChecker validateMandate(CieValidationData data) throws CieCheckerException {
-        log.info("Start validateMandate...");
+        log.info("START validateMandate...");
         try {
             validateDataInput(data);
 
             cms = new CMSSignedData(data.getCieIas().getSod());
             log.info("validateMandate - CMS created");
+
             //16048-bis - NIS: nis_verify_sod.sh
             verifyDigitalSignature(cms);
 
@@ -83,6 +82,7 @@ public class CieCheckerImpl implements CieChecker {
             cms = new CMSSignedData(data.getCieMrtd().getSod());
             verifyDigitalSignature(cms);
 
+            log.info("FINE validateMandate: ResultCieChecker == OK");
             return ResultCieChecker.OK;
         }catch(CMSException cmse){
             log.error("CMSException: {}", cmse.getMessage());
@@ -96,14 +96,19 @@ public class CieCheckerImpl implements CieChecker {
         }
     }
 
-    private void validateDataInput(CieValidationData data) throws CieCheckerException {
+    public boolean validateDataInput(CieValidationData data) throws CieCheckerException {
+        log.info("Start validateDataInput() ...");
         if ( Objects.isNull(data) || Objects.isNull(data.getCieIas()) || Objects.isNull(data.getCieMrtd())) throw new CieCheckerException(ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
-        if ( Objects.isNull(data.getCieMrtd().getSod()) || data.getCieMrtd().getSod().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDSOD);
+        if ( Objects.isNull(data.getCieIas().getSod()) || data.getCieIas().getSod().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIESOD);
         if ( Objects.isNull(data.getCieIas().getNis()) || data.getCieIas().getNis().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIENIS);
         if ( Objects.isNull(data.getCieIas().getPublicKey()) || data.getCieIas().getPublicKey().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_PUBLICKEY);
         if ( Objects.isNull(data.getSignedNonce()) || data.getSignedNonce().length == 0 ) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_SIGNEDNONCE);
         if ( Objects.isNull(data.getNonce()) || data.getNonce().isEmpty() ) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_NONCE);
-
+        if ( Objects.isNull(data.getCieMrtd().getSod()) || data.getCieMrtd().getSod().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDSOD);
+        if ( Objects.isNull(data.getCieMrtd().getDg1()) || data.getCieMrtd().getDg1().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG1);
+        if ( Objects.isNull(data.getCieMrtd().getDg11()) || data.getCieMrtd().getDg11().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG11);
+        log.info("validateMandate - CieValidationData is valid");
+        return true;
     }
 
     /**
@@ -114,7 +119,7 @@ public class CieCheckerImpl implements CieChecker {
      *  Per la verifica si utilizzano : byte[] signature, byte[] pubKey, byte[] challenge
      */
     public ResultCieChecker verifyChallengeFromSignature(CieValidationData data) throws CieCheckerException {
-
+        log.info("Start verifyChallengeFromSignature() ... ");
         try {
             RSAEngine engine = new RSAEngine();
             PKCS1Encoding engine2 = new PKCS1Encoding(engine);
@@ -142,11 +147,6 @@ public class CieCheckerImpl implements CieChecker {
         }
     }
 
-    /*
-    @Override
-    public boolean extractChallengeFromSignature(byte[] signature, byte[] pubKey, byte[] nis) throws NoSuchAlgorithmException, InvalidKeySpecException, CryptoException {
-        return false;
-    }*/
 
     /**
      *
@@ -176,7 +176,7 @@ public class CieCheckerImpl implements CieChecker {
     public boolean verifySodPassiveAuthCie(CMSSignedData cms, byte[] cieIasNis) throws CieCheckerException {
 
         try {
-
+            log.info("Start verifySodPassiveAuthCie() ...");
             /*****************************************************
              ** PASSO 1 - ANALISI E ESTRAZIONE DEI COMPONENTI
              *****************************************************/
@@ -225,20 +225,7 @@ public class CieCheckerImpl implements CieChecker {
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP);
             }
 
-            /*******************************************************************
-             **  PASSO 3: VERIFICA FINALE DELLA FIRMA DIGITALE
-             ********************************************************************/
-            /* NB: LE DUE SEGUENTI VERIFICHE SONO USATE NELLO SCRIPT SHELL E QUI SOLO COME TEST
-            if (!ValidateUtils.veryfySignedAttrIsSet(cms)) {
-                //System.err.println("SignedAttribute content do not match the expected value");
-                return false;
-            }
-            if (!ValidateUtils.veryfySignatures(cms)) {
-                //System.err.println("Signature do not match the expected value");
-                return false;
-            }
-            */
-
+            log.info("Verifica finale della firma digitale ...");
             ResultCieChecker result = ValidateUtils.verifyDigitalSignature(cms);
             if(!(result.getValue().equals(OK))) {
                 log.error("Error in verifySodPassiveAuthCie: {}", EXC_NOVALID_DIGITAL_SIGNATURE);
@@ -249,9 +236,6 @@ public class CieCheckerImpl implements CieChecker {
         }catch(CMSException cmse){
             log.error("Error in verifySodPassiveAuthCie - CMSException: {}", cmse.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, cmse);
-        /*}catch(NoSuchAlgorithmException nsae) {
-            log.error("Error in verifySodPassiveAuthCie - NoSuchAlgorithmException: {}", nsae.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_AVAILABLE_CRYPTOGRAPHIC_ALGORITHM, nsae);*/
         } catch (Exception  e ){
             log.error("Error in verifySodPassiveAuthCie - Exception: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
@@ -270,6 +254,7 @@ public class CieCheckerImpl implements CieChecker {
      */
     @Override
     public ResultCieChecker verifyIntegrity(CieMrtd mrtd) throws CieCheckerException {
+        log.info("Start verifyIntegrity() della firma digitale ... ");
         try {
             if(mrtd.getSod() == null){
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_MRTD_SOD);
@@ -291,7 +276,6 @@ public class CieCheckerImpl implements CieChecker {
      * esegue la logica vera e propria e propaga le eccezioni.
      * - usa ValidateUtils.decodeSodHr(...) per ottenere SodSummary (equivalente a sod_summary dello script)
      * - per ogni DG contenuto in dgFiles verifica hash
-     *
      * Ritorna true solo se tutti i DG verificati combaciano.
      */
     public ResultCieChecker verifyIntegrityCore(byte[] sodBytes, byte[] dg1, byte[] dg11) throws Exception {

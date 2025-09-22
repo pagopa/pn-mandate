@@ -11,6 +11,7 @@ import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.icao.DataGroupHash;
 import org.bouncycastle.asn1.icao.LDSSecurityObject;
+import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 
 import java.nio.charset.StandardCharsets;
@@ -52,46 +53,15 @@ public class ValidateUtils {
 
     private ValidateUtils() {}
     private static final Path CSCA_DIR = Path.of("src","test","resources");
-    private static final String MASTERLIST_CSCAS_FILENAME_ZIP = ("masterlist-cscas.zip");
+    private static final String MASTERLIST_CSCAS_FILENAME_ZIP = "IT_MasterListCSCA.zip";
 
-    public static X509CertificateHolder extractDscCertDer(byte[] signedDataPkcs7) throws CMSException {
-        CMSSignedData cms = new CMSSignedData(signedDataPkcs7);
-
-        Store<X509CertificateHolder> certStore = cms.getCertificates();
-
-        Collection<X509CertificateHolder> matches = certStore.getMatches(null);
-        if (!matches.isEmpty()) {
-            return matches.iterator().next();
-        }
-
-        throw new CieCheckerException(EXC_NOTFOUND_CERTIFICATES);
-    }
-
-    public static List<X509Certificate> parseCscaAnchors(Collection<byte[]> cscaAnchorBlobs,
-                                                          CertificateFactory x509Cf) throws CieCheckerException {
-        if (cscaAnchorBlobs == null || cscaAnchorBlobs.isEmpty()) {
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
-        }
-        try {
-            List<X509Certificate> out = new ArrayList<>();
-            for (byte[] blob : cscaAnchorBlobs) {
-                Collection<? extends Certificate> cs = x509Cf.generateCertificates(new ByteArrayInputStream(blob));
-                for (Certificate c : cs) out.add((X509Certificate) c);
-            }
-            if (out.isEmpty()) throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSED_ZERO_CSCA_CERTIFICATES);
-            return out;
-
-        }catch (CertificateException ce){
-            log.error("Error in parseCscaAnchors: {}", ce.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE, ce);
-        }
-    }
 
     public static ResultCieChecker verifyDscAgainstTrustBundle(byte[] dscDer, Collection<X509Certificate> cscaTrustAnchors, Date atTime) {
-        try {
-            if (Objects.isNull(dscDer) || dscDer.length == 0) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
-            if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
 
+        if (Objects.isNull(dscDer) || dscDer.length == 0) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
+        if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
+
+        try {
             CertificateFactory x509Cf = CertificateFactory.getInstance(X_509);
 
             X509Certificate dsc = (X509Certificate) x509Cf.generateCertificate(new ByteArrayInputStream(dscDer));
@@ -121,14 +91,8 @@ public class ValidateUtils {
         }
     }
 
-    public static ResultCieChecker verifyDscAgainstAnchorBytes(byte[] dscDerOrPem,
-                                                               List<X509Certificate> anchors,
-                                                               Date atTime) throws CieCheckerException {
-        log.info("Invoke verifyDscAgainstAnchorBytes()");
-        return verifyDscAgainstTrustBundle(dscDerOrPem, anchors, atTime);
 
-    }
-
+    /*
      public static ResultCieChecker verifyDscAgainstAnchorBytesOld(byte[] dscDerOrPem,
                                                Collection<byte[]> cscaAnchorBlobs,
                                                Date atTime) throws CieCheckerException {
@@ -142,7 +106,9 @@ public class ValidateUtils {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE);
         }
     }
+    */
 
+    /*
     public static boolean verifyDscAgainstTrustBundle(X509CertificateHolder dscHolder,
                                                       Collection<X509Certificate> cscaTrustAnchors,
                                                       Date atTime) throws CieCheckerException {
@@ -154,14 +120,16 @@ public class ValidateUtils {
             log.error("Error in verifyDscAgainstTrustBundle - IOException: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
-    }
+    }*/
 
     //***********************************************
     //    nis_verify_sod_passive_auth.sh
     //************************************************
 
-
     public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) throws CieCheckerException {
+
+        if(Objects.isNull(cms)) throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES);
+
         log.info("Invoke extractDscCertDer() for cms signed content type OID={}", cms.getSignedContentTypeOID());
         Store<X509CertificateHolder> certStore = cms.getCertificates();
 
@@ -170,7 +138,6 @@ public class ValidateUtils {
         if (!matches.isEmpty()) {
             return matches.iterator().next();
         }
-
         throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES);
     }
 
@@ -192,7 +159,7 @@ public class ValidateUtils {
             JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
             //converter.setProvider(BouncyCastleProvider.PROVIDER_NAME); java.security.cert.CertificateException: Errore durante la conversione del certificato per ottenere la chiave pubblica.
             X509Certificate certificate = converter.getCertificate(certHolder);
-            //System.out.println("SerialNumber: " + certificate.getSerialNumber());
+            //log.info("SerialNumber: {}" , certificate.getSerialNumber());
 
             // Estrae la chiave pubblica dall'oggetto X509Certificate
             return certificate.getPublicKey();
@@ -283,7 +250,7 @@ public class ValidateUtils {
 
         String firstStr = calculateSha256(firstOctetString);
         String fiveStr = getHexFromOctetString(fiveOctetString);
-        //System.out.println("calculateSha256 --> firstStr: "+ firstStr + " - getHexFromOctetString --> fiveStr: " + fiveStr);
+        //log.info("calculateSha256 --> firstStr: {}" , firstStr , " - getHexFromOctetString --> fiveStr: {}" , fiveStr);
         if (firstStr.equalsIgnoreCase(fiveStr)) {
             log.info("VERIFICA RIUSCITA: Gli hash corrispondono.");
             return true;
@@ -419,9 +386,9 @@ public class ValidateUtils {
             SignerInformation signer = it.next();
             // Estrai gli attributi firmati
             //AttributeTable signedAttributes = signer.getSignedAttributes();
-            //System.out.println("signedAttributes.size: " + signedAttributes.size());
-            //System.out.println("signedAttributes.size: " + signedAttributes.toHashtable());
-            //System.out.println("signedAttributes : " + signedAttributes.toASN1Structure().getAttributes());
+            //log.info("signedAttributes.size: {}" , signedAttributes.size());
+            //log.info("signedAttributes.size: {}", signedAttributes.toHashtable());
+            //log.info("signedAttributes : {}" , signedAttributes.toASN1Structure().getAttributes());
             // Converti l'AttributeTable in una Hashtable
             if ( Objects.isNull(signer.getSignedAttributes()) ) {
                 log.error("Error in extractAllSignedAttributes: " + EXC_NO_SIGNED_ATTRIBUTE);
@@ -536,19 +503,7 @@ public class ValidateUtils {
 
     }
 
-    public static boolean verifyNisPublicKeyFromDataGroup(CMSSignedData cmsData, byte[] nisSha256PublicKey) throws CieCheckerException {
-        if (cmsData == null || nisSha256PublicKey == null) {
-            throw new CieCheckerException("Input parameters NULL: CMSSignedData is " + cmsData + " - String is " + nisSha256PublicKey);
-        }
-        String nisSha256PublicKeyToCheck = calculateSha256(nisSha256PublicKey);
-        List<String> dataGroupList = extractDataGroupHashes(cmsData);
-        if(dataGroupList.contains(nisSha256PublicKeyToCheck)){
-            return true;
-        }else{
-            log.error("The dataGroupList do not contains nisSha256PublicKey");
-            return false;
-        }
-    }
+
 
     /*
     // NB: USATO NELLO SCRIPT SHELL SOLO COME TEST
@@ -561,7 +516,7 @@ public class ValidateUtils {
         if(dataGroupList.contains(nisSha256PublicKeyToCheck)){
             return true;
         }else{
-            System.err.println("The dataGroupList do not contains nisSha256PublicKey");
+            log.error("The dataGroupList do not contains nisSha256PublicKey");
             return false;
         }
     }
@@ -588,98 +543,7 @@ public class ValidateUtils {
 
     }
      */
-
     // END : ESTRAZIONE DEGLI HASH: CONTENT
-
-    /*
-    * PASSO 2: MANIPOLAZIONE DEL TAG PER LA VERIFICA DELLA FIRMA - Codifica da tag contestuale implicito [0] IMPLICIT a Set
-    * 0x30: Rappresenta una SEQUENCE.
-    * 0x31: Rappresenta un SET (o SET OF).
-    * 0xA0: Rappresenta un tag contestuale implicito [0] IMPLICIT per una classe di dati specifica.
-    * Quando viene richiesto l'array di byte con getEncoded(), BouncyCastle formatta correttamente aggiungendo il tag 0x31 e la lunghezza,
-    * in modo che l'output sia pronto per l'algoritmo di hash SHA-256.
-    */
-
-    /*
-    *  PASSO 3: VERIFICA FINALE DELLA FIRMA DIGITALE
-    **/
-    /*
-    NB: USATO NELLO SCRIPT SHELL SOLO COME TEST
-    //if [ "$ACTUAL_SIGNED_ATTRS_HEX" = "$EXPECTED_SIGNED_ATTRS_HEX" ]; then
-
-    // private static final String EXPECTED_SIGNED_ATTRS_HEX="3148301506092A864886F70D01090331080606678108010101302F06092A864886F70D01090431220420C9002855CB7A5D366DB2CD6CCD6E148B7F8265E765C520ACC88855C2F3338FEB";
-
-    public static boolean veryfySignedAttrIsSet (CMSSignedData signedData) throws CMSException, IOException {
-        if (signedData == null) {
-            throw new CieCheckerException("L'oggetto CMSSignedData e' nullo");
-        }
-        SignerInformationStore signers = signedData.getSignerInfos();
-        if (signers.size() == 0) {
-            throw new CMSException("SignerInformationStore is empty");
-        }
-
-        // Prendo il primo firmatario (ce ne dovrebbe essere uno solo in questo caso)
-        Collection<SignerInformation> signerCollection = signers.getSigners();
-        Iterator<SignerInformation> it = signerCollection.iterator();
-        if (it.hasNext()) {
-            SignerInformation signer = it.next();
-            // Estrai gli attributi firmati
-            AttributeTable signedAttributes = signer.getSignedAttributes();
-            // Ottieni l'ASN1Primitive che rappresenta l'AttributeTable (una sequenza)
-            ASN1Primitive primitive = signedAttributes.toASN1Structure().toASN1Primitive();
-
-            // Verifica che non sia una sequenza: ASN1Set
-            if (!(primitive instanceof ASN1Set)) {
-                throw new IOException("L'AttributeTable non è una sequenza ASN.1");
-            }
-
-            // Converto [0] IMPLICIT in SET, che è equivalente a cambiare il tag da A0 a 31 getEncoded()
-            ASN1Set signedAttributesSet = (ASN1Set) primitive;
-            byte[] signedAttributesSetByte = signedAttributesSet.getEncoded();
-            String signedAttributesSetToHex = ValidateUtils.bytesToHex(signedAttributesSetByte);
-            //System.out.println("signedAttributesSetToHex: " + signedAttributesSetToHex);
-
-            if(EXPECTED_SIGNED_ATTRS_HEX.equals(signedAttributesSetToHex)) {
-                return true;
-            }else {
-                System.err.println("SignedAttribute content do not match the expected value");
-                return false;
-            }
-        }
-        throw new CMSException("SignerInformation is null");
-    }
-
-    //  NB: USATO NELLO SCRIPT SHELL SOLO COME TEST
-    //  if [ "$ACTUAL_SIGNATURE_HEX" = "$EXPECTED_SIGNATURE_HEX" ]; then
-    // private static final String EXPECTED_SIGNATURE_HEX="68080B83AA856FC3AF1F9A1D897011526130AE85E236862890970D54746535DF3328AD0638C90584B0DB0A466C86F9A65049FBC830E34499FD54107536204DE029A575F5D97E1F1DFF604B560A97465E2B5F105BFD97B0C86EB492E960F929DA298D6FB87637051B37980C8AC4737FBFE3C37993A41FDC2749DA2EB3B21B51A2FE66979D2258FB161F8BB1DFE8BCFBFC55E50E5D62F3F4FDCB2BF880B60D63EC411809C813CC2F9DA24C03B6A45B15D3AECDA1047FAB8806029A54D70A4E9A4E3DE888899D2A6762B073C91ACBD2C39A27105CF6C24CF78352C115A18E97E9A2D29164177DB03C6F3D90F03B7D842DF31B0FE9A36CA361DD722B5AFD01EA10BD";
-
-    public static boolean veryfySignatures (CMSSignedData signedData) throws CMSException {
-        if (signedData == null) {
-            throw new CieCheckerException("L'oggetto CMSSignedData e' nullo");
-        }
-        List<byte[]> signatures = extractSignaturesFromSignedData(signedData);
-        List<String> signaturesHexStrings = decodeListByteIntoListString(signatures);
-        if(signaturesHexStrings.contains(EXPECTED_SIGNATURE_HEX))
-            return true;
-        else {
-            System.err.println("Signature do not match the expected value");
-            return false;
-        }
-    }
-
-    private static List<String> decodeListByteIntoListString(List<byte[]> byteArrays) {
-        List<String> hexStrings = new ArrayList<>();
-        for (byte[] byteArray : byteArrays) {
-            if (byteArray != null) {
-                hexStrings.add(Hex.toHexString(byteArray).toUpperCase());
-            }
-        }
-        return hexStrings;
-    }
-    */
-
-
-    // openssl dgst -sha1 -verify "$PUBLIC_KEY_FILE" -signature "$SIGNATURE_FILE" "$SIGNED_ATTRS_SET" >/dev/null 2>&1;
 
     /**
      * VERIFICA FINALE DELLA FIRMA DIGITALE
@@ -752,12 +616,6 @@ public class ValidateUtils {
         return Arrays.equals(actualDigest, expectedDigest);
     }
 
-//    public static Integer extractDgNumber(String filename) {
-//        var p = java.util.regex.Pattern.compile("(?i)^(?:EF\\.)?DG0*(\\d+)(?:\\.[A-Za-z0-9]+)?$");
-//        var m = p.matcher(filename);
-//        var parsed = m.find() ? Integer.parseInt(m.group(1)) : null;
-//        return parsed;
-//    }
 
     //creazione oggetto rappresentante EF.SOD -> decode_sod_hr.sh
     public static SodSummary decodeSodHr(byte[] sodBytes) throws Exception {
@@ -780,7 +638,8 @@ public class ValidateUtils {
         byte[] signature = si.getSignature();
 
         X509Certificate dsc = null;
-        X509CertificateHolder holder = extractDscCertDer(sodBytes);
+        //X509CertificateHolder holder = extractDscCertDer(sodBytes);
+        X509CertificateHolder holder = extractDscCertDer(cms);
         if (holder != null) {
             dsc = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(holder);
         }
@@ -800,15 +659,15 @@ public class ValidateUtils {
     }
 
 
-    /**
-     * Estrae la lista di certificati da un archivio ZIP
-     * Cerca i file con estensione .pem e li converte in X509Certificate
-     *
-     * @param zipStream L'InputStream del file ZIP.
-     * @return List<X509Certificate> List of X509Certificate
-     * @throws CieCheckerException Se si verifica un errore durante la lettura dello ZIP.
-     */
-    public static List<X509Certificate> getX509CertListFromZipFile(InputStream zipStream) throws CieCheckerException {
+//    /**
+//     * Estrae la lista di certificati da un archivio ZIP
+//     * Cerca i file con estensione .pem e li converte in X509Certificate
+//     *
+//     * @param zipStream InputStream L'InputStream del file ZIP.
+//     * @return List<X509Certificate> List of X509Certificate
+//     * @throws CieCheckerException Se si verifica un errore durante la lettura dello ZIP.
+//     */
+/*    public static List<X509Certificate> getX509CertListFromZipFile(InputStream zipStream) throws CieCheckerException {
         List<X509Certificate> x509List;
 
         try {
@@ -820,7 +679,7 @@ public class ValidateUtils {
                 // Controlla il nome del file all'interno dello ZIP
                 if (entry.getName().toLowerCase().endsWith(".pem")) {
                     // Ritorna l'InputStream del file .pem
-                    System.out.println("FILE NAME : " + entry.getName().toLowerCase());
+                    log.info("FILE NAME : {}", entry.getName().toLowerCase());
                     byte[] fileBytes = zis.readAllBytes();
 
                     x509List.add(readCertificateFromPem( new ByteArrayInputStream(fileBytes)));
@@ -832,6 +691,7 @@ public class ValidateUtils {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e); // File .ml non trovato nello ZIP
         }
     }
+*/
 
     public static List<X509Certificate> extractCscaAnchorFromZip() throws CieCheckerException {
 
@@ -883,9 +743,87 @@ public class ValidateUtils {
             data = (byte[]) sc.getContent();
             cscaCerts.add(data);
         }
-        System.out.println("CA CERT SIZE : " + cscaCerts.size());
+        log.info("CA CERT SIZE : {}" , cscaCerts.size());
         return cscaCerts;
     }
 
+///////////////////////////////
+
+    public static boolean isSelfSigned(X509Certificate cert) {
+        try {
+            // Confronto Subject e Issuer
+            if (!cert.getSubjectX500Principal().equals(cert.getIssuerX500Principal())) {
+                return false;
+            }
+
+            // Verifica firma con la sua stessa chiave pubblica
+            PublicKey key = cert.getPublicKey();
+            cert.verify(key);  // Solleva eccezione se la firma non è valida
+            return true;
+        } catch (Exception e) {
+            // Se la verifica fallisce, non è self-signed
+            return false;
+        }
+    }
+    /**
+     * Estrae la lista di certificati da un archivio ZIP
+     * Cerca i file con estensione .pem e li converte in X509Certificate
+     *
+     * @param zipStream L'InputStream del file ZIP.
+     * @return List<X509Certificate> List of X509Certificate
+     * @throws CieCheckerException Se si verifica un errore durante la lettura dello ZIP.
+     */
+    public static List<X509Certificate> getX509CertListFromZipFile(InputStream zipStream) throws CieCheckerException {
+        List<X509Certificate> x509List;
+
+        try {
+            x509List = new ArrayList<X509Certificate>();
+            ZipInputStream zis = new ZipInputStream(zipStream);
+            ZipEntry entry;
+
+            entry = zis.getNextEntry();
+            CMSSignedData cms = null;
+            if (entry != null) {
+                cms = new CMSSignedData(zis);
+
+                ASN1InputStream input = new ASN1InputStream((byte[])cms.getSignedContent().getContent());
+
+                ASN1Primitive p;
+                p = input.readObject();
+                ASN1Sequence seq0Lev = ASN1Sequence.getInstance(p);
+                Enumeration<ASN1Primitive> enum0Lev = seq0Lev.getObjects();
+                ASN1Integer int1Lev = (ASN1Integer) enum0Lev.nextElement();
+                ASN1Set set1Lev = (ASN1Set) enum0Lev.nextElement();
+                Enumeration<ASN1Primitive> enum1Lev = set1Lev.getObjects();
+
+                while ( enum1Lev.hasMoreElements() ) {
+                    ASN1Object asn1Obj = (ASN1Object)enum1Lev.nextElement();
+                    X509CertificateHolder holder = new X509CertificateHolder(asn1Obj.toASN1Primitive().getEncoded());
+
+                    RDN rdns [] = holder.getSubject().getRDNs(ASN1ObjectIdentifier.tryFromID("2.5.4.6"));
+                    if( rdns.length > 0 ) {
+                        RDN rdn = rdns[0];
+                        if( rdn != null
+                                && rdn.getFirst().getValue() != null ) {
+                            String country = rdn.getFirst().getValue().toString();
+                            if( country.equals("IT") ) {
+                                X509Certificate cert = new JcaX509CertificateConverter().getCertificate(holder);
+                                if( isSelfSigned(cert) ) {
+                                    //log.info("Subject Name: {}", holder.getSubject().toString());
+                                    //log.info("Issuer Name: {}", holder.getIssuer().toString());
+                                    x509List.add(cert);
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+            return x509List;
+        }catch (Exception e ){
+            log.error("Error in getX509CertListFromZipFile: {}", e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e); // File .ml non trovato nello ZIP
+        }
+    }
 
 }

@@ -5,6 +5,7 @@ public class CieCheckerConstants {
     private CieCheckerConstants() {}
 
     // constants
+    public static final String RSA_ALGORITHM = "RSA";
     public static final String X_509 = "X.509";
     public static final String PKIX = "PKIX";
     //public static final String BOUNCY_CASTLE_PROVIDER = "BC";
@@ -59,4 +60,10 @@ public class CieCheckerConstants {
     public static final String EXC_NOVALID_DIGITAL_SIGNATURE = "No valid digital Signature";
     public static final String EXC_NOT_SAME_DIGEST = "Digest mismatch between expected and actual DG";
     public static final String EXC_DIGEST_NOT_VERIFIED = "Digest are different, validation of integrity not passed";
+    public static final String EXC_INVALID_PARAMETER_CIESOD = "Input parameters SOD CIE is null";
+    public static final String EXC_INVALID_PARAMETER_MRTDSOD = "Input parameters SOD MRTD is null";
+    public static final String EXC_INVALID_PARAMETER_CIENIS = "Input parameters NIS CIE is null";
+    public static final String EXC_INVALID_PARAMETER_PUBLICKEY = "Input parameters PUBLICKEY CIE is null";
+    public static final String EXC_INVALID_PARAMETER_SIGNEDNONCE = "Input parameters SIGNED NONCE CIE is null";
+    public static final String EXC_INVALID_PARAMETER_NONCE = "Input parameters NONCE CIE is null";
 }

@@ -68,6 +68,7 @@ public class CieCheckerConstants {
     public static final String EXC_INVALID_PARAMETER_PUBLICKEY = "Input parameter PUBLICKEY CIE is null";
     public static final String EXC_INVALID_PARAMETER_SIGNEDNONCE = "Input parameter SIGNED NONCE CIE is null";
     public static final String EXC_INVALID_PARAMETER_NONCE = "Input parameter NONCE CIE is null";
-    public static final String EXC_INVALID_PARAMETER_MRTDDG1 = "Input parameter DG11 MRTD is null";
+    public static final String EXC_INVALID_PARAMETER_MRTDDG1 = "Input parameter DG1 MRTD is null";
     public static final String EXC_INVALID_PARAMETER_MRTDDG11 = "Input parameter DG11 MRTD is null";
+    public static final String EXC_INVALID_VERIFIER = "Verifier not valid at signingTime";
 }

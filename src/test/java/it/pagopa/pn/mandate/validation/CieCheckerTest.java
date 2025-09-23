@@ -8,13 +8,13 @@ import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.CieIas;
 import it.pagopa.pn.ciechecker.model.CieValidationData;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,7 +43,7 @@ import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-@Slf4j
+@lombok.CustomLog
 class CieCheckerTest {
 
     private static CieChecker cieChecker;
@@ -58,12 +58,6 @@ class CieCheckerTest {
     //private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
 
-    static byte[] nisPubKey;
-    static byte[] nisSignature;
-    static String nisChallenge;
-    static byte[] nisHexToCheck;
-    static byte[] sodIasByteArray;
-
     static CieValidationData validationData;
 
     @BeforeAll
@@ -71,11 +65,11 @@ class CieCheckerTest {
         cieChecker = new CieCheckerImpl();
         cieChecker.init();
 
-        nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
-        nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
-        nisChallenge = cleanString(basePath.resolve("NIS_CHALLENGE.HEX"));
-        nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));
-        sodIasByteArray = loadSodBytes(basePath.resolve(SOD_HEX_IAS));
+        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
+        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
+        String nisChallenge = cleanString(basePath.resolve("NIS_CHALLENGE.HEX"));
+        byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));
+        byte[] sodIasByteArray = loadSodBytes(basePath.resolve(SOD_HEX_IAS));
 
         byte[] sodMrtd = Files.readAllBytes(sodFile);
         byte[] dg1 = Files.readAllBytes(dg1Files);
@@ -96,9 +90,37 @@ class CieCheckerTest {
         cMrtd.setDg1(dg1);
         cMrtd.setDg11(dg11);
         validationData.setCieMrtd(cMrtd);
-        //Assertions.assertNotNull(validationData);
-        Assertions.assertTrue(cieChecker.validateDataInput(validationData));
+
+        // Assertions.assertTrue(cieChecker.validateDataInput(validationData));
     }
+
+
+    @Test
+    @Order(1)
+    void validateMandateTest() throws IOException {
+        log.info("TEST validateMandateTest - INIT... ");
+
+        if(cieChecker.getCscaAnchor() == null)
+            cieChecker.setCscaAnchor(cieChecker.extractCscaAnchor());
+        log.debug("cscaAnchor SIZE: " +cieChecker.getCscaAnchor().size());
+
+        //log.info("DG11: " +validationData.getCieMrtd().getDg1());
+        if(validationData.getCieMrtd().getDg1() == null )
+            validationData.getCieMrtd().setDg1(Files.readAllBytes(dg1Files));
+        //log.info("DG1: " +validationData.getCieMrtd().getDg1());
+
+        //log.info("DG11: " +validationData.getCieMrtd().getDg11());
+        if(validationData.getCieMrtd().getDg11() == null )
+            validationData.getCieMrtd().setDg11(Files.readAllBytes(dg11Files));
+        //log.info("DG11: " +validationData.getCieMrtd().getDg11());
+
+        ResultCieChecker result = cieChecker.validateMandate( validationData);
+        log.info("Risultato atteso OK -> " + result.getValue());
+
+        Assertions.assertEquals(OK, result.getValue());
+        log.info("TEST validateMandateTest - END ");
+    }
+
 
     private static byte[] hexFile(String toHex) throws DecoderException {
         return Hex.decodeHex(toHex);
@@ -118,7 +140,7 @@ class CieCheckerTest {
 
         ResultCieChecker result = cieChecker.verifyChallengeFromSignature(validationData);
         log.info("Risultato atteso OK -> {}", result.getValue());
-        Assertions.assertTrue(result.getValue().equals(OK));
+        Assertions.assertEquals(OK, result.getValue());
         log.info("TEST verifyChallengeFromSignature - END ");
     }
 
@@ -128,32 +150,20 @@ class CieCheckerTest {
         log.info("TEST generatedPublicKey - INIT... ");
         Assertions.assertNotNull(validationData.getCieIas().getPublicKey());
 
-        org.bouncycastle.asn1.pkcs.RSAPublicKey pkcs1PublicKey = org.bouncycastle.asn1.pkcs.RSAPublicKey.getInstance(nisPubKey);
+        org.bouncycastle.asn1.pkcs.RSAPublicKey pkcs1PublicKey = org.bouncycastle.asn1.pkcs.RSAPublicKey.getInstance(validationData.getCieIas().getPublicKey()); ///nisPubKey);
         BigInteger modulus = pkcs1PublicKey.getModulus();
         BigInteger publicExponent = pkcs1PublicKey.getPublicExponent();
         RSAPublicKeySpec keySpec = new RSAPublicKeySpec(modulus, publicExponent);
         KeyFactory kf = KeyFactory.getInstance(RSA_ALGORITHM);
         PublicKey generatedPublic = kf.generatePublic(keySpec);
 
-        log.info("Modulus: %X%n", modulus);
-        log.info("See, Java class result: %s, is RSAPublicKey: %b%n", generatedPublic.getClass().getName(), generatedPublic instanceof RSAPublicKey);
+        log.info("Modulus: %X%n {}", modulus);
+        log.info("See, Java class result: %s {}, is RSAPublicKey: %b%n {}", generatedPublic.getClass().getName(), generatedPublic instanceof RSAPublicKey);
 
         Assertions.assertTrue(generatedPublic instanceof RSAPublicKey);
         Assertions.assertEquals(modulus, ((RSAPublicKey)generatedPublic).getModulus());
         Assertions.assertEquals(publicExponent, pkcs1PublicKey.getPublicExponent());
         log.info("TEST generatedPublic - END ");
-    }
-
-    @Test
-    void validateMandateTest() {
-        log.info("TEST validateMandateTest - INIT... ");
-
-        log.info("cscaAnchor 0: " +cieChecker.getCscaAnchor());
-        ResultCieChecker result = cieChecker.validateMandate( validationData);
-        log.info("Risultato atteso OK -> " + result.getValue());
-
-        Assertions.assertFalse(result.getValue().equals(OK));
-        log.info("TEST validateMandateTest - END ");
     }
 
     @Test
@@ -229,8 +239,9 @@ class CieCheckerTest {
     @MethodSource("cieSources")
     void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException {
         log.info("=== INIZIO TEST [" + tipo + "] ===");
-        cieChecker.setCscaAnchor(cieChecker.extractCscaAnchor());
-        log.info("cscaAnchor 1: {}" , cieChecker.getCscaAnchor());
+        if(cieChecker.getCscaAnchor() == null )
+            cieChecker.setCscaAnchor(cieChecker.extractCscaAnchor());
+        log.info("cscaAnchor 1: {}" , cieChecker.getCscaAnchor().size());
         // caso ok
         CMSSignedData cms = new CMSSignedData(sodBytes);
         ResultCieChecker resultOk = cieChecker.verifyDigitalSignature(cms);
@@ -347,7 +358,7 @@ System.out.println("cscaAnchor 3: " + cieChecker.getCscaAnchor());
                 ValidateUtils.verifyDscAgainstTrustBundle(dscDer, cieChecker.getCscaAnchor(), null);
 
         log.info("Risultato atteso OK -> " + result.getValue());
-        Assertions.assertTrue(result.getValue().equals(OK));
+        Assertions.assertEquals(OK, result.getValue());
 
         log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - END ");
 
@@ -366,7 +377,7 @@ System.out.println("cscaAnchor 3: " + cieChecker.getCscaAnchor());
         ResultCieChecker resultCieChecker =ValidateUtils.verifyDscAgainstTrustBundle(dscPem, cieChecker.getCscaAnchor(), null);
         log.info("TEST resultCieChecker: " + resultCieChecker.getValue());
 
-        Assertions.assertTrue(resultCieChecker.getValue().equals(OK));
+        Assertions.assertEquals(OK, resultCieChecker.getValue());
     }
 
 
@@ -478,7 +489,7 @@ System.out.println("cscaAnchor 3: " + cieChecker.getCscaAnchor());
         ResultCieChecker result = cieChecker.verifyIntegrity(validationData.getCieMrtd());
         log.info("Risultato atteso OK -> " + result.getValue());
 
-        assertTrue(result.getValue().equals("OK"));  //, "Gli hash dei DG devono corrispondere a quelli del SOD");
+        Assertions.assertEquals(OK, result.getValue());  //, "Gli hash dei DG devono corrispondere a quelli del SOD");
         log.info("TEST testVerifyIntegrityOk - END ");
     }
 

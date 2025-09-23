@@ -2,6 +2,7 @@ package it.pagopa.pn.ciechecker.model;
 
 import it.pagopa.pn.ciechecker.CieCheckerConstants;
 
+@lombok.CustomLog
 public enum ResultCieChecker {
     OK("OK"),
     KO("KO"),
@@ -28,6 +29,7 @@ public enum ResultCieChecker {
     KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR(CieCheckerConstants.EXC_INVALID_PARAMETER_CERTPATHVALIDATOR),
     KO_EXC_IOEXCEPTION(CieCheckerConstants.EXC_IOEXCEPTION),
     KO_EXC_NO_HASH_ALGORITHM_SOD(CieCheckerConstants.EXC_NO_HASH_ALGORITHM_SOD),
+    KO_EXC_NO_HASH_SIGNED_DATA(CieCheckerConstants.EXC_NO_HASH_SIGNED_DATA),
     KO_EXC_UNSUPPORTED_ALGORITHM_SOD(CieCheckerConstants.EXC_UNSUPPORTED_HASH_ALGORITHM_SOD),
     KO_EXC_NOTFOUND_EXPECTED_HASHES_SOD(CieCheckerConstants.EXC_NO_EXPECTED_HASHES_FOUND_SOD),
     KO_EXC_NOTFOUND_DIGEST_SOD(CieCheckerConstants.EXC_NOTFOUND_DIGEST),
@@ -56,6 +58,7 @@ public enum ResultCieChecker {
     KO_EXC_NOT_SAME_DIGEST(CieCheckerConstants.EXC_NOT_SAME_DIGEST),
     KO_EXC_NO_SUPPORTED_CERTIFICATEFACTORY(CieCheckerConstants.EXC_NO_SUPPORTED_CERTIFICATEFACTORY),
     KO_EXC_DIGEST_NOT_VERIFIED(CieCheckerConstants.EXC_DIGEST_NOT_VERIFIED),
+    KO_EXC_INVALID_VERIFIER(CieCheckerConstants.EXC_INVALID_VERIFIER),
     KO_EXC_EXCEPTION(CieCheckerConstants.EXC_KO);
 
     private final String value;

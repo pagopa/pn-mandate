@@ -1,11 +1,8 @@
 package it.pagopa.pn.mandate.validate;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-import it.pagopa.pn.ciechecker.model.CieValidationData;
-import it.pagopa.pn.ciechecker.model.ResultCieChecker;
-import it.pagopa.pn.ciechecker.model.SodSummary;
+import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -33,21 +30,28 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.security.PublicKey;
 
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.OK;
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.X_509;
+import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
+import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_384;
+import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_512;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.decodeSodHr;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Slf4j
+@lombok.CustomLog
 class ValidateUtilsTest {
 
-    private static final Path BASE_PATH = Path.of("src","test","resources");
+    private static final Path basePath = Path.of("src","test","resources");
     private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
     private static final String SOD_HEX_IAS = "SOD_IAS.HEX";
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
     private static final String NIS_PUBKEY_FILENAME = "NIS_PUBKEY.HEX";
     private static final String NIS_HEX_TO_CHECK="393130373138343634363534";
     private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
+    private static final Path dg1Files = Paths.get("src/test/resources/EF.DG1");
+    private static final Path dg11Files = Paths.get("src/test/resources/EF.DG11");
+    private static final Path dg1FilesCorrupted = Paths.get("src/test/resources/DG1_CORROTTO.HEX");
+    private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
+    private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
+
     private static final Map<String,String> expectedIssuer = Map.of(
             "2.5.4.3", "Italian Country Signer CA",
             "2.5.4.11", "National Electronic Center of State Police",
@@ -55,23 +59,43 @@ class ValidateUtilsTest {
             "2.5.4.6", "IT"
     );
 
-    static byte[] sodIasByteArray;
-    static byte[] nisHexToCheck;
-
     static CieValidationData validationData;
 
     @BeforeAll
     static void setUp() throws IOException, DecoderException {
 
-        sodIasByteArray = loadSodBytes(BASE_PATH.resolve(SOD_HEX_IAS));
-        nisHexToCheck = hexFile(cleanString(BASE_PATH.resolve("NIS.HEX")));
+        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
+        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
+        String nisChallenge = cleanString(basePath.resolve("NIS_CHALLENGE.HEX"));
+        byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));
+        byte[] sodIasByteArray = loadSodBytes(basePath.resolve(SOD_HEX_IAS));
+
+        byte[] sodMrtd = Files.readAllBytes(sodFile);
+        byte[] dg1 = Files.readAllBytes(dg1Files);
+        byte[] dg11 = Files.readAllBytes(dg11Files);
+
+        validationData = new CieValidationData();
+        CieIas cieIas = new CieIas();
+        cieIas.setPublicKey(nisPubKey);
+        cieIas.setNis(nisHexToCheck);
+        cieIas.setSod(sodIasByteArray);
+
+        validationData.setCieIas(cieIas);
+        validationData.setSignedNonce(nisSignature);
+        validationData.setNonce(nisChallenge);
+
+        CieMrtd cMrtd = new CieMrtd();
+        cMrtd.setSod(sodMrtd);
+        cMrtd.setDg1(dg1);
+        cMrtd.setDg11(dg11);
+        validationData.setCieMrtd(cMrtd);
 
     }
 
         @Test
-    void extractDscCertDerTest() throws IOException, DecoderException,CMSException {
+    void extractDscCertDerTest() throws CMSException {
 
-        CMSSignedData cms = new CMSSignedData(sodIasByteArray);
+        CMSSignedData cms = new CMSSignedData(validationData.getCieIas().getSod());
         X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
 
         Assertions.assertNotNull(holder);
@@ -95,7 +119,7 @@ class ValidateUtilsTest {
     @Test
     void verifyDscAgainstTrustBundleTest() throws Exception {
 
-        CMSSignedData cms = new CMSSignedData(sodIasByteArray);
+        CMSSignedData cms = new CMSSignedData(validationData.getCieIas().getSod());
         X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
         List<byte[]> ders = pickManyDerFromResources(-1);
 
@@ -114,7 +138,7 @@ class ValidateUtilsTest {
     @Test
     void verifyDscAgainstTrustBundleIsFalseTest() throws Exception {
         CertificateFactory certificateFactory = CertificateFactory.getInstance(X_509);
-        CMSSignedData cms = new CMSSignedData(sodIasByteArray);
+        CMSSignedData cms = new CMSSignedData(validationData.getCieIas().getSod());
         X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
         byte[] dscDer = holder.getEncoded();
         List<byte[]> ders = pickManyDerFromResources(-1);
@@ -302,8 +326,8 @@ class ValidateUtilsTest {
     void extractPublicKeyFromHolder() throws IOException, DecoderException, CMSException {
         log.info("TEST extractPublicKeyFromHolder - INIT");
         log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
         log.info(" - sodIasByteArray: {}", Arrays.toString(sodIasByteArray));
 
@@ -358,8 +382,8 @@ class ValidateUtilsTest {
     void extractSignaturesFromSignedData() throws IOException, DecoderException, CMSException {
         log.info("TEST extractSignaturesFromSignedData - INIT");
         log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
         log.info(" - sodIasByteArray: {}" , Arrays.toString(sodIasByteArray));
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
@@ -385,8 +409,8 @@ class ValidateUtilsTest {
 
         log.info("TEST extractFirstAndFiveHashesOctetString - INIT");
         log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
         log.info(" - sodIasByteArray: {}" , Arrays.toString(sodIasByteArray));
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
@@ -415,8 +439,8 @@ class ValidateUtilsTest {
     void extractSignedAttributes() throws IOException, DecoderException, CMSException {
         log.info("TEST extractSignedAttributes - INIT");
         log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
         log.info(" - sodIasByteArray: {}" , Arrays.toString(sodIasByteArray));
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
@@ -459,8 +483,8 @@ class ValidateUtilsTest {
     void extractDataGroupHashesForSpecifyNIS() throws IOException, DecoderException, CMSException {
         log.info("TEST extractDataGroupHashes - INIT");
         log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
         log.info(" - sodIasByteArray: {}", Arrays.toString(sodIasByteArray));
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
@@ -490,8 +514,8 @@ class ValidateUtilsTest {
     void extractDataGroupHashesForPUBKEY() throws IOException, DecoderException, CMSException {
         log.info("TEST extractDataGroupHashes - INIT");
         log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
         log.info(" - sodIasByteArray: {}" , Arrays.toString(sodIasByteArray));
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
@@ -507,7 +531,7 @@ class ValidateUtilsTest {
 
     String decodeNisPublicKeyTest() throws IOException, DecoderException {
 
-        String fileString = Files.readString(BASE_PATH.resolve(NIS_PUBKEY_FILENAME)).replaceAll("\\s+", "");
+        String fileString = Files.readString(basePath.resolve(NIS_PUBKEY_FILENAME)).replaceAll("\\s+", "");
         log.info("fileString : {}" , fileString);
 
         byte[] nisPublicKeyToCheck = hexFile(fileString);
@@ -527,7 +551,7 @@ class ValidateUtilsTest {
     void veryfySignedAttrIsSet() throws IOException, DecoderException, CMSException {
         log.info("TEST convertSignedAttributesIntoSet - INIT");
         log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX)).replaceAll("\\s+", "");
         String subString = fileString.substring(8, fileString.length());
         byte[] sodIasByteArray = hexFile(subString);
         //log.info(" - sodIasByteArray: {}", sodIasByteArray);
@@ -540,7 +564,7 @@ class ValidateUtilsTest {
     void veryfySignatures() throws IOException, DecoderException, CMSException {
         log.info("TEST convertSignedAttributesIntoSet - INIT");
         log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX)).replaceAll("\\s+", "");
         String subString = fileString.substring(8, fileString.length());
         byte[] sodIasByteArray = hexFile(subString);
         //log.info(" - sodIasByteArray: {}", sodIasByteArray);
@@ -555,8 +579,8 @@ class ValidateUtilsTest {
     void verifyDigitalSignature() throws IOException, DecoderException, CMSException {
         log.info("TEST convertSignedAttributesIntoSet - INIT");
         log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
@@ -588,7 +612,7 @@ class ValidateUtilsTest {
         Exception exception = assertThrows(Exception.class, () -> {
             ValidateUtils.decodeSodHr(corruptedSod);
         });
-        log.info("Eccezione catturata: {} " , exception.getClass().getSimpleName() , " - {}" , exception.getMessage());
+        log.info("Eccezione catturata: {} - {}", exception.getClass().getSimpleName(), exception.getMessage());
         assertTrue(exception.getMessage().contains("unable") || !exception.getMessage().isEmpty());
     }
 
@@ -629,10 +653,10 @@ class ValidateUtilsTest {
     @Test
     void verifyNisPublicKeyFromDataGroup() throws Exception {
 
-        CMSSignedData cms = new CMSSignedData(sodIasByteArray);
-        byte[] NIS_HEX_TO_CHECK = hexFile("393130373138343634363534");
+        CMSSignedData cms = new CMSSignedData(validationData.getCieIas().getSod());
+        byte[] nisHexTOCheck = hexFile(NIS_HEX_TO_CHECK);
 
-        Assertions.assertTrue(verifyNisPublicKeyFromDataGroup( cms, NIS_HEX_TO_CHECK));
+        Assertions.assertTrue(verifyNisPublicKeyFromDataGroup( cms, nisHexTOCheck));
 
     }
 

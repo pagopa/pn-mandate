@@ -593,7 +593,7 @@ class MandateServiceTest {
         resgetmandatesbyid.add(mandateDtoDto);
 
 
-        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(mandateDao.createMandate(Mockito.any(), Mockito.any())).thenReturn(Mono.just(entity));
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
         when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
@@ -634,7 +634,7 @@ class MandateServiceTest {
         mandateDtoDto.setInfo(denominationDtoDto);
         resgetmandatesbyid.add(mandateDtoDto);
 
-        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(mandateDao.createMandate(Mockito.any(), Mockito.any())).thenReturn(Mono.just(entity));
         BaseRecipientDtoDto baseRecipientDtoDto = new BaseRecipientDtoDto();
         baseRecipientDtoDto.setDenomination("test");
        when(pnDatavaultClient.getRecipientDenominationByInternalId(anyList())).thenReturn(Flux.just(baseRecipientDtoDto));
@@ -769,7 +769,7 @@ class MandateServiceTest {
         mandateDtoDto.setInfo(denominationDtoDto);
         resgetmandatesbyid.add(mandateDtoDto);
 
-        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(mandateDao.createMandate(Mockito.any(), Mockito.any())).thenReturn(Mono.just(entity));
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
         when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
@@ -826,7 +826,7 @@ class MandateServiceTest {
         mandateDtoDto.setInfo(denominationDtoDto);
         resgetmandatesbyid.add(mandateDtoDto);
 
-        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(mandateDao.createMandate(Mockito.any(), Mockito.any())).thenReturn(Mono.just(entity));
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
         when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
@@ -882,7 +882,7 @@ class MandateServiceTest {
         resgetmandatesbyid.add(mandateDtoDto);
 
 
-        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(mandateDao.createMandate(Mockito.any(), Mockito.any())).thenReturn(Mono.just(entity));
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
         when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
@@ -948,7 +948,7 @@ class MandateServiceTest {
         paSummaryDto.setName("nome");
 
 
-        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(mandateDao.createMandate(Mockito.any(), Mockito.any())).thenReturn(Mono.just(entity));
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
         when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
@@ -1017,7 +1017,7 @@ class MandateServiceTest {
         paSummaryDto.setName("nome");
 
 
-        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(mandateDao.createMandate(Mockito.any(), Mockito.any())).thenReturn(Mono.just(entity));
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
         when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));
@@ -1090,7 +1090,7 @@ class MandateServiceTest {
         paSummaryDto1.setName("nome2");
 
 
-        when(mandateDao.createMandate(Mockito.any())).thenReturn(Mono.just(entity));
+        when(mandateDao.createMandate(Mockito.any(), Mockito.any())).thenReturn(Mono.just(entity));
         when(pnDatavaultClient.ensureRecipientByExternalId(Mockito.anyBoolean(), Mockito.anyString())).thenReturn(Mono.just(entity.getDelegate()));
         when(pnDatavaultClient.updateMandateById(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(Mono.just("OK"));
         when(pnDatavaultClient.getMandatesByIds(Mockito.any())).thenReturn(Flux.fromIterable(resgetmandatesbyid));

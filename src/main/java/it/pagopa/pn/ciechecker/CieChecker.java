@@ -6,6 +6,7 @@ import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.model.CieValidationData;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 
+import java.security.cert.X509Certificate;
 import java.util.List;
 
 public interface CieChecker {
@@ -13,12 +14,14 @@ public interface CieChecker {
     void init();
     ResultCieChecker validateMandate(CieValidationData data) throws CieCheckerException;
     ResultCieChecker verifyChallengeFromSignature(CieValidationData data);
-    //public boolean extractChallengeFromSignature(byte[] signature, byte[] pubKey,byte[] nis) throws NoSuchAlgorithmException, InvalidKeySpecException, CryptoException;
-    public boolean verifySodPassiveAuthCie(CieIas cieIas);
-    //public boolean verifyDigitalSignatureMrtd(CieMrtd cieMrtd);
+
+    boolean verifySodPassiveAuthCie(CieIas cieIas);
+
     ResultCieChecker verifyIntegrity(CieMrtd cieMrtd);
 
-    ResultCieChecker verifyDigitalSignature(byte[] sod, List<byte[]> cscaAnchors);
+    ResultCieChecker verifyDigitalSignature(byte[] sod);
 
-    void setCscaAnchor(List<byte[]> cscaAnchor);
+    void setCscaAnchor(List<X509Certificate> cscaAnchor);
+
+    List<X509Certificate> extractCscaAnchor() throws CieCheckerException;
 }

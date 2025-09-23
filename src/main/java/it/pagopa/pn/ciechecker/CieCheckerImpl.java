@@ -12,6 +12,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.math.BigInteger;
 import java.security.*;
+import java.security.cert.X509Certificate;
 import java.util.*;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
@@ -36,44 +37,46 @@ import java.util.List;
 public class CieCheckerImpl implements CieChecker {
 
     private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
-    private List<byte[]> cscaAnchor;
+    private List<X509Certificate> cscaAnchor;
 
     @Override
-    public void init() {
+    public void init() throws CieCheckerException {
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(new BouncyCastleProvider());
         }
-
-        // come recuperarlo  cscaAnchor
-
+        cscaAnchor = extractCscaAnchor();
     }
 
-    public List<byte[]> getCscaAnchor(){
+    public List<X509Certificate> getCscaAnchor(){
         return this.cscaAnchor;
     }
-    public void setCscaAnchor(List<byte[]> cscaAnchor){
+    public void setCscaAnchor(List<X509Certificate> cscaAnchor){
         this.cscaAnchor = cscaAnchor;
+    }
+    public List<X509Certificate> extractCscaAnchor() throws CieCheckerException {
+        return ValidateUtils.extractCscaAnchorFromZip();
     }
 
     @Override
     public ResultCieChecker validateMandate(CieValidationData data) throws CieCheckerException {
+        log.info("Start validateMandate()...");
         try {
             if (Objects.isNull(data) ) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
 
             //16048-bis - NIS: nis_verify_sod.sh
-            verifyDigitalSignature(data.getCieIas().getSod(), cscaAnchor); //data.getCieIas().getCscaAnchor());
+            verifyDigitalSignature(data.getCieIas().getSod());
 
             //16049 NIS: nis_verify_sod_passive_auth.sh
             verifySodPassiveAuthCie(data.getCieIas());
 
-            //16050 NIS: nis_verify_challenge.sh - verifica del nonce - verificare la firma di una challenge IAS
+            //16050 NIS: nis_verify_challenge.sh - verifica del nonce: verifica la firma di una challenge IAS
             verifyChallengeFromSignature(data);
 
             //16051 MRTD: verify_integrity.sh
             verifyIntegrity(data.getCieMrtd());
 
             //16052 MRTD: verify_signature.sh
-            verifyDigitalSignature(data.getCieMrtd().getSod(), this.getCscaAnchor());
+            verifyDigitalSignature(data.getCieMrtd().getSod());
 
             return ResultCieChecker.OK;
         }catch (CieCheckerException cce ) {
@@ -95,7 +98,6 @@ public class CieCheckerImpl implements CieChecker {
     public ResultCieChecker verifyChallengeFromSignature(CieValidationData data) throws CieCheckerException {
 
         try {
-
             RSAEngine engine = new RSAEngine();
             PKCS1Encoding engine2 = new PKCS1Encoding(engine);
             // estrazione public key dall'oggetto firma
@@ -104,7 +106,7 @@ public class CieCheckerImpl implements CieChecker {
             // estrae dalla signature i byte del nonce/challenge
             byte[] recovered = engine2.processBlock(data.getSignedNonce(), 0, data.getSignedNonce().length);
             if (!(Arrays.equals(recovered, Hex.decodeHex(data.getNonce()))))
-                return ResultCieChecker.KO_NO_MATCH_NONCE_SIGNATURE;
+                throw new CieCheckerException( ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE);
             else
                 return ResultCieChecker.OK;
         }catch (IllegalArgumentException ie){
@@ -158,7 +160,7 @@ public class CieCheckerImpl implements CieChecker {
         try {
             if ( Objects.isNull(cieIas) || Objects.isNull(cieIas.getSod()) || Objects.isNull(cieIas.getNis()) ) {
                 log.error("Error in verifySodPassiveAuthCie: {}", EXC_INPUT_PARAMETER_NULL);
-                throw new CieCheckerException(ResultCieChecker.KO_INPUT_PARAMETER_NULL);
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
             }
 
             CMSSignedData cms = new CMSSignedData(cieIas.getSod());
@@ -257,18 +259,17 @@ public class CieCheckerImpl implements CieChecker {
     public ResultCieChecker verifyIntegrity(CieMrtd mrtd) throws CieCheckerException {
         try {
             if(mrtd.getSod() == null){
-                throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_MRTD_SOD);
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_MRTD_SOD);
             }
             byte[] dg1 = mrtd.getDg1() != null ? mrtd.getDg1() : null;
             byte[] dg11 = mrtd.getDg11() != null ? mrtd.getDg11() : null;
 
             return verifyIntegrityCore(mrtd.getSod(), dg1, dg11);
         } catch (CieCheckerException ce) {
-            log.error("Validation error in verifyIntegrity: {}", ce.getMessage());
+            log.error("Error in verifyIntegrity - Validation error in verifyIntegrity: {}", ce.getMessage());
             throw new CieCheckerException(ce.getResult(), ce);
         } catch (Exception e) {
-            log.error("Unexpected error in verifyIntegrity: {}", e.getMessage());
-            //return ResultCieChecker.KO;
+            log.error("Error in verifyIntegrity - Unexpected error in verifyIntegrity: {}", e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
@@ -287,18 +288,18 @@ public class CieCheckerImpl implements CieChecker {
         // 2) Identifica algoritmo di digest
         String hashAlgorithmName = getDigestName(sodSummary.getDgDigestAlgorithm().getAlgorithm().getId());
         if (hashAlgorithmName == null || hashAlgorithmName.isBlank()) {
-            throw new CieCheckerException(ResultCieChecker.KO_HASH_ALGORITHM_SOD);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_ALGORITHM_SOD);
         }
         if (!COMPATIBLE_ALGOS.contains(hashAlgorithmName)) {
             log.error("Unsupported hash algorithm: {}", hashAlgorithmName);
-            throw new CieCheckerException(ResultCieChecker.KO_UNSUPPORTED_ALGORITHM_SOD);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_UNSUPPORTED_ALGORITHM_SOD);
         }
 
         MessageDigest md = MessageDigest.getInstance(hashAlgorithmName);
 
         Map<Integer, byte[]> expectedHashes = sodSummary.getDgExpectedHashes();
         if (expectedHashes == null || expectedHashes.isEmpty()) {
-            throw new CieCheckerException(ResultCieChecker.KO_NOTFOUND_EXPECTED_HASHES_SOD);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_EXPECTED_HASHES_SOD);
         }
 
         // 3) Verifica DG1 e DG11
@@ -308,22 +309,20 @@ public class CieCheckerImpl implements CieChecker {
         return ResultCieChecker.OK;
     }
 
-    private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum) throws CieCheckerException {
-            if (!isVerifyDigest(md, dg, expectedHashes.get(dgNum))) {
-                log.info("WARNING: " + EXC_NOT_SAME_DIGEST);
-             // DA SCOMMENTARE IN BLUE_PHASE  throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST);
-            }
-
+    private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum){ // DA SCOMMENTARE throws CieCheckerException {
+        if (!isVerifyDigest(md, dg, expectedHashes.get(dgNum))) {
+            log.error("Error in verifyDigestList: {}{}", EXC_NOT_SAME_DIGEST, dgNum);
+            // DA SCOMMENTARE throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST);
+        }
     }
 
     /**
      * Verifica la validità della catena di fiducia del SOD
      *
      * @param cms CMSSignedData
-     * @param cscaAnchors List<byte[]>
      * @return ResultCieChecker
      */
-    public ResultCieChecker verifyTrustChain(CMSSignedData cms, List<byte[]> cscaAnchors) throws CieCheckerException {
+    public ResultCieChecker verifyTrustChain(CMSSignedData cms) throws CieCheckerException {
         log.info("Start verifyTrustChain() ...");
         try {
             /*if (cieMrtd == null || cieMrtd.getSod() == null || cieMrtd.getCscaAnchor() == null || cieMrtd.getCscaAnchor().isEmpty()) {
@@ -334,13 +333,13 @@ public class CieCheckerImpl implements CieChecker {
             X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
             byte[] dscDer = holder.getEncoded();
             //verifica se il certificato contenuto in $DSC_DER_FILE è stato firmato da una delle autorità di certificazione presenti nel file $TRUST_BUNDLE_PEM.
-            /* DA SCOMMENTARE
-            ResultCieChecker result = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, cscaAnchors, new Date());
+
+            ResultCieChecker result = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, cscaAnchor, new Date());
             if (!result.getValue().equals(OK)) {
                 log.error("An error occoured in verifyTrustChain(). Error = {}",EXC_CERTIFICATE_NOT_SIGNED);
                 //return ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED;
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED);
-            }*/
+            }
             return ValidateUtils.verifyDigitalSignature(cms);
         }catch(IOException ioe){
             log.error("Error in verifyTrustChain - IOException: {}", ioe.getMessage());
@@ -354,21 +353,17 @@ public class CieCheckerImpl implements CieChecker {
      * nis_verify_sod.sh / verify_signature.sh
      *
      * @param sod byte[]
-     * @param cscaTrustAnchors List<byte[]>
      * @return boolean
      */
     @Override
-    public ResultCieChecker verifyDigitalSignature(byte[] sod, List<byte[]> cscaTrustAnchors) throws CieCheckerException {
+    public ResultCieChecker verifyDigitalSignature(byte[] sod ) throws CieCheckerException {
         log.info("Start verifyDigitalSignature() ...");
         try {
-            //if (Objects.isNull(sod) || sod.length == 0 || Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty())
-            //    throw new CieCheckerException( ResultCieChecker.KO_INPUT_PARAMETER_NULL);
             if (Objects.isNull(sod) || sod.length == 0) throw new CieCheckerException(EXC_INPUT_PARAMETER_NULL);
-            // DA SCOMMENTARE if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(NO_CSCA_ANCHORS_PROVIDED);
 
             CMSSignedData cms = new CMSSignedData(sod);
             log.info("verifyDigitalSignature() - CMS created, proceeding to verifyTrustChain()");
-            ResultCieChecker result = verifyTrustChain(cms, cscaTrustAnchors);
+            ResultCieChecker result = verifyTrustChain(cms);
             if( !(result.getValue().equals(OK)) ) {
                 throw new CieCheckerException(result);
             } else {

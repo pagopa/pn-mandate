@@ -377,7 +377,13 @@ public class MandateDao extends BaseDao {
         logEvent.log();
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
-                .flatMap(mandate -> checkAndAcceptMandate(mandate, verificationCode, cxTypeAuthFleet, groups))
+                .flatMap(mandate -> {
+                    if (!isMandateStandardSegregation(mandate)) {
+                        return Mono.error(new PnMandateBadRequestException());
+                    }
+                    editMandateState(mandate, verificationCode, cxTypeAuthFleet, groups);
+                    return save(mandate);
+                })
                 .doOnSuccess(mandate -> {
                     String messageAction = String.format(
                             "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
@@ -944,19 +950,9 @@ public class MandateDao extends BaseDao {
     }
     //#endregion
 
-    private Mono<MandateEntity> checkAndAcceptMandate(
-            MandateEntity mandate,
-            String verificationCode,
-            CxTypeAuthFleet cxTypeAuthFleet,
-            List<String> groups) {
-        // Controllo segregazione STANDARD
-        if (mandate.getWorkflowType() == null ||
-                WorkFlowType.STANDARD.equals(mandate.getWorkflowType()) ||
-                WorkFlowType.REVERSE.equals(mandate.getWorkflowType())) {
-            editMandateState(mandate, verificationCode, cxTypeAuthFleet, groups);
-            return save(mandate);
-        } else {
-            return Mono.error(new PnMandateBadRequestException());
-        }
-    }
+   private boolean isMandateStandardSegregation(MandateEntity mandate) {
+       return mandate.getWorkflowType() == null ||
+              WorkFlowType.STANDARD.equals(mandate.getWorkflowType()) ||
+              WorkFlowType.REVERSE.equals(mandate.getWorkflowType());
+   }
 }

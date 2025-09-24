@@ -206,7 +206,7 @@ public class MandateDao extends BaseDao {
 
         addNewFilterExpression(filterExpression);
         List<String> workflowTypesToSegregate = TypeSegregatorFilter.STANDARD.getTypes().stream().map(Enum::name).toList();
-        addWorkflowTypeStandardOrNotExistsFilter(workflowTypesToSegregate, MandateEntity.COL_S_WORKFLOW_TYPE, ":type", expressionBuilder, filterExpression);
+        addWorkflowTypeStandardOrNotExistsFilter(workflowTypesToSegregate, expressionBuilder, filterExpression);
 
         if (!filterExpression.isEmpty()) {
             expressionBuilder.expression(filterExpression.toString());
@@ -258,15 +258,15 @@ public class MandateDao extends BaseDao {
         expression.append(field).append(EQ).append(prefix).append(idx);
     }
 
-    private void addWorkflowTypeStandardOrNotExistsFilter(List<String> values, String field, String prefix,
+    private void addWorkflowTypeStandardOrNotExistsFilter(List<String> values,
                                                           Expression.Builder expressionBuilder, StringBuilder expression) {
-        expression.append("(attribute_not_exists(").append(field).append(") OR (");
+        expression.append("(attribute_not_exists(").append(MandateEntity.COL_S_WORKFLOW_TYPE).append(") OR (");
         for (int i = 0; i < values.size(); i++) {
-            expression.append(field).append(EQ).append(prefix).append(i);
+            expression.append(MandateEntity.COL_S_WORKFLOW_TYPE).append(EQ).append(":type").append(i);
             if (i < values.size() - 1) {
                 expression.append(" OR ");
             }
-            expressionBuilder.putExpressionValue(prefix + i, AttributeValue.builder().s(values.get(i)).build());
+            expressionBuilder.putExpressionValue(":type" + i, AttributeValue.builder().s(values.get(i)).build());
         }
         expression.append("))");
     }
@@ -545,8 +545,9 @@ public class MandateDao extends BaseDao {
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
                 .flatMap(mandate -> {
                     log.info("rejectMandate mandate for delegate retrieved mandateobj={}", mandate);
-
-                    if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
+                    if (!isMandateStandardSegregation(mandate)) {
+                        return Mono.error(new PnMandateBadRequestException());
+                    }else if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                             || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {
                         // aggiorno lo stato, solo se era in pending o active, ignoro eventuali altri stati (che NON dovrebbero essere presenti)
                         mandate.setRejected(Instant.now());

@@ -1684,6 +1684,41 @@ public class MandateDaoIT {
     }
 
     @Test
+    void updateMandateNotActive() {
+        // Given
+        MandateEntity mandateToInsert = newMandateWithGroups(true);
+        MandateSupportEntity mandateSupport = newMandateSupport(mandateToInsert);
+        // Imposta lo stato a EXPIRED (non attivo)
+        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.EXPIRED));
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        // When & Then
+        Assertions.assertThrows(
+            it.pagopa.pn.mandate.exceptions.PnInvalidMandateStatusException.class,
+            () -> mandateDao.updateMandate(
+                    mandateToInsert.getDelegate(),
+                    mandateToInsert.getMandateId(),
+                    mandateToInsert.getGroups()
+            ).block(d)
+        );
+
+        // Cleanup
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+    }
+
+    @Test
     void rejectMandate() {
         //Given
         MandateEntity mandateToInsert = newMandate(false);

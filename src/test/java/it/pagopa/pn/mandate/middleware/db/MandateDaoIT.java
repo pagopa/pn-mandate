@@ -4,6 +4,7 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.mandate.LocalStackTestConfig;
 import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
+import it.pagopa.pn.mandate.exceptions.PnMandateBadRequestException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.DelegateType;
@@ -21,11 +22,14 @@ import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
@@ -37,6 +41,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @Import(LocalStackTestConfig.class)
@@ -1369,6 +1375,30 @@ public class MandateDaoIT {
         }
     }
 
+    @Test
+    void acceptMandate_shouldThrowBadRequest_whenMandateNotStandardSegregation() {
+        //Given
+        MandateEntity mandateToInsert = newMandate(false);
+        mandateToInsert.setWorkflowType(WorkFlowType.CIE);
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+            mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(),null, CxTypeAuthFleet.PF).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        Mono<MandateEntity> mono = mandateDao.acceptMandate(mandateToInsert.getDelegate(), mandateToInsert.getMandateId(), mandateToInsert.getValidationcode(), null, CxTypeAuthFleet.PF);
+        assertThrows(PnMandateBadRequestException.class, () -> mono.block(d));
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+    }
 
     @Test
     void acceptMandateAlreadyAccepted() {
@@ -1702,6 +1732,42 @@ public class MandateDaoIT {
         // When & Then
         Assertions.assertThrows(
             it.pagopa.pn.mandate.exceptions.PnInvalidMandateStatusException.class,
+            () -> mandateDao.updateMandate(
+                    mandateToInsert.getDelegate(),
+                    mandateToInsert.getMandateId(),
+                    mandateToInsert.getGroups()
+            ).block(d)
+        );
+
+        // Cleanup
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+    }
+
+    @Test
+    void updateMandateExpiredValidTo() {
+        // Given
+        MandateEntity mandateToInsert = newMandateWithGroups(true);
+        MandateSupportEntity mandateSupport = newMandateSupport(mandateToInsert);
+        // Stato ACTIVE ma validto già scaduto
+        mandateToInsert.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE));
+        mandateToInsert.setValidto(Instant.now().minusSeconds(3600)); // 1 ora fa
+
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+            mandateDao.createMandate(mandateToInsert).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        // When & Then
+        Assertions.assertThrows(
+            it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException.class,
             () -> mandateDao.updateMandate(
                     mandateToInsert.getDelegate(),
                     mandateToInsert.getMandateId(),

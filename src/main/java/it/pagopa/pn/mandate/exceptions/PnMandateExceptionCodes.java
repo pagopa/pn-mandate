@@ -6,6 +6,7 @@ public class PnMandateExceptionCodes extends PnExceptionsCodes {
 
     // raccolgo qui tutti i codici di errore delle deleghe
     public static final String ERROR_CODE_MANDATE_NOT_FOUND = "PN_MANDATE_NOTFOUND";
+    public static final String ERROR_CODE_MANDATE_BAD_REQUEST = "PN_MANDATE_BADREQUEST";
     public static final String ERROR_CODE_MANDATE_QR_TOKEN_NOT_FOUND = "PN_MANDATE_QR_TOKEN_NOT_FOUND";
     public static final String ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR = "PN_MANDATE_INTERNAL_SERVER_ERROR";
     public static final String ERROR_CODE_MANDATE_NOT_VALID_AARQRCODE_ERROR = "PN_MANDATE_AARQRCODE_NOT_VALID";

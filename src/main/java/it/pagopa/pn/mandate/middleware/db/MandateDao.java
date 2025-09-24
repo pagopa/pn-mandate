@@ -377,8 +377,13 @@ public class MandateDao extends BaseDao {
         logEvent.log();
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
-                .doOnNext(mandate -> editMandateState(mandate, verificationCode, cxTypeAuthFleet, groups))
-                .flatMap(this::save)
+                .flatMap(mandate -> {
+                    if (!isMandateStandardSegregation(mandate)) {
+                        return Mono.error(new PnMandateBadRequestException());
+                    }
+                    editMandateState(mandate, verificationCode, cxTypeAuthFleet, groups);
+                    return save(mandate);
+                })
                 .doOnSuccess(mandate -> {
                     String messageAction = String.format(
                             "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
@@ -944,4 +949,10 @@ public class MandateDao extends BaseDao {
                 .toList();
     }
     //#endregion
+
+   private boolean isMandateStandardSegregation(MandateEntity mandate) {
+       return mandate.getWorkflowType() == null ||
+              WorkFlowType.STANDARD.equals(mandate.getWorkflowType()) ||
+              WorkFlowType.REVERSE.equals(mandate.getWorkflowType());
+   }
 }

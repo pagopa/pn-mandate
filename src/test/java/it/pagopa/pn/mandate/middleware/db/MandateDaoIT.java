@@ -14,7 +14,6 @@ import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnu
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
@@ -22,14 +21,11 @@ import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
@@ -41,8 +37,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @Import(LocalStackTestConfig.class)
@@ -1710,6 +1704,40 @@ public class MandateDaoIT {
             } catch (Exception e) {
                 System.out.println("Nothing to remove");
             }
+        }
+    }
+
+    @Test
+    void updateMandate_shouldThrowBadRequest_whenWorkflowTypeIsCIE() {
+        // Given
+        MandateEntity cieMandate = newMandateWithGroups(true);
+        cieMandate.setWorkflowType(WorkFlowType.CIE);
+        MandateSupportEntity mandateSupport = newMandateSupport(cieMandate);
+
+        try {
+            testDao.delete(cieMandate.getDelegator(), cieMandate.getSk());
+            testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+            mandateDao.createMandate(cieMandate).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        // When & Then
+        Assertions.assertThrows(
+                PnMandateBadRequestException.class,
+                () -> mandateDao.updateMandate(
+                        cieMandate.getDelegate(),
+                        cieMandate.getMandateId(),
+                        cieMandate.getGroups()
+                ).block(d)
+        );
+
+        // Cleanup
+        try {
+            testDao.delete(cieMandate.getDelegator(), cieMandate.getSk());
+            testDao.deleteSupport(mandateSupport.getDelegator(), mandateSupport.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
         }
     }
 

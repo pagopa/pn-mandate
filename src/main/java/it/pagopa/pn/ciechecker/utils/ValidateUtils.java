@@ -193,10 +193,9 @@ public class ValidateUtils {
             // --- PARTE 2: ESTRAI L'HASH FIRMATO (messageDigest) ---
             ASN1OctetString signedHash = ValidateUtils.extractHashSigned(cms);
             return ValidateUtils.verifyOctetStrings(hashSignedData, signedHash);
-
-        }catch(CMSException ce){
+        }catch(CieCheckerException ce){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, ce.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, ce);
+            throw new CieCheckerException(ce.getResult(), ce);
         }catch(Exception e){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
@@ -291,17 +290,13 @@ public class ValidateUtils {
      * @param signedData CMSSignedData
      * @return byte[]
      * @throws CieCheckerException e
-     * @throws CMSException e
      */
-    public static byte[] extractHashBlock(CMSSignedData signedData) throws CieCheckerException, CMSException {
-        if ( Objects.isNull(signedData) ) {
-            log.error("Error in extractHashBlock: {}", EXC_GENERATE_CMSSIGNEDDATA);
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA); //"L'oggetto CMSSignedData e' nullo");
-        }
+    public static byte[] extractHashBlock(CMSSignedData signedData) throws CieCheckerException {
+
         CMSTypedData signedContent = signedData.getSignedContent();
         if ( Objects.isNull(signedContent) || !(signedContent.getContent() instanceof byte[]) ) {
-            log.error("Error in extractHashBlock: {}", EXC_NO_CMSTYPEDDATA);
-            throw new CMSException(EXC_NO_CMSTYPEDDATA);
+            log.error("Error in extractHashBlock: {}", EXC_INVALID_CMSTYPEDDATA);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA);
         }
 
         return (byte[]) signedContent.getContent();

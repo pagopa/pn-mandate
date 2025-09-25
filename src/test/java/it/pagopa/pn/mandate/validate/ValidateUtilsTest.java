@@ -15,6 +15,8 @@ import org.bouncycastle.cms.CMSException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -36,7 +38,9 @@ import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_512;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.decodeSodHr;
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
 @lombok.CustomLog
+@ActiveProfiles("test")
 class ValidateUtilsTest {
 
     private static final Path basePath = Path.of("src","test","resources");
@@ -674,13 +678,6 @@ class ValidateUtilsTest {
         }
     }
 
-    @Test
-    void extractCscaAnchorFromZipTest() {
-        //CMSSignedData cms = ValidateUtils.loadCscaAnchorIntoCMS();
-        List<X509Certificate> x509List = ValidateUtils.extractCscaAnchorFromZip();
-        Assertions.assertFalse(x509List.isEmpty());
-        log.info("x509List.size: {}" , x509List.size());
-    }
 
     private static byte[] loadSodBytes(Path filePath) throws IOException, DecoderException {
         String fileString = Files.readString(filePath).replaceAll("\\s+", "");

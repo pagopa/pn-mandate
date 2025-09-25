@@ -8,11 +8,12 @@ public class CieCheckerConstants {
     public static final String RSA_ALGORITHM = "RSA";
     public static final String X_509 = "X.509";
     public static final String PKIX = "PKIX";
-    //public static final String BOUNCY_CASTLE_PROVIDER = "BC";
+    public static final String BOUNCY_CASTLE_PROVIDER = "BC";
     public static final String SHA_1 = "SHA-1";
     public static final String SHA_256 = "SHA-256";
     public static final String SHA_384 = "SHA-384";
     public static final String SHA_512 = "SHA-512";
+    public static final String SHA_1_WITH_RSA = "SHA1withRSA";
 
     public static final String OK = "OK";
 
@@ -21,8 +22,8 @@ public class CieCheckerConstants {
     public static final String EXC_NOTFOUND_CERTIFICATES ="No certificates found in PKCS7";
     public static final String EXC_NOTFOUND_CMSSIGNEDDATA = "Not found CMSSignedData";
     public static final String EXC_PARSED_ZERO_CSCA_CERTIFICATES="Parsed 0 CSCA certificates";
-    public static final String EXC_NO_CSCA_ANCHORS_PROVIDED= "No CSCA anchors provided";
-    public static final String EXC_INPUT_PARAMETER_NULL="One or more input parameters are null";
+    public static final String EXC_NO_CSCA_ANCHORS_PROVIDED= "No CSCA Anchor Files provided or is not valid";
+    public static final String EXC_INPUT_PARAMETER_NULL="Input object parameter CieValidationData is null";
     public static final String EXC_NO_SIGNATURES_SIGNED_DATA="No signatures found in SignedData";
     public static final String EXC_NO_HASH_CONTENT_MATCH="No HashContent match";
     public static final String EXC_NO_HASH_SIGNED_DATA = "No hash of SignedData found";
@@ -53,7 +54,7 @@ public class CieCheckerConstants {
     public static final String EXC_INVALID_KEY_SPECIFICATION ="Invalid key specifications";
     public static final String EXC_NOFOUND_DIGITAL_SIGNATURE ="No digital signature found in the SignedData structure";
     public static final String EXC_NOFOUND_SIGNER ="No signer found";
-    public static final String EXC_NO_CMSTYPEDDATA = "Invalid or unavailable signed content"; //""Contenuto firmato non valido o non disponibile.";
+    public static final String EXC_NO_CMSTYPEDDATA = "Invalid or unavailable signed content";
     public static final String EXC_NO_SIGNERINFORMATIONSTORE ="SignerInformationStore is null";
     public static final String EXC_NO_MESSAGEDIGESTSPI_SUPPORTED = "No Provider supports a MessageDigestSpi implementation for the specified algorithm";
     public static final String EXC_INVALID_CMSTYPEDDATA = "The signed content is not a valid hash sequence.";
@@ -71,4 +72,8 @@ public class CieCheckerConstants {
     public static final String EXC_INVALID_PARAMETER_MRTDDG1 = "Input parameter DG1 MRTD is null";
     public static final String EXC_INVALID_PARAMETER_MRTDDG11 = "Input parameter DG11 MRTD is null";
     public static final String EXC_INVALID_VERIFIER = "Verifier not valid at signingTime";
+    public static final String EXC_INVALID_SIGNATURE = "Signature object is not initialized properly";
+    public static final String EXC_INVALID_ALGORITHM = "No Provider supports a Signature implementation for the specified algorithm";
+
+
 }

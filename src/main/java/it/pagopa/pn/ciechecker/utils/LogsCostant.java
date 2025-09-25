@@ -31,7 +31,7 @@ public abstract class LogsCostant {
     public static final String VALIDATEUTILS_EXTRACT_CSCAANCHOR = "ValidateUtils.extractCscaAnchorFromZip()";
     public static final String VALIDATEUTILS_GETX509CERTLIST_ZIPFILE = "ValidateUtils.getX509CertListFromZipFile()";
     public static final String VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE = "ValidateUtils.verifyDigitalSignature()";
-
+    public static final String VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE = "ValidateUtils.verifySodPassiveDigitalSignature()";
 
     // ERROR
     public static final String ENDING_PROCESS_WITH_ERROR = "Ending '{}' Process with error = '{}' - '{}'";

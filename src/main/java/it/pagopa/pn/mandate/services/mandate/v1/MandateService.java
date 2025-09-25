@@ -238,7 +238,7 @@ public class MandateService {
                                         .flatMap(ent -> pnDatavaultClient.updateMandateById(uuid, dto.getDelegate().getFirstName(),
                                                         dto.getDelegate().getLastName(), dto.getDelegate().getCompanyName())
                                                 .then(Mono.just(ent)))
-                                        .flatMap(mandateDao::createMandate)
+                                        .flatMap(item -> mandateDao.createMandate(item, TypeSegregatorFilter.STANDARD))
                                 , (ddto, entity) -> entity)
                         .map(r -> {
                             r.setDelegator(null);
@@ -281,7 +281,7 @@ public class MandateService {
                                                 entity.getMandateId(), xPagopaPnCxId, entity.getValidfrom(), xPagopaPnUid);
                                     return entity;
                                 })
-                                .flatMap(mandateDao::createMandate), (ddto, entity) -> entity)
+                                .flatMap(item -> mandateDao.createMandate(item, TypeSegregatorFilter.STANDARD)), (ddto, entity) -> entity)
                         .flatMap(mandateEntity -> pnDatavaultClient.getRecipientDenominationByInternalId(Collections.singletonList(xPagopaPnCxId))
                                 .flatMap(baseRecipientDtoDto -> pnDatavaultClient.updateMandateById(uuid, null, null, baseRecipientDtoDto.getDenomination()))
                                 .then(Mono.just(mandateEntity)))

@@ -77,7 +77,7 @@ public class MandateRestV1Controller  implements MandateServiceApi {
 
         return mandateService.createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, groups, role)
                     .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m));
-    }
+    }                       
 
     @Override
     public Mono<ResponseEntity<Flux<MandateDto>>> listMandatesByDelegate1(String xPagopaPnCxId,

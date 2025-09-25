@@ -14,7 +14,6 @@ import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnu
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
@@ -248,6 +247,50 @@ public class MandateDaoIT {
             try {
                 testDao.delete(mandateToInsert1.getDelegator(), mandateToInsert1.getSk());
                 testDao.delete(mandateToInsert2.getDelegator(), mandateToInsert2.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void createMandateStandardAndCie_NoConflict() {
+        // Given
+        MandateEntity mandateStandard = newMandate(false);
+        MandateEntity mandateCie = newMandateAppIo(false);
+        mandateCie.setWorkflowType(WorkFlowType.CIE);
+        // Assicura che delegator e delegate coincidano per il test
+        mandateCie.setDelegator(mandateStandard.getDelegator());
+        mandateCie.setDelegate(mandateStandard.getDelegate());
+        // Usa mandateId diversi per evitare collisioni sulla PK+SK
+        mandateCie.setMandateId(mandateStandard.getMandateId() + "_CIE");
+        mandateCie.setSk(mandateCie.getMandateId());
+
+        try {
+            testDao.delete(mandateStandard.getDelegator(), mandateStandard.getSk());
+            testDao.delete(mandateCie.getDelegator(), mandateCie.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        // When
+        mandateDao.createMandate(mandateStandard, TypeSegregatorFilter.STANDARD).block(d);
+        mandateDao.createMandate(mandateCie, TypeSegregatorFilter.CIE).block(d);
+
+        // Then
+        try {
+            MandateEntity elementStandard = testDao.get(mandateStandard.getDelegator(), mandateStandard.getSk());
+            MandateEntity elementCie = testDao.get(mandateCie.getDelegator(), mandateCie.getSk());
+            Assertions.assertNotNull(elementStandard);
+            Assertions.assertNotNull(elementCie);
+            Assertions.assertEquals(mandateStandard, elementStandard);
+            Assertions.assertEquals(mandateCie, elementCie);
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            try {
+                testDao.delete(mandateStandard.getDelegator(), mandateStandard.getSk());
+                testDao.delete(mandateCie.getDelegator(), mandateCie.getSk());
             } catch (Exception e) {
                 System.out.println("Nothing to remove");
             }

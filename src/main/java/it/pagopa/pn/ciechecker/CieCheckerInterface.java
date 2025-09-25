@@ -11,9 +11,6 @@ import java.util.List;
 
 public interface CieCheckerInterface {
 
-    void init() throws CieCheckerException;
-    ResultCieChecker validateMandate(CieValidationData data) throws CieCheckerException;
-
     boolean validateDataInput(CieValidationData data) throws CieCheckerException;
     ResultCieChecker verifyChallengeFromSignature(CieValidationData data) throws CieCheckerException;
     boolean verifySodPassiveAuthCie(CMSSignedData cms, byte[] cieIasNis) throws CieCheckerException;
@@ -21,5 +18,5 @@ public interface CieCheckerInterface {
     ResultCieChecker verifyDigitalSignature(CMSSignedData cms) throws CieCheckerException;
     void setCscaAnchor(List<X509Certificate> cscaAnchor);
     List<X509Certificate> getCscaAnchor();
-    //List<X509Certificate> extractCscaAnchor() throws CieCheckerException;
+
 }

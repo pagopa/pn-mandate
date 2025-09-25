@@ -491,7 +491,7 @@ public class ValidateUtils {
 
             // 1. Ottieni il primo SignerInformation (presumendo che ce ne sia uno solo)
             SignerInformation signerInfo = cms.getSignerInfos().getSigners().iterator().next();
-            log.debug("signerInfo.getEncryptionAlgOID(): {}" , signerInfo.getEncryptionAlgOID());
+            log.debug("signerInfo.getEncryptionAlgOID(): {}", signerInfo.getEncryptionAlgOID());
             log.debug("signerInfo.getDigestAlgOID(): {} ", signerInfo.getDigestAlgOID());
 
             Signature verifier = Signature.getInstance(CieCheckerConstants.SHA_1_WITH_RSA, Security.getProvider(CieCheckerConstants.BOUNCY_CASTLE_PROVIDER));
@@ -508,18 +508,23 @@ public class ValidateUtils {
 
             verifier.initVerify(publicKey);
             verifier.update(signedAttributesBytes);
-            if(verifier.verify(signatureBytes))
+            if (verifier.verify(signatureBytes))
                 return ResultCieChecker.OK;
             else {
                 log.info("ResultCieChecker: ", ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE);
                 return ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE;
             }
+        }catch (NoSuchElementException nee){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, nee.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION, nee);
         }catch (SignatureException se){
             // if this signature object is not initialized properly
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, se.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_SIGNATURE, se);
         }catch (InvalidKeyException ike){
             //se la chiave è invalida
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, ike.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PUBLICKEY, ike);
         }catch (NoSuchAlgorithmException nae){
             //no Provider supports a Signature implementation for the specified algorithm
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, nae.getMessage());
@@ -528,8 +533,6 @@ public class ValidateUtils {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, ioe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_ERROR_CREATE_VERIFIER, ioe);
         }
-        log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION.getValue());
-        throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION);
     }
 
     /**

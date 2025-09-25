@@ -54,6 +54,7 @@ public enum ResultCieChecker {
     KO_EXC_INVALID_VERIFIER(CieCheckerConstants.EXC_INVALID_VERIFIER),
     KO_EXC_INVALID_SIGNATURE(CieCheckerConstants.EXC_INVALID_SIGNATURE),
     KO_EXC_INVALID_ALGORITHM(CieCheckerConstants.EXC_INVALID_ALGORITHM),
+    KO_EXC_INVALID_PUBLICKEY(CieCheckerConstants.EXC_INVALID_PUBLICKEY),
     KO_EXC_EXCEPTION(CieCheckerConstants.EXC_KO);
 
     private final String value;

@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.validation;
 
+import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.CieCheckerInterface;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
@@ -51,7 +52,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class CieCheckerTest {
 
     @Autowired
-    private CieCheckerInterface cieChecker;
+    private CieChecker cieChecker;
+    @Autowired
+    private CieCheckerInterface cieCheckerInterface;
     @Autowired
     private CieCheckerImpl.CscaAnchorZipFile cscaAnchorZipFile;
 
@@ -108,11 +111,11 @@ class CieCheckerTest {
     void validateMandateTest() throws IOException {
         log.info("TEST validateMandateTest - INIT... ");
 
-        if(cieChecker.getCscaAnchor() == null) {
+        if(cieCheckerInterface.getCscaAnchor() == null) {
             //cieChecker.setCscaAnchor(cieChecker.extractCscaAnchor());
-            log.debug("cscaAnchor SIZE: " + cieChecker.getCscaAnchor());
+            log.debug("cscaAnchor SIZE: " + cieCheckerInterface.getCscaAnchor());
         }
-        log.debug("cscaAnchor SIZE: " + cieChecker.getCscaAnchor().size());
+        log.debug("cscaAnchor SIZE: " + cieCheckerInterface.getCscaAnchor().size());
         //log.info("DG11: " +validationData.getCieMrtd().getDg1());
         if(validationData.getCieMrtd().getDg1() == null )
             validationData.getCieMrtd().setDg1(Files.readAllBytes(dg1Files));
@@ -154,7 +157,7 @@ class CieCheckerTest {
         assertNotNull(validationData.getSignedNonce());
         assertNotNull(validationData.getNonce());
 
-        ResultCieChecker result = cieChecker.verifyChallengeFromSignature(validationData);
+        ResultCieChecker result = cieCheckerInterface.verifyChallengeFromSignature(validationData);
         log.info("Risultato atteso OK -> {}", result.getValue());
         assertEquals(OK, result.getValue());
         log.info("TEST verifyChallengeFromSignature - END ");
@@ -193,7 +196,7 @@ class CieCheckerTest {
         log.info("Risultato atteso KO -> Validation error in verifyIntegrity: One ore more digest not found");
         // Verifica integrità
         assertThrows(CieCheckerException.class,
-                () -> cieChecker.verifyIntegrity(mrtd));
+                () -> cieCheckerInterface.verifyIntegrity(mrtd));
 
         log.info("TEST testVerifyIntegrityDG_NotFound - END ");
     }
@@ -208,7 +211,7 @@ class CieCheckerTest {
         log.info("Risultato atteso KO -> Validation error in verifyIntegrity: Mrtd SOD is empty: must be present");
         // Verifica integrità
         assertThrows(CieCheckerException.class,
-                () -> cieChecker.verifyIntegrity(mrtd));
+                () -> cieCheckerInterface.verifyIntegrity(mrtd));
 
         log.info("TEST testVerifyIntegritySOD_null - END ");
     }
@@ -257,24 +260,24 @@ class CieCheckerTest {
         log.info("=== INIZIO TEST [" + tipo + "] ===");
         //if(cieChecker.getCscaAnchor() == null )
         //    cieChecker.setCscaAnchor(cieChecker.extractCscaAnchor());
-        log.info("cscaAnchor 1: {}" , cieChecker.getCscaAnchor().size());
+        log.info("cscaAnchor 1: {}" , cieCheckerInterface.getCscaAnchor().size());
         // caso ok
         CMSSignedData cms = new CMSSignedData(sodBytes);
-        ResultCieChecker resultOk = cieChecker.verifyDigitalSignature(cms);
+        ResultCieChecker resultOk = cieCheckerInterface.verifyDigitalSignature(cms);
         log.info("[" + tipo + "] - Risultato atteso OK -> " + resultOk.getValue());
         assertEquals("OK", resultOk.getValue());
 
         // caso ko: SOD nullo
         log.info("[" + tipo + "] - Test con SOD nullo");
         assertThrows(CieCheckerException.class,
-                () -> cieChecker.verifyDigitalSignature(null));
+                () -> cieCheckerInterface.verifyDigitalSignature(null));
 
         // caso ko: anchors null
         log.info("[" + tipo + "] - Test con anchors null");
-        cieChecker.setCscaAnchor(null);
-        log.info("cscaAnchor SET: {}" , cieChecker.getCscaAnchor());
+        cieCheckerInterface.setCscaAnchor(null);
+        log.info("cscaAnchor SET: {}" , cieCheckerInterface.getCscaAnchor());
         assertThrows(Exception.class,
-               () -> cieChecker.verifyDigitalSignature(cms)); //, null));
+               () -> cieCheckerInterface.verifyDigitalSignature(cms)); //, null));
 
         // caso ko: SOD non corretto
         log.info("[" + tipo + "] - Test con SOD non corretto");
@@ -354,7 +357,7 @@ class CieCheckerTest {
         assertNotNull(validationData.getCieIas().getSod());
         assertNotNull(validationData.getCieIas().getNis());
 
-        assertTrue(cieChecker.verifySodPassiveAuthCie(new CMSSignedData(validationData.getCieIas().getSod()), validationData.getCieIas().getNis()));
+        assertTrue(cieCheckerInterface.verifySodPassiveAuthCie(new CMSSignedData(validationData.getCieIas().getSod()), validationData.getCieIas().getNis()));
         log.info("TEST verifySodPassiveAuthCie - END ");
     }
 
@@ -368,7 +371,7 @@ class CieCheckerTest {
         CMSSignedData cms = new CMSSignedData(pkcs7);
         X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
         byte[] dscDer = certHolder.getEncoded();
-        List<X509Certificate> cscaAnchor = cieChecker.getCscaAnchor();   //extractCscaAnchor();
+        List<X509Certificate> cscaAnchor = cieCheckerInterface.getCscaAnchor();   //extractCscaAnchor();
 System.out.println("cscaAnchor 3: " + cscaAnchor);
         ResultCieChecker result =
                 ValidateUtils.verifyDscAgainstTrustBundle(dscDer, cscaAnchor, null);
@@ -388,9 +391,9 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
         CMSSignedData cms = new CMSSignedData(pkcs7);
         X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
         byte[] dscPem = toPem(certHolder.getEncoded());
-        cieChecker.setCscaAnchor(cieChecker.getCscaAnchor()); ///extractCscaAnchor());
-        System.out.println("cscaAnchor 4 : " + cieChecker.getCscaAnchor());
-        ResultCieChecker resultCieChecker =ValidateUtils.verifyDscAgainstTrustBundle(dscPem, cieChecker.getCscaAnchor(), null);
+        cieCheckerInterface.setCscaAnchor(cieCheckerInterface.getCscaAnchor()); ///extractCscaAnchor());
+        System.out.println("cscaAnchor 4 : " + cieCheckerInterface.getCscaAnchor());
+        ResultCieChecker resultCieChecker =ValidateUtils.verifyDscAgainstTrustBundle(dscPem, cieCheckerInterface.getCscaAnchor(), null);
         log.info("TEST resultCieChecker: " + resultCieChecker.getValue());
 
         assertEquals(OK, resultCieChecker.getValue());
@@ -411,7 +414,7 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
         // Anchors
         //List<byte[]> anchorsDer = pickManyDerFromResources(-1);
         List<byte[]> anchorsDer = new ArrayList<>();
-        List<X509Certificate> anchorZip = cieChecker.getCscaAnchor();
+        List<X509Certificate> anchorZip = cieCheckerInterface.getCscaAnchor();
         for( X509Certificate x : anchorZip){
             anchorsDer.add(x.getEncoded());
         }
@@ -449,7 +452,7 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
         log.info("TEST verifyDscAgainstAnchorBytes_edgeCases - INIT ");
         // Anchors
         List<byte[]> ders = new ArrayList<>();
-        for( X509Certificate x : cieChecker.getCscaAnchor()){
+        for( X509Certificate x : cieCheckerInterface.getCscaAnchor()){
             ders.add(x.getEncoded());
         }
         var cf = CertificateFactory.getInstance(X_509);
@@ -502,7 +505,7 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
     public void testVerifyIntegrityOk()  {
         log.info("TEST testVerifyIntegrityOk - INIT ");
 
-        ResultCieChecker result = cieChecker.verifyIntegrity(validationData.getCieMrtd());
+        ResultCieChecker result = cieCheckerInterface.verifyIntegrity(validationData.getCieMrtd());
         log.info("Risultato atteso OK -> " + result.getValue());
 
         assertEquals(OK, result.getValue());  //, "Gli hash dei DG devono corrispondere a quelli del SOD");

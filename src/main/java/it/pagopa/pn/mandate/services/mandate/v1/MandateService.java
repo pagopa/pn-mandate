@@ -2,6 +2,8 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
 import it.pagopa.pn.commons.exceptions.PnRuntimeException;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.exceptions.PnUnsupportedFilterException;
@@ -11,21 +13,21 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateD
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
-import it.pagopa.pn.mandate.mapper.ReverseMandateEntityMandateDtoMapper;
-import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
-import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
-import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
+import it.pagopa.pn.mandate.mapper.*;
 import it.pagopa.pn.mandate.middleware.db.DelegateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.PnLastEvaluatedKey;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
+import it.pagopa.pn.mandate.middleware.msclient.PnDeliveryClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
+import it.pagopa.pn.mandate.utils.AarQrUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import it.pagopa.pn.mandate.utils.PgUtils;
+import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.lang.Nullable;
@@ -60,6 +62,10 @@ public class MandateService {
     private final MandateValidationUtils validateUtils;
     private final MandateSearchService mandateSearchService;
     private final PnMandateConfig pnMandateConfig;
+    private final PnDeliveryClient pnDeliveryClient;
+    private final MandateEntityAppIoMandateDtoMapper mandateEntityAppIoMandateDtoMapper;
+    private final AarQrUtils aarQrUtils;
+    private final MandateEntityBuilderMapper mandateEntityBuilderMapper;
 
     /**
      * Accetta una delega
@@ -147,6 +153,44 @@ public class MandateService {
                         .map(userEntityMandateCountsDtoMapper::toDto));
     }
 
+    /**
+     * Crea la delega da AppIo
+     *
+     * @param xPagopaPnUid              uId utente
+     * @param mandateCreationRequest    oggetto per la creazione della delega
+     * @param xPagopaPnCxId             cxId del deleganto
+     * @param xPagopaPnCxType           tipologia del delegante (PF/PG)
+     * @return delega creata
+     */
+    public Mono<MandateCreationResponse> createMandateAppIo(String xPagopaPnUid,
+                                                            String xPagopaPnCxId,
+                                                            it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType,
+                                                            Mono<MandateCreationRequest> mandateCreationRequest) {
+        final String mandateId = UUID.randomUUID().toString();
+        log.info("Start createMandateAppIo - mandateId: {}, xPagopaPnUid: {}, xPagopaPnCxId: {}, xPagopaPnCxType: {}", mandateId, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType);
+        return Mono.defer(() -> mandateCreationRequest)
+                .map(MandateCreationRequest::getAarQrCodeValue)
+                .doOnNext(qr -> log.debug("Extracted aarQrCodeValue: {}", qr))
+                .map(aarQrUtils::extractQrToken)
+                .doOnNext(token -> log.debug("Extracted Token: {}", token))
+                .flatMap(pnDeliveryClient::decodeAarQrCode)
+                .doOnNext(dto -> log.debug("Decoded AarQrCode, iun: {}", dto.getIun()))
+                .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(true, dto.getRecipientInfo().getTaxId())
+                                .doOnNext(delegatorInternalUserId -> log.debug("Retrieved delegatorInternalUserId: {}", delegatorInternalUserId))
+                                .map(delegatorInternalUserId -> {
+                                    var entity = mandateEntityBuilderMapper.buildMandateEntity(delegatorInternalUserId, dto, mandateId, xPagopaPnCxId);
+                                    log.debug("Built MandateEntity: {}", entity);
+                                    return entity;
+                                })
+                                //todo: Da implementare punti 5 e 6
+                                .flatMap(entity -> {
+                                    log.info("Start to persisting mandate: {}", entity.getMandateId());
+                                    return mandateDao.createMandate(entity, TypeSegregatorFilter.CIE);
+                                })
+                        , (dto, entity) -> entity)
+                .map(mandateEntityAppIoMandateDtoMapper::toDto)
+                .doOnNext(response -> log.info("Mandate is successfully created: {}", response));
+    }
 
     /**
      * Crea la delega
@@ -194,7 +238,7 @@ public class MandateService {
                                         .flatMap(ent -> pnDatavaultClient.updateMandateById(uuid, dto.getDelegate().getFirstName(),
                                                         dto.getDelegate().getLastName(), dto.getDelegate().getCompanyName())
                                                 .then(Mono.just(ent)))
-                                        .flatMap(mandateDao::createMandate)
+                                        .flatMap(item -> mandateDao.createMandate(item, TypeSegregatorFilter.STANDARD))
                                 , (ddto, entity) -> entity)
                         .map(r -> {
                             r.setDelegator(null);
@@ -237,7 +281,7 @@ public class MandateService {
                                                 entity.getMandateId(), xPagopaPnCxId, entity.getValidfrom(), xPagopaPnUid);
                                     return entity;
                                 })
-                                .flatMap(mandateDao::createMandate), (ddto, entity) -> entity)
+                                .flatMap(item -> mandateDao.createMandate(item, TypeSegregatorFilter.STANDARD)), (ddto, entity) -> entity)
                         .flatMap(mandateEntity -> pnDatavaultClient.getRecipientDenominationByInternalId(Collections.singletonList(xPagopaPnCxId))
                                 .flatMap(baseRecipientDtoDto -> pnDatavaultClient.updateMandateById(uuid, null, null, baseRecipientDtoDto.getDenomination()))
                                 .then(Mono.just(mandateEntity)))
@@ -292,8 +336,15 @@ public class MandateService {
         }
 
         Integer finalIStatus = iStatus;
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(internaluserId)
+                .status(finalIStatus)
+                .cxType(xPagopaPnCxType)
+                .groups(xPagopaPnCxGroups)
+                .build();
+
         return validaAccessoOnlyGroupAdmin(xPagopaPnCxType,xPagopaPnCxRole,xPagopaPnCxGroups)
-                .flatMapMany(obj -> mandateDao.listMandatesByDelegate(internaluserId, finalIStatus, null, xPagopaPnCxType, xPagopaPnCxGroups))   // (1)
+                .flatMapMany(obj -> mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD))   // (1)
                 .map(ent -> {
                     ent.setValidationcode(null);   // (2)
                     return ent;

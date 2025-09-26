@@ -31,4 +31,5 @@ public class PnMandateConfig {
     private Integer maxPageSize;
 
     private Duration pendingDuration;
+    private Duration ciePendingDuration;
 }

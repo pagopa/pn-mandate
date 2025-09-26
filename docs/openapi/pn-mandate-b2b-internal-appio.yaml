@@ -93,7 +93,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 unauthorizedError:
                   $ref: '#/components/examples/UnauthorizedError'
@@ -102,7 +102,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 forbiddenError:
                   $ref: '#/components/examples/ForbiddenError'
@@ -124,8 +124,8 @@ paths:
               examples:
                 internalServerError:
                   $ref: '#/components/examples/InternalServerError'
-  
-  
+
+
   /mandate/api/v1/io/mandate/{mandateId}/cie/accept:
     patch:
       tags:
@@ -167,7 +167,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 unauthorizedError:
                   $ref: '#/components/examples/UnauthorizedError'
@@ -176,7 +176,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+                $ref: '#/components/schemas/AuthError'
               examples:
                 forbiddenError:
                   $ref: '#/components/examples/ForbiddenError'
@@ -341,6 +341,17 @@ components:
         sod:
           type: string
           nullable: false
+
+    ############################################################################################
+    ###                     SCHEMA DI PROBLEMA AUTORIZZATIVO/AUTENTICATIVO                   ###
+    ############################################################################################
+
+    AuthError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Unauthorized
   examples:
     UnauthorizedError:
       summary: Example of a 401 Unauthorized response
@@ -430,5 +441,4 @@ components:
       name: x-api-key
 
 security:
-  - ApiKeyAuth: [ ] # use the same name as under securitySchemes
-  
+  - ApiKeyAuth: [] # use the same name as under securitySchemes

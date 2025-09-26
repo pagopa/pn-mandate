@@ -409,7 +409,9 @@ public class MandateDao extends BaseDao {
         return retrieveMandateForDelegate(delegateId, mandateId)
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
                 .flatMap(mandate -> {
-                    if (StatusEnumMapper.fromValue(mandate.getState()) != StatusEnum.ACTIVE) {
+                    if (!isMandateStandardSegregation(mandate)) {
+                        return Mono.error(new PnMandateBadRequestException());
+                    } else if (StatusEnumMapper.fromValue(mandate.getState()) != StatusEnum.ACTIVE) {
                         log.warn("mandate is not ACTIVE, throw error");
                         return Mono.error(new PnInvalidMandateStatusException("update an inactive mandate is not permitted", "Invalid mandate status", 500, PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOTUPDATABLE, "update an inactive mandate is not permitted"));
                     } else if (mandate.getValidto() != null && mandate.getValidto().isBefore(Instant.now())) {

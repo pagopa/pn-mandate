@@ -600,7 +600,10 @@ public class MandateDao extends BaseDao {
                                 logEvent.generateFailure(String.format("revokeMandate skipped, mandate not found mandateid=%s", mandateId)).log();
                                 return CompletableFuture.completedFuture(mandate);
                             }
-
+                            if (!isMandateStandardSegregation(mandate)) {
+                                log.warn("mandate is not STANDARD segregation, throw error");
+                                return CompletableFuture.failedFuture(new PnMandateBadRequestException());
+                            }
                             log.info("revokeMandate mandate for delegate retrieved mandateobj={}", mandate);
                             if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                                     || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {

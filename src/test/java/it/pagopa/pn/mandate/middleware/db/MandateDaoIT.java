@@ -2025,6 +2025,34 @@ public class MandateDaoIT {
         }
     }
 
+    @Test
+    void revokeMandateCie_shouldThrowBadRequest() {
+        // Given
+        MandateEntity cieMandate = newMandate(false);
+        cieMandate.setWorkflowType(WorkFlowType.CIE);
+
+        try {
+            testDao.delete(cieMandate.getDelegator(), cieMandate.getSk());
+            mandateDao.createMandate(cieMandate).block(d);
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        // When & Then
+        Assertions.assertThrows(
+            PnMandateBadRequestException.class,
+            () -> mandateDao.revokeMandate(cieMandate.getDelegator(), cieMandate.getMandateId()).block(d)
+        );
+
+        // Cleanup
+        try {
+            testDao.delete(cieMandate.getDelegator(), cieMandate.getSk());
+            testDao.deleteHistory(cieMandate.getDelegator(), cieMandate.getSk());
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+    }
+
 
     @Test
     void revokeMandateTwice() {

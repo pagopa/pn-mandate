@@ -466,7 +466,7 @@ public class MandateDao extends BaseDao {
         }
     }
 
-    private Mono<MandateEntity> save(MandateEntity mandate) {
+    public Mono<MandateEntity> save(MandateEntity mandate) {
         // Se la delega prevede una scadenza impostata dall'utente, creo un record di supporto con TTL
         // e quando questo verrà cancellato, dynamoDB invocherà la nostra logica che andrà a spostare il record principale nello storico.
         // Questo perchè se mettevo il TTL nel record principale e per qualche anomalia non veniva gestito l'evento di cancellazione
@@ -770,7 +770,7 @@ public class MandateDao extends BaseDao {
      * @param mandateId              id della delega
      * @return publisher contenente un solo record di delega
      */
-    private Mono<MandateEntity> retrieveMandateForDelegate(String delegateInternaluserid, String mandateId) {
+    public Mono<MandateEntity> retrieveMandateForDelegate(String delegateInternaluserid, String mandateId) {
         // qui l'internaluserid è quello del DELEGATO, e quindi NON posso usare direttamente l'informazione per accedere al record.
         // devo passare quindi per l'indice sul delegato, recuperarmi la riga, aggiornare il contenuto e salvarla.
         // NB: si noti che ci può essere un problema legato alla concorrenza, ma dato che i dati sulle deleghe non cambiano così frequentemente, 

@@ -276,6 +276,24 @@ Parameters:
     Type: String
     Default: '-'
     Description: Cron for which you send the metric to CloudWatch
+  
+  CscaMasterlistUrl:
+    Type: String
+    Description: 'URL of the CSCA masterlist zip file to download'
+
+  CscaSyncSchedule:
+    Type: String
+    Default: 'rate(10 minutes)'
+    Description: 'Schedule expression for the CSCA masterlist sync lambda (e.g., rate(1 hour) or cron expression)'
+
+  CscaSha256SsmParameterName:
+    Type: String
+    Description: 'Full name of the SSM Parameter Store parameter to store the last SHA256 hash'
+  
+  CscaSyncS3BucketPrefix:
+    Type: String
+    Default: '/pn-mandate/csca-masterlist/masterlist.zip'
+    Description: 'S3 bucket prefix for the CSCA Masterlist zip file'
 
 Resources:
 
@@ -587,3 +605,72 @@ Resources:
           };
       #ENDpnmandateexpiredtrigger
       #Non rimuovere o modificare il commento sopra, è usato come placeholder negli script
+  
+  CscaMasterlistSync:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-CscaMasterlistSync
+      Runtime: nodejs22.x
+      Handler: "index.handler"
+      Code:
+        S3Bucket: !Ref MicroserviceBucketName
+        S3Key: !Sub "${MicroserviceBucketBaseKey}/functions_zip/CscaMasterlistSync.zip"
+      Role: !GetAtt CscaMasterlistSyncRole.Arn
+      MemorySize: 256
+      Timeout: 300
+      Environment:
+        Variables:
+          CSCA_MASTERLIST_URL: !Ref CscaMasterlistUrl
+          SHA256_SSM_PARAMETER_NAME: !Ref CscaSha256SsmParameterName
+          S3_BUCKET_NAME: !Sub pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}
+          S3_OBJECT_KEY: !Ref CscaSyncS3BucketPrefix
+
+  CscaMasterlistSyncSchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-CscaMasterlistSyncSchedulerRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-CscaMasterlistSyncSchedulerInvokePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt CscaMasterlistSync.Arn
+
+  CscaMasterlistSyncSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: !Sub ${ProjectName}-CscaMasterlistSyncSchedule
+      Description: 'Triggers the CscaMasterlistSync Lambda periodically'
+      ScheduleExpression: !Ref CscaSyncSchedule
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      State: ENABLED
+      Target:
+        Arn: !GetAtt CscaMasterlistSync.Arn
+        RoleArn: !GetAtt CscaMasterlistSyncSchedulerRole.Arn
+
+  CscaMasterlistSyncInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt CscaMasterlistSync.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "scheduler.amazonaws.com"
+      SourceArn: !GetAtt CscaMasterlistSyncSchedule.Arn
+      SourceAccount: !Ref AWS::AccountId
+
+  # CscaMasterlistSyncAlarms:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/lambda-alarms.yaml"
+  #     Parameters:
+  #       FunctionName: !Ref CscaMasterlistSync
+  #       AlarmSNSTopicArn: !Ref AlarmSNSTopicArn

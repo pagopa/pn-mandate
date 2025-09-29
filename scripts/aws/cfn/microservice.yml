@@ -301,7 +301,7 @@ Parameters:
   
   CscaSyncS3BucketPrefix:
     Type: String
-    Default: '/projects/pn-mandate/csca-masterlist/masterlist.zip'
+    Default: '/pn-mandate/csca-masterlist/masterlist.zip'
     Description: 'S3 bucket prefix for the CSCA Masterlist zip file'
 
 Resources:
@@ -679,7 +679,7 @@ Resources:
                 Effect: Allow
                 Action:
                   - s3:PutObject
-                Resource: !Sub "arn:aws:s3:::${MicroserviceBucketName}/${CscaSyncS3BucketPrefix}"
+                Resource: !Sub "arn:aws:s3:::pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/${CscaSyncS3BucketPrefix}"
 
   CscaMasterlistSync:
     Type: AWS::Lambda::Function
@@ -697,7 +697,7 @@ Resources:
         Variables:
           CSCA_MASTERLIST_URL: !Ref CscaMasterlistUrl
           SHA256_SSM_PARAMETER_NAME: !Ref CscaSha256SsmParameterName
-          S3_BUCKET_NAME: !Ref MicroserviceBucketName
+          S3_BUCKET_NAME: !Sub pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}
           S3_OBJECT_KEY: !Ref CscaSyncS3BucketPrefix
 
   CscaMasterlistSyncSchedulerRole:

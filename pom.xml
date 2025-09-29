@@ -50,22 +50,7 @@
 		<dependency>
 			<groupId>it.pagopa.pn</groupId>
 			<artifactId>pn-commons</artifactId>
-			<version>2.14.0</version>
-			<exclusions>
-				<!-- esclude vecchia linea BC jdk15on e FIPS per evitare mix -->
-				<exclusion>
-					<groupId>org.bouncycastle</groupId>
-					<artifactId>bcprov-jdk15on</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.bouncycastle</groupId>
-					<artifactId>bc-fips</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.bouncycastle</groupId>
-					<artifactId>bcpkix-jdk15on</artifactId>
-				</exclusion>
-			</exclusions>
+			<version>2.14.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>it.pagopa.pn</groupId>

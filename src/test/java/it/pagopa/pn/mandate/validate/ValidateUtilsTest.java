@@ -1,13 +1,7 @@
 package it.pagopa.pn.mandate.validate;
 
-
-import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-
-import it.pagopa.pn.ciechecker.model.CieIas;
-import it.pagopa.pn.ciechecker.model.ResultCieChecker;
-import it.pagopa.pn.ciechecker.model.SodSummary;
-import it.pagopa.pn.ciechecker.model.CieMrtd;
+import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -16,13 +10,13 @@ import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.SignerInformationStore;
-import org.bouncycastle.operator.OperatorCreationException;
-
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,29 +24,38 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.cert.CertificateException;
 
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.OK;
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.X_509;
+import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
+import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_384;
+import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_512;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.decodeSodHr;
 import static org.junit.jupiter.api.Assertions.*;
 
-
+@SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
+@lombok.CustomLog
+@ActiveProfiles("test")
 class ValidateUtilsTest {
 
-    private static final Path BASE_PATH = Path.of("src","test","resources");
+    private static final Path basePath = Path.of("src","test","resources");
     private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
-    private static final String SOD_HEX = "SOD_IAS.HEX";
+    private static final String SOD_HEX_IAS = "SOD_IAS.HEX";
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
     private static final String NIS_PUBKEY_FILENAME = "NIS_PUBKEY.HEX";
     private static final String NIS_HEX_TO_CHECK="393130373138343634363534";
     private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
+    private static final Path dg1Files = Paths.get("src/test/resources/EF.DG1");
+    private static final Path dg11Files = Paths.get("src/test/resources/EF.DG11");
+    private static final Path dg1FilesCorrupted = Paths.get("src/test/resources/DG1_CORROTTO.HEX");
+    private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
+    private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
+
     private static final Map<String,String> expectedIssuer = Map.of(
             "2.5.4.3", "Italian Country Signer CA",
             "2.5.4.11", "National Electronic Center of State Police",
@@ -60,18 +63,50 @@ class ValidateUtilsTest {
             "2.5.4.6", "IT"
     );
 
-    // extractDscCertDer
+    static CieValidationData validationData;
 
-    @Test
-    void extractDscCertDerTest() throws IOException, DecoderException,CMSException {
+    @BeforeAll
+    static void setUp() throws IOException, DecoderException {
 
-        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(extractCertificateByteArray());
+        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
+        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
+        String nisChallenge = cleanString(basePath.resolve("NIS_CHALLENGE.HEX"));
+        byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));
+        byte[] sodIasByteArray = loadSodBytes(basePath.resolve(SOD_HEX_IAS));
+
+        byte[] sodMrtd = Files.readAllBytes(sodFile);
+        byte[] dg1 = Files.readAllBytes(dg1Files);
+        byte[] dg11 = Files.readAllBytes(dg11Files);
+
+        validationData = new CieValidationData();
+        CieIas cieIas = new CieIas();
+        cieIas.setPublicKey(nisPubKey);
+        cieIas.setNis(nisHexToCheck);
+        cieIas.setSod(sodIasByteArray);
+
+        validationData.setCieIas(cieIas);
+        validationData.setSignedNonce(nisSignature);
+        validationData.setNonce(nisChallenge);
+
+        CieMrtd cMrtd = new CieMrtd();
+        cMrtd.setSod(sodMrtd);
+        cMrtd.setDg1(dg1);
+        cMrtd.setDg11(dg11);
+        validationData.setCieMrtd(cMrtd);
+
+    }
+
+        @Test
+    void extractDscCertDerTest() throws CMSException {
+
+        CMSSignedData cms = new CMSSignedData(validationData.getCieIas().getSod());
+        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
 
         Assertions.assertNotNull(holder);
 
       Arrays.stream(holder.getIssuer().getRDNs()).forEach(elem ->{
-           System.out.println(elem.getFirst().getType().toString());
-           System.out.println(elem.getFirst().getValue().toString());
+           log.info(elem.getFirst().getType().toString());
+          log.info(elem.getFirst().getValue().toString());
        });
 
         ASN1ObjectIdentifier objectIdentifier = new ASN1ObjectIdentifier("2.5.4.3");
@@ -87,8 +122,9 @@ class ValidateUtilsTest {
 
     @Test
     void verifyDscAgainstTrustBundleTest() throws Exception {
-        CertificateFactory certificateFactory = CertificateFactory.getInstance(X_509);
-        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(extractCertificateByteArray());
+
+        CMSSignedData cms = new CMSSignedData(validationData.getCieIas().getSod());
+        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
         List<byte[]> ders = pickManyDerFromResources(-1);
 
         String concatenatedPem = ders.stream()
@@ -97,16 +133,17 @@ class ValidateUtilsTest {
 
         byte[] blob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
 
-        Collection<X509Certificate> anchors = ValidateUtils.parseCscaAnchors(List.of(blob),certificateFactory);
-
-        Assertions.assertTrue(ValidateUtils.verifyDscAgainstTrustBundle(holder,anchors,null));
+        CertificateFactory certificateFactory = CertificateFactory.getInstance(X_509);
+        Collection<X509Certificate> anchors = parseCscaAnchors(List.of(blob),certificateFactory);
+        ResultCieChecker resultCieChecker = ValidateUtils.verifyDscAgainstTrustBundle(holder.getEncoded() ,anchors,null);
+        Assertions.assertTrue(resultCieChecker.getValue().equals(OK));
     }
 
     @Test
     void verifyDscAgainstTrustBundleIsFalseTest() throws Exception {
         CertificateFactory certificateFactory = CertificateFactory.getInstance(X_509);
-
-        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(extractCertificateByteArray());
+        CMSSignedData cms = new CMSSignedData(validationData.getCieIas().getSod());
+        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
         byte[] dscDer = holder.getEncoded();
         List<byte[]> ders = pickManyDerFromResources(-1);
 
@@ -116,7 +153,7 @@ class ValidateUtilsTest {
 
         byte[] blob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
 
-        Collection<X509Certificate> anchors = ValidateUtils.parseCscaAnchors(List.of(blob),certificateFactory);
+        Collection<X509Certificate> anchors = parseCscaAnchors(List.of(blob),certificateFactory);
 
         X509Certificate dscX509 = (X509Certificate) CertificateFactory.getInstance(X_509)
                 .generateCertificate(new ByteArrayInputStream(dscDer));
@@ -138,11 +175,13 @@ class ValidateUtilsTest {
         () -> ValidateUtils.verifyDscAgainstTrustBundle(dscDer, wrongBundle, null));
     }
 
+    /* Test sostituito dal test CieCheckerTest.verifyDscAgainstAnchorBytes_derDsc_pemZIP_true
     @Test
     void verifyDscAgainstAnchorBytes_derDsc_pemBundle_true() throws Exception {
 
         byte[] pkcs7 = extractCertificateByteArray();
-        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(pkcs7);
+        CMSSignedData cms = new CMSSignedData(pkcs7);
+        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
         byte[] dscDer = holder.getEncoded();
 
         List<byte[]> ders = pickManyDerFromResources(-1);
@@ -152,15 +191,16 @@ class ValidateUtilsTest {
         byte[] caBlob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
 
         ResultCieChecker resultCieChecker =
-                ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(caBlob), null);
-        System.out.println("TEST resultCieChecker: " + resultCieChecker.getValue());
+                ValidateUtils.verifyDscAgainstAnchorBytesOld(dscDer, List.of(caBlob), null);
+        log.info("TEST resultCieChecker: {}" , resultCieChecker.getValue());
         Assertions.assertTrue(resultCieChecker.getValue().equals(OK));
     }
 
     @Test
     void verifyDscAgainstAnchorBytes_pemDsc_pemBundle_true() throws Exception {
         byte[] pkcs7 = extractCertificateByteArray();
-        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(pkcs7);
+        CMSSignedData cms = new CMSSignedData(pkcs7);
+        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
         byte[] dscPem = toPem(holder.getEncoded());
 
         List<byte[]> ders = pickManyDerFromResources(-1);
@@ -169,8 +209,8 @@ class ValidateUtilsTest {
                 .collect(Collectors.joining());
         byte[] caBlob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
 
-        ResultCieChecker resultCieChecker =ValidateUtils.verifyDscAgainstAnchorBytes(dscPem, List.of(caBlob), null);
-        System.out.println("TEST resultCieChecker: " + resultCieChecker.getValue());
+        ResultCieChecker resultCieChecker =ValidateUtils.verifyDscAgainstAnchorBytesOld(dscPem, List.of(caBlob), null);
+        log.info("TEST resultCieChecker: {}", resultCieChecker.getValue());
 
         Assertions.assertTrue(resultCieChecker.getValue().equals(OK));
     }
@@ -181,7 +221,8 @@ class ValidateUtilsTest {
 
         // DSC (DER)
         byte[] pkcs7 = extractCertificateByteArray();
-        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(pkcs7);
+        CMSSignedData cms = new CMSSignedData(pkcs7);
+        X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
         byte[] dscDer = holder.getEncoded();
         X509Certificate dscX509 = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(dscDer));
 
@@ -207,7 +248,7 @@ class ValidateUtilsTest {
         //ResultCieChecker resultCieChecker = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, wrongAnchorBlobs, null);
         //Assertions.assertFalse(resultCieChecker.getValue().equals(OK));
         Assertions.assertThrows(CieCheckerException.class,
-                () -> ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, wrongAnchorBlobs, null));
+                () -> ValidateUtils.verifyDscAgainstAnchorBytesOld(dscDer, wrongAnchorBlobs, null));
     }
 
     @Test
@@ -222,12 +263,13 @@ class ValidateUtilsTest {
         //ResultCieChecker resultSODNull =ValidateUtils.verifyDscAgainstAnchorBytes(null, List.of(caBlob), null);
         //Assertions.assertFalse(resultSODNull.getValue().equals(OK));
         Assertions.assertThrows(CieCheckerException.class,
-                () ->ValidateUtils.verifyDscAgainstAnchorBytes(null, List.of(caBlob), null));
+                () ->ValidateUtils.verifyDscAgainstAnchorBytesOld(null, List.of(caBlob), null));
 
 
                 // anchors null
         byte[] pkcs7 = extractCertificateByteArray();
-        byte[] dscDer = ValidateUtils.extractDscCertDer(pkcs7).getEncoded();
+        CMSSignedData cms = new CMSSignedData(pkcs7);
+        byte[] dscDer = ValidateUtils.extractDscCertDer(cms).getEncoded();
         //ResultCieChecker resultNull = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, null, null);
         //Assertions.assertFalse(resultNull.getValue().equals(OK));
         Assertions.assertThrows(CieCheckerException.class,
@@ -245,21 +287,21 @@ class ValidateUtilsTest {
         //ResultCieChecker resultMalformed = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(malformed), null);
         //Assertions.assertFalse(resultMalformed.getValue().equals(OK));
         Assertions.assertThrows(CieCheckerException.class,
-                () -> ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(malformed), null));
+                () -> ValidateUtils.verifyDscAgainstAnchorBytesOld(dscDer, List.of(malformed), null));
     }
-
+*/
     @Test
     void verify_invalid_inputs() {
-        System.out.println(" dsc non-parsable ");
+        log.info(" dsc non-parsable ");
         Assertions.assertThrows(CieCheckerException.class,
                 () -> ValidateUtils.verifyDscAgainstTrustBundle(new byte[]{0x01,0x02}, List.of(), null));
 
-        System.out.println(" dsc len 0 ⇒ false ");
+        log.info(" dsc len 0 ⇒ false ");
         //Assertions.assertFalse(ValidateUtils.verifyDscAgainstTrustBundle(new byte[0], List.of(), null));
         Assertions.assertThrows(CieCheckerException.class,
                 () -> ValidateUtils.verifyDscAgainstTrustBundle(new byte[0], List.of(), null));
 
-        System.out.println(" anchors null ⇒ false ");
+        log.info(" anchors null ⇒ false ");
         //Assertions.assertFalse(ValidateUtils.verifyDscAgainstTrustBundle(new byte[]{1}, null, null));
         Assertions.assertThrows(CieCheckerException.class,
                 () ->ValidateUtils.verifyDscAgainstTrustBundle(new byte[]{1}, null, null));
@@ -278,7 +320,7 @@ class ValidateUtilsTest {
 
         byte[] blob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
 
-        List<X509Certificate> anchors = ValidateUtils.parseCscaAnchors(List.of(blob),certificateFactory);
+        List<X509Certificate> anchors = parseCscaAnchors(List.of(blob),certificateFactory);
 
         Assertions.assertEquals(ders.size(), anchors.size());
     }
@@ -286,26 +328,29 @@ class ValidateUtilsTest {
 
     @Test
     void extractPublicKeyFromHolder() throws IOException, DecoderException, CMSException {
-        System.out.println("TEST extractPublicKeyFromHolder - INIT");
-        System.out.println(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        log.info("TEST extractPublicKeyFromHolder - INIT");
+        log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
-        System.out.println(" - sodIasByteArray: " + sodIasByteArray);
-        X509CertificateHolder x509Certificate = ValidateUtils.extractDscCertDer(sodIasByteArray);
-        System.out.println(" - Estrae il certificato X509CertificateHolder: " + x509Certificate);
-        System.out.println(" - Estrae il certificato X509CertificateHolder: " + x509Certificate.getSignatureAlgorithm().getAlgorithm());
+        log.info(" - sodIasByteArray: {}", Arrays.toString(sodIasByteArray));
+
+        CMSSignedData cms = new CMSSignedData(sodIasByteArray);
+        X509CertificateHolder x509Certificate = ValidateUtils.extractDscCertDer(cms);
+
+        log.info(" - Estrae il certificato X509CertificateHolder: {}", x509Certificate);
+        log.info(" - Estrae il certificato X509CertificateHolder: {}" , x509Certificate.getSignatureAlgorithm().getAlgorithm());
         //Estrae il certificato X509CertificateHolder: 1.2.840.113549.1.1.5
         Assertions.assertNotNull(x509Certificate);
 
-        System.out.println(" - Estrae la publicKey dal certificato X509CertificateHolder");
+        log.info(" - Estrae la publicKey dal certificato X509CertificateHolder");
         PublicKey publicKey = ValidateUtils.extractPublicKeyFromHolder( x509Certificate); //SerialNumber: 1382935226051631925
-        System.out.println(" - publicKey: " + publicKey);
-        System.out.println(" - publicKey Format: " + publicKey.getFormat()); //publicKey Format: X.509
-        System.out.println(" - publicKey Algorithm: " + publicKey.getAlgorithm()); //RSA
+        log.info(" - publicKey: {}" , publicKey);
+        log.info(" - publicKey Format: {}" , publicKey.getFormat()); //publicKey Format: X.509
+        log.info(" - publicKey Algorithm: {}" , publicKey.getAlgorithm()); //RSA
         byte[] certDer = publicKey.getEncoded();  //bytes del certificato DER usato per l’estrazione OpenSSL
         Assertions.assertNotNull(certDer);
-        System.out.println("//////////////////");
+        log.info("//////////////////");
 
         // AND: la public key PEM estratta con OpenSSL (BEGIN PUBLIC KEY ... END PUBLIC KEY)
         String openSslPem = """
@@ -339,21 +384,21 @@ class ValidateUtilsTest {
 
     @Test
     void extractSignaturesFromSignedData() throws IOException, DecoderException, CMSException {
-        System.out.println("TEST extractSignaturesFromSignedData - INIT");
-        System.out.println(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        log.info("TEST extractSignaturesFromSignedData - INIT");
+        log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
-        System.out.println(" - sodIasByteArray: " + sodIasByteArray);
+        log.info(" - sodIasByteArray: {}" , Arrays.toString(sodIasByteArray));
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
         List<byte[]> signatures  = ValidateUtils.extractSignaturesFromSignedData(cms);
 
-        Assertions.assertTrue(!signatures.isEmpty());
-        System.out.println(" - signatures SIZE: " + signatures.size());
+        assertFalse(signatures.isEmpty());
+        log.info(" - signatures SIZE: {}" , signatures.size());
         //[104, 8, 11, -125, -86, -123, 111, -61, -81, 31, -102, 29, -119, 112, 17, 82, 97, 48, -82, -123, -30, 54, -122, 40, -112, -105, 13, 84, 116, 101, 53, -33, 51, 40, -83, 6, 56, -55, 5, -124, -80, -37, 10, 70, 108, -122, -7, -90, 80, 73, -5, -56, 48, -29, 68, -103, -3, 84, 16, 117, 54, 32, 77, -32, 41, -91, 117, -11, -39, 126, 31, 29, -1, 96, 75, 86, 10, -105, 70, 94, 43, 95, 16, 91, -3, -105, -80, -56, 110, -76, -110, -23, 96, -7, 41, -38, 41, -115, 111, -72, +156 more]
-        System.out.println(" - signatures length: " + signatures.get(0).length); //256
+        log.info(" - signatures length: {}" , signatures.get(0).length); //256
         String signaturesToHex = ValidateUtils.bytesToHex(signatures.get(0));
-        System.out.println("HEX signatures: " + signaturesToHex);
+        log.info("HEX signatures: {}", signaturesToHex);
 
         String signaturesToVerify = "68080b83aa856fc3af1f9a1d897011526130ae85e236862890970d54746535df3328ad0638c90584b0db0a466c86f9a65049fbc830e34499fd54107536204de029a575f5d97e1f1dff604\n" +
                 "b560a97465e2b5f105bfd97b0c86eb492e960f929da298d6fb87637051b37980c8ac4737fbfe3c37993a41fdc2749da2eb3b21b51a2fe66979d2258fb161f8bb1dfe8bcfbfc55e50e5d62f3f4fdcb2bf8\n" +
@@ -364,14 +409,14 @@ class ValidateUtilsTest {
     }
 
     @Test
-    void extractFirstAndFiveHashesOctetString() throws IOException, DecoderException, CMSException, NoSuchAlgorithmException {
+    void extractFirstAndFiveHashesOctetString() throws IOException, DecoderException, CMSException {
 
-        System.out.println("TEST extractFirstAndFiveHashesOctetString - INIT");
-        System.out.println(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        log.info("TEST extractFirstAndFiveHashesOctetString - INIT");
+        log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
-        System.out.println(" - sodIasByteArray: " + sodIasByteArray);
+        log.info(" - sodIasByteArray: {}" , Arrays.toString(sodIasByteArray));
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
         // --- PARTE 1: ESTRAI E CALCOLA L'HASH DEI DATI FIRMATI ---
@@ -379,7 +424,7 @@ class ValidateUtilsTest {
         //contiene la concatenazione degli hash dei dati originali ossia i file che sono stati firmati - hashesBlock
         //ASN1OctetString firstOctetString = impl.extractHashesOctetString(cms, 1);
         byte[] dataToHash = ValidateUtils.extractHashBlock(cms);
-        System.out.println("PRIMA OCCORRENZA DI octetString: " + dataToHash.toString());
+        log.info("PRIMA OCCORRENZA DI octetString: {}" , Arrays.toString(dataToHash));
         Assertions.assertNotNull(dataToHash);
 
         // --- PARTE 2: ESTRAI L'HASH FIRMATO (messageDigest) ---
@@ -390,18 +435,18 @@ class ValidateUtilsTest {
         }
         ASN1OctetString newFive = ValidateUtils.extractHashSigned(cms);
         //getHexFromOctetString - fiveStr: C9002855CB7A5D366DB2CD6CCD6E148B7F8265E765C520ACC88855C2F3338FEB
-        System.out.println("QUINTA OCCORRENZA DI octetString: " + newFive.toString());
+        log.info("QUINTA OCCORRENZA DI octetString: {}" , newFive.toString());
         Assertions.assertTrue(ValidateUtils.verifyOctetStrings(dataToHash, newFive));
     }
 
     @Test
     void extractSignedAttributes() throws IOException, DecoderException, CMSException {
-        System.out.println("TEST extractSignedAttributes - INIT");
-        System.out.println(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+        log.info("TEST extractSignedAttributes - INIT");
+        log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
-        System.out.println(" - sodIasByteArray: " + sodIasByteArray);
+        log.info(" - sodIasByteArray: {}" , Arrays.toString(sodIasByteArray));
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
         Hashtable<ASN1ObjectIdentifier, Attribute> attributes = ValidateUtils.extractAllSignedAttributes(cms);
@@ -410,13 +455,13 @@ class ValidateUtilsTest {
         Enumeration<ASN1ObjectIdentifier> oids = attributes.keys();
         while (oids.hasMoreElements()) {
             ASN1ObjectIdentifier oid = oids.nextElement();
-            System.out.println("  - Attributo (OID): " + oid.getId());
+            log.info("  - Attributo (OID): {}" , oid.getId());
             // Ottieni l'oggetto Attribute
             Attribute attribute = attributes.get(oid);
             // Stampa i valori dell'attributo, che sono contenuti in un ASN1Set
-            System.out.println("    Valori:");
+            log.info("    Valori:");
             attribute.getAttrValues().forEach(value -> {
-                System.out.println("    - " + value.toString());
+                log.info("    - {}" , value.toString());
             });
         }
 /*
@@ -439,13 +484,13 @@ class ValidateUtilsTest {
 
     //Verifica specifica dell'hash del NIS...
     @Test
-    void extractDataGroupHashesForSpecifyNIS() throws IOException, DecoderException, CMSException, NoSuchAlgorithmException {
-        System.out.println("TEST extractDataGroupHashes - INIT");
-        System.out.println(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+    void extractDataGroupHashesForSpecifyNIS() throws IOException, DecoderException, CMSException {
+        log.info("TEST extractDataGroupHashes - INIT");
+        log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
-        System.out.println(" - sodIasByteArray: " + sodIasByteArray);
+        log.info(" - sodIasByteArray: {}", Arrays.toString(sodIasByteArray));
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
         List<String> dataGroupList = ValidateUtils.extractDataGroupHashes(cms);
@@ -457,12 +502,12 @@ class ValidateUtilsTest {
         Assertions.assertTrue(dataGroupList.contains(nisSha256String));
     }
 
-    String decodeNisSha256String() throws DecoderException, NoSuchAlgorithmException {
+    String decodeNisSha256String() throws DecoderException {
         byte[] nisHexToCheck = hexFile(NIS_HEX_TO_CHECK);
-        System.out.println("DECODED_NIS_STRING : " + nisHexToCheck);
+        log.info("DECODED_NIS_STRING : {}" , Arrays.toString(nisHexToCheck));
 
         String nisSha256Str = ValidateUtils.calculateSha256(nisHexToCheck);
-        System.out.println("nisHexToCheckStr : " + nisSha256Str);
+        log.info("nisHexToCheckStr : {}" , nisSha256Str);
         // E0C47E69639807307D6DB3EE8E3C4E5893B6093E2F04397E140BA26F29C54663
         return nisSha256Str;
     }
@@ -470,13 +515,13 @@ class ValidateUtilsTest {
     //Verifica specifica dell'hash della chiave pubblica... ????
     //hash del primo "Data Group" che si trova all'interno del file SOD_IAS.HEX, e non l'hash della chiave pubblica.
     @Test
-    void extractDataGroupHashesForPUBKEY() throws IOException, DecoderException, CMSException, NoSuchAlgorithmException {
-        System.out.println("TEST extractDataGroupHashes - INIT");
-        System.out.println(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+    void extractDataGroupHashesForPUBKEY() throws IOException, DecoderException, CMSException {
+        log.info("TEST extractDataGroupHashes - INIT");
+        log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
-        System.out.println(" - sodIasByteArray: " + sodIasByteArray);
+        log.info(" - sodIasByteArray: {}" , Arrays.toString(sodIasByteArray));
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
         List<String> dataGroupList = ValidateUtils.extractDataGroupHashes(cms);
@@ -488,16 +533,16 @@ class ValidateUtilsTest {
         Assertions.assertTrue(dataGroupList.contains(nisPublicKeyString));
     }
 
-    String decodeNisPublicKeyTest() throws NoSuchAlgorithmException, IOException, DecoderException {
+    String decodeNisPublicKeyTest() throws IOException, DecoderException {
 
-        String fileString = Files.readString(BASE_PATH.resolve(NIS_PUBKEY_FILENAME)).replaceAll("\\s+", "");
-        System.out.println("fileString : " + fileString);
+        String fileString = Files.readString(basePath.resolve(NIS_PUBKEY_FILENAME)).replaceAll("\\s+", "");
+        log.info("fileString : {}" , fileString);
 
         byte[] nisPublicKeyToCheck = hexFile(fileString);
-        System.out.println("DECODED_NIS_PUBLICKEY_STRING : " + nisPublicKeyToCheck);
+        log.info("DECODED_NIS_PUBLICKEY_STRING : {}", Arrays.toString(nisPublicKeyToCheck));
 
         String nisSha256PublicKeyStr = ValidateUtils.calculateSha256(nisPublicKeyToCheck);
-        System.out.println("nisSha256PublicKeyStr : " + nisSha256PublicKeyStr);
+        log.info("nisSha256PublicKeyStr : {}", nisSha256PublicKeyStr);
         // A77DBDB693EDD191EC82412C1462C70DF7901CDCA12088CD23CAF74429681A86
         Assertions.assertNotNull(nisSha256PublicKeyStr);
         return nisSha256PublicKeyStr;
@@ -508,12 +553,12 @@ class ValidateUtilsTest {
 /*
     @Test
     void veryfySignedAttrIsSet() throws IOException, DecoderException, CMSException {
-        System.out.println("TEST convertSignedAttributesIntoSet - INIT");
-        System.out.println(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
+        log.info("TEST convertSignedAttributesIntoSet - INIT");
+        log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX)).replaceAll("\\s+", "");
         String subString = fileString.substring(8, fileString.length());
         byte[] sodIasByteArray = hexFile(subString);
-        //System.out.println(" - sodIasByteArray: " + sodIasByteArray);
+        //log.info(" - sodIasByteArray: {}", sodIasByteArray);
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
         Assertions.assertTrue(ValidateUtils.veryfySignedAttrIsSet ( cms));
@@ -521,12 +566,12 @@ class ValidateUtilsTest {
 
     @Test
     void veryfySignatures() throws IOException, DecoderException, CMSException {
-        System.out.println("TEST convertSignedAttributesIntoSet - INIT");
-        System.out.println(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
+        log.info("TEST convertSignedAttributesIntoSet - INIT");
+        log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX)).replaceAll("\\s+", "");
         String subString = fileString.substring(8, fileString.length());
         byte[] sodIasByteArray = hexFile(subString);
-        //System.out.println(" - sodIasByteArray: " + sodIasByteArray);
+        //log.info(" - sodIasByteArray: {}", sodIasByteArray);
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
         Assertions.assertTrue(ValidateUtils.veryfySignatures( cms));
@@ -535,22 +580,22 @@ class ValidateUtilsTest {
     */
 
     @Test
-    void verifyDigitalSignature() throws IOException, DecoderException, CMSException, CertificateException, OperatorCreationException {
-        System.out.println("TEST convertSignedAttributesIntoSet - INIT");
-        System.out.println(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8, fileString.length());
+    void verifyDigitalSignature() throws IOException, DecoderException, CMSException {
+        log.info("TEST convertSignedAttributesIntoSet - INIT");
+        log.info(" - Leggo il file SOD_HEX e decodifico in byte[] HEX");
+        String fileString = Files.readString(basePath.resolve(SOD_HEX_IAS)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
         byte[] sodIasByteArray = hexFile(subString);
         CMSSignedData cms = new CMSSignedData(sodIasByteArray);
 
         ResultCieChecker resultCieChecker = ValidateUtils.verifyDigitalSignature(cms);
-        Assertions.assertTrue(resultCieChecker.getValue().equals("OK"));
+        assertEquals("OK", resultCieChecker.getValue());
     }
 
     @Test
     void testDecodeSodHrOk() throws Exception {
         byte[] sodBytes = Files.readAllBytes(sodFile);
-        System.out.println("bytes letti dal file SOD: " + sodBytes.length);
+        log.info("bytes letti dal file SOD: {} ", sodBytes.length);
 
         SodSummary summary = decodeSodHr(sodBytes);
         Assertions.assertNotNull(summary);
@@ -560,27 +605,21 @@ class ValidateUtilsTest {
         Assertions.assertNotNull(summary.getSignatureAlgorithm());
         Assertions.assertNotNull(summary.getCmsSignature());
         Assertions.assertNotNull(summary.getDscCertificate());
-        System.out.println("SodSummary: "+ summary);
+        log.info("SodSummary: {}", summary);
 
     }
     @Test
     void testDecodeSodHrFail() {
         byte[] corruptedSod = new byte[]{0x01, 0x02, 0x03}; // SOD corrotto
-        System.out.println("bytes letti dal file SOD corrotto: " + corruptedSod.length);
+        log.info("bytes letti dal file SOD corrotto: {} " , corruptedSod.length);
 
         Exception exception = assertThrows(Exception.class, () -> {
             ValidateUtils.decodeSodHr(corruptedSod);
         });
-        System.out.println("Eccezione catturata: " + exception.getClass().getSimpleName() + " - " + exception.getMessage());
+        log.info("Eccezione catturata: {} - {}", exception.getClass().getSimpleName(), exception.getMessage());
         assertTrue(exception.getMessage().contains("unable") || !exception.getMessage().isEmpty());
     }
-  
 
-      private byte[] extractCertificateByteArray() throws DecoderException, IOException {
-        String fileString = Files.readString(BASE_PATH.resolve(SOD_HEX)).replaceAll("\\s+", "");
-        String subString = fileString.substring(8,fileString.length());
-        return hexFile(subString);
-    }
 
     private static byte[] hexFile(String toHex) throws DecoderException {
         return Hex.decodeHex(toHex);
@@ -618,11 +657,56 @@ class ValidateUtilsTest {
     @Test
     void verifyNisPublicKeyFromDataGroup() throws Exception {
 
-        byte[] sodByte = extractCertificateByteArray();
-        CMSSignedData cms = new CMSSignedData(sodByte);
-        byte[] NIS_HEX_TO_CHECK = hexFile("393130373138343634363534");
+        CMSSignedData cms = new CMSSignedData(validationData.getCieIas().getSod());
+        byte[] nisHexTOCheck = hexFile(NIS_HEX_TO_CHECK);
 
-        Assertions.assertTrue(ValidateUtils.verifyNisPublicKeyFromDataGroup( cms, NIS_HEX_TO_CHECK));
+        Assertions.assertTrue(verifyNisPublicKeyFromDataGroup( cms, nisHexTOCheck));
 
     }
+
+    public static boolean verifyNisPublicKeyFromDataGroup(CMSSignedData cmsData, byte[] nisSha256PublicKey) throws CieCheckerException {
+        if (cmsData == null || nisSha256PublicKey == null) {
+            throw new CieCheckerException("Input parameters NULL: CMSSignedData is " + cmsData + " - String is " + nisSha256PublicKey);
+        }
+        String nisSha256PublicKeyToCheck = ValidateUtils.calculateSha256(nisSha256PublicKey);
+        List<String> dataGroupList = ValidateUtils.extractDataGroupHashes(cmsData);
+        if(dataGroupList.contains(nisSha256PublicKeyToCheck)){
+            return true;
+        }else{
+            log.error("The dataGroupList do not contains nisSha256PublicKey");
+            return false;
+        }
+    }
+
+
+    private static byte[] loadSodBytes(Path filePath) throws IOException, DecoderException {
+        String fileString = Files.readString(filePath).replaceAll("\\s+", "");
+        return hexFile(fileString.substring(8));
+    }
+
+    private static String cleanString(Path file) throws IOException {
+        return Files.readString(file).replaceAll("\\s+", "");
+    }
+
+    public static List<X509Certificate> parseCscaAnchors(Collection<byte[]> cscaAnchorBlobs,
+                                                         CertificateFactory x509Cf) throws CieCheckerException {
+        if (cscaAnchorBlobs == null || cscaAnchorBlobs.isEmpty()) {
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
+        }
+        try {
+            List<X509Certificate> out = new ArrayList<>();
+            for (byte[] blob : cscaAnchorBlobs) {
+                Collection<? extends Certificate> cs = x509Cf.generateCertificates(new ByteArrayInputStream(blob));
+                for (Certificate c : cs) out.add((X509Certificate) c);
+            }
+            if (out.isEmpty()) throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSED_ZERO_CSCA_CERTIFICATES);
+            return out;
+
+        }catch (CertificateException ce){
+            log.error("Error in parseCscaAnchors: {}", ce.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE, ce);
+        }
+    }
+
+
 }

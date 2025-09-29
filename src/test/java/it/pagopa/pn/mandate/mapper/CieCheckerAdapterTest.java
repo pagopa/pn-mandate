@@ -17,13 +17,12 @@ import static org.mockito.Mockito.*;
 class CieCheckerAdapterTest {
 
     private CieCheckerAdapterMapper cieCheckerAdapterMapper;
-    private CieResultAnalyzer cieResultAnalyzer;
     private CieCheckerAdapterImpl cieCheckerAdapter;
 
     @BeforeEach
     void setUp() {
         cieCheckerAdapterMapper = mock(CieCheckerAdapterMapper.class);
-        cieResultAnalyzer = mock(CieResultAnalyzer.class);
+        CieResultAnalyzer cieResultAnalyzer = mock(CieResultAnalyzer.class);
         cieCheckerAdapter = new CieCheckerAdapterImpl(cieCheckerAdapterMapper, cieResultAnalyzer);
     }
 

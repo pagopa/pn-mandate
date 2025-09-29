@@ -2078,9 +2078,7 @@ class MandateServiceTest {
 
         StepVerifier.create(mandateService.acceptMandateAppIo(
                         "cxId", null, null, "mid", null, null, Mono.just(new CIEValidationData())))
-                .expectErrorSatisfies(throwable -> {
-                    assertThat(throwable).isInstanceOf(PnMandateBadRequestException.class);
-                })
+                .expectErrorSatisfies(throwable -> assertThat(throwable).isInstanceOf(PnMandateBadRequestException.class))
                 .verify();
     }
 
@@ -2105,9 +2103,7 @@ class MandateServiceTest {
 
         StepVerifier.create(mandateService.acceptMandateAppIo(
                         "cxId", null, null, "mid", null, null, Mono.just(new CIEValidationData())))
-                .expectErrorSatisfies(throwable -> {
-                    assertThat(throwable).isInstanceOf(PnMandateBadRequestException.class);
-                })
+                .expectErrorSatisfies(throwable -> assertThat(throwable).isInstanceOf(PnMandateBadRequestException.class))
                 .verify();
     }
 

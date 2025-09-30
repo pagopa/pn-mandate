@@ -22,12 +22,12 @@ public class CieCheckerAdapterImpl implements CieCheckerAdapter {
         this.cieCheckerAdapterMapper = cieCheckerAdapterMapper;
         this.cieResultAnalyzer = cieResultAnalyzer;
         this.cieChecker = new CieCheckerImpl();
+        cieChecker.init();
     }
 
     @Override
     public void validateMandate(CIEValidationData data, String nonce, String delegatorTaxId) throws CieCheckerException {
         try {
-            cieChecker.init();
             CieValidationData cieValidationData = cieCheckerAdapterMapper.mapToLibDto(data, nonce);
             ResultCieChecker resultCieChecker = cieChecker.validateMandate(cieValidationData);
             cieResultAnalyzer.analyzeResult(resultCieChecker);

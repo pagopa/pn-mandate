@@ -1,6 +1,6 @@
 let options = {
     "sonar.organization": "pagopa",
-    "sonar.projectKey": "pagopa_pn-delayer-CscaMasterlistSync"
+    "sonar.projectKey": "pagopa_pn-mandate-CscaMasterlistSync"
 }
 
 if (process.env.PR_NUM) {

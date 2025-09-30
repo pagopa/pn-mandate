@@ -279,6 +279,7 @@ Parameters:
   
   CscaMasterlistUrl:
     Type: String
+    Default: 'https://csca-ita.interno.gov.it/certificatiCSCA/IT_MasterListCSCA.zip'
     Description: 'URL of the CSCA masterlist zip file to download'
 
   CscaSyncSchedule:
@@ -288,6 +289,7 @@ Parameters:
 
   CscaSha256SsmParameterName:
     Type: String
+    Default: 'pn-mandate/csca-masterlist/latest-sha256'
     Description: 'Full name of the SSM Parameter Store parameter to store the last SHA256 hash'
   
   CscaSyncS3BucketPrefix:

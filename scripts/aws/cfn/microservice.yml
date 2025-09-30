@@ -289,7 +289,7 @@ Parameters:
 
   CscaSha256SsmParameterName:
     Type: String
-    Default: 'pn-mandate/csca-masterlist/latest-sha256'
+    Default: '/pn-mandate/csca-masterlist/latest-sha256'
     Description: 'Full name of the SSM Parameter Store parameter to store the last SHA256 hash'
   
   CscaSyncS3BucketPrefix:

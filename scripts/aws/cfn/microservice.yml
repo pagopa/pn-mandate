@@ -334,6 +334,7 @@ Resources:
         ContainerEnvEntry9: !Sub 'PN_MANDATE_PENDINGDURATION=${PendingDuration}'
         ContainerEnvEntry10: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
         ContainerEnvEntry11: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
+        ContainerEnvEntry12: !Sub 'CSCA_MASTERLIST_S3_PATH=s3://pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}${CscaSyncS3BucketPrefix}'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -607,6 +608,43 @@ Resources:
           };
       #ENDpnmandateexpiredtrigger
       #Non rimuovere o modificare il commento sopra, è usato come placeholder negli script
+  
+  # ----------------------------------------------------------------
+  # CSCA Masterlist Sync Lambda Resources
+  # ----------------------------------------------------------------
+
+  CscaMasterlistSyncRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-CscaMasterlistSyncRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-CscaMasterlistSyncPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowSSMAccess
+                Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                Resource: 
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${CscaSha256SsmParameterName}"
+              - Sid: AllowS3PutObject
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub "arn:aws:s3:::pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}${CscaSyncS3BucketPrefix}"
   
   CscaMasterlistSync:
     Type: AWS::Lambda::Function

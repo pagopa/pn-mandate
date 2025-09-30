@@ -17,13 +17,17 @@ import static org.mockito.Mockito.*;
 class CieCheckerAdapterTest {
 
     private CieCheckerAdapterMapper cieCheckerAdapterMapper;
+    private CieChecker cieChecker;
+    private CieResultAnalyzer cieResultAnalyzer;
     private CieCheckerAdapterImpl cieCheckerAdapter;
 
     @BeforeEach
     void setUp() {
         cieCheckerAdapterMapper = mock(CieCheckerAdapterMapper.class);
-        CieResultAnalyzer cieResultAnalyzer = mock(CieResultAnalyzer.class);
-        cieCheckerAdapter = new CieCheckerAdapterImpl(cieCheckerAdapterMapper, cieResultAnalyzer);
+        cieChecker = mock(CieChecker.class);
+        doNothing().when(cieChecker).init();
+        cieResultAnalyzer = mock(CieResultAnalyzer.class);
+        cieCheckerAdapter = new CieCheckerAdapterImpl(cieCheckerAdapterMapper, cieChecker, cieResultAnalyzer);
     }
 
     @Test
@@ -34,24 +38,14 @@ class CieCheckerAdapterTest {
         CieValidationData cieValidationData = mock(CieValidationData.class);
 
         when(cieCheckerAdapterMapper.mapToLibDto(data, nonce)).thenReturn(cieValidationData);
-
-        CieChecker cieCheckerMock = mock(CieChecker.class);
-        doNothing().when(cieCheckerMock).init();
-        when(cieCheckerMock.validateMandate(cieValidationData)).thenReturn(ResultCieChecker.OK);
-
-        try {
-            var field = cieCheckerAdapter.getClass().getDeclaredField("cieChecker");
-            field.setAccessible(true);
-            field.set(cieCheckerAdapter, cieCheckerMock);
-        } catch (Exception e) {
-            fail("Reflection error: " + e.getMessage());
-        }
+        when(cieChecker.validateMandate(cieValidationData)).thenReturn(ResultCieChecker.OK);
+        doNothing().when(cieResultAnalyzer).analyzeResult(ResultCieChecker.OK);
 
         cieCheckerAdapter.validateMandate(data, nonce, delegatorTaxId);
 
-        verify(cieCheckerMock).init();
+        verify(cieChecker).init();
         verify(cieCheckerAdapterMapper).mapToLibDto(data, nonce);
-        verify(cieCheckerMock).validateMandate(cieValidationData);
+        verify(cieChecker).validateMandate(cieValidationData);
     }
 
 
@@ -60,16 +54,6 @@ class CieCheckerAdapterTest {
         CIEValidationData data = mock(CIEValidationData.class);
         String nonce = "nonce";
         String delegatorTaxId = "taxId";
-
-        CieChecker cieCheckerMock = mock(CieChecker.class);
-        doNothing().when(cieCheckerMock).init();
-        try {
-            var field = cieCheckerAdapter.getClass().getDeclaredField("cieChecker");
-            field.setAccessible(true);
-            field.set(cieCheckerAdapter, cieCheckerMock);
-        } catch (Exception e) {
-            fail("Reflection error: " + e.getMessage());
-        }
 
         when(cieCheckerAdapterMapper.mapToLibDto(any(), any()))
                 .thenThrow(new PnInternalException("fail", PnMandateExceptionCodes.ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR));

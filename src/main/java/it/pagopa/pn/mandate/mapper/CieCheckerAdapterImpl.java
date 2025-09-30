@@ -1,7 +1,6 @@
 package it.pagopa.pn.mandate.mapper;
 
 import it.pagopa.pn.ciechecker.CieChecker;
-import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.CieValidationData;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
@@ -18,10 +17,10 @@ public class CieCheckerAdapterImpl implements CieCheckerAdapter {
     private final CieCheckerAdapterMapper cieCheckerAdapterMapper;
     private final CieResultAnalyzer cieResultAnalyzer;
 
-    public CieCheckerAdapterImpl(CieCheckerAdapterMapper cieCheckerAdapterMapper, CieResultAnalyzer cieResultAnalyzer) {
+    public CieCheckerAdapterImpl(CieCheckerAdapterMapper cieCheckerAdapterMapper, CieChecker cieChecker, CieResultAnalyzer cieResultAnalyzer) {
         this.cieCheckerAdapterMapper = cieCheckerAdapterMapper;
         this.cieResultAnalyzer = cieResultAnalyzer;
-        this.cieChecker = new CieCheckerImpl();
+        this.cieChecker = cieChecker;
         cieChecker.init();
     }
 

@@ -644,7 +644,7 @@ Resources:
                 Effect: Allow
                 Action:
                   - s3:PutObject
-                Resource: !Sub "arn:aws:s3:::pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}${CscaSyncS3BucketPrefix}"
+                Resource: !Sub "arn:aws:s3:::pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/pn-mandate/*"
   
   CscaMasterlistSync:
     Type: AWS::Lambda::Function

@@ -62,6 +62,7 @@ class CieCheckerTest {
     private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
     private static final Path dg1Files = Paths.get("src/test/resources/EF.DG1");
     private static final Path dg11Files = Paths.get("src/test/resources/EF.DG11");
+    private static final Path dg11FilesHex = Paths.get("src/test/resources/DG11.HEX");
     private static final Path dg1FilesCorrupted = Paths.get("src/test/resources/DG1_CORROTTO.HEX");
     private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
@@ -84,7 +85,8 @@ class CieCheckerTest {
 
         byte[] sodMrtd = Files.readAllBytes(sodFile);
         byte[] dg1 = Files.readAllBytes(dg1Files);
-        byte[] dg11 = Files.readAllBytes(dg11Files);
+        byte[] dg11 = hexFile(Files.readString(dg11FilesHex));
+        //byte[] dg11 = Files.readAllBytes(dg11Files);
 
         validationData = new CieValidationData();
         CieIas cieIas = new CieIas();
@@ -95,6 +97,7 @@ class CieCheckerTest {
         validationData.setCieIas(cieIas);
         validationData.setSignedNonce(nisSignature);
         validationData.setNonce(nisChallenge);
+        validationData.setCodFiscDelegante("RSSDNC42R01H501Y");
 
         CieMrtd cMrtd = new CieMrtd();
         cMrtd.setSod(sodMrtd);
@@ -134,8 +137,24 @@ class CieCheckerTest {
     }
 
     @Test
+    void verifyCodFiscDeleganteTest () throws CieCheckerException {
+
+        validationData.setCodFiscDelegante("RSSMRA95A58H501Z");
+        ResultCieChecker resultOK = cieCheckerInterface.verifyCodFiscDelegante(validationData);
+        log.info("Risultato atteso OK -> " + resultOK.getValue());
+        assertEquals(OK, resultOK.getValue());
+
+        validationData.setCodFiscDelegante("RSSDNC42R01H501Y");
+        ResultCieChecker resultKO = cieCheckerInterface.verifyCodFiscDelegante(validationData);
+        log.info("Risultato atteso OK -> " + resultKO.getValue());
+        assertNotEquals(OK, resultKO.getValue());
+
+    }
+
+
+    @Test
     void extractCscaAnchorFromZipTest() {
-        //CMSSignedData cms = ValidateUtils.loadCscaAnchorIntoCMS();
+
         List<X509Certificate> x509List = ValidateUtils.extractCscaAnchorFromZip(Path.of(cscaAnchorZipFile.getCscaAnchorPathFileName()));
         Assertions.assertFalse(x509List.isEmpty());
         log.info("x509List.size: {}" , x509List.size());

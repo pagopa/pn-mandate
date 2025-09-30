@@ -2,10 +2,16 @@ package it.pagopa.pn.ciechecker.utils;
 
 import java.io.*;
 
+import com.payneteasy.tlv.BerTag;
+import com.payneteasy.tlv.BerTlv;
+import com.payneteasy.tlv.BerTlvParser;
+import com.payneteasy.tlv.BerTlvs;
 import it.pagopa.pn.ciechecker.CieCheckerConstants;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
+import it.pagopa.pn.ciechecker.model.CieValidationData;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.SodSummary;
+import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.icao.DataGroupHash;
@@ -24,9 +30,11 @@ import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.asn1.cms.AttributeTable;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.*;
+import org.bouncycastle.crypto.io.CipherIOException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -735,5 +743,28 @@ public class ValidateUtils {
             return false;
         }
     }
+
+
+    public static String extractCodiceFiscaleByOid(byte[] dg11Bytes) throws CieCheckerException {
+
+        try {
+            //parser TLV
+            log.info(LogsCostant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsCostant.VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE, dg11Bytes);
+            BerTlvParser parser = new BerTlvParser();
+            BerTlvs tlvs = parser.parse(dg11Bytes, 0, dg11Bytes.length);
+            BerTag bTag = new BerTag(org.apache.commons.codec.binary.Hex.decodeHex(CieCheckerConstants.TAG_PERSONAL_NUMBER));
+            BerTlv bTlv = tlvs.find(bTag);
+            if (bTlv != null) {
+                log.debug("CODICE_FISCALE DELEGANTE: " + bTlv.getTextValue());
+                return bTlv.getTextValue();
+            } else {
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
+            }
+        } catch (DecoderException de) {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE, de.getMessage());
+            throw new CieCheckerException( ResultCieChecker.KO_EXC_DECODER_ERROR, de);
+        }
+    }
+
 
 }

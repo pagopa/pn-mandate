@@ -77,6 +77,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 log.debug("la variabile 'pn.mandate.ciechecker.csca-anchor.pathFileName' nel property file IS NULL o BLANK");
                 this.setCscaAnchorPathFileName(this.CSCA_ANCHOR_PATH_FILENAME);
             }
+            log.debug("Variable 'pn.mandate.ciechecker.csca-anchor.pathFileName': {}",this.getCscaAnchorPathFileName());
             return ValidateUtils.extractCscaAnchorFromZip(Path.of(this.getCscaAnchorPathFileName()));
         }
 
@@ -90,7 +91,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             Security.addProvider(new BouncyCastleProvider());
         }
 
-        log.debug("Variable 'pn.mandate.ciechecker.csca-anchor.pathFileName': {}",cscaAnchorZipFile.getCscaAnchorPathFileName());
         cscaAnchor = cscaAnchorZipFile.extractCscaAnchor();
     }
 
@@ -122,6 +122,8 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             cms = new CMSSignedData(data.getCieMrtd().getSod());
             verifyDigitalSignature(cms);
 
+            verifyCodFiscDelegante(data);
+
             log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, true, ResultCieChecker.OK.getValue());
             return ResultCieChecker.OK;
         }catch(CMSException cmse){
@@ -148,9 +150,25 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         if ( Objects.isNull(data.getCieMrtd().getSod()) || data.getCieMrtd().getSod().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDSOD);
         if ( Objects.isNull(data.getCieMrtd().getDg1()) || data.getCieMrtd().getDg1().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG1);
         if ( Objects.isNull(data.getCieMrtd().getDg11()) || data.getCieMrtd().getDg11().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG11);
+        if ( Objects.isNull(data.getCodFiscDelegante()) || data.getCodFiscDelegante().isBlank()) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CODFISCDELEGANTE);
+
         log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.CIECHECKER_VALIDATE_DATA_INPUT, data, true);
         return true;
     }
+
+
+    public ResultCieChecker verifyCodFiscDelegante (CieValidationData data ) throws CieCheckerException{
+
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsCostant.VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE, data);
+        String codiceFiscaleDelegante = extractCodiceFiscaleByOid(data.getCieMrtd().getDg11());
+        log.debug("codiceFiscaleDelegante: {} - data.getCodFiscDelegante(): {}", codiceFiscaleDelegante, data.getCodFiscDelegante());
+        if (data.getCodFiscDelegante().equals(codiceFiscaleDelegante))
+            return ResultCieChecker.OK;
+        else
+            return ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED;
+
+    }
+
 
     /**
      * @param data CieValidationData

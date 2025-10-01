@@ -56,6 +56,8 @@ paths:
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'                         # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'                       # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/lollipopUserName'                        # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/lollipopUserFamilyName'                  # NO EXTERNAL
       #       - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
       #       - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
       #       - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL

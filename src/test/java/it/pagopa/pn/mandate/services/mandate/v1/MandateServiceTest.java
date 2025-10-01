@@ -1919,6 +1919,8 @@ class MandateServiceTest {
         // Given
         String xPagopaPnUid = "uid";
         String xPagopaPnCxId = "PF-f271e4bf-0d69-4ed6-a39f-4ef2delegate";
+        String lollipopUserName = "John";
+        String lollipopUserFamilyName = "Doe";
         String iun = "QDYU-PUAD-QMQA-202305-G-3";
         it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType =
                 it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF;
@@ -1951,6 +1953,7 @@ class MandateServiceTest {
         when(aarQrUtils.extractQrToken("qrCodeValue")).thenReturn(decodedQr);
         when(pnDeliveryClient.decodeAarQrCode(decodedQr)).thenReturn(Mono.just(userInfoQrCodeDto));
         when(pnDatavaultClient.ensureRecipientByExternalId(true, "TAXID123")).thenReturn(Mono.just(delegatorInternalUserId));
+        when(pnDatavaultClient.updateMandateById(any(), any(), any(), any())).thenReturn(Mono.just("OK"));
         when(mandateEntityBuilderMapper.buildMandateEntity(
                 any(),
                 any(),
@@ -1964,6 +1967,8 @@ class MandateServiceTest {
         MandateCreationResponse result = mandateService.createMandateAppIo(
                 xPagopaPnUid,
                 xPagopaPnCxId,
+                lollipopUserName,
+                lollipopUserFamilyName,
                 xPagopaPnCxType,
                 Mono.just(request)
         ).block(D);
@@ -1977,6 +1982,7 @@ class MandateServiceTest {
                 any(),
                 any(),
                 any());
+        verify(pnDatavaultClient).updateMandateById(any(), any(), any(), any());
         verify(mandateDao).createMandate(entity, TypeSegregatorFilter.CIE);
         verify(mandateEntityAppIoMandateDtoMapper).toDto(entity);
     }
@@ -2005,11 +2011,12 @@ class MandateServiceTest {
                 any(),
                 any()
         )).thenReturn(entity);
+        when(pnDatavaultClient.updateMandateById(any(), any(), any(), any())).thenReturn(Mono.just("OK"));
         when(mandateDao.createMandate(entity, TypeSegregatorFilter.CIE))
                 .thenReturn(Mono.error(new RuntimeException("Internal error")));
 
         Mono<MandateCreationResponse> result = mandateService.createMandateAppIo(
-                "uid", "cxId", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)
+                "uid", "cxId", "John", "Doe", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)
         );
 
         StepVerifier.create(result)

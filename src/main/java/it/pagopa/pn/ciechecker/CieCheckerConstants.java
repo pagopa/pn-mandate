@@ -14,6 +14,7 @@ public class CieCheckerConstants {
     public static final String SHA_384 = "SHA-384";
     public static final String SHA_512 = "SHA-512";
     public static final String SHA_1_WITH_RSA = "SHA1withRSA";
+    public static final String TAG_PERSONAL_NUMBER = "5F10";
 
     public static final String OK = "OK";
 
@@ -70,9 +71,13 @@ public class CieCheckerConstants {
     public static final String EXC_INVALID_PARAMETER_NONCE = "Input parameter NONCE CIE is null";
     public static final String EXC_INVALID_PARAMETER_MRTDDG1 = "Input parameter DG1 MRTD is null";
     public static final String EXC_INVALID_PARAMETER_MRTDDG11 = "Input parameter DG11 MRTD is null";
+    public static final String EXC_INVALID_PARAMETER_CODFISCDELEGANTE = "Input parameter CODICE FISCALE DELEGANTE is null";
     public static final String EXC_INVALID_VERIFIER = "Verifier not valid at signingTime";
     public static final String EXC_INVALID_SIGNATURE = "Signature object is not initialized properly";
     public static final String EXC_INVALID_ALGORITHM = "No Provider supports a Signature implementation for the specified algorithm";
     public static final String EXC_INVALID_PUBLICKEY = "PublicKey is not valid";
+    public static final String EXC_DECODER_ERROR = "Error occurs during the decoding process of data";
+    public static final String EXC_NOFOUND_CODFISCALE_DG11 = "Error occurs during the extraction of Personal number in DG11";
+    public static final String EXC_CODFISCALE_NOT_VERIFIED = "Personal number do not match with the expected value";
 
 }

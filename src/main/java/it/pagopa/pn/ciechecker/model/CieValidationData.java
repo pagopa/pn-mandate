@@ -8,4 +8,5 @@ public class CieValidationData {
     private CieMrtd cieMrtd;
     private String nonce;
     private byte[] signedNonce;
+    private String codFiscDelegante;
 }

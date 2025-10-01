@@ -5,5 +5,5 @@ import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CIEValidationD
 import org.apache.commons.codec.DecoderException;
 
 public interface CieCheckerAdapterMapperInterface{
-    CieValidationData mapToLibDto(CIEValidationData cieValidationData,String nonce) throws DecoderException;
+    CieValidationData mapToLibDto(CIEValidationData cieValidationDataInput, String nonce, String delegatorTaxId) throws DecoderException;
 }

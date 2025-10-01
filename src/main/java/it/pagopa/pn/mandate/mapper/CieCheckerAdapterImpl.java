@@ -30,7 +30,7 @@ public class CieCheckerAdapterImpl implements CieCheckerAdapter {
     public void validateMandate(CIEValidationData data, String nonce, String delegatorTaxId) throws CieCheckerException {
         log.info("Starting CIE Checker validation");
         try {
-            CieValidationData cieValidationData = cieCheckerAdapterMapper.mapToLibDto(data, nonce);
+            CieValidationData cieValidationData = cieCheckerAdapterMapper.mapToLibDto(data, nonce, delegatorTaxId);
             ResultCieChecker resultCieChecker = cieChecker.validateMandate(cieValidationData);
             cieResultAnalyzer.analyzeResult(resultCieChecker);
         } catch (PnInternalException exception) {

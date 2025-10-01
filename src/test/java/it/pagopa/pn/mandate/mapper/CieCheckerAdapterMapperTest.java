@@ -31,9 +31,10 @@ class CieCheckerAdapterMapperTest {
         input.setSignedNonce("signedNonceValue");
 
         String nonce = "testNonce";
+        String delegatorTaxId = "delegatorTaxId";
 
         // Act
-        CieValidationData result = mapper.mapToLibDto(input, nonce);
+        CieValidationData result = mapper.mapToLibDto(input, nonce, delegatorTaxId);
 
         // Assert
         assertNotNull(result);
@@ -47,5 +48,6 @@ class CieCheckerAdapterMapperTest {
         assertArrayEquals("mrtdDg11".getBytes(), result.getCieMrtd().getDg11());
         assertArrayEquals("signedNonceValue".getBytes(), result.getSignedNonce());
         assertEquals("746573744e6f6e6365", result.getNonce()); // "testNonce" in hex
+        assertEquals("delegatorTaxId", result.getCodFiscDelegante());
     }
 }

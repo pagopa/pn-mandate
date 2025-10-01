@@ -37,14 +37,14 @@ class CieCheckerAdapterTest {
         String delegatorTaxId = "taxId";
         CieValidationData cieValidationData = mock(CieValidationData.class);
 
-        when(cieCheckerAdapterMapper.mapToLibDto(data, nonce)).thenReturn(cieValidationData);
+        when(cieCheckerAdapterMapper.mapToLibDto(data, nonce, delegatorTaxId)).thenReturn(cieValidationData);
         when(cieChecker.validateMandate(cieValidationData)).thenReturn(ResultCieChecker.OK);
         doNothing().when(cieResultAnalyzer).analyzeResult(ResultCieChecker.OK);
 
         cieCheckerAdapter.validateMandate(data, nonce, delegatorTaxId);
 
         verify(cieChecker).init();
-        verify(cieCheckerAdapterMapper).mapToLibDto(data, nonce);
+        verify(cieCheckerAdapterMapper).mapToLibDto(data, nonce, delegatorTaxId);
         verify(cieChecker).validateMandate(cieValidationData);
     }
 
@@ -55,7 +55,7 @@ class CieCheckerAdapterTest {
         String nonce = "nonce";
         String delegatorTaxId = "taxId";
 
-        when(cieCheckerAdapterMapper.mapToLibDto(any(), any()))
+        when(cieCheckerAdapterMapper.mapToLibDto(any(), any(), any()))
                 .thenThrow(new PnInternalException("fail", PnMandateExceptionCodes.ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR));
 
         PnInternalException ex = assertThrows(PnInternalException.class, () ->

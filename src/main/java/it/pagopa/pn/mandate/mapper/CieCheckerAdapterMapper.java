@@ -14,12 +14,13 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class CieCheckerAdapterMapper implements CieCheckerAdapterMapperInterface{
     @Override
-    public CieValidationData mapToLibDto(CIEValidationData cieValidationDataInput, String nonce){
+    public CieValidationData mapToLibDto(CIEValidationData cieValidationDataInput, String nonce, String delegatorTaxId) {
         CieValidationData cieValidationDataLib = new CieValidationData();
         cieValidationDataLib.setCieIas(createIas(cieValidationDataInput.getNisData()));
         cieValidationDataLib.setCieMrtd(createMrtd(cieValidationDataInput.getMrtdData()));
         cieValidationDataLib.setSignedNonce(cieValidationDataInput.getSignedNonce().getBytes(StandardCharsets.UTF_8));
         cieValidationDataLib.setNonce(Hex.encodeHexString(nonce.getBytes(StandardCharsets.UTF_8)));
+        cieValidationDataLib.setCodFiscDelegante(delegatorTaxId);
         return cieValidationDataLib;
     }
 

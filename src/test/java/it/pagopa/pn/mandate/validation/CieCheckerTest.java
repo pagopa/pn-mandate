@@ -97,7 +97,7 @@ class CieCheckerTest {
         validationData.setCieIas(cieIas);
         validationData.setSignedNonce(nisSignature);
         validationData.setNonce(nisChallenge);
-        validationData.setCodFiscDelegante("RSSDNC42R01H501Y");
+        validationData.setCodFiscDelegante("RSSMRA95A58H501Z"); //"RSSDNC42R01H501Y");
 
         CieMrtd cMrtd = new CieMrtd();
         cMrtd.setSod(sodMrtd);
@@ -139,16 +139,15 @@ class CieCheckerTest {
     @Test
     void verifyCodFiscDeleganteTest () throws CieCheckerException {
 
-        validationData.setCodFiscDelegante("RSSMRA95A58H501Z");
-        ResultCieChecker resultOK = cieCheckerInterface.verifyCodFiscDelegante(validationData);
-        log.info("Risultato atteso OK -> " + resultOK.getValue());
-        assertEquals(OK, resultOK.getValue());
-
         validationData.setCodFiscDelegante("RSSDNC42R01H501Y");
         ResultCieChecker resultKO = cieCheckerInterface.verifyCodFiscDelegante(validationData);
         log.info("Risultato atteso OK -> " + resultKO.getValue());
         assertNotEquals(OK, resultKO.getValue());
 
+        validationData.setCodFiscDelegante("RSSMRA95A58H501Z");
+        ResultCieChecker resultOK = cieCheckerInterface.verifyCodFiscDelegante(validationData);
+        log.info("Risultato atteso OK -> " + resultOK.getValue());
+        assertEquals(OK, resultOK.getValue());
     }
 
 

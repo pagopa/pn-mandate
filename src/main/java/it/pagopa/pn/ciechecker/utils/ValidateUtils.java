@@ -8,7 +8,6 @@ import com.payneteasy.tlv.BerTlvParser;
 import com.payneteasy.tlv.BerTlvs;
 import it.pagopa.pn.ciechecker.CieCheckerConstants;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-import it.pagopa.pn.ciechecker.model.CieValidationData;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.model.SodSummary;
 import org.apache.commons.codec.DecoderException;
@@ -30,11 +29,9 @@ import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.asn1.cms.AttributeTable;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
-import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.*;
-import org.bouncycastle.crypto.io.CipherIOException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -127,7 +124,7 @@ public class ValidateUtils {
      * Estrazione la PublicKey dal Certificato X509 - riga 64
      * @param certHolder certificato
      * @return PublicKey
-     * @throws CieCheckerException
+     * @throws CieCheckerException ResultCieChecker.KO_EXC_PARSING_CERTIFICATION
      */
     public static PublicKey extractPublicKeyFromHolder(X509CertificateHolder certHolder) throws CieCheckerException {
 
@@ -186,7 +183,7 @@ public class ValidateUtils {
      * Verifica che lo sha256 di hashes_octet_block sia uguale al digest estratto
      * @param cms CMSSignedData
      * @return boolean
-     * @throws CieCheckerException
+     * @throws CieCheckerException ResultCieChecker.KO
      */
     public static boolean verifyMatchHashContent(CMSSignedData cms) throws CieCheckerException {
 
@@ -215,7 +212,7 @@ public class ValidateUtils {
      * @param firstOctetString byte[]
      * @param fiveOctetString ASN1OctetString
      * @return boolean
-     * @throws CieCheckerException
+     * @throws CieCheckerException ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA, KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP
      */
     public static boolean verifyOctetStrings(byte[] firstOctetString, ASN1OctetString fiveOctetString) throws CieCheckerException {
 
@@ -519,7 +516,7 @@ public class ValidateUtils {
             if (verifier.verify(signatureBytes))
                 return ResultCieChecker.OK;
             else {
-                log.info("ResultCieChecker: ", ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE);
+                log.error("ResultCieChecker: {}", ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE);
                 return ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE;
             }
         }catch (NoSuchElementException nee){
@@ -758,6 +755,7 @@ public class ValidateUtils {
                 log.debug("CODICE_FISCALE DELEGANTE: " + bTlv.getTextValue());
                 return bTlv.getTextValue();
             } else {
+                log.error("ResultCieChecker: {}", ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
             }
         } catch (DecoderException de) {

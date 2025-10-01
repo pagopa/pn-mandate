@@ -122,10 +122,12 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             cms = new CMSSignedData(data.getCieMrtd().getSod());
             verifyDigitalSignature(cms);
 
-            verifyCodFiscDelegante(data);
+            //16304 - Verifica codice fiscale del delegante con quanto presente nei dati della CIE
+            ResultCieChecker result = verifyCodFiscDelegante(data);
+            if(OK.equals(result.getValue()) )
+                log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, true, ResultCieChecker.OK.getValue());
 
-            log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, true, ResultCieChecker.OK.getValue());
-            return ResultCieChecker.OK;
+            return result;
         }catch(CMSException cmse){
             log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, cmse);
@@ -156,7 +158,12 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         return true;
     }
 
-
+    /**
+     * Verifica codice fiscale del delegante con quanto presente nei dati della CIE
+     * @param data CieValidationData
+     * @return ResultCieChecker: OK se il codice fiscale matcha con quello presente nel DG11, KO se non matcha
+     * @throws CieCheckerException result
+     */
     public ResultCieChecker verifyCodFiscDelegante (CieValidationData data ) throws CieCheckerException{
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsCostant.VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE, data);
@@ -164,9 +171,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         log.debug("codiceFiscaleDelegante: {} - data.getCodFiscDelegante(): {}", codiceFiscaleDelegante, data.getCodFiscDelegante());
         if (data.getCodFiscDelegante().equals(codiceFiscaleDelegante))
             return ResultCieChecker.OK;
-        else
+        else {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE, ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED.getValue());
             return ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED;
-
+        }
     }
 
 

@@ -72,6 +72,14 @@
 			<artifactId>dynamodb-enhanced</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-s3</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<scope>provided</scope>
@@ -152,12 +160,12 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- sotto il cofano, testcontainer usa aws1 e quindi serve la dipendenza -->
-		<dependency>
+		<!-- dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-s3</artifactId>
 			<version>1.12.332</version>
 			<scope>test</scope>
-		</dependency>
+		</dependency -->
 
 		<!-- Sebbene non usata dal codice, in intelliJ non si riusciva a risolvere il plugin antrun semplicemetne dichiarandolo
              Mettendolo come dipedenza, si aggira il problema -->

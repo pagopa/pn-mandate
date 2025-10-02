@@ -28,12 +28,15 @@ public abstract class LogsCostant {
     public static final String VALIDATEUTILS_EXTRACT_HASHSIGNED = "ValidateUtils.extractHashSigned()";
     public static final String VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR = "ValidateUtils.extractAllSignedAttributes()";
     public static final String VALIDATEUTILS_EXTRACT_DATAGROUP = "ValidateUtils.extractDataGroupHashes()";
-    public static final String VALIDATEUTILS_EXTRACT_CSCAANCHOR = "ValidateUtils.extractCscaAnchorFromZip()";
+    public static final String VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP = "ValidateUtils.extractCscaAnchorFromZip()";
+    public static final String CIECHECKER_EXTRACT_CSCAANCHOR = "CieCheckerImpl.extractCscaAnchor()";
     public static final String VALIDATEUTILS_GETX509CERTLIST_ZIPFILE = "ValidateUtils.getX509CertListFromZipFile()";
     public static final String VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE = "ValidateUtils.verifyDigitalSignature()";
     public static final String VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE = "ValidateUtils.verifySodPassiveDigitalSignature()";
     public static final String VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE = "ValidateUtils.verifyCodFiscDelegante()";
     public static final String VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE = "ValidateUtils.extractCodiceFiscaleByOid()";
+    public static final String S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT = "S3BucketClientImpl.getObjectContent()";
+    public static final String VALIDATEUTILS_LOAD_CSCAANCHOR_PEM = "ValidateUtils.loadCertificateFromPemFile()";
 
     // ERROR
     public static final String ENDING_PROCESS_WITH_ERROR = "Ending '{}' Process with error = '{}' - '{}'";

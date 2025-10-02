@@ -15,6 +15,9 @@ public class CieCheckerConstants {
     public static final String SHA_512 = "SHA-512";
     public static final String SHA_1_WITH_RSA = "SHA1withRSA";
     public static final String TAG_PERSONAL_NUMBER = "5F10";
+    public static final String PROTOCOLLO_S3 = "s3://";
+    public static final String CSCA_ANCHOR_PATH_FILENAME = "src/test/resources/IT_MasterListCSCA.zip";
+
 
     public static final String OK = "OK";
 
@@ -24,6 +27,8 @@ public class CieCheckerConstants {
     public static final String EXC_NOTFOUND_CMSSIGNEDDATA = "Not found CMSSignedData";
     public static final String EXC_PARSED_ZERO_CSCA_CERTIFICATES="Parsed 0 CSCA certificates";
     public static final String EXC_NO_CSCA_ANCHORS_PROVIDED= "No CSCA Anchor Files provided or is not valid";
+    public static final String EXC_NOVALID_URI_CSCA_ANCHORS= "URI S3 for CSCA Anchor Files is not valid";
+    public static final String EXC_NOVALID_CSCA_ANCHORS= "CSCA Anchor File is not valid (Valid file is .zip or .pem)";
     public static final String EXC_INPUT_PARAMETER_NULL="Input object parameter CieValidationData is null";
     public static final String EXC_NO_SIGNATURES_SIGNED_DATA="No signatures found in SignedData";
     public static final String EXC_NO_HASH_CONTENT_MATCH="No HashContent match";

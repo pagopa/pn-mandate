@@ -1,7 +1,9 @@
 package it.pagopa.pn.ciechecker;
 
+import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,6 +16,8 @@ import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.security.*;
@@ -29,8 +33,6 @@ import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -47,41 +49,19 @@ import java.util.List;
 public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
     private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
+
     @Setter
     @Getter
     private List<X509Certificate> cscaAnchor;
 
-    private CscaAnchorZipFile cscaAnchorZipFile;
-    private Path cscaAnchorZipFilePath;
+    private S3BucketClientImpl s3BucketClient;
+    private PnMandateConfig pnMandateConfig;
 
-    @Autowired
-    public CieCheckerImpl(CscaAnchorZipFile cscaAnchorZipFile){
-        this.cscaAnchorZipFile = cscaAnchorZipFile;
-    }
 
-    @Setter
-    @Getter
-    @Component
-    public static class CscaAnchorZipFile {
-
-        public static final String CSCA_ANCHOR_PATH_FILENAME = "src/test/resources/IT_MasterListCSCA.zip";
-
-        @Value("${pn.mandate.ciechecker.csca-anchor.pathFileName}")
-        private String cscaAnchorPathFileName;
-
-        public CscaAnchorZipFile(){}
-
-        public List<X509Certificate> extractCscaAnchor() throws CieCheckerException {
-
-            if(Objects.isNull(this.getCscaAnchorPathFileName()) || this.getCscaAnchorPathFileName().isBlank()) {
-                log.debug("la variabile 'pn.mandate.ciechecker.csca-anchor.pathFileName' nel property file IS NULL o BLANK");
-                this.setCscaAnchorPathFileName(this.CSCA_ANCHOR_PATH_FILENAME);
-            }
-            log.debug("Variable 'pn.mandate.ciechecker.csca-anchor.pathFileName': {}",this.getCscaAnchorPathFileName());
-            return ValidateUtils.extractCscaAnchorFromZip(Path.of(this.getCscaAnchorPathFileName()));
-        }
-
-    }
+//    public CieCheckerImpl(S3BucketClientImpl s3BucketClient, PnMandateConfig pnMandateConfig){
+//        this.s3BucketClient = s3BucketClient;
+//        this.pnMandateConfig= pnMandateConfig;
+//    }
 
     @Override
     public void init() throws CieCheckerException {
@@ -91,12 +71,13 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             Security.addProvider(new BouncyCastleProvider());
         }
 
-        cscaAnchor = cscaAnchorZipFile.extractCscaAnchor();
+       // cscaAnchor = extractCscaAnchor(pnMandateConfig.getCscaAnchorPathFileName());
+        cscaAnchor = extractCscaAnchor(CSCA_ANCHOR_PATH_FILENAME); //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip");
     }
 
 
     @Override
-    public ResultCieChecker validateMandate(CieValidationData data) throws CieCheckerException {
+    public ResultCieChecker validateMandate(CieValidationData data) {
         log.logStartingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE);
 
         CMSSignedData cms;
@@ -130,13 +111,14 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             return result;
         }catch(CMSException cmse){
             log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA.getValue());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, cmse);
+            return ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA;
         }catch (CieCheckerException cce ) {
             log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, cce.getResult().getValue());
             return cce.getResult();
         }catch (Exception e ) {
             log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO, e);
+            //throw new CieCheckerException(ResultCieChecker.KO, e);
+            return ResultCieChecker.KO;
         }
     }
 
@@ -166,9 +148,9 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      */
     public ResultCieChecker verifyCodFiscDelegante (CieValidationData data ) throws CieCheckerException{
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsCostant.VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE, data);
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE);
         String codiceFiscaleDelegante = extractCodiceFiscaleByOid(data.getCieMrtd().getDg11());
-        log.debug("codiceFiscaleDelegante: {} - data.getCodFiscDelegante(): {}", codiceFiscaleDelegante, data.getCodFiscDelegante());
+        //log.debug("codiceFiscaleDelegante: {} - data.getCodFiscDelegante(): {}", codiceFiscaleDelegante, data.getCodFiscDelegante());
         if (data.getCodFiscDelegante().equals(codiceFiscaleDelegante))
             return ResultCieChecker.OK;
         else {
@@ -187,7 +169,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      */
     public ResultCieChecker verifyChallengeFromSignature(CieValidationData data) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, data);
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE);
         try {
             RSAEngine engine = new RSAEngine();
             PKCS1Encoding engine2 = new PKCS1Encoding(engine);
@@ -204,18 +186,15 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 return ResultCieChecker.OK;
             }
         }catch (IllegalArgumentException ie){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ie.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, IllegalArgumentException.class + " - Message: " + ie.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_PUBLICKEY, ie);
         }catch( CryptoException cre){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, cre.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, CryptoException.class + " - Message: " + cre.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CRYPTOGRAPHIC_OPERATION, cre);
         } catch (DecoderException de) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, de.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, DecoderException.class + " - Message: " + de.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_HEX_BYTE, de);
-        }catch (Exception e){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO, e);
-        }
+       }
     }
 
 
@@ -245,7 +224,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
     public boolean verifySodPassiveAuthCie(CMSSignedData cms, byte[] cieIasNis) throws CieCheckerException {
 
         try {
-            log.info(LogsCostant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, cms, cieIasNis);
+            log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE);
             //*****************************************************
             // ** PASSO 1 - ANALISI E ESTRAZIONE DEI COMPONENTI
             // *****************************************************/
@@ -324,7 +303,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      */
     @Override
     public ResultCieChecker verifyIntegrity(CieMrtd mrtd) throws CieCheckerException {
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, mrtd);
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_VERIFY_INTEGRITY);
         try {
             if(mrtd.getSod() == null){
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, ResultCieChecker.KO_EXC_NOTFOUND_MRTD_SOD.getValue());
@@ -355,7 +334,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      * @throws Exception
      */
     public ResultCieChecker verifyIntegrityCore(byte[] sodBytes, byte[] dg1, byte[] dg11) throws Exception {
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY_CORE, sodBytes, dg1, dg11);
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_VERIFY_INTEGRITY_CORE);
 
         log.debug("Decodifica SOD...");
         SodSummary sodSummary = decodeSodHr(sodBytes);
@@ -400,7 +379,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      * @return ResultCieChecker
      */
     public ResultCieChecker verifyTrustChain(CMSSignedData cms) throws CieCheckerException {
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsCostant.CIECHECKER_VERIFY_TRUST_CHAIN, cms);
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_VERIFY_TRUST_CHAIN);
         try {
             log.debug("Verifica la validità della catena di fiducia del SOD");
             X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
@@ -429,7 +408,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      */
     @Override
     public ResultCieChecker verifyDigitalSignature( CMSSignedData cms) throws CieCheckerException {
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsCostant.CIECHECKER_VERIFY_DIGITAL_SIGNATURE, cms);
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_VERIFY_DIGITAL_SIGNATURE);
         ResultCieChecker result = verifyTrustChain(cms);
         if( !(result.getValue().equals(OK)) ) {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_DIGITAL_SIGNATURE, result.getValue());
@@ -439,5 +418,44 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             return result;
         }
     }
+
+
+    public List<X509Certificate> extractCscaAnchor(String cscaAnchorPathFileName) throws CieCheckerException {
+
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR);
+        if(Objects.isNull(cscaAnchorPathFileName) || cscaAnchorPathFileName.isBlank()) {
+            log.debug("la variabile 'pn.mandate.ciechecker.csca-anchor.pathFileName' nel property file IS NULL o BLANK");
+            cscaAnchorPathFileName =  CieCheckerConstants.CSCA_ANCHOR_PATH_FILENAME; //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
+        }
+        log.debug("Variable 'pn.mandate.ciechecker.csca-anchor.pathFileName': {}",cscaAnchorPathFileName);
+        InputStream fileInputStream ;
+        try {
+            if (cscaAnchorPathFileName.startsWith(PROTOCOLLO_S3) ){
+                if(cscaAnchorPathFileName.endsWith(".zip") || cscaAnchorPathFileName.endsWith(".ZIP")) {
+                    fileInputStream  = new FileInputStream(cscaAnchorPathFileName);//getContentCscaAnchorFile(cscaAnchorPathFileName);
+                    return ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
+                } else if (cscaAnchorPathFileName.endsWith(".pem") || cscaAnchorPathFileName.endsWith(".PEM")) {
+                    fileInputStream = new FileInputStream(cscaAnchorPathFileName);//getContentCscaAnchorFile(cscaAnchorPathFileName);
+                    return ValidateUtils.loadCertificateFromPemFile(fileInputStream);
+                } else {
+                    log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR);
+                    throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_CSCA_ANCHORS);
+                }
+            }else{
+                fileInputStream = new FileInputStream(Path.of(cscaAnchorPathFileName).toFile());
+                return ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
+            }
+
+        }catch (IOException ioe) {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR, ioe.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, ioe);
+        }
+    }
+
+
+//    public InputStream getContentCscaAnchorFile(String key) {
+//        return s3BucketClient.getObjectContent(key);
+//    }
+
 
 }

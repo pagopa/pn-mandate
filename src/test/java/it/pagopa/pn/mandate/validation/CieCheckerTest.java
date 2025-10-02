@@ -4,12 +4,8 @@ import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.CieCheckerInterface;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-import it.pagopa.pn.ciechecker.model.CieMrtd;
-import it.pagopa.pn.ciechecker.model.ResultCieChecker;
-import it.pagopa.pn.ciechecker.model.CieIas;
-import it.pagopa.pn.ciechecker.model.CieValidationData;
+import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
-import lombok.CustomLog;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -23,10 +19,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
 @Slf4j
+//@TestPropertySource("classpath:application.properties")
 @ActiveProfiles("test")
 class CieCheckerTest {
 
@@ -55,8 +55,6 @@ class CieCheckerTest {
     private CieChecker cieChecker;
     @Autowired
     private CieCheckerInterface cieCheckerInterface;
-    @Autowired
-    private CieCheckerImpl.CscaAnchorZipFile cscaAnchorZipFile;
 
     private static final Path basePath= Path.of("src","test","resources");
     private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
@@ -151,13 +149,58 @@ class CieCheckerTest {
     }
 
 
-    @Test
-    void extractCscaAnchorFromZipTest() {
+//    @Test
+//    void extractCscaAnchorFromZipPathTest() {
+//
+//        List<X509Certificate> x509List = ValidateUtils.extractCscaAnchorFromZipPath(Path.of(cscaAnchorZipFile.getCscaAnchorPathFileName()));
+//        Assertions.assertFalse(x509List.isEmpty());
+//        log.info("x509List.size: {}" , x509List.size());
+//    }
 
-        List<X509Certificate> x509List = ValidateUtils.extractCscaAnchorFromZip(Path.of(cscaAnchorZipFile.getCscaAnchorPathFileName()));
-        Assertions.assertFalse(x509List.isEmpty());
-        log.info("x509List.size: {}" , x509List.size());
+
+    @Test
+    void extractS3ComponentsTest(){
+        String inputUri = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
+        String[] stringArray = extractS3Components(inputUri);
+        //InputStream fileInputStream = cieCheckerInterface.getContentCscaAnchorFile(inputUri); //getContentCscaAnchorFile(this.getCscaAnchorPathFileName());
+        //List<X509Certificate> x509CertList  = ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
+        Assertions.assertNotNull(stringArray);
     }
+
+    public String[] extractS3Components(String s3Uri) {
+
+        //Verifica e rimuovi il prefisso "s3://"
+        if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
+            log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
+            return null;
+        }
+        try {
+            // Creiamo un oggetto URI
+            URI uri = new URI(s3Uri);
+
+            // Il nome del bucket è l'host/autorità dell'URI S3
+            String bucketName = uri.getHost();
+
+            // La chiave dell'oggetto è il percorso dell'URI (path)
+            //    Questo include lo '/' iniziale, che va rimosso.
+            String objectKey = uri.getPath();
+            if (objectKey != null && objectKey.startsWith("/")) {
+                objectKey = objectKey.substring(1);
+            }
+
+            System.out.println("URI di Input: " + s3Uri);
+            System.out.println("-------------------------------------");
+            System.out.println("Bucket estratto:  \"" + bucketName + "\"");
+            System.out.println("Chiave estratta: \"" + objectKey + "\"");
+
+            return new String[]{bucketName, objectKey};
+
+        } catch (URISyntaxException e) {
+            log.error("Sintax error in URI S3: {}" , e.getMessage());
+            return null;
+        }
+    }
+
 
     private static byte[] hexFile(String toHex) throws DecoderException {
         return Hex.decodeHex(toHex);

@@ -32,4 +32,6 @@ public class PnMandateConfig {
 
     private Duration pendingDuration;
     private Duration ciePendingDuration;
+
+    private String cscaAnchorPathFileName;
 }

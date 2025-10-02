@@ -275,6 +275,7 @@ public class MandateService {
                                                          final String xPagopaPnUid,
                                                          final String xPagopaPnCxId,
                                                          CxTypeAuthFleet cxTypeAuthFleet,
+                                                         String xPagopaPnSrcCh,
                                                          List<String> groups,
                                                          String role) {
         final String uuid = UUID.randomUUID().toString();
@@ -283,7 +284,7 @@ public class MandateService {
                         .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegator().getPerson(), dto.getDelegator().getFiscalCode())
                                 .map(delegatorInternaluserId -> {
                                     validateUtils.validateCreationRequestHimself(cxTypeAuthFleet, xPagopaPnCxId, delegatorInternaluserId);
-                                    MandateEntity entity = getMandateEntity(xPagopaPnCxId, dto, delegatorInternaluserId, uuid);
+                                    MandateEntity entity = getMandateEntity(xPagopaPnCxId, xPagopaPnSrcCh, dto, delegatorInternaluserId, uuid);
                                     if (log.isInfoEnabled())
                                         log.info("creating reverse mandate uuid: {} to: {} validfrom: {} requestBy: {}",
                                                 entity.getMandateId(), xPagopaPnCxId, entity.getValidfrom(), xPagopaPnUid);
@@ -298,7 +299,7 @@ public class MandateService {
     }
 
     @NotNull
-    private MandateEntity getMandateEntity(String xPagopaPnCxId, MandateDtoRequest dto, String delegatorInternaluserId, String uuid) {
+    private MandateEntity getMandateEntity(String xPagopaPnCxId, String xPagopaPnSrcCh, MandateDtoRequest dto, String delegatorInternaluserId, String uuid) {
         MandateEntity entity = reverseMandateEntityMandateDtoMapper.toEntity(dto);
         entity.setDelegate(xPagopaPnCxId);
         entity.setDelegatorUid(delegatorInternaluserId);
@@ -307,6 +308,8 @@ public class MandateService {
         entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
         entity.setCreated(Instant.now());
         entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
+        entity.setWorkflowType(WorkFlowType.REVERSE);
+        entity.setSrcChannel(xPagopaPnSrcCh);
         return entity;
     }
 

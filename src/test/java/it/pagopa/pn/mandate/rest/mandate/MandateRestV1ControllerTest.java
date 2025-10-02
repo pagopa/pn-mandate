@@ -39,6 +39,7 @@ class MandateRestV1ControllerTest {
     public static final String PN_PAGOPA_CX_TYPE = "x-pagopa-pn-cx-type";
     public static final String PN_PAGOPA_CX_ID = "x-pagopa-pn-cx-id";
     public static final String PN_PAGOPA_CX_ROLE = "x-pagopa-pn-cx-role";
+    public static final String PN_PAGOPA_CX_SRC_CH = "x-pagopa-pn-src-ch";
 
     @Autowired
     private WebTestClient webTestClient;
@@ -132,7 +133,7 @@ class MandateRestV1ControllerTest {
         MandateDto dto = mapper.toDto(MandateDaoIT.newMandate(true));
 
         //When
-        Mockito.when(mandateService.createMandate(Mockito.any(), Mockito.any() , Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any()))
+        Mockito.when(mandateService.createMandate(Mockito.any(), Mockito.any() , Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(Mono.just(dto));
 
         //Then
@@ -142,6 +143,7 @@ class MandateRestV1ControllerTest {
                 .header(PN_PAGOPA_CX_ID, "internaluserid1234")
                 .header(PN_PAGOPA_CX_TYPE, "PF")
                 .header(PN_PAGOPA_USER_ID, "userid")
+                .header(PN_PAGOPA_CX_SRC_CH, "APP")
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody();

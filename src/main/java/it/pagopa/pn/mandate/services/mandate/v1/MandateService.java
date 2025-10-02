@@ -23,6 +23,7 @@ import it.pagopa.pn.mandate.middleware.msclient.PnDeliveryClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.PageResultDto;
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.AarQrUtils;
 import it.pagopa.pn.mandate.utils.DateUtils;
@@ -201,6 +202,7 @@ public class MandateService {
      * @param mandateDto                oggetto delega
      * @param requesterInternaluserId   iuid del delegante
      * @param cxTypeAuthFleet           tipologia del delegante (PF/PG)
+     * @param xPagopaPnSrcCh            canale di richiesta
      * @param groups                    gruppi a cui appartiene l'utente
      * @param role                      ruolo dell'utente
      * @return delega creata
@@ -209,6 +211,7 @@ public class MandateService {
                                           final String requesterUid,
                                           final String requesterInternaluserId,
                                           CxTypeAuthFleet cxTypeAuthFleet,
+                                          String xPagopaPnSrcCh,
                                           List<String> groups,
                                           String role) {
         final String uuid = UUID.randomUUID().toString();
@@ -232,6 +235,8 @@ public class MandateService {
                                             entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
                                             entity.setCreated(Instant.now());
                                             entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
+                                            entity.setWorkflowType(WorkFlowType.STANDARD);
+                                            entity.setSrcChannel(xPagopaPnSrcCh);
                                             if (log.isInfoEnabled())
                                                 log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}",
                                                         entity.getMandateId(), requesterInternaluserId, requesterUserTypeIsPF, entity.getValidfrom());

@@ -59,6 +59,7 @@ Parameters:
     Type: String
     Description: 'network load balancer link for API-GW'
 
+  # OpenApi Bucket params
   MicroserviceBucketName:
     Type: String
     Default: ''
@@ -721,7 +722,7 @@ Resources:
                 Effect: Allow
                 Action:
                   - ecs:UpdateService
-                Resource: !GetAtt MandateMicroservice.Outputs.ServiceArn
+                Resource: !GetAtt MandateMicroservice.Outputs.ServiceARN
 
   CscaMandateServiceUpdater:
     Type: AWS::Lambda::Function

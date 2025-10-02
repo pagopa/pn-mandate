@@ -555,7 +555,7 @@ class MandateServiceTest {
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
         //When
-        Mono<MandateDto> result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PG, null, "operator");
+        Mono<MandateDto> result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PG, "WEB",null, "operator");
 
         //Then
         Assertions.assertThrows(PnForbiddenException.class, result::block);
@@ -609,7 +609,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn( true );
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null).block(D);
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB", null, null).block(D);
 
         //Then
         assertNotNull(result);
@@ -650,7 +650,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn( true );
         when(mapperB2b.toEntity(any())).thenReturn(entity);
         //When
-        String result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null).block(D);
+        String result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, "APP",null, null).block(D);
 
         //Then
         assertNotNull(result);
@@ -664,7 +664,7 @@ class MandateServiceTest {
 
         final MandateDtoRequest mandateDtoRequest = new MandateDtoRequest();
 
-        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, "APP",null, null);
         assertThrows(PnInvalidInputException.class, () -> result.block(D));
     }
 
@@ -676,7 +676,7 @@ class MandateServiceTest {
         final MandateDtoRequest mandateDtoRequest = new MandateDtoRequest();
         mandateDtoRequest.setDelegator(new UserDto());
 
-        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, "APP",null, null);
         assertThrows(PnInvalidInputException.class, () -> result.block(D));
     }
 
@@ -689,7 +689,7 @@ class MandateServiceTest {
         mandateDtoRequest.setDelegator(new UserDto());
         mandateDtoRequest.getDelegator().setFiscalCode("LVLDAA85T50G702B");
 
-        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, "APP", null, null);
         assertThrows(PnInvalidInputException.class, () -> result.block(D));
     }
 
@@ -703,7 +703,7 @@ class MandateServiceTest {
         mandateDtoRequest.getDelegator().setFiscalCode("LVLDAA85T50G702B");
         mandateDtoRequest.getDelegator().setPerson(true);
 
-        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, "APP", null, null);
         assertThrows(PnInvalidInputException.class, () -> result.block(D));
     }
 
@@ -719,7 +719,7 @@ class MandateServiceTest {
         mandateDtoRequest.getDelegator().setFiscalCode("FAKEFAKEFAKE");
         mandateDtoRequest.getDelegator().setPerson(true);
 
-        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, "APP",null, null);
         assertThrows(PnInvalidInputException.class, () -> result.block(D));
     }
 
@@ -736,7 +736,7 @@ class MandateServiceTest {
         mandateDtoRequest.getDelegator().setPerson(true);
 
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn( true );
-        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, null, null);
+        Mono<String> result = mandateService.createReverseMandate(mandateDtoRequest, null, entity.getDelegate(), CxTypeAuthFleet.PF, "APP",null, null);
         assertThrows(PnInvalidInputException.class, () -> result.block(D));
     }
 
@@ -785,7 +785,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(false), Mockito.eq(false))).thenReturn( true );
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB", null, null)
                 .block(D);
 
         //Then
@@ -842,7 +842,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn(true);
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PG, null, "admin")
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PG, "WEB", null, "admin")
                 .block(D);
 
         //Then
@@ -898,7 +898,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(false), Mockito.eq(false))).thenReturn( true );
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(),  CxTypeAuthFleet.PF, null, null)
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(),  CxTypeAuthFleet.PF, "WEB",null, null)
                 .block(D);
 
         //Then
@@ -965,7 +965,7 @@ class MandateServiceTest {
         when(pnExtRegPrvtClient.checkAooUoIds(Mockito.anyList())).thenReturn(Flux.empty());
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB",null, null)
                 .block(D);
 
         //Then
@@ -1036,7 +1036,7 @@ class MandateServiceTest {
 
 
         //When
-        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB", null, null);
         //Then
         assertThrows(PnInvalidVisibilityIdException.class, () -> mono.block(D));
 
@@ -1107,7 +1107,7 @@ class MandateServiceTest {
         when(pnExtRegPrvtClient.checkAooUoIds(Mockito.anyList())).thenReturn(Flux.empty());
 
         //When
-        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null)
+        MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB",null, null)
                 .block(D);
 
         //Then
@@ -1137,7 +1137,7 @@ class MandateServiceTest {
         //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
-        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB",null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
@@ -1161,7 +1161,7 @@ class MandateServiceTest {
        //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
-        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB", null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
@@ -1186,7 +1186,7 @@ class MandateServiceTest {
         //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
-        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB", null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
@@ -1211,7 +1211,7 @@ class MandateServiceTest {
         //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
-        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB", null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
@@ -1236,7 +1236,7 @@ class MandateServiceTest {
         //When
         Mono<MandateDto> monodto = Mono.just(mandateDto);
         String delegate = entity.getDelegate();
-        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(monodto, delegate, entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB", null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
@@ -1261,7 +1261,7 @@ class MandateServiceTest {
         mandateDto.getDelegate().setPerson(entity.getDelegateisperson());
 
         //When
-        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegate(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB", null, null);
         assertThrows(PnInvalidInputException.class, () -> mono.block(D));
 
         //Then
@@ -1290,7 +1290,7 @@ class MandateServiceTest {
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn( true );
 
         //When
-        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegatorUid(), entity.getDelegator(), CxTypeAuthFleet.PF, null, null);
+        Mono<MandateDto> mono = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegatorUid(), entity.getDelegator(), CxTypeAuthFleet.PF, "WEB", null, null);
         assertThrows(PnMandateByHimselfException.class, () -> mono.block(D));
 
         //Then
@@ -1925,6 +1925,8 @@ class MandateServiceTest {
         // Given
         String xPagopaPnUid = "uid";
         String xPagopaPnCxId = "PF-f271e4bf-0d69-4ed6-a39f-4ef2delegate";
+        String lollipopUserName = "John";
+        String lollipopUserFamilyName = "Doe";
         String iun = "QDYU-PUAD-QMQA-202305-G-3";
         it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType =
                 it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF;
@@ -1957,6 +1959,7 @@ class MandateServiceTest {
         when(aarQrUtils.extractQrToken("qrCodeValue")).thenReturn(decodedQr);
         when(pnDeliveryClient.decodeAarQrCode(decodedQr)).thenReturn(Mono.just(userInfoQrCodeDto));
         when(pnDatavaultClient.ensureRecipientByExternalId(true, "TAXID123")).thenReturn(Mono.just(delegatorInternalUserId));
+        when(pnDatavaultClient.updateMandateById(any(), any(), any(), any())).thenReturn(Mono.just("OK"));
         when(mandateEntityBuilderMapper.buildMandateEntity(
                 any(),
                 any(),
@@ -1970,6 +1973,8 @@ class MandateServiceTest {
         MandateCreationResponse result = mandateService.createMandateAppIo(
                 xPagopaPnUid,
                 xPagopaPnCxId,
+                lollipopUserName,
+                lollipopUserFamilyName,
                 xPagopaPnCxType,
                 Mono.just(request)
         ).block(D);
@@ -1983,6 +1988,7 @@ class MandateServiceTest {
                 any(),
                 any(),
                 any());
+        verify(pnDatavaultClient).updateMandateById(any(), any(), any(), any());
         verify(mandateDao).createMandate(entity, TypeSegregatorFilter.CIE);
         verify(mandateEntityAppIoMandateDtoMapper).toDto(entity);
     }
@@ -2011,11 +2017,12 @@ class MandateServiceTest {
                 any(),
                 any()
         )).thenReturn(entity);
+        when(pnDatavaultClient.updateMandateById(any(), any(), any(), any())).thenReturn(Mono.just("OK"));
         when(mandateDao.createMandate(entity, TypeSegregatorFilter.CIE))
                 .thenReturn(Mono.error(new RuntimeException("Internal error")));
 
         Mono<MandateCreationResponse> result = mandateService.createMandateAppIo(
-                "uid", "cxId", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)
+                "uid", "cxId", "John", "Doe", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)
         );
 
         StepVerifier.create(result)

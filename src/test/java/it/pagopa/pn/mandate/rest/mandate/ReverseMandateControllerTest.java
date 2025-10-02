@@ -26,6 +26,7 @@ class ReverseMandateControllerTest {
     public static final String PN_PAGOPA_CX_TYPE = "x-pagopa-pn-cx-type";
     public static final String PN_PAGOPA_CX_ID = "x-pagopa-pn-cx-id";
     public static final String PN_PAGOPA_CX_ROLE = "x-pagopa-pn-cx-role";
+    public static final String PN_PAGOPA_CX_SRC_CH = "x-pagopa-pn-src-ch";
 
     @Autowired
     private WebTestClient webTestClient;
@@ -38,7 +39,7 @@ class ReverseMandateControllerTest {
         MandateDtoRequest request = new MandateDtoRequest();
         String requestBody = new ObjectMapper().writeValueAsString(request);
 
-        Mockito.when(mandateService.createReverseMandate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+        Mockito.when(mandateService.createReverseMandate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(Mono.just("Mandate Created"));
 
         webTestClient.post()
@@ -47,6 +48,7 @@ class ReverseMandateControllerTest {
                 .header(PN_PAGOPA_CX_ID, "cx-id")
                 .header(PN_PAGOPA_CX_TYPE, CxTypeAuthFleet.PG.toString())
                 .header(PN_PAGOPA_CX_ROLE, "cx-role")
+                .header(PN_PAGOPA_CX_SRC_CH, "src-ch")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(requestBody))
                 .exchange()

@@ -36,7 +36,10 @@ components:
       $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopSignatureInput'
     lollipopSignature:
       $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/a1f457ddc112983ec79be0be93256476dd11102c/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopSignature'
-  
+    lollipopUserName:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/afcf9f5887592aab426d83a7512de1d91d815fa4/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopUserName'
+    lollipopUserFamilyName:
+      $ref: 'https://raw.githubusercontent.com/pagopa/pn-auth-fleet/afcf9f5887592aab426d83a7512de1d91d815fa4/docs/openapi/authenticationParameters-v1.yaml#/components/parameters/lollipopUserFamilyName'
   schemas:
 
     ############################################################################################

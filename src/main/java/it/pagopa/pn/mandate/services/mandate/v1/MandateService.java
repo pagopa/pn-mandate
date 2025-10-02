@@ -164,6 +164,8 @@ public class MandateService {
      */
     public Mono<MandateCreationResponse> createMandateAppIo(String xPagopaPnUid,
                                                             String xPagopaPnCxId,
+                                                            String lollipopUserName,
+                                                            String lollipopUserFamilyName,
                                                             it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType,
                                                             Mono<MandateCreationRequest> mandateCreationRequest) {
         final String mandateId = UUID.randomUUID().toString();
@@ -182,7 +184,8 @@ public class MandateService {
                                     log.debug("Built MandateEntity: {}", entity);
                                     return entity;
                                 })
-                                //todo: Da implementare punti 5 e 6
+                                .flatMap(entity -> pnDatavaultClient.updateMandateById(mandateId, lollipopUserName, lollipopUserFamilyName, null)
+                                        .thenReturn(entity))
                                 .flatMap(entity -> {
                                     log.info("Start to persisting mandate: {}", entity.getMandateId());
                                     return mandateDao.createMandate(entity, TypeSegregatorFilter.CIE);

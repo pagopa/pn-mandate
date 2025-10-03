@@ -18,5 +18,6 @@ public interface CieCheckerInterface {
     ResultCieChecker verifyDigitalSignature(CMSSignedData cms) throws CieCheckerException;
     void setCscaAnchor(List<X509Certificate> cscaAnchor);
     List<X509Certificate> getCscaAnchor();
+    List<X509Certificate> extractCscaAnchor(String cscaAnchorPathFileName) throws CieCheckerException;
     ResultCieChecker verifyCodFiscDelegante (CieValidationData data ) throws CieCheckerException;
 }

@@ -750,7 +750,7 @@ public class ValidateUtils {
             BerTag bTag = new BerTag(org.apache.commons.codec.binary.Hex.decodeHex(CieCheckerConstants.TAG_PERSONAL_NUMBER));
             BerTlv bTlv = tlvs.find(bTag);
             if (bTlv != null) {
-                log.debug("CODICE_FISCALE DELEGANTE: " + bTlv.getTextValue());
+                //log.debug("CODICE_FISCALE DELEGANTE: " + bTlv.getTextValue());
                 return bTlv.getTextValue();
             } else {
                 log.error("ResultCieChecker: {}", ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);

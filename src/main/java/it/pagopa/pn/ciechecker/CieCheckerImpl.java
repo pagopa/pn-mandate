@@ -1,12 +1,8 @@
 package it.pagopa.pn.ciechecker;
 
-import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
@@ -32,7 +28,6 @@ import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -45,23 +40,14 @@ import java.util.List;
 
 @lombok.CustomLog
 @NoArgsConstructor
+@Data
 @Service
 public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
     private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
 
-    @Setter
-    @Getter
     private List<X509Certificate> cscaAnchor;
-
-    private S3BucketClientImpl s3BucketClient;
-    private PnMandateConfig pnMandateConfig;
-
-
-//    public CieCheckerImpl(S3BucketClientImpl s3BucketClient, PnMandateConfig pnMandateConfig){
-//        this.s3BucketClient = s3BucketClient;
-//        this.pnMandateConfig= pnMandateConfig;
-//    }
+    private String ciecheckerCscaAnchorPathFilename;
 
     @Override
     public void init() throws CieCheckerException {
@@ -71,8 +57,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             Security.addProvider(new BouncyCastleProvider());
         }
 
-       // cscaAnchor = extractCscaAnchor(pnMandateConfig.getCscaAnchorPathFileName());
-        cscaAnchor = extractCscaAnchor(CSCA_ANCHOR_PATH_FILENAME); //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip");
+        String cscaPath = this.getCiecheckerCscaAnchorPathFilename();
+        log.debug("CSCA ANCHOR PATH: {}", cscaPath );
+        this.setCscaAnchor(extractCscaAnchor(cscaPath)); //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip");
+        log.debug("INIT - cscaAnchor SIZE: " + cscaAnchor.size());
     }
 
 

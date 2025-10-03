@@ -1,8 +1,8 @@
 package it.pagopa.pn.mandate.validation;
 
 import it.pagopa.pn.ciechecker.CieChecker;
-import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.CieCheckerInterface;
+import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
 @Slf4j
-//@TestPropertySource("classpath:application.properties")
+@TestPropertySource("classpath:application.properties")
 @ActiveProfiles("test")
 class CieCheckerTest {
 
@@ -112,11 +112,6 @@ class CieCheckerTest {
     void validateMandateTest() throws IOException {
         log.info("TEST validateMandateTest - INIT... ");
 
-        if(cieCheckerInterface.getCscaAnchor() == null) {
-            //cieChecker.setCscaAnchor(cieChecker.extractCscaAnchor());
-            log.debug("cscaAnchor SIZE: " + cieCheckerInterface.getCscaAnchor());
-        }
-        log.debug("cscaAnchor SIZE: " + cieCheckerInterface.getCscaAnchor().size());
         //log.info("DG11: " +validationData.getCieMrtd().getDg1());
         if(validationData.getCieMrtd().getDg1() == null )
             validationData.getCieMrtd().setDg1(Files.readAllBytes(dg1Files));
@@ -320,8 +315,8 @@ class CieCheckerTest {
     void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException {
         log.info("=== INIZIO TEST [" + tipo + "] ===");
         //if(cieChecker.getCscaAnchor() == null )
-        //    cieChecker.setCscaAnchor(cieChecker.extractCscaAnchor());
-        log.info("cscaAnchor 1: {}" , cieCheckerInterface.getCscaAnchor().size());
+        List<X509Certificate> cscaAnchor = cieCheckerInterface.extractCscaAnchor(CSCA_ANCHOR_PATH_FILENAME);
+        log.info("cscaAnchor 1: {}" , cscaAnchor.size());
         // caso ok
         CMSSignedData cms = new CMSSignedData(sodBytes);
         ResultCieChecker resultOk = cieCheckerInterface.verifyDigitalSignature(cms);

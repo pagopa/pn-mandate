@@ -16,6 +16,7 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.RevocationCause;
 import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
@@ -582,10 +583,16 @@ public class MandateDao extends BaseDao {
      *
      * @param delegatorInternaluserid internaluserid del delegante
      * @param mandateId               id della delega
+     * @param allowedSegregator       segregatore (utilizzato per filtrare la tipologia di delega sulla quale è permessa l'operazione)
      * @return void
      */
-    public Mono<MandateEntity> revokeMandate(String delegatorInternaluserid, String mandateId) {
-        String logMessage = String.format("revokeMandate for delegate uid=%s mandateid=%s", delegatorInternaluserid, mandateId);
+    public Mono<MandateEntity> revokeMandate(
+            String delegatorInternaluserid,
+            String mandateId,
+            TypeSegregatorFilter allowedSegregator,
+            RevocationCause cause
+    ) {
+        String logMessage = String.format("revokeMandate %s for delegate uid=%s mandateid=%s", cause.getLogSuffix(), delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
                 .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
@@ -600,10 +607,7 @@ public class MandateDao extends BaseDao {
                                 logEvent.generateFailure(String.format("revokeMandate skipped, mandate not found mandateid=%s", mandateId)).log();
                                 return CompletableFuture.completedFuture(mandate);
                             }
-                            if (!isMandateStandardSegregation(mandate)) {
-                                log.warn("mandate is not STANDARD segregation, throw error");
-                                return CompletableFuture.failedFuture(new PnMandateBadRequestException());
-                            }
+                            checkMandateSegregation(mandate, allowedSegregator);
                             log.info("revokeMandate mandate for delegate retrieved mandateobj={}", mandate);
                             if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                                     || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {
@@ -955,6 +959,13 @@ public class MandateDao extends BaseDao {
                 .toList();
     }
     //#endregion
+
+    private void checkMandateSegregation(MandateEntity mandate, TypeSegregatorFilter allowedSegregator) {
+        if (!allowedSegregator.isIncluded(mandate.getWorkflowType())) {
+            log.warn("mandate with workflowType {} does not respect {} segregation, throw error", mandate.getWorkflowType(), allowedSegregator.name());
+            throw new PnMandateBadRequestException();
+        }
+    }
 
    private boolean isMandateStandardSegregation(MandateEntity mandate) {
        return mandate.getWorkflowType() == null ||

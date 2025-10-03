@@ -28,10 +28,7 @@ import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
-import it.pagopa.pn.mandate.utils.AarQrUtils;
-import it.pagopa.pn.mandate.utils.DateUtils;
-import it.pagopa.pn.mandate.utils.PgUtils;
-import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
+import it.pagopa.pn.mandate.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.lang.Nullable;
@@ -604,7 +601,7 @@ public class MandateService {
             return Mono.error(new PnMandateNotFoundException());
         }
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
-                .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId))
+                .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId, TypeSegregatorFilter.STANDARD, RevocationCause.USER))
                 .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
                 .flatMap(entity -> {
                     if (Boolean.FALSE.equals(entity.getDelegateisperson())) {

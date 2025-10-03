@@ -13,14 +13,14 @@ import static it.pagopa.pn.mandate.middleware.db.entities.MandateEntity.COL_S_WO
 
 @Getter
 public enum TypeSegregatorFilter {
-    STANDARD(WorkFlowType.STANDARD, WorkFlowType.REVERSE) {
+    STANDARD(true, WorkFlowType.STANDARD, WorkFlowType.REVERSE) {
         @Override
         public String buildExpression(Map<String, AttributeValue> expressionValues) {
             return "(attribute_not_exists("+ COL_S_WORKFLOW_TYPE + ") OR " + super.buildExpression(expressionValues) + ")";
         }
     },
-    CIE(WorkFlowType.CIE),
-    ALL(WorkFlowType.values()) {
+    CIE(false, WorkFlowType.CIE),
+    ALL(true, WorkFlowType.values()) {
         @Override
         public String buildExpression(Map<String, AttributeValue> expressionValues) {
             return "(attribute_not_exists(" + COL_S_WORKFLOW_TYPE + ") OR " + super.buildExpression(expressionValues) + ")";
@@ -28,8 +28,10 @@ public enum TypeSegregatorFilter {
     }; // Include tutti i tipi di workflow;
 
     private final List<WorkFlowType> types;
+    private final boolean includesNull;
 
-    TypeSegregatorFilter(WorkFlowType... types) {
+    TypeSegregatorFilter(boolean includesNull, WorkFlowType... types) {
+        this.includesNull = includesNull;
         this.types = List.of(types);
     }
 
@@ -70,5 +72,20 @@ public enum TypeSegregatorFilter {
                     return COL_S_WORKFLOW_TYPE + " = " + paramName;
                 })
                 .collect(Collectors.joining(" OR "));
+    }
+
+    /**
+     * Verifica se un dato WorkFlowType è incluso nel filtro.
+     *
+     * @param workflowType il WorkFlowType da verificare
+     * @return true se il WorkFlowType è incluso nel filtro, false altrimenti
+     */
+    public boolean isIncluded(WorkFlowType workflowType) {
+        // Se il workflowType è null, controlla il flag 'includeNull'
+        if (workflowType == null) {
+            return this.includesNull;
+        }
+
+        return this.types.contains(workflowType);
     }
 }

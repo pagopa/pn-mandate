@@ -103,7 +103,6 @@ class CieCheckerTest {
         cMrtd.setDg11(dg11);
         validationData.setCieMrtd(cMrtd);
 
-        // Assertions.assertTrue(cieChecker.validateDataInput(validationData));
     }
 
 

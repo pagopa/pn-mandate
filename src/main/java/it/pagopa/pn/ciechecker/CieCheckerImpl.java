@@ -1,5 +1,6 @@
 package it.pagopa.pn.ciechecker;
 
+import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import lombok.*;
@@ -99,13 +100,13 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
             return result;
         }catch(CMSException cmse){
-            log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA.getValue());
+            log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, cmse.getClass().getName() + " Message: " + ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA.getValue());
             return ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA;
         }catch (CieCheckerException cce ) {
-            log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, cce.getResult().getValue());
+            log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, cce.getClass().getName() + " Message: " + cce.getResult().getValue());
             return cce.getResult();
         }catch (Exception e ) {
-            log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, e.getMessage());
+            log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, e.getClass().getName() + " Message: " + e.getMessage());
             //throw new CieCheckerException(ResultCieChecker.KO, e);
             return ResultCieChecker.KO;
         }
@@ -175,13 +176,13 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 return ResultCieChecker.OK;
             }
         }catch (IllegalArgumentException ie){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, IllegalArgumentException.class + " - Message: " + ie.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ie.getClass().getName() + " Message: " +  ie.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_PUBLICKEY, ie);
         }catch( CryptoException cre){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, CryptoException.class + " - Message: " + cre.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, cre.getClass().getName() + " - Message: " + cre.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CRYPTOGRAPHIC_OPERATION, cre);
         } catch (DecoderException de) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, DecoderException.class + " - Message: " + de.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, de.getClass().getName() + " - Message: " + de.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_HEX_BYTE, de);
        }
     }
@@ -272,10 +273,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 return true;
             }
         }catch(CMSException cmse){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, CMSException.class + " - Message: " + cmse.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, cmse.getClass().getName() +" - Message: " + cmse.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, cmse);
         } catch (Exception  e ){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, Exception.class + " - Message: " + e.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, e.getClass().getName() + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
@@ -303,10 +304,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
             return verifyIntegrityCore(mrtd.getSod(), dg1, dg11);
         } catch (CieCheckerException ce) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, CieCheckerException.class + " - Message: " + ce.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, ce.getClass().getName() + " - Message: " + ce.getMessage());
             throw new CieCheckerException(ce.getResult(), ce);
         } catch (Exception e) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, Exception.class + " - Message: " + e.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, e.getClass().getName() + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
@@ -383,7 +384,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.CIECHECKER_VERIFY_TRUST_CHAIN, "ResultCieChecker", result.getValue());
             return ValidateUtils.verifyDigitalSignature(cms);
         }catch(IOException ioe){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_TRUST_CHAIN, IOException.class + " - Message: " + ioe.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_TRUST_CHAIN, ioe.getClass().getName() + " - Message: " + ioe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION, ioe);
         }
     }
@@ -414,12 +415,16 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR);
         if(Objects.isNull(cscaAnchorPathFileName) || cscaAnchorPathFileName.isBlank()) {
             log.debug("la variabile 'pn.mandate.ciechecker.csca-anchor.pathFileName' nel property file IS NULL o BLANK");
-            cscaAnchorPathFileName =  CieCheckerConstants.CSCA_ANCHOR_PATH_FILENAME; //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
+            cscaAnchorPathFileName =  "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
+                    //CieCheckerConstants.CSCA_ANCHOR_PATH_FILENAME; //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
         }
         log.debug("Variable 'pn.mandate.ciechecker.csca-anchor.pathFileName': {}",cscaAnchorPathFileName);
         InputStream fileInputStream ;
         try {
             if (cscaAnchorPathFileName.startsWith(PROTOCOLLO_S3) ){
+
+                //fileInputStream = S3BucketClientImpl.getObjectContent(cscaAnchorPathFileName);
+
                 if(cscaAnchorPathFileName.endsWith(".zip") || cscaAnchorPathFileName.endsWith(".ZIP")) {
                     fileInputStream  = new FileInputStream(cscaAnchorPathFileName);//getContentCscaAnchorFile(cscaAnchorPathFileName);
                     return ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
@@ -436,7 +441,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             }
 
         }catch (IOException ioe) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR, IOException.class + " - Message: " + ioe.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR, ioe.getClass().getName() + " - Message: " + ioe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, ioe);
         }
     }

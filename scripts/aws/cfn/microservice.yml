@@ -294,8 +294,11 @@ Parameters:
   
   CscaSyncS3BucketPrefix:
     Type: String
-    Default: 'pn-mandate/csca-masterlist/masterlist.zip'
     Description: 'S3 bucket prefix for the CSCA Masterlist zip file'
+  
+  CieValidationCertS3Path:
+    Type: String
+    Description: "S3 path to the validation certificate (env-specific)."
 
 Resources:
 
@@ -334,7 +337,7 @@ Resources:
         ContainerEnvEntry9: !Sub 'PN_MANDATE_PENDINGDURATION=${PendingDuration}'
         ContainerEnvEntry10: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
         ContainerEnvEntry11: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
-        ContainerEnvEntry12: !Sub 'CSCA_MASTERLIST_S3_PATH=s3://pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/${CscaSyncS3BucketPrefix}'
+        ContainerEnvEntry12: !Sub 'CSCA_MASTERLIST_S3_PATH=s3://pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/${CieValidationCertS3Path}'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds

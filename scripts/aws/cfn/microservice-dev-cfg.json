@@ -11,6 +11,9 @@
     "EnhancedWebSecurityEnabled": "true",
     "MountEfs": "false",
     "PnCronAnalyzer": "-",
-    "WireTapLogActivation": "false"
+    "WireTapLogActivation": "false",
+    "CscaMasterlistUrl": "https://csca-ita.interno.gov.it/certificatiCSCA/IT_MasterListCSCA.zip",
+    "CscaSyncS3BucketPrefix": "pn-mandate/csca-masterlist/IT_MasterListCSCA.zip",
+    "CieValidationCertS3Path": "pn-mandate/csca-masterlist/IT_MasterListCSCA.zip"
   }
 }

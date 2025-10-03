@@ -59,7 +59,8 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
         String cscaPath = this.getCiecheckerCscaAnchorPathFilename();
         log.debug("CSCA ANCHOR PATH: {}", cscaPath );
-        this.setCscaAnchor(extractCscaAnchor(cscaPath)); //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip");
+        //this.setCscaAnchor(extractCscaAnchor(cscaPath)); //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip");
+        cscaAnchor = extractCscaAnchor(cscaPath);
         log.debug("INIT - cscaAnchor SIZE: " + cscaAnchor.size());
     }
 
@@ -271,10 +272,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 return true;
             }
         }catch(CMSException cmse){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, cmse.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, CMSException.class + " - Message: " + cmse.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, cmse);
         } catch (Exception  e ){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, e.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, Exception.class + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
@@ -302,10 +303,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
             return verifyIntegrityCore(mrtd.getSod(), dg1, dg11);
         } catch (CieCheckerException ce) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, ce.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, CieCheckerException.class + " - Message: " + ce.getMessage());
             throw new CieCheckerException(ce.getResult(), ce);
         } catch (Exception e) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, e.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, Exception.class + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
@@ -382,7 +383,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.CIECHECKER_VERIFY_TRUST_CHAIN, "ResultCieChecker", result.getValue());
             return ValidateUtils.verifyDigitalSignature(cms);
         }catch(IOException ioe){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_TRUST_CHAIN, ioe.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_TRUST_CHAIN, IOException.class + " - Message: " + ioe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION, ioe);
         }
     }
@@ -435,7 +436,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             }
 
         }catch (IOException ioe) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR, ioe.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR, IOException.class + " - Message: " + ioe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, ioe);
         }
     }

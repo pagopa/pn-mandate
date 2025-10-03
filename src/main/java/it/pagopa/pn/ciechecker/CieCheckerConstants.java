@@ -57,7 +57,7 @@ public class CieCheckerConstants {
     public static final String EXC_INVALID_CRYPTOGRAPHIC_OPERATION = "Unexpected or invalid state occurs during cryptographic operations";
     public static final String EXC_NOT_AVAILABLE_CRYPTOGRAPHIC_ALGORITHM ="The cryptographic algorithm is not available";
     public static final String EXC_NOT_AVAILABLE_SECURITY_PROVIDER ="The security provider is not available";
-    public static final String EXC_NOFOUND_DIGITAL_SIGNATURE ="No digital signature found in the SignedData structure";
+    //public static final String EXC_NOFOUND_DIGITAL_SIGNATURE ="No digital signature found in the SignedData structure";
     public static final String EXC_NOFOUND_SIGNER ="No signer found";
     public static final String EXC_NO_CMSTYPEDDATA = "Invalid or unavailable signed content";
     public static final String EXC_NO_SIGNERINFORMATIONSTORE ="SignerInformationStore is null";

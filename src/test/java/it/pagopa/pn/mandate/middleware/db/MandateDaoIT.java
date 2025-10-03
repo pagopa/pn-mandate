@@ -2001,7 +2001,7 @@ public class MandateDaoIT {
         }
 
         //When
-        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(d);
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId(), TypeSegregatorFilter.ALL).block(d);
 
 
         //Then
@@ -2026,7 +2026,7 @@ public class MandateDaoIT {
     }
 
     @Test
-    void revokeMandateCie_shouldThrowBadRequest() {
+    void revokeMandateCie_shouldThrowBadRequestIfWorkflowTypeIsNotIncludedInSegregator() {
         // Given
         MandateEntity cieMandate = newMandate(false);
         cieMandate.setWorkflowType(WorkFlowType.CIE);
@@ -2041,7 +2041,7 @@ public class MandateDaoIT {
         // When & Then
         Assertions.assertThrows(
             PnMandateBadRequestException.class,
-            () -> mandateDao.revokeMandate(cieMandate.getDelegator(), cieMandate.getMandateId()).block(d)
+            () -> mandateDao.revokeMandate(cieMandate.getDelegator(), cieMandate.getMandateId(), TypeSegregatorFilter.STANDARD).block(d)
         );
 
         // Cleanup
@@ -2065,11 +2065,11 @@ public class MandateDaoIT {
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
-        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(d);
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId(), TypeSegregatorFilter.STANDARD).block(d);
 
 
         //When
-        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId()).block(d);
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId(), TypeSegregatorFilter.STANDARD).block(d);
 
 
         //Then

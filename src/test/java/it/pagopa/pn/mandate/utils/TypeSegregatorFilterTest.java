@@ -71,4 +71,29 @@ class TypeSegregatorFilterTest {
         assertEquals(TypeSegregatorFilter.STANDARD, TypeSegregatorFilter.fromWorkflowType(null));
     }
 
+    @Test
+    void testIncludesNull() {
+        assertTrue(TypeSegregatorFilter.STANDARD.isIncludesNull());
+        assertFalse(TypeSegregatorFilter.CIE.isIncludesNull());
+        assertTrue(TypeSegregatorFilter.ALL.isIncludesNull());
+    }
+
+    @Test
+    void testIsIncluded() {
+        assertTrue(TypeSegregatorFilter.STANDARD.isIncluded(null));
+        assertTrue(TypeSegregatorFilter.STANDARD.isIncluded(WorkFlowType.STANDARD));
+        assertTrue(TypeSegregatorFilter.STANDARD.isIncluded(WorkFlowType.REVERSE));
+        assertFalse(TypeSegregatorFilter.STANDARD.isIncluded(WorkFlowType.CIE));
+
+        assertFalse(TypeSegregatorFilter.CIE.isIncluded(null));
+        assertFalse(TypeSegregatorFilter.CIE.isIncluded(WorkFlowType.STANDARD));
+        assertFalse(TypeSegregatorFilter.CIE.isIncluded(WorkFlowType.REVERSE));
+        assertTrue(TypeSegregatorFilter.CIE.isIncluded(WorkFlowType.CIE));
+
+        assertTrue(TypeSegregatorFilter.ALL.isIncluded(null));
+        assertTrue(TypeSegregatorFilter.ALL.isIncluded(WorkFlowType.STANDARD));
+        assertTrue(TypeSegregatorFilter.ALL.isIncluded(WorkFlowType.REVERSE));
+        assertTrue(TypeSegregatorFilter.ALL.isIncluded(WorkFlowType.CIE));
+    }
+
 }

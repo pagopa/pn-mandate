@@ -539,7 +539,7 @@ public class MandateService {
             return Mono.error(new PnMandateNotFoundException());
         }
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
-                .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId))
+                .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId, TypeSegregatorFilter.STANDARD))
                 .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
                 .flatMap(entity -> {
                     if (Boolean.FALSE.equals(entity.getDelegateisperson())) {

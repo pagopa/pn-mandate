@@ -1670,7 +1670,7 @@ class MandateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString()))
+        when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
                 .thenReturn(Mono.just(mandateEntity));
         when(pnDatavaultClient.deleteMandateById(Mockito.any()))
                 .thenReturn(Mono.just("").then());
@@ -1690,7 +1690,7 @@ class MandateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(mandateEntity));
+        when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString(), Mockito.any())).thenReturn(Mono.just(mandateEntity));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         Mono<Object> resp = mandateService.revokeMandate(mandateEntity.getMandateId(), mandateEntity.getDelegator(), CxTypeAuthFleet.PG, null, null);
@@ -1706,7 +1706,7 @@ class MandateServiceTest {
 
         when(sqsService.sendToDelivery(mandateEntity, EventType.MANDATE_REVOKED))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
-        when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString()))
+        when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
                 .thenReturn(Mono.just(mandateEntity));
         when(pnDatavaultClient.deleteMandateById(Mockito.any()))
                 .thenReturn(Mono.just("").then());
@@ -1726,7 +1726,7 @@ class MandateServiceTest {
         //Given
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
 
-        when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString())).thenReturn(Mono.just(mandateEntity));
+        when(mandateDao.revokeMandate(Mockito.anyString(), Mockito.anyString(), Mockito.any())).thenReturn(Mono.just(mandateEntity));
         when(pnDatavaultClient.deleteMandateById(Mockito.any())).thenReturn(Mono.empty());
 
         //When

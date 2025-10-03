@@ -4,10 +4,8 @@ const crypto = require('crypto');
 const proxyquire = require('proxyquire').noCallThru();
 const path = require('path');
 
-// Mock undici request module
-const undiciMock = {
-  request: sinon.stub()
-};
+// Mock global fetch
+let fetchStub;
 
 // Mock AWS service module
 const awsServiceMock = {
@@ -18,14 +16,9 @@ const awsServiceMock = {
 
 const eventHandlerPath = path.resolve(__dirname, '../app/eventHandler');
 
-// Load handler with injected mocks
-const { handler } = proxyquire(eventHandlerPath, {
-  'undici': undiciMock,
-  './awsService': awsServiceMock
-});
-
 describe('eventHandler', () => {
   let originalEnv;
+  let handler;
 
   beforeEach(() => {
     originalEnv = { ...process.env };
@@ -33,12 +26,21 @@ describe('eventHandler', () => {
     process.env.SHA256_SSM_PARAMETER_NAME = '/test/sha256';
     process.env.S3_BUCKET_NAME = 'test-bucket';
     process.env.S3_OBJECT_KEY = 'test/masterlist.zip';
+
+    // Mock global fetch
+    fetchStub = sinon.stub(global, 'fetch');
+
+    // Load handler with injected mocks
+    const handlerModule = proxyquire(eventHandlerPath, {
+      './awsService': awsServiceMock
+    });
+    handler = handlerModule.handler;
   });
 
   afterEach(() => {
     process.env = originalEnv;
     sinon.restore();
-    undiciMock.request.reset();
+    fetchStub.restore();
     awsServiceMock.getSsmParameter.reset();
     awsServiceMock.updateSsmParameter.reset();
     awsServiceMock.saveFileToS3.reset();
@@ -49,14 +51,13 @@ describe('eventHandler', () => {
       const fileContent = Buffer.from('existing content');
       const existingSha256 = crypto.createHash('sha256').update(fileContent).digest('hex');
       
-      undiciMock.request.resolves({
-        statusCode: 200,
-        body: { 
-          arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
-            fileContent.byteOffset, 
-            fileContent.byteOffset + fileContent.byteLength
-          )) 
-        }
+      fetchStub.resolves({
+        ok: true,
+        status: 200,
+        arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
+          fileContent.byteOffset, 
+          fileContent.byteOffset + fileContent.byteLength
+        ))
       });
 
       awsServiceMock.getSsmParameter.withArgs('/test/sha256').resolves(existingSha256);
@@ -74,14 +75,13 @@ describe('eventHandler', () => {
       const oldSha256 = 'old_hash_value';
       const newSha256 = crypto.createHash('sha256').update(fileContent).digest('hex');
       
-      undiciMock.request.resolves({
-        statusCode: 200,
-        body: { 
-          arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
-            fileContent.byteOffset, 
-            fileContent.byteOffset + fileContent.byteLength
-          )) 
-        }
+      fetchStub.resolves({
+        ok: true,
+        status: 200,
+        arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
+          fileContent.byteOffset, 
+          fileContent.byteOffset + fileContent.byteLength
+        ))
       });
 
       awsServiceMock.getSsmParameter.withArgs('/test/sha256').resolves(oldSha256);
@@ -100,14 +100,13 @@ describe('eventHandler', () => {
       const fileContent = Buffer.from('first download content');
       const newSha256 = crypto.createHash('sha256').update(fileContent).digest('hex');
       
-      undiciMock.request.resolves({
-        statusCode: 200,
-        body: { 
-          arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
-            fileContent.byteOffset, 
-            fileContent.byteOffset + fileContent.byteLength
-          )) 
-        }
+      fetchStub.resolves({
+        ok: true,
+        status: 200,
+        arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
+          fileContent.byteOffset, 
+          fileContent.byteOffset + fileContent.byteLength
+        ))
       });
 
       awsServiceMock.getSsmParameter.withArgs('/test/sha256').resolves(null);
@@ -125,49 +124,52 @@ describe('eventHandler', () => {
 
   describe('error scenarios', () => {
     it('should throw error when required environment variables are missing', async () => {
-      // Clear module cache before removing env variable
+      delete process.env.CSCA_MASTERLIST_URL;
+      
+      // Clear module cache
       Object.keys(require.cache).forEach(key => {
-        if (key.includes('eventHandler') || key.includes('env-var')) {
+        if (key.includes('eventHandler')) {
           delete require.cache[key];
         }
       });
       
-      delete process.env.CSCA_MASTERLIST_URL;
-      
       try {
         const { handler: freshHandler } = proxyquire(eventHandlerPath, {
-          'undici': undiciMock,
           './awsService': awsServiceMock
         });
         await freshHandler({}, {});
         expect.fail('Expected an error to be thrown');
       } catch (error) {
+        expect(error.message).to.include('Missing required environment variables');
         expect(error.message).to.include('CSCA_MASTERLIST_URL');
       }
     });
 
     it('should throw error when download fails with non-retryable status', async () => {
-      undiciMock.request.resolves({ statusCode: 404, body: {} });
+      fetchStub.resolves({ 
+        ok: false, 
+        status: 404,
+        text: () => Promise.resolve('Not Found')
+      });
 
       try {
         await handler({}, {});
         expect.fail('Expected an error to be thrown');
       } catch (error) {
-        expect(error.message).to.include("GET request failed with status code: 404");
-        expect(undiciMock.request.calledOnce).to.be.true;
+        expect(error.message).to.include("HTTP error! status: 404");
+        expect(fetchStub.calledOnce).to.be.true;
       }
     });
 
     it('should propagate AWS service errors', async () => {
       const fileContent = Buffer.from('test content');
-      undiciMock.request.resolves({
-        statusCode: 200,
-        body: { 
-          arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
-            fileContent.byteOffset, 
-            fileContent.byteOffset + fileContent.byteLength
-          )) 
-        }
+      fetchStub.resolves({
+        ok: true,
+        status: 200,
+        arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
+          fileContent.byteOffset, 
+          fileContent.byteOffset + fileContent.byteLength
+        ))
       });
 
       awsServiceMock.getSsmParameter.rejects(new Error('SSM access denied'));
@@ -184,15 +186,20 @@ describe('eventHandler', () => {
   describe('retry logic', () => {
     it('should retry on retryable status codes and succeed on second attempt', async () => {
       const fileContent = Buffer.from('success content');
-      undiciMock.request.onFirstCall().resolves({ statusCode: 500, body: {} });
-      undiciMock.request.onSecondCall().resolves({
-        statusCode: 200,
-        body: { 
-          arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
-            fileContent.byteOffset, 
-            fileContent.byteOffset + fileContent.byteLength
-          )) 
-        }
+      
+      fetchStub.onFirstCall().resolves({ 
+        ok: false, 
+        status: 500,
+        text: () => Promise.resolve('Internal Server Error')
+      });
+      
+      fetchStub.onSecondCall().resolves({
+        ok: true,
+        status: 200,
+        arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
+          fileContent.byteOffset, 
+          fileContent.byteOffset + fileContent.byteLength
+        ))
       });
 
       awsServiceMock.getSsmParameter.resolves(null);
@@ -202,13 +209,13 @@ describe('eventHandler', () => {
       const result = await handler({}, {});
 
       expect(result.status).to.equal('SUCCESS');
-      expect(undiciMock.request.calledTwice).to.be.true;
+      expect(fetchStub.calledTwice).to.be.true;
     });
 
     it('should fail after maximum retry attempts with retryable errors', async () => {
       const networkError = new Error('Connection reset');
       networkError.code = 'ECONNRESET';
-      undiciMock.request.rejects(networkError);
+      fetchStub.rejects(networkError);
 
       try {
         await handler({}, {});
@@ -216,8 +223,34 @@ describe('eventHandler', () => {
       } catch (error) {
         // Verify original error is thrown after max retries
         expect(error.message).to.equal('Connection reset');
-        expect(undiciMock.request.calledThrice).to.be.true;
+        expect(fetchStub.calledThrice).to.be.true;
       }
+    });
+
+    it('should retry on timeout errors', async () => {
+      const fileContent = Buffer.from('success after timeout');
+      
+      const timeoutError = new Error('The operation was aborted due to timeout');
+      timeoutError.name = 'AbortError';
+      
+      fetchStub.onFirstCall().rejects(timeoutError);
+      fetchStub.onSecondCall().resolves({
+        ok: true,
+        status: 200,
+        arrayBuffer: () => Promise.resolve(fileContent.buffer.slice(
+          fileContent.byteOffset, 
+          fileContent.byteOffset + fileContent.byteLength
+        ))
+      });
+
+      awsServiceMock.getSsmParameter.resolves(null);
+      awsServiceMock.updateSsmParameter.resolves();
+      awsServiceMock.saveFileToS3.resolves();
+
+      const result = await handler({}, {});
+
+      expect(result.status).to.equal('SUCCESS');
+      expect(fetchStub.calledTwice).to.be.true;
     });
   });
 });

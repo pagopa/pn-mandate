@@ -4,6 +4,15 @@ const crypto = require('crypto');
 const proxyquire = require('proxyquire').noCallThru();
 const path = require('path');
 
+// Polyfill fetch for Node.js < 18 (used in CodeBuild with Node 16)
+if (!global.fetch) {
+  const nodeFetch = require('node-fetch');
+  global.fetch = nodeFetch;
+  global.Headers = nodeFetch.Headers;
+  global.Request = nodeFetch.Request;
+  global.Response = nodeFetch.Response;
+}
+
 // Mock global fetch
 let fetchStub;
 

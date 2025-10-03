@@ -1,48 +1,33 @@
 const { ECSClient, UpdateServiceCommand } = require('@aws-sdk/client-ecs');
 
+// Client initialized outside the handler
 const ecsClient = new ECSClient();
 
-const updateEcsService = async () => {
-  const clusterName = process.env.ECS_CLUSTER_NAME;
-  const serviceName = process.env.ECS_SERVICE_NAME;
-
-  if (!clusterName || !serviceName) {
-    throw new Error('Missing required environment variables: ECS_CLUSTER_NAME, ECS_SERVICE_NAME');
-  }
-
+/**
+ * Triggers a forced redeployment of an ECS service.
+ * 
+ * @param {string} clusterName - The name of the ECS cluster.
+ * @param {string} serviceName - The name of the ECS service.
+ * @returns {Promise<object>} The ECS UpdateService response.
+ */
+async function updateEcsService(clusterName, serviceName) {
   const command = new UpdateServiceCommand({
     cluster: clusterName,
     service: serviceName,
     forceNewDeployment: true
   });
 
-  try {
-    const response = await ecsClient.send(command);
-    console.log('ECS service redeploy triggered successfully:', {
-      cluster: clusterName,
-      service: serviceName,
-      serviceArn: response.service.serviceArn,
-      deploymentId: response.service.deployments?.[0]?.id
-    });
-    
-    return {
-      statusCode: 200,
-      body: {
-        cluster: clusterName,
-        service: serviceName,
-        serviceArn: response.service.serviceArn,
-        message: 'ECS service redeploy triggered successfully'
-      }
-    };
-  } catch (error) {
-    console.error('Failed to trigger ECS redeploy:', {
-      cluster: clusterName,
-      service: serviceName,
-      error: error.message,
-      errorCode: error.name
-    });
-    throw error;
-  }
-};
+  const response = await ecsClient.send(command);
+  
+  console.log('ECS UpdateService command executed successfully', {
+    serviceArn: response.service.serviceArn,
+    status: response.service.status,
+    desiredCount: response.service.desiredCount
+  });
 
-module.exports = { updateEcsService };
+  return response;
+}
+
+module.exports = {
+  updateEcsService
+};

@@ -16,6 +16,7 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.RevocationCause;
 import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
@@ -585,8 +586,13 @@ public class MandateDao extends BaseDao {
      * @param allowedSegregator       segregatore (utilizzato per filtrare la tipologia di delega sulla quale è permessa l'operazione)
      * @return void
      */
-    public Mono<MandateEntity> revokeMandate(String delegatorInternaluserid, String mandateId, TypeSegregatorFilter allowedSegregator) {
-        String logMessage = String.format("revokeMandate for delegate uid=%s mandateid=%s", delegatorInternaluserid, mandateId);
+    public Mono<MandateEntity> revokeMandate(
+            String delegatorInternaluserid,
+            String mandateId,
+            TypeSegregatorFilter allowedSegregator,
+            RevocationCause cause
+    ) {
+        String logMessage = String.format("revokeMandate %s for delegate uid=%s mandateid=%s", cause.getLogSuffix(), delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
                 .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)

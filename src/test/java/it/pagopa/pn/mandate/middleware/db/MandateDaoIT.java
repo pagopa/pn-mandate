@@ -17,6 +17,7 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.RevocationCause;
 import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -2001,7 +2002,7 @@ public class MandateDaoIT {
         }
 
         //When
-        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId(), TypeSegregatorFilter.ALL).block(d);
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId(), TypeSegregatorFilter.ALL, RevocationCause.USER).block(d);
 
 
         //Then
@@ -2041,7 +2042,7 @@ public class MandateDaoIT {
         // When & Then
         Assertions.assertThrows(
             PnMandateBadRequestException.class,
-            () -> mandateDao.revokeMandate(cieMandate.getDelegator(), cieMandate.getMandateId(), TypeSegregatorFilter.STANDARD).block(d)
+            () -> mandateDao.revokeMandate(cieMandate.getDelegator(), cieMandate.getMandateId(), TypeSegregatorFilter.STANDARD, RevocationCause.USER).block(d)
         );
 
         // Cleanup
@@ -2065,11 +2066,11 @@ public class MandateDaoIT {
         } catch (Exception e) {
             System.out.println("Nothing to remove");
         }
-        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId(), TypeSegregatorFilter.STANDARD).block(d);
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId(), TypeSegregatorFilter.STANDARD, RevocationCause.USER).block(d);
 
 
         //When
-        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId(), TypeSegregatorFilter.STANDARD).block(d);
+        mandateDao.revokeMandate(mandateToInsert.getDelegator(), mandateToInsert.getMandateId(), TypeSegregatorFilter.STANDARD, RevocationCause.USER).block(d);
 
 
         //Then

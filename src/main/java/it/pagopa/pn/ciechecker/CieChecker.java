@@ -8,5 +8,5 @@ public interface CieChecker {
 
     void init() throws CieCheckerException;
 
-    ResultCieChecker validateMandate(CieValidationData data) throws CieCheckerException;
+    ResultCieChecker validateMandate(CieValidationData data);
 }

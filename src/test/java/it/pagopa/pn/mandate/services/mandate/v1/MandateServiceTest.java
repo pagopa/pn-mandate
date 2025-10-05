@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
@@ -35,6 +36,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -53,6 +57,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -1917,7 +1922,6 @@ class MandateServiceTest {
     @Test
     void createMandateAppIo_success() {
         // Given
-        String xPagopaPnUid = "uid";
         String xPagopaPnCxId = "PF-f271e4bf-0d69-4ed6-a39f-4ef2delegate";
         String lollipopUserName = "John";
         String lollipopUserFamilyName = "Doe";
@@ -1965,7 +1969,6 @@ class MandateServiceTest {
 
         // When
         MandateCreationResponse result = mandateService.createMandateAppIo(
-                xPagopaPnUid,
                 xPagopaPnCxId,
                 lollipopUserName,
                 lollipopUserFamilyName,
@@ -1987,6 +1990,32 @@ class MandateServiceTest {
         verify(mandateEntityAppIoMandateDtoMapper).toDto(entity);
     }
 
+    @ParameterizedTest
+    @MethodSource("provideInvalidDelegateData")
+    void createMandateAppIo_shouldReturn500_whenDelegateNameOrFamilyNameIsMissingOrEmpty(String lollipopUserName, String lollipopUserFamilyName) {
+        // Given
+        MandateCreationRequest request = new MandateCreationRequest();
+        request.setAarQrCodeValue("qrCodeValue");
+
+        Mono<MandateCreationResponse> result = mandateService.createMandateAppIo(
+                "cxId", lollipopUserName, lollipopUserFamilyName, it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)
+        );
+
+        StepVerifier.create(result)
+                .expectError(PnInternalException.class)
+                .verify();
+    }
+
+    private static Stream<Arguments> provideInvalidDelegateData() {
+        return Stream.of(
+                Arguments.of("", "Doe"),
+                Arguments.of(" ", "Doe"),
+                Arguments.of(null, "Doe"),
+                Arguments.of("John", ""),
+                Arguments.of("John", " "),
+                Arguments.of("John", null)
+        );
+    }
 
     @Test
     void createMandateAppIo_shouldReturn500_whenInternalError() {
@@ -2016,7 +2045,7 @@ class MandateServiceTest {
                 .thenReturn(Mono.error(new RuntimeException("Internal error")));
 
         Mono<MandateCreationResponse> result = mandateService.createMandateAppIo(
-                "uid", "cxId", "John", "Doe", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)
+                "cxId", "John", "Doe", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)
         );
 
         StepVerifier.create(result)

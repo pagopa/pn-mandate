@@ -2055,8 +2055,9 @@ class MandateServiceTest {
 
     @Test
     void acceptMandateAppIo_success() {
+        String mandateId = "mid";
         MandateEntity entity = new MandateEntity();
-        entity.setMandateId("mid");
+        entity.setMandateId(mandateId);
         entity.setDelegator("delegatorId");
         entity.setWorkflowType(WorkFlowType.CIE);
         entity.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING));
@@ -2066,7 +2067,7 @@ class MandateServiceTest {
         entity.setValidto(Instant.now());
 
 
-        when(mandateDao.retrieveMandateForDelegate("cxId", "mid")).thenReturn(Mono.just(entity));
+        when(mandateDao.retrieveMandateForDelegate("cxId", mandateId)).thenReturn(Mono.just(entity));
         when(pnDatavaultClient.getRecipientDenominationByInternalId(List.of("delegatorId")))
                 .thenReturn(Flux.just(new BaseRecipientDtoDto().taxId("TAXID")));
         when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(5));
@@ -2075,7 +2076,7 @@ class MandateServiceTest {
         doNothing().when(cieCheckerAdapter).validateCie(any(), any(), any());
 
         StepVerifier.create(mandateService.acceptMandateAppIo(
-                        "cxId", null, "TAXID", "mid", null, null, Mono.just(new CIEValidationData())))
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
                 .verifyComplete();
     }
 
@@ -2085,15 +2086,16 @@ class MandateServiceTest {
         when(mandateDao.retrieveMandateForDelegate(anyString(), anyString())).thenReturn(Mono.empty());
 
         StepVerifier.create(mandateService.acceptMandateAppIo(
-                        "cxId", null, null, "mandateId", null, null, Mono.just(new CIEValidationData())))
+                        "cxId", null, "mandateId", Mono.just(new CIEValidationData())))
                 .expectError(PnMandateNotFoundException.class)
                 .verify();
     }
 
     @Test
     void acceptMandateAppIo_error_workflowTypeNotCIE() {
+        String mandateId = "mid";
         MandateEntity entity = new MandateEntity();
-        entity.setMandateId("mid");
+        entity.setMandateId(mandateId);
         entity.setDelegator("delegatorId");
         entity.setWorkflowType(WorkFlowType.STANDARD);
         entity.setState(10);
@@ -2106,16 +2108,16 @@ class MandateServiceTest {
         when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(5));
 
         StepVerifier.create(mandateService.acceptMandateAppIo(
-                        "cxId", null, null, "mid", null, null, Mono.just(new CIEValidationData())))
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
                 .expectErrorSatisfies(throwable -> assertThat(throwable).isInstanceOf(PnMandateBadRequestException.class))
                 .verify();
     }
 
-
     @Test
     void acceptMandateAppIo_error_statusNotPending() {
+        String mandateId = "mid";
         MandateEntity entity = new MandateEntity();
-        entity.setMandateId("mid");
+        entity.setMandateId(mandateId);
         entity.setWorkflowType(WorkFlowType.CIE);
         entity.setState(20); // State 10 is PENDING
         entity.setCreated(Instant.now());
@@ -2131,7 +2133,7 @@ class MandateServiceTest {
         when(mandateDao.save(any(MandateEntity.class))).thenReturn(Mono.just(new MandateEntity()));
 
         StepVerifier.create(mandateService.acceptMandateAppIo(
-                        "cxId", null, null, "mid", null, null, Mono.just(new CIEValidationData())))
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
                 .expectErrorSatisfies(throwable -> assertThat(throwable).isInstanceOf(PnMandateBadRequestException.class))
                 .verify();
     }
@@ -2139,8 +2141,9 @@ class MandateServiceTest {
 
     @Test
     void acceptMandateAppIo_error_mandateExpired() {
+        String mandateId = "mid";
         MandateEntity entity = new MandateEntity();
-        entity.setMandateId("mid");
+        entity.setMandateId(mandateId);
         entity.setWorkflowType(WorkFlowType.CIE);
         entity.setState(10);
         entity.setCreated(Instant.now().minus(Duration.ofHours(2)));
@@ -2155,7 +2158,7 @@ class MandateServiceTest {
         when(mandateDao.save(any(MandateEntity.class))).thenReturn(Mono.just(new MandateEntity()));
 
         StepVerifier.create(mandateService.acceptMandateAppIo(
-                        "cxId", null, null, "mid", null, null, Mono.just(new CIEValidationData())))
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
                 .expectErrorSatisfies(throwable -> {
                     // Il test ora fallirà con l'eccezione corretta
                     assertThat(throwable).isInstanceOf(PnMandateNotFoundException.class);
@@ -2165,8 +2168,9 @@ class MandateServiceTest {
 
     @Test
     void acceptMandateAppIo_error_delegateTaxIdNotFound() {
+        String mandateId = "mid";
         MandateEntity entity = new MandateEntity();
-        entity.setMandateId("mid");
+        entity.setMandateId(mandateId);
         entity.setWorkflowType(WorkFlowType.CIE);
         entity.setState(20);
         entity.setCreated(Instant.now());
@@ -2177,15 +2181,16 @@ class MandateServiceTest {
                 .thenReturn(Flux.empty());
 
         StepVerifier.create(mandateService.acceptMandateAppIo(
-                        "cxId", null, null, "mid", null, null, Mono.just(new CIEValidationData())))
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
                 .expectError(PnInternalException.class)
                 .verify();
     }
 
     @Test
     void acceptMandateAppIo_error_cieCheckerThrows() {
+        String mandateId = "mid";
         MandateEntity entity = new MandateEntity();
-        entity.setMandateId("mid");
+        entity.setMandateId(mandateId);
         entity.setWorkflowType(WorkFlowType.CIE);
         entity.setState(20);
         entity.setCreated(Instant.now());
@@ -2199,15 +2204,16 @@ class MandateServiceTest {
         doThrow(new RuntimeException("CIE error")).when(cieCheckerAdapter).validateCie(any(), any(), any());
 
         StepVerifier.create(mandateService.acceptMandateAppIo(
-                        "cxId", null, null, "mid", null, null, Mono.just(new CIEValidationData())))
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
                 .expectError(RuntimeException.class)
                 .verify();
     }
 
     @Test
     void acceptMandateAppIo_error_revokeMandateForInvalidVerificationCode() {
+        String mandateId = "mid";
         MandateEntity entity = new MandateEntity();
-        entity.setMandateId("mid");
+        entity.setMandateId(mandateId);
         entity.setWorkflowType(WorkFlowType.CIE);
         entity.setState(20);
         entity.setCreated(Instant.now());
@@ -2223,7 +2229,7 @@ class MandateServiceTest {
         doThrow(new PnInvalidVerificationCodeException()).when(cieCheckerAdapter).validateCie(any(), any(), any());
 
         StepVerifier.create(mandateService.acceptMandateAppIo(
-                        "cxId", null, null, "mid", null, null, Mono.just(new CIEValidationData())))
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
                 .expectError(PnInvalidVerificationCodeException.class)
                 .verify();
     }

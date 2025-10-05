@@ -211,14 +211,11 @@ public class MandateService {
      *
      * @param xPagopaPnCxId         cxId del delegato
      * @param xPagopaPnCxType       tipologia del delegato (PF/PG)
-     * @param xPagopaCxTaxid        taxId del delegato
      * @param mandateId             id della delega
-     * @param xPagopaPnCxGroups     gruppi a cui appartiene l'utente
-     * @param xPagopaPnCxRole       ruolo dell'utente
      * @param ciEValidationData     dati per la validazione CIE
      * @return void
      */
-    public Mono<Void> acceptMandateAppIo(String xPagopaPnCxId, it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType, String xPagopaCxTaxid, String mandateId, List<String> xPagopaPnCxGroups, String xPagopaPnCxRole, Mono<CIEValidationData> ciEValidationData){
+    public Mono<Void> acceptMandateAppIo(String xPagopaPnCxId, it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType, String mandateId, Mono<CIEValidationData> ciEValidationData){
         String logMessage = String.format("Start acceptMandateAppIo - mandateId: %s, xPagopaPnCxId: %s, xPagopaPnCxType: %s", mandateId, xPagopaPnCxId, xPagopaPnCxType);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)

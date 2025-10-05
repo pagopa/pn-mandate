@@ -55,23 +55,20 @@ class MandateAppIoControllerTest {
     void testAcceptIOMandate() {
         String cxId = "testCxId";
         CxTypeAuthFleet cxType = CxTypeAuthFleet.PA;
-        String cxTaxId = "testTaxId";
         String mandateId = "mandateId";
-        List<String> cxGroups = List.of("group1", "group2");
-        String cxRole = "role";
         CIEValidationData cieValidationData = new CIEValidationData();
 
-        when(mandateService.acceptMandateAppIo(anyString(), any(), anyString(), anyString(), anyList(), anyString(), any()))
+        when(mandateService.acceptMandateAppIo(anyString(), any(), anyString(), any()))
                 .thenReturn(Mono.empty());
 
         Mono<ResponseEntity<Void>> result = controller.acceptIOMandate(
-                cxId, cxType, cxTaxId, mandateId, cxGroups, cxRole, Mono.just(cieValidationData), mock(ServerWebExchange.class)
+                cxId, cxType, mandateId, Mono.just(cieValidationData), mock(ServerWebExchange.class)
         );
 
         StepVerifier.create(result)
                 .expectNextMatches(entity -> entity.getStatusCode().is2xxSuccessful() && entity.getStatusCodeValue() == 204)
                 .verifyComplete();
 
-        verify(mandateService).acceptMandateAppIo(eq(cxId), eq(cxType), eq(cxTaxId), eq(mandateId), eq(cxGroups), eq(cxRole), any());
+        verify(mandateService).acceptMandateAppIo(eq(cxId), eq(cxType), eq(mandateId), any());
     }
 }

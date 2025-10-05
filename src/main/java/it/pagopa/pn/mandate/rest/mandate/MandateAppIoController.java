@@ -22,8 +22,8 @@ public class MandateAppIoController implements AppIoPnMandateCreateApi {
     private final MandateService mandateService;
 
     @Override
-    public Mono<ResponseEntity<Void>> acceptIOMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String xPagopaCxTaxid, String mandateId, List<String> xPagopaPnCxGroups, String xPagopaPnCxRole, Mono<CIEValidationData> ciEValidationData, ServerWebExchange exchange) {
-        return mandateService.acceptMandateAppIo(xPagopaPnCxId,xPagopaPnCxType,xPagopaCxTaxid,mandateId,xPagopaPnCxGroups,xPagopaPnCxRole,ciEValidationData)
+    public Mono<ResponseEntity<Void>> acceptIOMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String mandateId, Mono<CIEValidationData> ciEValidationData,  final ServerWebExchange exchange) {
+        return mandateService.acceptMandateAppIo(xPagopaPnCxId, xPagopaPnCxType, mandateId, ciEValidationData)
                 .thenReturn(ResponseEntity.noContent().build());
     }
 

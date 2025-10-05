@@ -5,6 +5,6 @@ import org.springframework.http.HttpStatus;
 
 public class PnInvalidCieDataException extends PnRuntimeException {
     public PnInvalidCieDataException(String detail, String code) {
-        super("CIE Data", "I dati CIE sono invalidi", HttpStatus.UNPROCESSABLE_ENTITY.value(), code, null, detail);
+        super("CIE Data validation error", "CIE Data Validation Failed: Client-side issue encountered", HttpStatus.UNPROCESSABLE_ENTITY.value(), code, null, detail);
     }
 }

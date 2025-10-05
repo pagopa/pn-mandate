@@ -11,8 +11,8 @@ public class PnMandateNotFoundException extends PnRuntimeException {
     public PnMandateNotFoundException() {
         super("Delega non presente", "Non è stata trovata nessuna delega valida", HttpStatus.NOT_FOUND.value(), ERROR_CODE_MANDATE_NOT_FOUND, null, null);
     }
-    public PnMandateNotFoundException(@NotNull String message, @NotNull String description, int status, @NotNull String errorcode, String detail) {
-        super(message, description, status, errorcode, null, detail);
+    public PnMandateNotFoundException(@NotNull String message, @NotNull String description, @NotNull String errorcode) {
+        super(message, description, HttpStatus.NOT_FOUND.value(), errorcode, null, null);
     }
 
 }

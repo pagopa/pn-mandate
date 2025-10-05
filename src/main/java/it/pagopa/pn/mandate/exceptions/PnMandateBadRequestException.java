@@ -10,7 +10,12 @@ public class PnMandateBadRequestException extends PnRuntimeException {
     public PnMandateBadRequestException( ) {
         super("Richiesta non valida", "La richiesta effettuata non è valida", HttpStatus.BAD_REQUEST.value(),ERROR_CODE_MANDATE_BAD_REQUEST,null, null);
     }
-    public PnMandateBadRequestException(@NotNull String message, @NotNull String description, int status, @NotNull String errorcode, String detail) {
-        super(message, description, status, errorcode, null, null);
+
+    public PnMandateBadRequestException(@NotNull String message, @NotNull String description, @NotNull String errorcode) {
+        super(message, description, HttpStatus.BAD_REQUEST.value(), errorcode, null, null);
+    }
+
+    public PnMandateBadRequestException(@NotNull String message, @NotNull String description, @NotNull String errorcode, String detail) {
+        super(message, description, HttpStatus.BAD_REQUEST.value(), errorcode, null, detail);
     }
 }

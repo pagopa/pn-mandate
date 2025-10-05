@@ -142,6 +142,22 @@ Parameters:
     Type: String
     Description: 'Durata del pending massima oltre il quale la delega non accettata scade'
 
+  CiePendingDuration:
+    Type: String
+    Description: 'Durata del pending massima oltre il quale la delega creata con AppIO non accettata scade'
+
+  CieValidToDuration:
+    Type: String
+    Description: 'Durata della validità della delega creata con AppIO (impostata nel processo di accettazione)'
+
+  RevokeCieMandateOnVerificationFailure:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: 'Se true, la revoca della delega CIE viene effettuata automaticamente in caso di nonce incongruente rispetto al validationCode della delega'
+
   PnMandateExpiredTriggerLambdaEventSourceMappingBatchSize:
     Type: String
     Description: 'BatchSize stream mapping'
@@ -325,7 +341,8 @@ Resources:
         ContainerEnvEntry11: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
         ContainerEnvEntry12: !Sub 'PN_MANDATE_CLIENT_DELIVERY_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
         ContainerEnvEntry13: !Sub 'PN_MANDATE_CIEPENDINGDURATION=${CiePendingDuration}'
-        ContainerEnvEntry21: !Sub 'PN_MANDATE_CIEVALIDTODURATION=${CieValidToDuration}'
+        ContainerEnvEntry14: !Sub 'PN_MANDATE_CIEVALIDTODURATION=${CieValidToDuration}'
+        ContainerEnvEntry15: !Sub 'PN_MANDATE_REVOKECIEMANDATEONVERIFICATIONFAILURE=${RevokeCieMandateOnVerificationFailure}'
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds

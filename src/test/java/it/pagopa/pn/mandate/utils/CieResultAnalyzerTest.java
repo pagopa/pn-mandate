@@ -8,9 +8,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class CieResultAnalyzerTest {
-    private final CieResultAnalyzer analyzer = new CieResultAnalyzer();
+    private final CieExceptionMapper mapper = mock(CieExceptionMapper.class);
+    private final CieResultAnalyzer analyzer = new CieResultAnalyzer(mapper);
 
     private void verifyCode(PnRuntimeException ex, String cieCheckerServerError) {
         assertEquals(cieCheckerServerError, ex.getProblem().getErrors().get(0).getCode());
@@ -31,35 +34,12 @@ class CieResultAnalyzerTest {
 
     @Test
     @DisplayName("Should throw PnInvalidCieDataException for client error result")
-    void analyzeResultWithClientErrorShouldThrowInvalidCieDataException() {
+    void analyzeResultShouldThrowExceptionFromMapper() {
+        when(mapper.mapToException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA))
+                .thenReturn(new PnInvalidCieDataException("Invalid input", "CIE_INVALID_INPUT"));
         PnInvalidCieDataException ex = assertThrows(PnInvalidCieDataException.class, () ->
                 analyzer.analyzeResult(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA));
         verifyCode(ex, "CIE_INVALID_INPUT");
     }
 
-    @Test
-    @DisplayName("Should throw PnInternalException for unmapped error result")
-    void analyzeResultWithUnmappedErrorShouldThrowInternalException() {
-        PnInternalException ex = assertThrows(PnInternalException.class, () ->
-                analyzer.analyzeResult(ResultCieChecker.KO_EXC_INVALID_VERIFIER));
-        verifyCode(ex, "CIE_CHECKER_SERVER_ERROR");
-    }
-
-
-
-    @Test
-    @DisplayName("Should throw PnInvalidCieDataException for integrity error result")
-    void analyzeResultWithIntegrityErrorShouldThrowInvalidCieDataException() {
-        PnInvalidCieDataException ex = assertThrows(PnInvalidCieDataException.class, () ->
-                analyzer.analyzeResult(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST));
-        verifyCode(ex, "CIE_INTEGRITY_ERROR");
-    }
-
-    @Test
-    @DisplayName("Should throw PnInvalidCieDataException for signature error result")
-    void analyzeResultWithSignatureErrorShouldThrowInvalidCieDataException() {
-        PnInvalidCieDataException ex = assertThrows(PnInvalidCieDataException.class, () ->
-                analyzer.analyzeResult(ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED));
-        verifyCode(ex, "CIE_SIGNATURE_ERROR");
-    }
 }

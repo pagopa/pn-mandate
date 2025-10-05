@@ -4,6 +4,7 @@ import it.pagopa.pn.ciechecker.model.CieValidationData;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CIEValidationData;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MRTDData;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.NISData;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -13,41 +14,35 @@ class CieCheckerAdapterMapperTest {
     private final CieCheckerAdapterMapper mapper = new CieCheckerAdapterMapper();
 
     @Test
-    void mapToLibDto_shouldMapAllFieldsCorrectly() {
-        // Arrange
+    @DisplayName("Should correctly map valid input data to library DTO")
+    void mapToLibDtoWithValidInputShouldMapFieldsCorrectly() {
         NISData nisData = new NISData();
-        nisData.setNis("nisValue");
-        nisData.setSod("sodValue");
-        nisData.setPubKey("pubKeyValue");
-
+        nisData.setNis("dGVzdA==");
+        nisData.setSod("c29k");
+        nisData.setPubKey("cHVia2V5");
         MRTDData mrtdData = new MRTDData();
-        mrtdData.setSod("mrtdSod");
-        mrtdData.setDg1("mrtdDg1");
-        mrtdData.setDg11("mrtdDg11");
-
+        mrtdData.setSod("bXJ0ZFNvZA==");
+        mrtdData.setDg1("ZGcx");
+        mrtdData.setDg11("ZGcxMQ==");
         CIEValidationData input = new CIEValidationData();
         input.setNisData(nisData);
         input.setMrtdData(mrtdData);
-        input.setSignedNonce("signedNonceValue");
+        input.setSignedNonce("c2lnbmVkTm9uY2U=");
 
-        String nonce = "testNonce";
-        String delegatorTaxId = "delegatorTaxId";
+        String nonce = "nonceValue";
+        String delegatorTaxId = "ABCDEF12G34H567I";
 
-        // Act
         CieValidationData result = mapper.mapToLibDto(input, nonce, delegatorTaxId);
 
-        // Assert
         assertNotNull(result);
-        assertNotNull(result.getCieIas());
-        assertNotNull(result.getCieMrtd());
-        assertArrayEquals("nisValue".getBytes(), result.getCieIas().getNis());
-        assertArrayEquals("sodValue".getBytes(), result.getCieIas().getSod());
-        assertArrayEquals("pubKeyValue".getBytes(), result.getCieIas().getPublicKey());
+        assertEquals(nonce, result.getNonce());
+        assertEquals(delegatorTaxId, result.getCodFiscDelegante());
+        assertArrayEquals("test".getBytes(), result.getCieIas().getNis());
+        assertArrayEquals("sod".getBytes(), result.getCieIas().getSod());
+        assertArrayEquals("pubkey".getBytes(), result.getCieIas().getPublicKey());
         assertArrayEquals("mrtdSod".getBytes(), result.getCieMrtd().getSod());
-        assertArrayEquals("mrtdDg1".getBytes(), result.getCieMrtd().getDg1());
-        assertArrayEquals("mrtdDg11".getBytes(), result.getCieMrtd().getDg11());
-        assertArrayEquals("signedNonceValue".getBytes(), result.getSignedNonce());
-        assertEquals("746573744e6f6e6365", result.getNonce()); // "testNonce" in hex
-        assertEquals("delegatorTaxId", result.getCodFiscDelegante());
+        assertArrayEquals("dg1".getBytes(), result.getCieMrtd().getDg1());
+        assertArrayEquals("dg11".getBytes(), result.getCieMrtd().getDg11());
+        assertArrayEquals("signedNonce".getBytes(), result.getSignedNonce());
     }
 }

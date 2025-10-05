@@ -9,6 +9,8 @@
     "AutoscalingThreshold": "1300",
     "PendingDuration": "15m",
     "CiePendingDuration": "15m",
+    "CieValidToDuration": "15m",
+    "RevokeCieMandateOnVerificationFailure": "false",
     "EnhancedWebSecurityEnabled": "true",
     "MountEfs": "false",
     "PnCronAnalyzer": "-",

@@ -52,7 +52,7 @@ class Base64ValidatorTest {
         cieValidationData.setSignedNonce("c2lnbmVkTm9uY2U=");
 
         PnMandateBadRequestException ex = assertThrows(PnMandateBadRequestException.class, () -> validator.validateCieValidationData(cieValidationData));
-        checkExceptionDetails(ex, "Invalid Base64 encoding in field: NIS");
+        checkExceptionDetails(ex, "Invalid Base64 encoding in field: nisData.nis");
     }
 
     @Test
@@ -72,7 +72,7 @@ class Base64ValidatorTest {
         cieValidationData.setSignedNonce("c2lnbmVkTm9uY2U=");
 
         PnMandateBadRequestException ex = assertThrows(PnMandateBadRequestException.class, () -> validator.validateCieValidationData(cieValidationData));
-        checkExceptionDetails(ex, "Missing or empty field: NIS");
+        checkExceptionDetails(ex, "Missing or empty field: nisData.nis");
     }
 
     @Test
@@ -92,7 +92,7 @@ class Base64ValidatorTest {
         cieValidationData.setSignedNonce("c2lnbmVkTm9uY2U=");
 
         PnMandateBadRequestException ex = assertThrows(PnMandateBadRequestException.class, () -> validator.validateCieValidationData(cieValidationData));
-        checkExceptionDetails(ex, "Missing or empty field: NIS");
+        checkExceptionDetails(ex, "Missing or empty field: nisData.nis");
     }
 
 }

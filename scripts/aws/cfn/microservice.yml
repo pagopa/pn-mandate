@@ -709,3 +709,11 @@ Resources:
       Principal: "scheduler.amazonaws.com"
       SourceArn: !GetAtt CscaMasterlistSyncSchedule.Arn
       SourceAccount: !Ref AWS::AccountId
+  
+  CscaMasterlistSyncAlarms:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/lambda-alarms.yaml"
+      Parameters:
+        FunctionName: !Ref CscaMasterlistSync
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn

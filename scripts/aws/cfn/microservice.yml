@@ -284,6 +284,12 @@ Parameters:
   IOBackendCidrs:
     Type: String
     Default: ''
+
+  ApplicativeEnvFileChecksum:
+    Type: String
+    Default: ''
+    Description: 'Applicative environment variable file checksum'
+
   IsLollipopActive:
     Type: String
     Description: "lollipop authorization activation flag"
@@ -365,6 +371,7 @@ Resources:
         ContainerEnvEntry18: !Sub "LOLLIPOP_IDP_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopIdpRestConfigConnectionTimeout}"
         ContainerEnvEntry19: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_READ_TIMEOUT=${LollipopAssertionRestConfigReadTimeout}"
         ContainerEnvEntry20: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopAssertionRestConfigConnectionTimeout}"
+        ApplicativeEnvFileChecksum: !Ref ApplicativeEnvFileChecksum
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds

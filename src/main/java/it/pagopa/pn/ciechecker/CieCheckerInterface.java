@@ -19,4 +19,5 @@ public interface CieCheckerInterface {
     void setCscaAnchor(List<X509Certificate> cscaAnchor);
     List<X509Certificate> getCscaAnchor();
     ResultCieChecker verifyCodFiscDelegante (CieValidationData data ) throws CieCheckerException;
+    ResultCieChecker verifyExpirationCie (byte[] dg1byte ) throws CieCheckerException;
 }

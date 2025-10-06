@@ -7,7 +7,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {
+		"it.pagopa.pn.mandate",
+		"it.pagopa.pn.ciechecker"
+})
 public class MandateApplication {
 
 	public static void main(String[] args) {

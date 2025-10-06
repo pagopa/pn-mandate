@@ -3,6 +3,7 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 import it.pagopa.pn.api.dto.events.EventType;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.ValidateUtils;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CIEValidationData;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
@@ -30,6 +31,7 @@ import it.pagopa.pn.mandate.model.PageResultDto;
 import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.AarQrUtils;
+import it.pagopa.pn.mandate.utils.Base64Validator;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.junit.jupiter.api.Assertions;
@@ -59,6 +61,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -122,11 +125,35 @@ class MandateServiceTest {
     @Mock
     private PnExtRegPrvtClient pnExtRegPrvtClient;
 
+    @Mock
+    private CieCheckerAdapter cieCheckerAdapter;
+
+    @Mock
+    private Base64Validator base64Validator;
+
     @BeforeEach
     public void init() {
         MockitoAnnotations.openMocks(this);
         MandateValidationUtils mandateValidationUtils = Mockito.spy(new MandateValidationUtils(validateUtils, pnExtRegPrvtClient));
-        mandateService = new MandateService(mandateDao, delegateDao, mapper, mapperB2b, userEntityMandateCountsDtoMapper, pnInfoPaClient, pnDatavaultClient, sqsService, mandateValidationUtils, mandateSearchService, pnMandateConfig,pnDeliveryClient,mandateEntityAppIoMandateDtoMapper,aarQrUtils,mandateEntityBuilderMapper);
+        mandateService = new MandateService(
+                mandateDao,
+                delegateDao,
+                mapper,
+                mapperB2b,
+                userEntityMandateCountsDtoMapper,
+                pnInfoPaClient,
+                pnDatavaultClient,
+                sqsService,
+                mandateValidationUtils,
+                mandateSearchService,
+                pnMandateConfig,
+                pnDeliveryClient,
+                mandateEntityAppIoMandateDtoMapper,
+                aarQrUtils,
+                mandateEntityBuilderMapper,
+                cieCheckerAdapter,
+                base64Validator
+        );
     }
 
     @Test
@@ -2052,4 +2079,187 @@ class MandateServiceTest {
                 .expectError(RuntimeException.class)
                 .verify();
     }
+
+
+    @Test
+    void acceptMandateAppIo_success() {
+        String mandateId = "mid";
+        MandateEntity entity = new MandateEntity();
+        entity.setMandateId(mandateId);
+        entity.setDelegator("delegatorId");
+        entity.setWorkflowType(WorkFlowType.CIE);
+        entity.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING));
+        entity.setCreated(Instant.now().minus(Duration.ofMinutes(1)));
+        entity.setValidationcode("valcode");
+        entity.setAccepted(Instant.now());
+        entity.setValidto(Instant.now());
+
+
+        when(mandateDao.retrieveMandateForDelegate("cxId", mandateId)).thenReturn(Mono.just(entity));
+        when(pnDatavaultClient.getRecipientDenominationByInternalId(List.of("delegatorId")))
+                .thenReturn(Flux.just(new BaseRecipientDtoDto().taxId("TAXID")));
+        when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(5));
+        when(pnMandateConfig.getCieValidToDuration()).thenReturn(Duration.ofDays(1));
+        when(mandateDao.save(any())).thenReturn(Mono.just(entity));
+        doNothing().when(cieCheckerAdapter).validateCie(any(), any(), any());
+
+        StepVerifier.create(mandateService.acceptMandateAppIo(
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
+                .verifyComplete();
+    }
+
+
+    @Test
+    void acceptMandateAppIo_error_mandateNotFound() {
+        when(mandateDao.retrieveMandateForDelegate(anyString(), anyString())).thenReturn(Mono.empty());
+
+        StepVerifier.create(mandateService.acceptMandateAppIo(
+                        "cxId", null, "mandateId", Mono.just(new CIEValidationData())))
+                .expectError(PnMandateNotFoundException.class)
+                .verify();
+    }
+
+    @Test
+    void acceptMandateAppIo_error_workflowTypeNotCIE() {
+        String mandateId = "mid";
+        MandateEntity entity = new MandateEntity();
+        entity.setMandateId(mandateId);
+        entity.setDelegator("delegatorId");
+        entity.setWorkflowType(WorkFlowType.STANDARD);
+        entity.setState(10);
+        entity.setCreated(Instant.now());
+
+        when(pnDatavaultClient.getRecipientDenominationByInternalId(any()))
+                .thenReturn(Flux.just(new BaseRecipientDtoDto().taxId("TAXID")));
+
+        when(mandateDao.retrieveMandateForDelegate(anyString(), anyString())).thenReturn(Mono.just(entity));
+        when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(5));
+
+        StepVerifier.create(mandateService.acceptMandateAppIo(
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
+                .expectErrorSatisfies(throwable -> assertThat(throwable).isInstanceOf(PnMandateBadRequestException.class))
+                .verify();
+    }
+
+    @Test
+    void acceptMandateAppIo_error_statusNotPending() {
+        String mandateId = "mid";
+        MandateEntity entity = new MandateEntity();
+        entity.setMandateId(mandateId);
+        entity.setWorkflowType(WorkFlowType.CIE);
+        entity.setState(20); // State 10 is PENDING
+        entity.setCreated(Instant.now());
+        entity.setDelegator("delegator");
+        entity.setDelegate("cxId");
+        entity.setValidto(Instant.now());
+        entity.setAccepted(Instant.now());
+
+        when(mandateDao.retrieveMandateForDelegate(anyString(), anyString())).thenReturn(Mono.just(entity));
+        when(pnDatavaultClient.getRecipientDenominationByInternalId(any())).thenReturn(Flux.just(new BaseRecipientDtoDto().taxId("TAXID")));
+        doNothing().when(cieCheckerAdapter).validateCie(any(), any(), any());
+        when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(5));
+        when(mandateDao.save(any(MandateEntity.class))).thenReturn(Mono.just(new MandateEntity()));
+
+        StepVerifier.create(mandateService.acceptMandateAppIo(
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
+                .expectErrorSatisfies(throwable -> assertThat(throwable).isInstanceOf(PnMandateBadRequestException.class))
+                .verify();
+    }
+
+
+    @Test
+    void acceptMandateAppIo_error_mandateExpired() {
+        String mandateId = "mid";
+        MandateEntity entity = new MandateEntity();
+        entity.setMandateId(mandateId);
+        entity.setWorkflowType(WorkFlowType.CIE);
+        entity.setState(10);
+        entity.setCreated(Instant.now().minus(Duration.ofHours(2)));
+        entity.setDelegator("delegatorId");
+        entity.setValidto(Instant.now());
+        entity.setAccepted(Instant.now());
+
+        when(mandateDao.retrieveMandateForDelegate(anyString(), anyString())).thenReturn(Mono.just(entity));
+        when(pnDatavaultClient.getRecipientDenominationByInternalId(any())).thenReturn(Flux.just(new BaseRecipientDtoDto().taxId("TAXID")));
+        doNothing().when(cieCheckerAdapter).validateCie(any(), any(), any());
+        when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(30));
+        when(mandateDao.save(any(MandateEntity.class))).thenReturn(Mono.just(new MandateEntity()));
+
+        StepVerifier.create(mandateService.acceptMandateAppIo(
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
+                .expectErrorSatisfies(throwable -> {
+                    // Il test ora fallirà con l'eccezione corretta
+                    assertThat(throwable).isInstanceOf(PnMandateNotFoundException.class);
+                })
+                .verify();
+    }
+
+    @Test
+    void acceptMandateAppIo_error_delegateTaxIdNotFound() {
+        String mandateId = "mid";
+        MandateEntity entity = new MandateEntity();
+        entity.setMandateId(mandateId);
+        entity.setWorkflowType(WorkFlowType.CIE);
+        entity.setState(20);
+        entity.setCreated(Instant.now());
+        entity.setDelegator("delegatorId");
+        when(mandateDao.retrieveMandateForDelegate(anyString(), anyString())).thenReturn(Mono.just(entity));
+        when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(30));
+        when(pnDatavaultClient.getRecipientDenominationByInternalId(anyList()))
+                .thenReturn(Flux.empty());
+
+        StepVerifier.create(mandateService.acceptMandateAppIo(
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
+                .expectError(PnInternalException.class)
+                .verify();
+    }
+
+    @Test
+    void acceptMandateAppIo_error_cieCheckerThrows() {
+        String mandateId = "mid";
+        MandateEntity entity = new MandateEntity();
+        entity.setMandateId(mandateId);
+        entity.setWorkflowType(WorkFlowType.CIE);
+        entity.setState(20);
+        entity.setCreated(Instant.now());
+        entity.setDelegator("delegatorId");
+        entity.setValidationcode("valcode");
+        when(mandateDao.retrieveMandateForDelegate(anyString(), anyString())).thenReturn(Mono.just(entity));
+        when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(30));
+        BaseRecipientDtoDto recipient = new BaseRecipientDtoDto().taxId("TAXID");
+        when(pnDatavaultClient.getRecipientDenominationByInternalId(anyList()))
+                .thenReturn(Flux.just(recipient));
+        doThrow(new RuntimeException("CIE error")).when(cieCheckerAdapter).validateCie(any(), any(), any());
+
+        StepVerifier.create(mandateService.acceptMandateAppIo(
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
+                .expectError(RuntimeException.class)
+                .verify();
+    }
+
+    @Test
+    void acceptMandateAppIo_error_revokeMandateForInvalidVerificationCode() {
+        String mandateId = "mid";
+        MandateEntity entity = new MandateEntity();
+        entity.setMandateId(mandateId);
+        entity.setWorkflowType(WorkFlowType.CIE);
+        entity.setState(20);
+        entity.setCreated(Instant.now());
+        entity.setDelegator("delegatorId");
+        entity.setValidationcode("valcode");
+        when(mandateDao.retrieveMandateForDelegate(anyString(), anyString())).thenReturn(Mono.just(entity));
+        when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(30));
+        BaseRecipientDtoDto recipient = new BaseRecipientDtoDto().taxId("TAXID");
+        when(pnDatavaultClient.getRecipientDenominationByInternalId(anyList()))
+                .thenReturn(Flux.just(recipient));
+        when(pnMandateConfig.getRevokeCieMandateOnVerificationFailure()).thenReturn(true);
+        when(mandateDao.revokeMandate(anyString(), anyString(), any(), any())).thenReturn(Mono.just(entity));
+        doThrow(new PnInvalidVerificationCodeException()).when(cieCheckerAdapter).validateCie(any(), any(), any());
+
+        StepVerifier.create(mandateService.acceptMandateAppIo(
+                        "cxId", null, mandateId, Mono.just(new CIEValidationData())))
+                .expectError(PnInvalidVerificationCodeException.class)
+                .verify();
+    }
+
 }

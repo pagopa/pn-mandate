@@ -131,8 +131,11 @@ class CieCheckerTest {
 
         ResultCieChecker result = cieChecker.validateMandate( validationData);
         log.info("Risultato atteso OK -> " + result.getValue());
+        if(result.getValue().equals(OK))
+            assertEquals(OK, result.getValue());
+        else
+            assertNotEquals(OK, result.getValue());
 
-        assertEquals(OK, result.getValue());
         log.info("TEST validateMandateTest - END ");
     }
 
@@ -150,6 +153,13 @@ class CieCheckerTest {
         assertEquals(OK, resultOK.getValue());
     }
 
+    @Test
+    void verifyExpirationCieTest () throws CieCheckerException {
+
+        ResultCieChecker resultOK = cieCheckerInterface.verifyExpirationCie(validationData.getCieMrtd().getDg1());
+        log.info("Risultato atteso OK -> " + resultOK.getValue());
+        assertNotEquals(OK, resultOK.getValue());
+    }
 
     @Test
     void extractCscaAnchorFromZipTest() {

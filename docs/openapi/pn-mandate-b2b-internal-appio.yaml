@@ -135,18 +135,16 @@ paths:
       parameters:
         - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'                           # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'                         # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'                       # NO EXTERNAL
-        - $ref: '#/components/parameters/cxRoleAuthFleet'                                         # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL
-        #       - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
-        #       - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
-        #       - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
-        #       - $ref: '#/components/parameters/lollipopAssertionRef'                                    # ONLY EXTERNAL
-        #       - $ref: '#/components/parameters/lollipopAssertionType'                                   # ONLY EXTERNAL
-        #       - $ref: '#/components/parameters/lollipopAuthJwt'                                         # ONLY EXTERNAL
-        #       - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
-        #       - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
-        #       - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
+#        - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL
+#        - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
+#        - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
+#        - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
+#        - $ref: '#/components/parameters/lollipopAssertionRef'                                    # ONLY EXTERNAL
+#        - $ref: '#/components/parameters/lollipopAssertionType'                                   # ONLY EXTERNAL
+#        - $ref: '#/components/parameters/lollipopAuthJwt'                                         # ONLY EXTERNAL
+#        - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
+#        - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
+#        - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
         - name: mandateId
           in: path
           required: true
@@ -162,6 +160,17 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          description: Bad Request - Dati CIE non forniti o in formato non corretto
+          content:
+            application/json:
+              schema:
+                $ref: 'remote-refs.yaml#/components/schemas/Problem'
+              examples:
+                missingCIEValidationDataError:
+                  $ref: '#/components/examples/MissingCIEValidationDataError'
+                invalidCIEValidationDataError:
+                  $ref: '#/components/examples/InvalidCIEValidationDataError'
         '401':
           description: Unauthorized - Token di autenticazione mancante o non valido
           content:
@@ -206,18 +215,6 @@ components:
     ############################################################################################
     ###                     PARAMETRI DI AUTENTICAZIONE E AUTORIZZAZIONE                     ###
     ############################################################################################
-    cxRoleAuthFleet:
-      name: x-pagopa-pn-cx-role
-      in: header
-      description: Ruolo (estratto da token di Self Care)
-      required: false
-      schema:
-        type: string
-        # ASCII printable characters
-        pattern: ^[ -~]*$
-        maxLength: 64
-    
-    
     cxTypeAuthFleet: # NO EXTERNAL
       $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'            # NO EXTERNAL
     cxIdAuthFleet: # NO EXTERNAL
@@ -418,6 +415,34 @@ components:
           - code: "PN_GENERIC_ERROR"
             element: null
             detail: "none"
+
+    MissingCIEValidationDataError:
+      summary: Esempio di risposta 400 in caso di dati CIE mancanti
+      value:
+          type: "GENERIC_ERROR"
+          status: 400
+          title: "Handled error"
+          detail: "See logs for details in PN-MANDATE"
+          traceId: "trace_id:f474bb7c-e0cd-46b0-9ddf-8b0006fd33d4"
+          timestamp: "2025-09-15T14:49:27.179Z"
+          errors:
+            - code: "PN_GENERIC_INVALIDPARAMETER"
+              element: "nisData.nis"
+              detail: "must not be null"
+
+    InvalidCIEValidationDataError:
+      summary: Esempio di risposta 400 in caso di dati CIE non validi
+      value:
+          type: "GENERIC_ERROR"
+          status: 400
+          title: "Handled error"
+          detail: "See logs for details in PN-MANDATE"
+          traceId: "trace_id:f474bb7c-e0cd-46b0-9ddf-8b0006fd33d4"
+          timestamp: "2025-09-15T14:49:27.179Z"
+          errors:
+          - code: "PN_MANDATE_BADREQUEST"
+            element: null
+            detail: "Invalid Base64 encoding in field: nisData.nis"
     
     AcceptMandateCIEValidationError:
       summary: Esempio di risposta 422 in caso di errore di validazione CIE

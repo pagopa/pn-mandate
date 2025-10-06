@@ -1,8 +1,6 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
-import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet;
-import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
-import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,10 +9,9 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 class MandateAppIoControllerTest {
 
@@ -46,5 +43,27 @@ class MandateAppIoControllerTest {
         StepVerifier.create(result)
                 .expectNextMatches(entity -> entity.getStatusCode().is2xxSuccessful() && entity.getBody() == response)
                 .verifyComplete();
+    }
+
+
+    @Test
+    void testAcceptIOMandate() {
+        String cxId = "testCxId";
+        CxTypeAuthFleet cxType = CxTypeAuthFleet.PA;
+        String mandateId = "mandateId";
+        CIEValidationData cieValidationData = new CIEValidationData();
+
+        when(mandateService.acceptMandateAppIo(anyString(), any(), anyString(), any()))
+                .thenReturn(Mono.empty());
+
+        Mono<ResponseEntity<Void>> result = controller.acceptIOMandate(
+                cxId, cxType, mandateId, Mono.just(cieValidationData), mock(ServerWebExchange.class)
+        );
+
+        StepVerifier.create(result)
+                .expectNextMatches(entity -> entity.getStatusCode().is2xxSuccessful() && entity.getStatusCodeValue() == 204)
+                .verifyComplete();
+
+        verify(mandateService).acceptMandateAppIo(eq(cxId), eq(cxType), eq(mandateId), any());
     }
 }

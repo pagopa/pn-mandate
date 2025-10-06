@@ -6,6 +6,9 @@ import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.NISData;
 import it.pagopa.pn.mandate.exceptions.PnMandateBadRequestException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,12 +38,13 @@ class Base64ValidatorTest {
         assertDoesNotThrow(() -> validator.validateCieValidationData(cieValidationData));
     }
 
-    @Test
-    @DisplayName("Should throw exception when a field is not valid Base64")
-    void validateCieValidationDataWithInvalidBase64ShouldThrow() {
+    @ParameterizedTest
+    @DisplayName("Should throw exception for invalid, null, or empty Base64 field")
+    @MethodSource("invalidBase64Provider")
+    void validateCieValidationDataWithInvalidBase64ShouldThrow(String nisValue, String expectedDetail) {
         CIEValidationData cieValidationData = new CIEValidationData();
         NISData nisData = new NISData();
-        nisData.setNis("not_base64");
+        nisData.setNis(nisValue);
         nisData.setSod("c29k");
         nisData.setPubKey("cHVia2V5");
         MRTDData mrtdData = new MRTDData();
@@ -52,47 +56,16 @@ class Base64ValidatorTest {
         cieValidationData.setSignedNonce("c2lnbmVkTm9uY2U=");
 
         PnMandateBadRequestException ex = assertThrows(PnMandateBadRequestException.class, () -> validator.validateCieValidationData(cieValidationData));
-        checkExceptionDetails(ex, "Invalid Base64 encoding in field: nisData.nis");
+        checkExceptionDetails(ex, expectedDetail);
     }
 
-    @Test
-    @DisplayName("Should throw exception when a field is null")
-    void validateCieValidationDataWithNullFieldShouldThrow() {
-        CIEValidationData cieValidationData = new CIEValidationData();
-        NISData nisData = new NISData();
-        nisData.setNis(null);
-        nisData.setSod("c29k");
-        nisData.setPubKey("cHVia2V5");
-        MRTDData mrtdData = new MRTDData();
-        mrtdData.setSod("bXJ0ZFNvZA==");
-        mrtdData.setDg1("ZGcx");
-        mrtdData.setDg11("ZGcxMQ==");
-        cieValidationData.setNisData(nisData);
-        cieValidationData.setMrtdData(mrtdData);
-        cieValidationData.setSignedNonce("c2lnbmVkTm9uY2U=");
-
-        PnMandateBadRequestException ex = assertThrows(PnMandateBadRequestException.class, () -> validator.validateCieValidationData(cieValidationData));
-        checkExceptionDetails(ex, "Missing or empty field: nisData.nis");
+    private static java.util.stream.Stream<Arguments> invalidBase64Provider() {
+        return java.util.stream.Stream.of(
+                Arguments.of("not_base64", "Invalid Base64 encoding in field: nisData.nis"),
+                Arguments.of(null, "Missing or empty field: nisData.nis"),
+                Arguments.of("", "Missing or empty field: nisData.nis")
+        );
     }
 
-    @Test
-    @DisplayName("Should throw exception when a field is empty string")
-    void validateCieValidationDataWithEmptyFieldShouldThrow() {
-        CIEValidationData cieValidationData = new CIEValidationData();
-        NISData nisData = new NISData();
-        nisData.setNis("");
-        nisData.setSod("c29k");
-        nisData.setPubKey("cHVia2V5");
-        MRTDData mrtdData = new MRTDData();
-        mrtdData.setSod("bXJ0ZFNvZA==");
-        mrtdData.setDg1("ZGcx");
-        mrtdData.setDg11("ZGcxMQ==");
-        cieValidationData.setNisData(nisData);
-        cieValidationData.setMrtdData(mrtdData);
-        cieValidationData.setSignedNonce("c2lnbmVkTm9uY2U=");
-
-        PnMandateBadRequestException ex = assertThrows(PnMandateBadRequestException.class, () -> validator.validateCieValidationData(cieValidationData));
-        checkExceptionDetails(ex, "Missing or empty field: nisData.nis");
-    }
 
 }

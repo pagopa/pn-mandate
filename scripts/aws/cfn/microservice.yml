@@ -641,7 +641,12 @@ Resources:
                 Action:
                   - s3:PutObject
                 Resource: !Sub "arn:aws:s3:::pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/pn-mandate/*"
-  
+              - Sid: AllowECSUpdateService
+                Effect: Allow
+                Action:
+                  - ecs:UpdateService
+                Resource: !GetAtt MandateMicroservice.Outputs.ServiceARN
+    
   CscaMasterlistSync:
     Type: AWS::Lambda::Function
     Properties:
@@ -660,6 +665,8 @@ Resources:
           SHA256_SSM_PARAMETER_NAME: !Ref CscaSha256SsmParameterName
           S3_BUCKET_NAME: !Sub pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}
           S3_OBJECT_KEY: !Ref CscaSyncS3BucketPrefix
+          ECS_CLUSTER_NAME: !Ref ECSClusterName
+          ECS_SERVICE_NAME: !GetAtt MandateMicroservice.Outputs.ServiceName
 
   CscaMasterlistSyncSchedulerRole:
     Type: AWS::IAM::Role
@@ -701,75 +708,4 @@ Resources:
       Action: "lambda:InvokeFunction"
       Principal: "scheduler.amazonaws.com"
       SourceArn: !GetAtt CscaMasterlistSyncSchedule.Arn
-      SourceAccount: !Ref AWS::AccountId
-
-  CscaMandateServiceUpdaterRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${ProjectName}-CscaMandateServiceUpdaterRole
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: !Sub ${ProjectName}-CscaMandateServiceUpdaterPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Sid: AllowECSUpdateService
-                Effect: Allow
-                Action:
-                  - ecs:UpdateService
-                Resource: !GetAtt MandateMicroservice.Outputs.ServiceARN
-
-  CscaMandateServiceUpdater:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub ${ProjectName}-CscaMandateServiceUpdater
-      Runtime: nodejs22.x
-      Handler: index.handler
-      Code:
-        S3Bucket: !Ref MicroserviceBucketName
-        S3Key: !Sub "${MicroserviceBucketBaseKey}/functions_zip/CscaMandateServiceUpdater.zip"
-      Role: !GetAtt CscaMandateServiceUpdaterRole.Arn
-      MemorySize: 128
-      Timeout: 30
-      Environment:
-        Variables:
-          ECS_CLUSTER_NAME: !Ref ECSClusterName
-          ECS_SERVICE_NAME: !GetAtt MandateMicroservice.Outputs.ServiceName
-
-  CscaMandateServiceUpdaterRule:
-    Type: AWS::Events::Rule
-    Properties:
-      Name: !Sub ${ProjectName}-CscaMandateServiceUpdaterRule
-      Description: Triggers ECS service redeploy when CSCA certificates are updated
-      EventPattern:
-        source:
-          - aws.ssm
-        detail-type:
-          - Parameter Store Change
-        detail:
-          name:
-            - !Ref CscaSha256SsmParameterName
-          operation:
-            - Update
-            - Create
-      State: ENABLED
-      Targets:
-        - Arn: !GetAtt CscaMandateServiceUpdater.Arn
-          Id: CscaMandateServiceUpdaterTarget
-
-  CscaMandateServiceUpdaterInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt CscaMandateServiceUpdater.Arn
-      Action: lambda:InvokeFunction
-      Principal: events.amazonaws.com
-      SourceArn: !GetAtt CscaMandateServiceUpdaterRule.Arn
       SourceAccount: !Ref AWS::AccountId

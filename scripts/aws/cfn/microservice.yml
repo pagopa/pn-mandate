@@ -382,13 +382,13 @@ Resources:
         ContainerEnvEntry13: !Sub 'PN_MANDATE_CIEPENDINGDURATION=${CiePendingDuration}'
         ContainerEnvEntry14: !Sub 'PN_MANDATE_CIEVALIDTODURATION=${CieValidToDuration}'
         ContainerEnvEntry15: !Sub 'PN_MANDATE_REVOKECIEMANDATEONVERIFICATIONFAILURE=${RevokeCieMandateOnVerificationFailure}'
-        ContainerEnvEntry14: !Sub "LOLLIPOP_ACTIVE=${IsLollipopActive}"
-        ContainerEnvEntry15: !Sub "LOLLIPOP_EXPECTED_LC_ORIGINAL_URL=${LollipopExpectedLcOriginalUrl}"
-        ContainerEnvEntry16: !Sub "LOLLIPOP_ENABLE_CONSUMER_LOGGING=${LollipopEnableConsumerLogging}"
-        ContainerEnvEntry17: !Sub "LOLLIPOP_IDP_REST_CONFIG_READ_TIMEOUT=${LollipopIdpRestConfigReadTimeout}"
-        ContainerEnvEntry18: !Sub "LOLLIPOP_IDP_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopIdpRestConfigConnectionTimeout}"
-        ContainerEnvEntry19: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_READ_TIMEOUT=${LollipopAssertionRestConfigReadTimeout}"
-        ContainerEnvEntry20: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopAssertionRestConfigConnectionTimeout}"
+        ContainerEnvEntry16: !Sub "LOLLIPOP_ACTIVE=${IsLollipopActive}"
+        ContainerEnvEntry17: !Sub "LOLLIPOP_EXPECTED_LC_ORIGINAL_URL=${LollipopExpectedLcOriginalUrl}"
+        ContainerEnvEntry18: !Sub "LOLLIPOP_ENABLE_CONSUMER_LOGGING=${LollipopEnableConsumerLogging}"
+        ContainerEnvEntry19: !Sub "LOLLIPOP_IDP_REST_CONFIG_READ_TIMEOUT=${LollipopIdpRestConfigReadTimeout}"
+        ContainerEnvEntry20: !Sub "LOLLIPOP_IDP_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopIdpRestConfigConnectionTimeout}"
+        ContainerEnvEntry21: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_READ_TIMEOUT=${LollipopAssertionRestConfigReadTimeout}"
+        ContainerEnvEntry22: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopAssertionRestConfigConnectionTimeout}"
         ApplicativeEnvFileChecksum: !Ref ApplicativeEnvFileChecksum
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName

@@ -1,6 +1,9 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
-import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CIEValidationData;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,7 +13,6 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class MandateAppIoControllerTest {

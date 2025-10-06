@@ -164,24 +164,22 @@ public class MandateService {
 
     /**
      * Crea la delega da AppIo
-     *
-     * @param xPagopaPnUid              uId utente
-     * @param mandateCreationRequest    oggetto per la creazione della delega
-     * @param xPagopaPnCxId             cxId del deleganto
-     * @param xPagopaPnCxType           tipologia del delegante (PF/PG)
+     * @param xPagopaPnCxId             cxId del delegato
      * @param lollipopUserName          nome del delegato
      * @param lollipopUserFamilyName    cognome del delegato
+     * @param mandateCreationRequest    oggetto per la creazione della delega
+     * @param xPagopaPnCxType           tipologia del delegante (PF/PG)
      * @return delega creata
      */
-    public Mono<MandateCreationResponse> createMandateAppIo(String xPagopaPnUid,
-                                                            String xPagopaPnCxId,
+    public Mono<MandateCreationResponse> createMandateAppIo(String xPagopaPnCxId,
                                                             String lollipopUserName,
                                                             String lollipopUserFamilyName,
                                                             it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType,
                                                             Mono<MandateCreationRequest> mandateCreationRequest) {
         final String mandateId = UUID.randomUUID().toString();
-        log.info("Start createMandateAppIo - mandateId: {}, xPagopaPnUid: {}, xPagopaPnCxId: {}, xPagopaPnCxType: {}", mandateId, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType);
-        return Mono.defer(() -> mandateCreationRequest)
+        log.info("Start createMandateAppIo - mandateId: {}, xPagopaPnCxId: {}, xPagopaPnCxType: {}", mandateId, xPagopaPnCxId, xPagopaPnCxType);
+        return checkPresenceOfDelegateData(lollipopUserName, lollipopUserFamilyName)
+                .then(mandateCreationRequest)
                 .map(MandateCreationRequest::getAarQrCodeValue)
                 .doOnNext(qr -> log.debug("Extracted aarQrCodeValue: {}", qr))
                 .map(aarQrUtils::extractQrToken)
@@ -204,6 +202,17 @@ public class MandateService {
                         , (dto, entity) -> entity)
                 .map(mandateEntityAppIoMandateDtoMapper::toDto)
                 .doOnNext(response -> log.info("Mandate is successfully created: {}", response));
+    }
+
+    private Mono<Void> checkPresenceOfDelegateData(String lollipopUserName, String lollipopUserFamilyName) {
+        if(!StringUtils.hasText(lollipopUserName)) {
+            return Mono.error(new PnInternalException("Lollipop user name is missing or empty", ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR));
+        }
+        if(!StringUtils.hasText(lollipopUserFamilyName)) {
+            return Mono.error(new PnInternalException("Lollipop user family name is missing or empty", ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR));
+        }
+
+        return Mono.empty();
     }
 
     /**

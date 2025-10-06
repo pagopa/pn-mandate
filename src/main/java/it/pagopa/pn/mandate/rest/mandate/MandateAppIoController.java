@@ -28,8 +28,8 @@ public class MandateAppIoController implements AppIoPnMandateCreateApi {
     }
 
     @Override
-    public Mono<ResponseEntity<MandateCreationResponse>> createIOMandate(String xPagopaPnUid, String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String xPagopaCxTaxid, List<String> xPagopaPnCxGroups, String xPagopaLollipopUserName, String xPagopaLollipopUserFamilyName, Mono<MandateCreationRequest> mandateCreationRequest,  final ServerWebExchange exchange) {
-        return mandateService.createMandateAppIo(xPagopaPnUid, xPagopaPnCxId, xPagopaLollipopUserName, xPagopaLollipopUserFamilyName, xPagopaPnCxType, mandateCreationRequest)
+    public Mono<ResponseEntity<MandateCreationResponse>> createIOMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String xPagopaLollipopUserName, String xPagopaLollipopUserFamilyName, Mono<MandateCreationRequest> mandateCreationRequest,  final ServerWebExchange exchange) {
+        return mandateService.createMandateAppIo(xPagopaPnCxId, xPagopaLollipopUserName, xPagopaLollipopUserFamilyName, xPagopaPnCxType, mandateCreationRequest)
                 .map(response ->ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 }

@@ -1,6 +1,9 @@
 package it.pagopa.pn.mandate.rest.mandate;
 
-import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CIEValidationData;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,10 +12,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.List;
-
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class MandateAppIoControllerTest {
@@ -28,21 +28,18 @@ class MandateAppIoControllerTest {
 
     @Test
     void testCreateIOMandate() {
-        String uid = "testUid";
         String cxId = "testCxId";
         String lollipopUserName = "John";
         String lollipopUserFamilyName = "Doe";
         CxTypeAuthFleet cxType = CxTypeAuthFleet.PA;
-        String xPagopaCxTaxid = "cxTaxId";
-        List<String> xPagopaPnCxGroups = List.of("group1");
         MandateCreationRequest request = new MandateCreationRequest();
         MandateCreationResponse response = new MandateCreationResponse();
 
-        when(mandateService.createMandateAppIo(anyString(), anyString(), anyString(), anyString(), any(), any()))
+        when(mandateService.createMandateAppIo(anyString(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(response));
 
         Mono<ResponseEntity<MandateCreationResponse>> result = controller.createIOMandate(
-                uid, cxId, cxType, xPagopaCxTaxid, xPagopaPnCxGroups, lollipopUserName, lollipopUserFamilyName, Mono.just(request), mock(ServerWebExchange.class)
+                cxId, cxType, lollipopUserName, lollipopUserFamilyName, Mono.just(request), mock(ServerWebExchange.class)
         );
 
         StepVerifier.create(result)

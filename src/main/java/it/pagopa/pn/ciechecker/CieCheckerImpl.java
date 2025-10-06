@@ -1,8 +1,9 @@
 package it.pagopa.pn.ciechecker;
 
-import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
+import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.*;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.DecoderException;
@@ -40,12 +41,15 @@ import java.util.Hashtable;
 import java.util.List;
 
 @lombok.CustomLog
-@NoArgsConstructor
+@RequiredArgsConstructor
 @Data
 @Service
 public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
     private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
+
+    private final PnMandateConfig pnMandateConfig;
+    private final S3BucketClient s3BucketClient;
 
     private List<X509Certificate> cscaAnchor;
     private String ciecheckerCscaAnchorPathFilename;
@@ -58,10 +62,9 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             Security.addProvider(new BouncyCastleProvider());
         }
 
-        String cscaPath = this.getCiecheckerCscaAnchorPathFilename();
+        String cscaPath = pnMandateConfig.getCiecheckerCscaAnchorPathFilename();
         log.debug("CSCA ANCHOR PATH: {}", cscaPath );
-        //this.setCscaAnchor(extractCscaAnchor(cscaPath)); //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip");
-        cscaAnchor = extractCscaAnchor(cscaPath);
+        this.setCscaAnchor(extractCscaAnchor(cscaPath)); //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip");
         log.debug("INIT - cscaAnchor SIZE: " + cscaAnchor.size());
     }
 
@@ -422,9 +425,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         InputStream fileInputStream ;
         try {
             if (cscaAnchorPathFileName.startsWith(PROTOCOLLO_S3) ){
-
-                //fileInputStream = S3BucketClientImpl.getObjectContent(cscaAnchorPathFileName);
-
+                fileInputStream = s3BucketClient.getObjectContent(cscaAnchorPathFileName);
                 if(cscaAnchorPathFileName.endsWith(".zip") || cscaAnchorPathFileName.endsWith(".ZIP")) {
                     fileInputStream  = new FileInputStream(cscaAnchorPathFileName);//getContentCscaAnchorFile(cscaAnchorPathFileName);
                     return ValidateUtils.extractCscaAnchorFromZip(fileInputStream);

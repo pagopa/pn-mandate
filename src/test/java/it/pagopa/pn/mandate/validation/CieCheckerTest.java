@@ -6,6 +6,7 @@ import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -16,13 +17,22 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.http.AbortableInputStream;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -43,18 +53,25 @@ import java.util.stream.Stream;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 
 @SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
 @Slf4j
-@TestPropertySource("classpath:application.properties")
 @ActiveProfiles("test")
+@EnableConfigurationProperties(PnMandateConfig.class)
 class CieCheckerTest {
 
     @Autowired
     private CieChecker cieChecker;
     @Autowired
     private CieCheckerInterface cieCheckerInterface;
+    @MockBean
+    private S3BucketClientImpl s3BucketClient;
+    @MockBean
+    private S3Client s3Client;
 
     private static final Path basePath= Path.of("src","test","resources");
     private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
@@ -67,11 +84,25 @@ class CieCheckerTest {
     private static final String SOD_HEX_IAS = "SOD_IAS.HEX";
     //private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
+    private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
 
     static CieValidationData validationData;
 
     @BeforeEach
     void setUp() throws IOException, DecoderException {
+
+        // inizio a creare l'inputStream che deve tornare la chiamata s3
+        byte[] fileBytes = Files.readAllBytes(masterListCSCA);
+
+        // crea un ResponseInputStream "reale"
+        ResponseInputStream<GetObjectResponse> s3Stream = new ResponseInputStream<>(
+                GetObjectResponse.builder().build(),
+                AbortableInputStream.create(new ByteArrayInputStream(fileBytes))
+        );
+
+        // restituisce l’istanza reale senza che Mockito cerchi di “mockare” la risposta
+        when(s3Client.getObject(any(GetObjectRequest.class)))
+                .thenAnswer(invocation -> s3Stream);
 
         cieChecker.init();
 

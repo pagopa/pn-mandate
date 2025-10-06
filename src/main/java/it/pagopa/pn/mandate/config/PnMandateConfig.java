@@ -35,6 +35,5 @@ public class PnMandateConfig {
     private Duration ciePendingDuration;
 
     //@Value("${ciechecker.cscaAnchor.pathFileName}")
-    //pn.mandate.ciechecker_csca_anchor_path_filename
     private String ciecheckerCscaAnchorPathFilename;
 }

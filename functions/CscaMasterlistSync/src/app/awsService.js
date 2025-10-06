@@ -1,9 +1,11 @@
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { SSMClient, GetParameterCommand, PutParameterCommand } = require("@aws-sdk/client-ssm");
+const { ECSClient, UpdateServiceCommand } = require("@aws-sdk/client-ecs");
 
 // Clients initialized outside the handler 
 const s3Client = new S3Client({});
 const ssmClient = new SSMClient({});
+const ecsClient = new ECSClient({});
 
 /**
  * Retrieves a parameter from AWS SSM Parameter Store.
@@ -63,8 +65,33 @@ async function saveFileToS3(bucketName, objectKey, fileBuffer) {
   });
 }
 
+/**
+ * Triggers a forced redeployment of an ECS service.
+ * @param {string} clusterName - The name of the ECS cluster.
+ * @param {string} serviceName - The name of the ECS service.
+ * @returns {Promise<object>} The ECS UpdateService response.
+ */
+async function updateEcsService(clusterName, serviceName) {
+  const command = new UpdateServiceCommand({
+    cluster: clusterName,
+    service: serviceName,
+    forceNewDeployment: true
+  });
+
+  const response = await ecsClient.send(command);
+  
+  console.log('ECS UpdateService command executed successfully', {
+    serviceArn: response.service.serviceArn,
+    status: response.service.status,
+    desiredCount: response.service.desiredCount
+  });
+
+  return response;
+}
+
 module.exports = {
   getSsmParameter,
   updateSsmParameter,
   saveFileToS3,
+  updateEcsService
 };

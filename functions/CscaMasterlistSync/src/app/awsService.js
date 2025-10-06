@@ -24,7 +24,6 @@ async function getSsmParameter(parameterName) {
       console.log(`SSM Parameter "${parameterName}" not found. This is expected on first run.`);
       return null;
     }
-    // Let AWS SDK errors propagate naturally
     throw error;
   }
 }

@@ -70,12 +70,13 @@ public class MandateRestV1Controller  implements MandateServiceApi {
     public Mono<ResponseEntity<MandateDto>> createMandate(String xPagopaPnUid,
                                                           String xPagopaPnCxId,
                                                           CxTypeAuthFleet xPagopaPnCxType,
+                                                          String xPagopaPnSrcCh,
                                                           List<String> groups,
                                                           String role,
                                                           Mono<MandateDto> mandateDto,
                                                           final ServerWebExchange exchange) {
 
-        return mandateService.createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, groups, role)
+        return mandateService.createMandate(mandateDto, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnSrcCh, groups, role)
                     .map(m ->  ResponseEntity.status(HttpStatus.CREATED).body(m));
     }                       
 

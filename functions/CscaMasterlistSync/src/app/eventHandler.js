@@ -1,7 +1,7 @@
 const { createHash } = require('crypto');
 const awsService = require('./awsService');
 
-//env vars
+// Expected environment variables
 const HTTP_TIMEOUT_MS = Number(process.env.HTTP_TIMEOUT_MS) || 60000;
 const CSCA_MASTERLIST_URL = process.env.CSCA_MASTERLIST_URL;
 const SHA256_SSM_PARAMETER_NAME = process.env.SHA256_SSM_PARAMETER_NAME;
@@ -9,6 +9,23 @@ const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
 const S3_OBJECT_KEY = process.env.S3_OBJECT_KEY;
 const ECS_CLUSTER_NAME = process.env.ECS_CLUSTER_NAME;
 const ECS_SERVICE_NAME = process.env.ECS_SERVICE_NAME;
+
+/**
+ * Checks if an error is retriable based on its type and code.
+ * @param {Error} error - The error to check.
+ * @returns {boolean} True if the error is retriable.
+ */
+function isRetryable(error) {
+  const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
+  const isNetworkError = error.cause?.code === 'ECONNRESET' || 
+                         error.cause?.code === 'ENOTFOUND' || 
+                         error.cause?.code === 'ECONNREFUSED' ||
+                         error.code === 'ECONNRESET' || 
+                         error.code === 'ENOTFOUND' || 
+                         error.code === 'ECONNREFUSED';
+  
+  return isTimeout || isNetworkError;
+}
 
 /**
  * Downloads a file from the given URL with retry logic using native fetch.
@@ -47,16 +64,7 @@ async function downloadFile(fileUrl) {
 
       return Buffer.from(await response.arrayBuffer());
     } catch (error) {
-      // Handle timeout and network errors
-      const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
-      const isNetworkError = error.cause?.code === 'ECONNRESET' || 
-                             error.cause?.code === 'ENOTFOUND' || 
-                             error.cause?.code === 'ECONNREFUSED' ||
-                             error.code === 'ECONNRESET' || 
-                             error.code === 'ENOTFOUND' || 
-                             error.code === 'ECONNREFUSED';
-      
-      if (attempt < maxAttempts - 1 && (isTimeout || isNetworkError)) {
+      if (attempt < maxAttempts - 1 && isRetryable(error)) {
         const delay = 1000 * Math.pow(2, attempt) + Math.random() * 1000;
         console.log(`Attempt ${attempt + 1} failed with ${error.message}, retrying in ${Math.round(delay)}ms`);
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -77,12 +85,8 @@ async function downloadFile(fileUrl) {
  * @returns {Promise<object>} Result object with status and file information.
  */
 async function handler(event, context) {
-  if (!CSCA_MASTERLIST_URL || !SHA256_SSM_PARAMETER_NAME || !S3_BUCKET_NAME || !S3_OBJECT_KEY) {
-    throw new Error("Missing required environment variables: CSCA_MASTERLIST_URL, SHA256_SSM_PARAMETER_NAME, S3_BUCKET_NAME, or S3_OBJECT_KEY");
-  }
-
-  if (!ECS_CLUSTER_NAME || !ECS_SERVICE_NAME) {
-    throw new Error("Missing required environment variables: ECS_CLUSTER_NAME or ECS_SERVICE_NAME");
+  if (!CSCA_MASTERLIST_URL || !SHA256_SSM_PARAMETER_NAME || !S3_BUCKET_NAME || !S3_OBJECT_KEY || !ECS_CLUSTER_NAME || !ECS_SERVICE_NAME) {
+    throw new Error("Missing required environment variables: CSCA_MASTERLIST_URL, SHA256_SSM_PARAMETER_NAME, S3_BUCKET_NAME, S3_OBJECT_KEY, ECS_CLUSTER_NAME, or ECS_SERVICE_NAME");
   }
 
   console.log("Starting direct file download and SHA256 verification");

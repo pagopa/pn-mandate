@@ -18,6 +18,9 @@ import java.math.BigInteger;
 import java.nio.file.Path;
 import java.security.*;
 import java.security.cert.X509Certificate;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
@@ -121,10 +124,14 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             verifyDigitalSignature(cms);
 
             //16304 - Verifica codice fiscale del delegante con quanto presente nei dati della CIE
-            ResultCieChecker result = verifyCodFiscDelegante(data);
+            verifyCodFiscDelegante(data);
+
+            //16669 - verifica scadenza CIE
+            ResultCieChecker result = verifyExpirationCie(data.getCieMrtd().getDg1());
             if(OK.equals(result.getValue()) )
                 log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, true, ResultCieChecker.OK.getValue());
-
+            else
+                log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, result.getValue());
             return result;
         }catch(CMSException cmse){
             log.logEndingProcess(LogsCostant.CIECHECKER_VALIDATE_MANDATE, false, cmse.getClass().getName() + " Message: " + ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA.getValue());
@@ -166,13 +173,40 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
     public ResultCieChecker verifyCodFiscDelegante (CieValidationData data ) throws CieCheckerException{
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE);
-        String codiceFiscaleDelegante = extractCodiceFiscaleByOid(data.getCieMrtd().getDg11());
+        String codiceFiscaleDelegante = parserTLVTagValue(data.getCieMrtd().getDg11(), TAG_PERSONAL_NUMBER);
         //log.debug("codiceFiscaleDelegante: {} - data.getCodFiscDelegante(): {}", codiceFiscaleDelegante, data.getCodFiscDelegante());
         if (data.getCodFiscDelegante().equals(codiceFiscaleDelegante))
             return ResultCieChecker.OK;
         else {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE, ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED.getValue());
             return ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED;
+        }
+    }
+
+    public ResultCieChecker verifyExpirationCie (byte[] dg1 ) throws CieCheckerException{
+
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_VERIFY_EXPIRATION_CIE);
+        String dataElement = parserTLVTagValue(dg1, TAG_EXPIRE_DATE);
+        //log.debug("dataElement: {} ", dataElement);
+
+        String expirationDate = dataElement.substring(38, 38+6);
+        log.debug("expirationDate: {} ", expirationDate);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyy");
+
+        try {
+            LocalDate inputDate = LocalDate.parse(expirationDate, formatter);
+            LocalDate today = LocalDate.now();
+            //    isAfter() restituisce true se l'oggetto chiamante è strettamente SUCCESSIVO
+            //    all'oggetto passato come argomento.
+            boolean isAfter = inputDate.isAfter(today);
+            if(isAfter)
+                return ResultCieChecker.OK;
+            else
+                return ResultCieChecker.KO_EXC_EXPIRATIONDATE;
+
+        } catch (DateTimeParseException dtpe) {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_EXPIRATION_CIE, DateTimeParseException.class + " - Message: " + dtpe.getMessage());
+            throw new CieCheckerException( ResultCieChecker.KO_EXC_INVALID_EXPIRATIONDATE, dtpe );
         }
     }
 

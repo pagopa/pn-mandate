@@ -40,6 +40,9 @@ public class PnMandateConfig {
 
     private Duration pendingDuration;
     private Duration ciePendingDuration;
+    private Duration cieValidToDuration;
+
+    private Boolean revokeCieMandateOnVerificationFailure;
 
     private String ciecheckerCscaAnchorPathFilename;
 

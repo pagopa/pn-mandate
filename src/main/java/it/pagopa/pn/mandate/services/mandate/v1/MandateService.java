@@ -1,10 +1,17 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.exceptions.PnRuntimeException;
+import it.pagopa.pn.commons.log.PnAuditLogBuilder;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
+import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CIEValidationData;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
+import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
+import it.pagopa.pn.mandate.exceptions.PnMandateBadRequestException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
 import it.pagopa.pn.mandate.exceptions.PnUnsupportedFilterException;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
@@ -23,11 +30,9 @@ import it.pagopa.pn.mandate.middleware.msclient.PnDeliveryClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.PageResultDto;
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
-import it.pagopa.pn.mandate.utils.AarQrUtils;
-import it.pagopa.pn.mandate.utils.DateUtils;
-import it.pagopa.pn.mandate.utils.PgUtils;
-import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
+import it.pagopa.pn.mandate.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.lang.Nullable;
@@ -43,6 +48,8 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM;
+import static it.pagopa.pn.commons.utils.MDCUtils.MDC_PN_MANDATEID_KEY;
+import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.*;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyAdmin;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyGroupAdmin;
 
@@ -66,6 +73,8 @@ public class MandateService {
     private final MandateEntityAppIoMandateDtoMapper mandateEntityAppIoMandateDtoMapper;
     private final AarQrUtils aarQrUtils;
     private final MandateEntityBuilderMapper mandateEntityBuilderMapper;
+    private final CieCheckerAdapter cieChecker;
+    private final Base64Validator base64Validator;
 
     /**
      * Accetta una delega
@@ -155,20 +164,22 @@ public class MandateService {
 
     /**
      * Crea la delega da AppIo
-     *
-     * @param xPagopaPnUid              uId utente
+     * @param xPagopaPnCxId             cxId del delegato
+     * @param lollipopUserName          nome del delegato
+     * @param lollipopUserFamilyName    cognome del delegato
      * @param mandateCreationRequest    oggetto per la creazione della delega
-     * @param xPagopaPnCxId             cxId del deleganto
      * @param xPagopaPnCxType           tipologia del delegante (PF/PG)
      * @return delega creata
      */
-    public Mono<MandateCreationResponse> createMandateAppIo(String xPagopaPnUid,
-                                                            String xPagopaPnCxId,
+    public Mono<MandateCreationResponse> createMandateAppIo(String xPagopaPnCxId,
+                                                            String lollipopUserName,
+                                                            String lollipopUserFamilyName,
                                                             it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType,
                                                             Mono<MandateCreationRequest> mandateCreationRequest) {
         final String mandateId = UUID.randomUUID().toString();
-        log.info("Start createMandateAppIo - mandateId: {}, xPagopaPnUid: {}, xPagopaPnCxId: {}, xPagopaPnCxType: {}", mandateId, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType);
-        return Mono.defer(() -> mandateCreationRequest)
+        log.info("Start createMandateAppIo - mandateId: {}, xPagopaPnCxId: {}, xPagopaPnCxType: {}", mandateId, xPagopaPnCxId, xPagopaPnCxType);
+        return checkPresenceOfDelegateData(lollipopUserName, lollipopUserFamilyName)
+                .then(mandateCreationRequest)
                 .map(MandateCreationRequest::getAarQrCodeValue)
                 .doOnNext(qr -> log.debug("Extracted aarQrCodeValue: {}", qr))
                 .map(aarQrUtils::extractQrToken)
@@ -182,7 +193,8 @@ public class MandateService {
                                     log.debug("Built MandateEntity: {}", entity);
                                     return entity;
                                 })
-                                //todo: Da implementare punti 5 e 6
+                                .flatMap(entity -> pnDatavaultClient.updateMandateById(mandateId, lollipopUserName, lollipopUserFamilyName, null)
+                                        .thenReturn(entity))
                                 .flatMap(entity -> {
                                     log.info("Start to persisting mandate: {}", entity.getMandateId());
                                     return mandateDao.createMandate(entity, TypeSegregatorFilter.CIE);
@@ -192,12 +204,122 @@ public class MandateService {
                 .doOnNext(response -> log.info("Mandate is successfully created: {}", response));
     }
 
+    private Mono<Void> checkPresenceOfDelegateData(String lollipopUserName, String lollipopUserFamilyName) {
+        if(!StringUtils.hasText(lollipopUserName)) {
+            return Mono.error(new PnInternalException("Lollipop user name is missing or empty", ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR));
+        }
+        if(!StringUtils.hasText(lollipopUserFamilyName)) {
+            return Mono.error(new PnInternalException("Lollipop user family name is missing or empty", ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR));
+        }
+
+        return Mono.empty();
+    }
+
+    /**
+     * Accetta la delega da AppIo
+     *
+     * @param xPagopaPnCxId         cxId del delegato
+     * @param xPagopaPnCxType       tipologia del delegato (PF/PG)
+     * @param mandateId             id della delega
+     * @param ciEValidationData     dati per la validazione CIE
+     * @return void
+     */
+    public Mono<Void> acceptMandateAppIo(String xPagopaPnCxId, it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet xPagopaPnCxType, String mandateId, Mono<CIEValidationData> ciEValidationData){
+        String logMessage = String.format("Start acceptMandateAppIo - mandateId: %s, xPagopaPnCxId: %s, xPagopaPnCxType: %s", mandateId, xPagopaPnCxId, xPagopaPnCxType);
+        PnAuditLogEvent logEvent = new PnAuditLogBuilder()
+                .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
+                .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
+                .build();
+        logEvent.log();
+        return mandateDao.retrieveMandateForDelegate(xPagopaPnCxId,mandateId)
+                .doOnNext(mandate -> log.debug("Get mandate {} for delegate {}:",mandateId,xPagopaPnCxId))
+                .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
+                .flatMap(mandateEntity -> validateCieData(ciEValidationData, mandateEntity))
+                .map(mandateEntity -> {
+                    checkAcceptanceCIE(mandateEntity);
+                    log.debug("Start to update entity for acceptance with mandateId {}", mandateEntity.getMandateId());
+                    mandateEntity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE));
+                    mandateEntity.setAccepted(Instant.now());
+                    mandateEntity.setValidto(Instant.now().plus(pnMandateConfig.getCieValidToDuration()));
+                    return mandateEntity;
+                })
+                .doOnNext(mandateEntity -> log.info("Start to save acceptance of mandate with mandateId {}", mandateEntity.getMandateId()))
+                .flatMap(mandateDao::save)
+                .doOnNext(mandate ->  {
+                    String messageAction = String.format(
+                            "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
+                            mandate.getDelegator(), mandate.getDelegate(), mandate);
+                    logEvent.generateSuccess(messageAction).log();
+                })
+                .doOnError(ex -> {
+                        if(ex instanceof PnRuntimeException pnEx) {
+                            logEvent.generateFailure(pnEx.getProblem().getDetail()).log();
+                        } else {
+                            logEvent.generateFailure(ex.getMessage()).log();
+                        }
+                })
+                .then();
+    }
+
+    private Mono<MandateEntity> validateCieData(Mono<CIEValidationData> cieValidationDataMono, MandateEntity mandate) {
+        log.info("Start to validate CIE Data for mandateId {}", mandate.getMandateId());
+        return cieValidationDataMono
+                .doOnNext(base64Validator::validateCieValidationData)
+                .zipWith(retrieveTaxIdFromInternalId(mandate.getDelegator()))
+                .doOnNext(tuple -> {
+                    CIEValidationData cieValidationData = tuple.getT1();
+                    String delegatorTaxId = tuple.getT2();
+                    cieChecker.validateCie(cieValidationData, mandate.getValidationcode(), delegatorTaxId);
+                })
+                .thenReturn(mandate)
+                .onErrorResume(PnInvalidVerificationCodeException.class, ex -> {
+                    String mandateId = mandate.getMandateId();
+                    log.warn("Invalid verification code for mandateId {}", mandateId);
+                    if(Boolean.TRUE.equals(pnMandateConfig.getRevokeCieMandateOnVerificationFailure())) {
+                        log.info("Revoking mandate for mandateId {} after invalid verification code", mandateId);
+                        return mandateDao.revokeMandate(mandate.getDelegator(), mandateId, TypeSegregatorFilter.CIE, RevocationCause.SYSTEM)
+                                .then(Mono.error(ex));
+                    }
+
+                    return Mono.error(ex);
+                });
+    }
+
+    private Mono<String> retrieveTaxIdFromInternalId(String internalId) {
+        log.info("Start to get taxId of delegate from delegator {}", internalId);
+        return pnDatavaultClient.getRecipientDenominationByInternalId(List.of(internalId))
+                .collectList()
+                .filter(baseRecipientDtoList -> baseRecipientDtoList != null && baseRecipientDtoList.size()==1)
+                .switchIfEmpty(Mono.error(new PnInternalException("List must not be null or empty", ERROR_CODE_MANDATE_DELEGATE_LIST)))
+                .map(baseRecipientDtoList -> baseRecipientDtoList.get(0).getTaxId())
+                .doOnNext(taxIdDelegate -> log.info("TaxId of delegate retrieved successfully"));
+    }
+
+    private void checkAcceptanceCIE(MandateEntity mandateEntity) {
+        log.debug("Start to check validity of the acceptance request for mandateId {}", mandateEntity.getMandateId());
+        if (!mandateEntity.getWorkflowType().equals(WorkFlowType.CIE)) {
+            log.error("Impossible to accept mandate with mandateId {} having workflowType {}, should have workflow type {}",mandateEntity.getMandateId(), mandateEntity.getWorkflowType(), WorkflowType.CIE.getValue());
+            throw new PnMandateBadRequestException("Mandate Bad Request","Mandate has a workflowType different from CIE", ERROR_CODE_MANDATE_BAD_REQUEST);
+        }
+        if (mandateEntity.getState() != StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING)) {
+            log.error("Impossible to accept mandate with mandateId {} having status {}, should have status {}",mandateEntity.getMandateId(), StatusEnumMapper.fromValue(mandateEntity.getState()), MandateDto.StatusEnum.PENDING);
+            throw new PnMandateBadRequestException("Mandate Bad Request","Mandate has a status different from PENDING", ERROR_CODE_MANDATE_BAD_REQUEST);
+        }
+        Instant expiration = mandateEntity.getCreated().plus(pnMandateConfig.getCiePendingDuration());
+        if (Instant.now().isAfter(expiration)) {
+            log.error("Mandate with mandateId {} is expired", mandateEntity.getMandateId());
+            throw new PnMandateNotFoundException("Mandate is expired","Mandate not found because is expired", ERROR_CODE_MANDATE_NOT_FOUND);
+        }
+        log.debug("End to check validity of of the acceptance request for mandateId {}", mandateEntity.getMandateId());
+    }
+
     /**
      * Crea la delega
      *
      * @param mandateDto                oggetto delega
      * @param requesterInternaluserId   iuid del delegante
      * @param cxTypeAuthFleet           tipologia del delegante (PF/PG)
+     * @param xPagopaPnSrcCh            canale di richiesta
      * @param groups                    gruppi a cui appartiene l'utente
      * @param role                      ruolo dell'utente
      * @return delega creata
@@ -206,6 +328,7 @@ public class MandateService {
                                           final String requesterUid,
                                           final String requesterInternaluserId,
                                           CxTypeAuthFleet cxTypeAuthFleet,
+                                          String xPagopaPnSrcCh,
                                           List<String> groups,
                                           String role) {
         final String uuid = UUID.randomUUID().toString();
@@ -229,6 +352,8 @@ public class MandateService {
                                             entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
                                             entity.setCreated(Instant.now());
                                             entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
+                                            entity.setWorkflowType(WorkFlowType.STANDARD);
+                                            entity.setSrcChannel(xPagopaPnSrcCh);
                                             if (log.isInfoEnabled())
                                                 log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}",
                                                         entity.getMandateId(), requesterInternaluserId, requesterUserTypeIsPF, entity.getValidfrom());
@@ -267,6 +392,7 @@ public class MandateService {
                                                          final String xPagopaPnUid,
                                                          final String xPagopaPnCxId,
                                                          CxTypeAuthFleet cxTypeAuthFleet,
+                                                         String xPagopaPnSrcCh,
                                                          List<String> groups,
                                                          String role) {
         final String uuid = UUID.randomUUID().toString();
@@ -275,7 +401,7 @@ public class MandateService {
                         .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(dto.getDelegator().getPerson(), dto.getDelegator().getFiscalCode())
                                 .map(delegatorInternaluserId -> {
                                     validateUtils.validateCreationRequestHimself(cxTypeAuthFleet, xPagopaPnCxId, delegatorInternaluserId);
-                                    MandateEntity entity = getMandateEntity(xPagopaPnCxId, dto, delegatorInternaluserId, uuid);
+                                    MandateEntity entity = getMandateEntity(xPagopaPnCxId, xPagopaPnSrcCh, dto, delegatorInternaluserId, uuid);
                                     if (log.isInfoEnabled())
                                         log.info("creating reverse mandate uuid: {} to: {} validfrom: {} requestBy: {}",
                                                 entity.getMandateId(), xPagopaPnCxId, entity.getValidfrom(), xPagopaPnUid);
@@ -290,7 +416,7 @@ public class MandateService {
     }
 
     @NotNull
-    private MandateEntity getMandateEntity(String xPagopaPnCxId, MandateDtoRequest dto, String delegatorInternaluserId, String uuid) {
+    private MandateEntity getMandateEntity(String xPagopaPnCxId, String xPagopaPnSrcCh, MandateDtoRequest dto, String delegatorInternaluserId, String uuid) {
         MandateEntity entity = reverseMandateEntityMandateDtoMapper.toEntity(dto);
         entity.setDelegate(xPagopaPnCxId);
         entity.setDelegatorUid(delegatorInternaluserId);
@@ -299,6 +425,8 @@ public class MandateService {
         entity.setState(StatusEnumMapper.intValfromStatus(StatusEnum.PENDING));
         entity.setCreated(Instant.now());
         entity.setValidfrom(DateUtils.atStartOfDay(ZonedDateTime.now().minusDays(120).toInstant()).toInstant());
+        entity.setWorkflowType(WorkFlowType.REVERSE);
+        entity.setSrcChannel(xPagopaPnSrcCh);
         return entity;
     }
 
@@ -528,7 +656,7 @@ public class MandateService {
             return Mono.error(new PnMandateNotFoundException());
         }
         return validaAccessoOnlyAdmin(pnCxType, pnCxRole, pnCxGroups)
-                .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId))
+                .flatMap(o -> mandateDao.revokeMandate(internalUserId, mandateId, TypeSegregatorFilter.STANDARD, RevocationCause.USER))
                 .flatMap(r -> pnDatavaultClient.deleteMandateById(mandateId).thenReturn(r))
                 .flatMap(entity -> {
                     if (Boolean.FALSE.equals(entity.getDelegateisperson())) {

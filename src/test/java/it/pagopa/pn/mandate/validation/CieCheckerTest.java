@@ -3,7 +3,6 @@ package it.pagopa.pn.mandate.validation;
 import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerInterface;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
-import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
@@ -18,18 +17,14 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.http.AbortableInputStream;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.ByteArrayInputStream;
@@ -56,7 +51,6 @@ import java.util.stream.Stream;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -173,6 +167,13 @@ class CieCheckerTest {
         assertEquals(OK, resultOK.getValue());
     }
 
+    @Test
+    void verifyExpirationCieTest () throws CieCheckerException {
+
+        ResultCieChecker resultOK = cieCheckerInterface.verifyExpirationCie(validationData.getCieMrtd().getDg1());
+        log.info("Risultato atteso OK -> " + resultOK.getValue());
+        assertNotEquals(OK, resultOK.getValue());
+    }
 
 //    @Test
 //    void extractCscaAnchorFromZipPathTest() {
@@ -192,40 +193,14 @@ class CieCheckerTest {
         Assertions.assertNotNull(stringArray);
     }
 
-    public String[] extractS3Components(String s3Uri) {
 
-        //Verifica e rimuovi il prefisso "s3://"
-        if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
-            log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
-            return null;
-        }
-        try {
-            // Creiamo un oggetto URI
-            URI uri = new URI(s3Uri);
+    @Test
+    void extractCscaAnchorFromZipTest() {
 
-            // Il nome del bucket è l'host/autorità dell'URI S3
-            String bucketName = uri.getHost();
-
-            // La chiave dell'oggetto è il percorso dell'URI (path)
-            //    Questo include lo '/' iniziale, che va rimosso.
-            String objectKey = uri.getPath();
-            if (objectKey != null && objectKey.startsWith("/")) {
-                objectKey = objectKey.substring(1);
-            }
-
-            System.out.println("URI di Input: " + s3Uri);
-            System.out.println("-------------------------------------");
-            System.out.println("Bucket estratto:  \"" + bucketName + "\"");
-            System.out.println("Chiave estratta: \"" + objectKey + "\"");
-
-            return new String[]{bucketName, objectKey};
-
-        } catch (URISyntaxException e) {
-            log.error("Sintax error in URI S3: {}" , e.getMessage());
-            return null;
-        }
+        List<X509Certificate> x509List = ValidateUtils.extractCscaAnchorFromZip(Path.of(cscaAnchorZipFile.getCscaAnchorPathFileName()));
+        Assertions.assertFalse(x509List.isEmpty());
+        log.info("x509List.size: {}" , x509List.size());
     }
-
 
     private static byte[] hexFile(String toHex) throws DecoderException {
         return Hex.decodeHex(toHex);
@@ -436,6 +411,40 @@ class CieCheckerTest {
                 .replaceAll("-----END PUBLIC KEY-----", "")
                 .replaceAll("\\s", "");
         return Base64.getDecoder().decode(b64);
+    }
+
+    public String[] extractS3Components(String s3Uri) {
+
+        //Verifica e rimuovi il prefisso "s3://"
+        if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
+            log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
+            return null;
+        }
+        try {
+            // Creiamo un oggetto URI
+            URI uri = new URI(s3Uri);
+
+            // Il nome del bucket è l'host/autorità dell'URI S3
+            String bucketName = uri.getHost();
+
+            // La chiave dell'oggetto è il percorso dell'URI (path)
+            //    Questo include lo '/' iniziale, che va rimosso.
+            String objectKey = uri.getPath();
+            if (objectKey != null && objectKey.startsWith("/")) {
+                objectKey = objectKey.substring(1);
+            }
+
+            System.out.println("URI di Input: " + s3Uri);
+            System.out.println("-------------------------------------");
+            System.out.println("Bucket estratto:  \"" + bucketName + "\"");
+            System.out.println("Chiave estratta: \"" + objectKey + "\"");
+
+            return new String[]{bucketName, objectKey};
+
+        } catch (URISyntaxException e) {
+            log.error("Sintax error in URI S3: {}" , e.getMessage());
+            return null;
+        }
     }
 
 

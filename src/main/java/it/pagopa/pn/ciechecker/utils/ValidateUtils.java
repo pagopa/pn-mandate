@@ -56,7 +56,7 @@ public class ValidateUtils {
 
     private ValidateUtils() {}
 
-    public static ResultCieChecker verifyDscAgainstTrustBundle(byte[] dscDer, Collection<X509Certificate> cscaTrustAnchors, Date atTime) throws CieCheckerException{
+    public static ResultCieChecker verifyDscAgainstTrustBundle(byte[] dscDer, Collection<X509Certificate> cscaTrustAnchors, Date atTime) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE);
         if (Objects.isNull(dscDer) || dscDer.length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_CERTIFICATION);
@@ -138,12 +138,12 @@ public class ValidateUtils {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE);
         }
         try {
-            log.debug("X509CertificateHolder: {}" , certHolder.getSubject().toString());
+            log.debug("X509CertificateHolder: {}", certHolder.getSubject().toString());
             // Per convertire X509CertificateHolder in un X509Certificate utilizzo la classe JcaX509CertificateConverter
             JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
             //converter.setProvider(BouncyCastleProvider.PROVIDER_NAME); java.security.cert.CertificateException: Errore durante la conversione del certificato per ottenere la chiave pubblica.
             X509Certificate certificate = converter.getCertificate(certHolder);
-            log.debug("SerialNumber: {}" , certificate.getSerialNumber());
+            log.debug("SerialNumber: {}", certificate.getSerialNumber());
 
             // Estrae la chiave pubblica dall'oggetto X509Certificate
             return certificate.getPublicKey();
@@ -226,7 +226,7 @@ public class ValidateUtils {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
         }
-        if ( Objects.isNull(fiveOctetString)){
+        if (Objects.isNull(fiveOctetString)) {
             //log.error("Error in verifyOctetStrings: ASN1OctetString fiveOctetString is null" );
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
@@ -268,7 +268,7 @@ public class ValidateUtils {
      * @return String
      * @throws CieCheckerException exception
      */
-    private static String getHexFromOctetString(ASN1OctetString octetString) throws CieCheckerException{
+    private static String getHexFromOctetString(ASN1OctetString octetString) throws CieCheckerException {
         if (octetString == null) {
             throw new CieCheckerException("ASN1OctetString octetString is null");
         }
@@ -303,7 +303,7 @@ public class ValidateUtils {
     public static byte[] extractHashBlock(CMSSignedData signedData) throws CieCheckerException {
 
         CMSTypedData signedContent = signedData.getSignedContent();
-        if ( Objects.isNull(signedContent) || !(signedContent.getContent() instanceof byte[]) ) {
+        if (Objects.isNull(signedContent) || !(signedContent.getContent() instanceof byte[])) {
             log.error("Error in extractHashBlock: {}", EXC_INVALID_CMSTYPEDDATA);
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA);
         }
@@ -354,7 +354,7 @@ public class ValidateUtils {
      * @throws CieCheckerException e
      * @throws CMSException e
      */
-    public static Hashtable<ASN1ObjectIdentifier, Attribute> extractAllSignedAttributes (CMSSignedData signedData) throws CieCheckerException, CMSException{
+    public static Hashtable<ASN1ObjectIdentifier, Attribute> extractAllSignedAttributes(CMSSignedData signedData) throws CieCheckerException, CMSException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR);
         SignerInformationStore signers = signedData.getSignerInfos();
@@ -369,9 +369,9 @@ public class ValidateUtils {
             SignerInformation signer = it.next();
             // Estrai gli attributi firmati
             AttributeTable signedAttributes = signer.getSignedAttributes();
-            log.debug("signedAttributes.size: {}" , signedAttributes.size());
+            log.debug("signedAttributes.size: {}", signedAttributes.size());
             log.debug("signedAttributes.size: {}", signedAttributes.toHashtable());
-            log.debug("signedAttributes : {}" , signedAttributes.toASN1Structure().getAttributes());
+            log.debug("signedAttributes : {}", signedAttributes.toASN1Structure().getAttributes());
             // Converti l'AttributeTable in una Hashtable
             if ( Objects.isNull(signer.getSignedAttributes()) ) {
                 log.error("Error in extractAllSignedAttributes: " + CieCheckerException.class.getName() + " Message: " + EXC_NO_SIGNED_ATTRIBUTE);
@@ -465,7 +465,6 @@ public class ValidateUtils {
      * @param nisSha256 byte[]
      * @return boolean
      * @throws CieCheckerException c
-     *
      */
     public static boolean verifyNisSha256FromDataGroup(CMSSignedData cmsData, byte[] nisSha256) throws CieCheckerException {
 
@@ -549,7 +548,7 @@ public class ValidateUtils {
      * @return boolean
      * @throws CieCheckerException c
      */
-    public static ResultCieChecker verifyDigitalSignature(CMSSignedData cms ) throws CieCheckerException {
+    public static ResultCieChecker verifyDigitalSignature(CMSSignedData cms) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE);
         log.debug("Cms signed content type OID={}", cms.getSignedContentTypeOID());
@@ -720,7 +719,7 @@ public class ValidateUtils {
             }
 
             return x509List;
-        }catch (Exception e ){
+        } catch (Exception e) {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE, e.getClass().getName() + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e); // File .ml non trovato nello ZIP
         }
@@ -766,6 +765,34 @@ public class ValidateUtils {
         }
     }
 
+    public static String parserTLVTagValue(byte[] fileBytes, String tag) throws CieCheckerException {
+
+        try {
+            //parser TLV
+            log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_PARSER_TLV_TAGVALUE);
+            BerTlvParser parser = new BerTlvParser();
+            BerTlvs tlvs = parser.parse(fileBytes, 0, fileBytes.length);
+            BerTag bTag = new BerTag(org.apache.commons.codec.binary.Hex.decodeHex(tag));
+            BerTlv bTlv = tlvs.find(bTag);
+            if (bTlv != null) {
+                return bTlv.getTextValue();
+            } else {
+                if (tag.equals(CieCheckerConstants.TAG_PERSONAL_NUMBER)) {
+                    log.error("ResultCieChecker: {}", ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
+                    throw new CieCheckerException(ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
+                } else if (tag.equals(CieCheckerConstants.TAG_EXPIRE_DATE)) {
+                    log.error("ResultCieChecker: {}", ResultCieChecker.KO_EXC_NOFOUND_EXPIRE_DATE_DG1);
+                    throw new CieCheckerException(ResultCieChecker.KO_EXC_NOFOUND_EXPIRE_DATE_DG1);
+                } else {
+                    log.error("ResultCieChecker: {} - TAG: {}", ResultCieChecker.KO_EXC_NOFOUND_TAG_DG, tag);
+                    throw new CieCheckerException(ResultCieChecker.KO_EXC_NOFOUND_TAG_DG);
+                }
+            }
+        } catch (DecoderException de) {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_PARSER_TLV_TAGVALUE, de.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_DECODER_ERROR, de);
+        }
+    }
 
       public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
 

@@ -142,6 +142,22 @@ Parameters:
     Type: String
     Description: 'Durata del pending massima oltre il quale la delega non accettata scade'
 
+  CiePendingDuration:
+    Type: String
+    Description: 'Durata del pending massima oltre il quale la delega creata con AppIO non accettata scade'
+
+  CieValidToDuration:
+    Type: String
+    Description: 'Durata della validità della delega creata con AppIO (impostata nel processo di accettazione)'
+
+  RevokeCieMandateOnVerificationFailure:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: 'Se true, la revoca della delega CIE viene effettuata automaticamente in caso di nonce incongruente rispetto al validationCode della delega'
+
   PnMandateExpiredTriggerLambdaEventSourceMappingBatchSize:
     Type: String
     Description: 'BatchSize stream mapping'
@@ -285,6 +301,48 @@ Parameters:
     Type: String
     Default: ''
 
+  ApplicativeEnvFileChecksum:
+    Type: String
+    Default: ''
+    Description: 'Applicative environment variable file checksum'
+
+  IsLollipopActive:
+    Type: String
+    Description: "lollipop authorization activation flag"
+    AllowedValues: [ true, false ]
+    Default: false
+
+  LollipopExpectedLcOriginalUrl:
+    Type: String
+    Description: "expected lollipop consumer original url"
+
+  LollipopEnableConsumerLogging:
+    Type: String
+    Description: "enable lollipop consumer logging"
+
+  LollipopIdpRestConfigReadTimeout:
+    Type: String
+    Default: "8000ms"
+    Description: Read timeout for Lollipop Idp endpoint in duration format
+
+  LollipopIdpRestConfigConnectionTimeout:
+    Type: String
+    Default: "3000ms"
+    Description: Connection timeout for Lollipop Idp endpoint in duration format
+
+  LollipopAssertionRestConfigReadTimeout:
+    Type: String
+    Default: "8000ms"
+    Description: Read timeout for Lollipop Assertion endpoint in duration format
+
+  LollipopAssertionRestConfigConnectionTimeout:
+    Type: String
+    Default: "3000ms"
+    Description: Connection timeout for Lollipop Assertion endpoint in duration format
+
+  CscaMasterListS3Path:
+    Type: String
+    Description: "S3 path of the CSCA master list"
 
 Resources:
 
@@ -325,6 +383,17 @@ Resources:
         ContainerEnvEntry11: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
         ContainerEnvEntry12: !Sub 'PN_MANDATE_CLIENT_DELIVERY_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
         ContainerEnvEntry13: !Sub 'PN_MANDATE_CIEPENDINGDURATION=${CiePendingDuration}'
+        ContainerEnvEntry14: !Sub 'PN_MANDATE_CIEVALIDTODURATION=${CieValidToDuration}'
+        ContainerEnvEntry15: !Sub 'PN_MANDATE_REVOKECIEMANDATEONVERIFICATIONFAILURE=${RevokeCieMandateOnVerificationFailure}'
+        ContainerEnvEntry16: !Sub "LOLLIPOP_ACTIVE=${IsLollipopActive}"
+        ContainerEnvEntry17: !Sub "LOLLIPOP_EXPECTED_LC_ORIGINAL_URL=${LollipopExpectedLcOriginalUrl}"
+        ContainerEnvEntry18: !Sub "LOLLIPOP_ENABLE_CONSUMER_LOGGING=${LollipopEnableConsumerLogging}"
+        ContainerEnvEntry19: !Sub "LOLLIPOP_IDP_REST_CONFIG_READ_TIMEOUT=${LollipopIdpRestConfigReadTimeout}"
+        ContainerEnvEntry20: !Sub "LOLLIPOP_IDP_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopIdpRestConfigConnectionTimeout}"
+        ContainerEnvEntry21: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_READ_TIMEOUT=${LollipopAssertionRestConfigReadTimeout}"
+        ContainerEnvEntry22: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopAssertionRestConfigConnectionTimeout}"
+        ContainerEnvEntry23: !Sub "CSCA_MASTERLIST_S3_PATH=${CscaMasterListS3Path}"
+        ApplicativeEnvFileChecksum: !Ref ApplicativeEnvFileChecksum
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds

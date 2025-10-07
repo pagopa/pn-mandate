@@ -21,5 +21,6 @@ public interface CieCheckerInterface {
     List<X509Certificate> getCscaAnchor();
     List<X509Certificate> extractCscaAnchor(String cscaAnchorPathFileName) throws CieCheckerException;
     ResultCieChecker verifyCodFiscDelegante (CieValidationData data ) throws CieCheckerException;
+    ResultCieChecker verifyExpirationCie (byte[] dg1byte ) throws CieCheckerException;
     InputStream getContentCscaAnchorFile(String cscaAnchorPathFileName);
 }

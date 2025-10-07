@@ -349,6 +349,8 @@ paths:
         - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'       # NO EXTERNAL
         - $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'     # NO EXTERNAL
         - $ref: '#/components/parameters/cxRoleAuthFleet'                       # NO EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/headerSourceChannel'   # NO EXTERNAL
+
       requestBody:
         content:
           application/json:

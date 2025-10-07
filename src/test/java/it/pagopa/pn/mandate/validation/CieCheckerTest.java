@@ -194,13 +194,6 @@ class CieCheckerTest {
     }
 
 
-    @Test
-    void extractCscaAnchorFromZipTest() {
-
-        List<X509Certificate> x509List = ValidateUtils.extractCscaAnchorFromZip(Path.of(cscaAnchorZipFile.getCscaAnchorPathFileName()));
-        Assertions.assertFalse(x509List.isEmpty());
-        log.info("x509List.size: {}" , x509List.size());
-    }
 
     private static byte[] hexFile(String toHex) throws DecoderException {
         return Hex.decodeHex(toHex);

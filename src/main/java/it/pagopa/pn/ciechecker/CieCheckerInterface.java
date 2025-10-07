@@ -6,6 +6,7 @@ import it.pagopa.pn.ciechecker.model.CieValidationData;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import org.bouncycastle.cms.CMSSignedData;
 
+import java.io.InputStream;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
@@ -20,4 +21,5 @@ public interface CieCheckerInterface {
     List<X509Certificate> getCscaAnchor();
     List<X509Certificate> extractCscaAnchor(String cscaAnchorPathFileName) throws CieCheckerException;
     ResultCieChecker verifyCodFiscDelegante (CieValidationData data ) throws CieCheckerException;
+    InputStream getContentCscaAnchorFile(String cscaAnchorPathFileName);
 }

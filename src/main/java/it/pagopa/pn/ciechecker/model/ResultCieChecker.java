@@ -62,6 +62,7 @@ public enum ResultCieChecker {
     KO_EXC_DECODER_ERROR(CieCheckerConstants.EXC_DECODER_ERROR),
     KO_EXC_NOFOUND_CODFISCALE_DG11(CieCheckerConstants.EXC_NOFOUND_CODFISCALE_DG11),
     KO_EXC_CODFISCALE_NOT_VERIFIED(CieCheckerConstants.EXC_CODFISCALE_NOT_VERIFIED),
+    KO_EXC_NOVALID_CONNECT_S3 ( CieCheckerConstants.EXC_NOVALID_CONNECT_S3),
     KO_EXC_EXCEPTION(CieCheckerConstants.EXC_KO);
 
     private final String value;

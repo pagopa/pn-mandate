@@ -1,8 +1,10 @@
 package it.pagopa.pn.mandate.validate;
 
+import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -15,9 +17,16 @@ import org.bouncycastle.cms.CMSException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.http.AbortableInputStream;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -38,11 +47,14 @@ import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_384;
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_512;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.decodeSodHr;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
 @TestPropertySource("classpath:application.properties")
 @lombok.CustomLog
 @ActiveProfiles("test")
+@EnableConfigurationProperties(PnMandateConfig.class)
 class ValidateUtilsTest {
 
     private static final Path basePath = Path.of("src","test","resources");
@@ -57,6 +69,9 @@ class ValidateUtilsTest {
     private static final Path dg1FilesCorrupted = Paths.get("src/test/resources/DG1_CORROTTO.HEX");
     private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
+    private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
+    private static final String masterListCSCAZip_S3 = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
+
 
     private static final Map<String,String> expectedIssuer = Map.of(
             "2.5.4.3", "Italian Country Signer CA",
@@ -65,14 +80,33 @@ class ValidateUtilsTest {
             "2.5.4.6", "IT"
     );
 
+    @MockBean
+    private S3BucketClientImpl s3BucketClient;
+    @MockBean
+    private static S3Client s3Client;
+
     static CieValidationData validationData;
 
     @BeforeAll
     static void setUp() throws IOException, DecoderException {
 
+        // inizio a creare l'inputStream che deve tornare la chiamata s3
+        byte[] fileBytes = Files.readAllBytes(masterListCSCA);
+
+        // crea un ResponseInputStream "reale"
+        ResponseInputStream<GetObjectResponse> s3Stream = new ResponseInputStream<>(
+                GetObjectResponse.builder().build(),
+                AbortableInputStream.create(new ByteArrayInputStream(fileBytes))
+        );
+
+//        // restituisce l’istanza reale senza che Mockito cerchi di “mockare” la risposta
+//        when(s3Client.getObject(any(GetObjectRequest.class)))
+//                .thenAnswer(invocation -> s3Stream);
+
+
         byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
         byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
-        String nisChallenge = cleanString(basePath.resolve("NIS_CHALLENGE.HEX"));
+        String nisChallenge = "02461"; //cleanString(basePath.resolve("NIS_CHALLENGE.HEX"));
         byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));
         byte[] sodIasByteArray = loadSodBytes(basePath.resolve(SOD_HEX_IAS));
 

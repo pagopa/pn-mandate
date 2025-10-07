@@ -29,7 +29,7 @@ public abstract class LogsCostant {
     public static final String VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR = "ValidateUtils.extractAllSignedAttributes()";
     public static final String VALIDATEUTILS_EXTRACT_DATAGROUP = "ValidateUtils.extractDataGroupHashes()";
     public static final String VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP = "ValidateUtils.extractCscaAnchorFromZip()";
-    public static final String CIECHECKER_EXTRACT_CSCAANCHOR = "CieCheckerImpl.extractCscaAnchor()";
+    public static final String S3BUCKETCLIENTIMPL_EXTRACT_CSCAANCHOR = "S3BucketClientImpl.getFileInputStreamCscaAnchor()";
     public static final String VALIDATEUTILS_GETX509CERTLIST_ZIPFILE = "ValidateUtils.getX509CertListFromZipFile()";
     public static final String VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE = "ValidateUtils.verifyDigitalSignature()";
     public static final String VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE = "ValidateUtils.verifySodPassiveDigitalSignature()";

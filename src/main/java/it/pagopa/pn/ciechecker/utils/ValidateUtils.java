@@ -20,6 +20,7 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.*;
 import java.util.stream.Collectors;
@@ -33,6 +34,8 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.*;
+import org.bouncycastle.crypto.Digest;
+import org.bouncycastle.crypto.util.DigestFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -807,6 +810,22 @@ public class ValidateUtils {
             X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemFileStream);
 
             return certificate;
+    }
+
+
+    public static byte[] calculateSha1(String nonce) {
+        // Ottieni l'oggetto Digest per SHA-1
+        Digest sha1Digest = DigestFactory.createSHA1();
+        // Converte la stringa in byte usando la codifica standard (UTF-8)
+        byte[] inputBytes = nonce.getBytes(StandardCharsets.UTF_8);
+        // Esegue l'hashing sui byte
+        sha1Digest.update(inputBytes, 0, inputBytes.length);
+        // Crea un array per contenere il risultato (20 byte per SHA-1)
+        byte[] result = new byte[sha1Digest.getDigestSize()];
+
+        // Memorizza il risultato nell'array
+        sha1Digest.doFinal(result, 0);
+        return result;
     }
 
 }

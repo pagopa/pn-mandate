@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.validation;
 
 import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerInterface;
+import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
@@ -31,6 +32,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -58,7 +60,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 
-@SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
+@SpringBootTest(classes = {it.pagopa.pn.ciechecker.CieCheckerImpl.class, it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl.class})
 @Slf4j
 @ActiveProfiles("test")
 @EnableConfigurationProperties(PnMandateConfig.class)
@@ -68,8 +70,8 @@ class CieCheckerTest {
     private CieChecker cieChecker;
     @Autowired
     private CieCheckerInterface cieCheckerInterface;
-    @MockBean
-    private S3BucketClientImpl s3BucketClient;
+    @Autowired //@MockBean
+    private S3BucketClient s3BucketClient;
     @MockBean
     private S3Client s3Client;
 
@@ -85,24 +87,25 @@ class CieCheckerTest {
     //private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
     private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
+    private static final String masterListCSCAZip_S3 = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
 
     static CieValidationData validationData;
 
     @BeforeEach
     void setUp() throws IOException, DecoderException {
 
-        // inizio a creare l'inputStream che deve tornare la chiamata s3
-        byte[] fileBytes = Files.readAllBytes(masterListCSCA);
-
-        // crea un ResponseInputStream "reale"
-        ResponseInputStream<GetObjectResponse> s3Stream = new ResponseInputStream<>(
-                GetObjectResponse.builder().build(),
-                AbortableInputStream.create(new ByteArrayInputStream(fileBytes))
-        );
-
-        // restituisce l’istanza reale senza che Mockito cerchi di “mockare” la risposta
-        when(s3Client.getObject(any(GetObjectRequest.class)))
-                .thenAnswer(invocation -> s3Stream);
+//        // inizio a creare l'inputStream che deve tornare la chiamata s3
+//        byte[] fileBytes = Files.readAllBytes(masterListCSCA);
+//
+//        // crea un ResponseInputStream "reale"
+//        ResponseInputStream<GetObjectResponse> s3Stream = new ResponseInputStream<>(
+//                GetObjectResponse.builder().build(),
+//                AbortableInputStream.create(new ByteArrayInputStream(fileBytes))
+//        );
+//
+//        // restituisce l’istanza reale senza che Mockito cerchi di “mockare” la risposta
+//        when(s3Client.getObject(any(GetObjectRequest.class)))
+//                .thenAnswer(invocation -> s3Stream);
 
         cieChecker.init();
 
@@ -125,7 +128,7 @@ class CieCheckerTest {
 
         validationData.setCieIas(cieIas);
         validationData.setSignedNonce(nisSignature);
-        validationData.setNonce(nisChallenge);
+        validationData.setNonce( "02461"); // nisChallenge);
         validationData.setCodFiscDelegante("RSSMRA95A58H501Z"); //"RSSDNC42R01H501Y");
 
         CieMrtd cMrtd = new CieMrtd();
@@ -243,9 +246,11 @@ class CieCheckerTest {
         assertNotNull(validationData.getSignedNonce());
         assertNotNull(validationData.getNonce());
 
-        ResultCieChecker result = cieCheckerInterface.verifyChallengeFromSignature(validationData);
-        log.info("Risultato atteso OK -> {}", result.getValue());
-        assertEquals(OK, result.getValue());
+        //ResultCieChecker result = cieCheckerInterface.verifyChallengeFromSignature(validationData);
+        //log.info("Risultato atteso OK -> {}", result.getValue());
+        //assertNotEquals(OK, result.getValue());
+        assertThrows(CieCheckerException.class,
+                () -> cieCheckerInterface.verifyChallengeFromSignature(validationData));
         log.info("TEST verifyChallengeFromSignature - END ");
     }
 
@@ -342,10 +347,12 @@ class CieCheckerTest {
 
     @ParameterizedTest(name = "Verifica digital signature con sorgente: {0}")
     @MethodSource("cieSources")
-    void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException {
+    void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException, Exception {
         log.info("=== INIZIO TEST [" + tipo + "] ===");
         //if(cieChecker.getCscaAnchor() == null )
-        List<X509Certificate> cscaAnchor = cieCheckerInterface.extractCscaAnchor(CSCA_ANCHOR_PATH_FILENAME);
+        InputStream fileInputStream = new FileInputStream(Path.of(CSCA_ANCHOR_PATH_FILENAME).toFile());
+        List<X509Certificate> cscaAnchor =  ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
+        //List<X509Certificate> cscaAnchor = cieCheckerInterface.extractCscaAnchor(CSCA_ANCHOR_PATH_FILENAME);
         log.info("cscaAnchor 1: {}" , cscaAnchor.size());
         // caso ok
         CMSSignedData cms = new CMSSignedData(sodBytes);

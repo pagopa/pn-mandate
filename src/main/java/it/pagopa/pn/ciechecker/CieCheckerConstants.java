@@ -84,5 +84,5 @@ public class CieCheckerConstants {
     public static final String EXC_DECODER_ERROR = "Error occurs during the decoding process of data";
     public static final String EXC_NOFOUND_CODFISCALE_DG11 = "Error occurs during the extraction of Personal number in DG11";
     public static final String EXC_CODFISCALE_NOT_VERIFIED = "Personal number do not match with the expected value";
-
+    public static final String EXC_NOVALID_CONNECT_S3 = "Problem with connect S3";
 }

@@ -41,7 +41,6 @@ public class CieCheckerConstants {
     public static final String EXC_GENERATE_CERTIFICATE = "Error in generating the certificate object and initializes";
     public static final String EXC_VALIDATE_CERTIFICATE = "Path does not chain with any of the trust anchors";
     public static final String EXC_GENERATE_CMSSIGNEDDATA = "Error in generating CMSSignedData";
-    public static final String EXC_NO_SUPPORTED_CERTIFICATEFACTORY = "No Provider supports a CertificateFactorySpi implementation for the specified type";
     public static final String EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR = "No Provider supports a CertPathValidatorSpi implementation for the specified algorithm";
     public static final String EXC_INVALID_PARAMETER_CERTPATHVALIDATOR = "The specified parameters or the type of the specified CertPath are inappropriate for this CertPathValidator";
     public static final String EXC_IOEXCEPTION = "KO_IOEXCEPTION";
@@ -55,9 +54,6 @@ public class CieCheckerConstants {
     public static final String EXC_NO_MATCH_NONCE_SIGNATURE = "The challenge (nonce) from the signature does not match the one extracted from the signature.";
     public static final String EXC_PARSING_HEX_BYTE = "Conversion error from string to byte[]";
     public static final String EXC_INVALID_CRYPTOGRAPHIC_OPERATION = "Unexpected or invalid state occurs during cryptographic operations";
-    public static final String EXC_NOT_AVAILABLE_CRYPTOGRAPHIC_ALGORITHM ="The cryptographic algorithm is not available";
-    public static final String EXC_NOT_AVAILABLE_SECURITY_PROVIDER ="The security provider is not available";
-    //public static final String EXC_NOFOUND_DIGITAL_SIGNATURE ="No digital signature found in the SignedData structure";
     public static final String EXC_NOFOUND_SIGNER ="No signer found";
     public static final String EXC_NO_CMSTYPEDDATA = "Invalid or unavailable signed content";
     public static final String EXC_NO_SIGNERINFORMATIONSTORE ="SignerInformationStore is null";

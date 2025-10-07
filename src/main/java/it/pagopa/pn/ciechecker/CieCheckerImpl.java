@@ -1,13 +1,10 @@
 package it.pagopa.pn.ciechecker;
 
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
-import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.*;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
@@ -16,7 +13,6 @@ import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.file.Path;
@@ -32,7 +28,6 @@ import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -53,7 +48,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
     private final PnMandateConfig pnMandateConfig;
 
-    private final S3BucketClientImpl s3BucketClient;
+    private final S3BucketClient s3BucketClient;
 
     private List<X509Certificate> cscaAnchor;
     private String ciecheckerCscaAnchorPathFilename;
@@ -70,30 +65,29 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         log.debug("CSCA ANCHOR PATH: {}", cscaPath );
         try {
 
-            InputStream inputStreamCscaAnchor = s3BucketClient.getFileInputStreamCscaAnchor(cscaPath);
-
-            if(Objects.isNull(inputStreamCscaAnchor)) {
-                log.error(EXC_NOVALID_CONNECT_S3 + " - Usage MasterListCSCA File local resource");
-                cscaPath = CSCA_ANCHOR_PATH_FILENAME;
-                inputStreamCscaAnchor = new FileInputStream(Path.of(cscaPath).toFile());
+            if(Objects.isNull(cscaPath) || cscaPath.isBlank()) {
+                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_INIT,ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED.getValue());
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
             }
-            //if (cscaPath.startsWith(PROTOCOLLO_S3)) {
-                if (cscaPath.endsWith(".zip") || cscaPath.endsWith(".ZIP")) {
-                    cscaAnchor = ValidateUtils.extractCscaAnchorFromZip(inputStreamCscaAnchor);
-                } else if (cscaPath.endsWith(".pem") || cscaPath.endsWith(".PEM")) {
-                    cscaAnchor = ValidateUtils.loadCertificateFromPemFile(inputStreamCscaAnchor);
-                }
-            //} else {
-              //  InputStream fileInputStream = new FileInputStream(Path.of(cscaPath).toFile());
-              //  cscaAnchor = ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
-            //}
-            this.setCscaAnchor(cscaAnchor);
+            InputStream inputStreamCscaAnchor;
+            if (cscaPath.startsWith(PROTOCOLLO_S3) ){
+               inputStreamCscaAnchor= s3BucketClient.getObjectContent(cscaPath);
+            } else {
+                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_INIT,ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS);
+            }
 
-            // da gestire il file PEM
-            // this.setCscaAnchor(extractCscaAnchor(cscaPath)); //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip");
-            log.debug("INIT - cscaAnchor SIZE: " + cscaAnchor.size());
-        }catch (FileNotFoundException e){
-            e.printStackTrace();
+
+            if (cscaPath.endsWith(".zip") || cscaPath.endsWith(".ZIP")) {
+                  cscaAnchor = ValidateUtils.extractCscaAnchorFromZip(inputStreamCscaAnchor);
+            } else if (cscaPath.endsWith(".pem") || cscaPath.endsWith(".PEM")) {
+                  cscaAnchor = ValidateUtils.loadCertificateFromPemFile(inputStreamCscaAnchor);
+            }
+
+            this.setCscaAnchor(cscaAnchor);
+            log.debug("CSCA ANCHOR SIZE: " + cscaAnchor.size());
+        }catch (Exception e){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_INIT, e.getClass().getName()+" Message: "+e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS, e);
         }
     }
@@ -341,7 +335,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             throw new CieCheckerException(ce.getResult(), ce);
         } catch (Exception e) {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_INTEGRITY, e.getClass().getName() + " - Message: " + e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO, e);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_DIGEST_NOT_VERIFIED, e);
         }
     }
 
@@ -389,10 +383,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         return ResultCieChecker.OK;
     }
 
-    private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum){ // DA SCOMMENTARE throws CieCheckerException {
+    private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum) throws CieCheckerException {
         if (!isVerifyDigest(md, dg, expectedHashes.get(dgNum))) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_DIGESTLIST, ResultCieChecker.KO_EXC_NOT_SAME_DIGEST.getValue(), dgNum);
-            // DA SCOMMENTARE throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST);
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS_DG_VALIDATE, LogsCostant.CIECHECKER_VERIFY_DIGESTLIST, ResultCieChecker.KO_EXC_NOT_SAME_DIGEST.getValue(),dgNum);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST);
         }
     }
 

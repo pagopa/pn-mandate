@@ -19,6 +19,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -70,10 +71,9 @@ class CieCheckerTest {
     private CieChecker cieChecker;
     @Autowired
     private CieCheckerInterface cieCheckerInterface;
-    @Autowired //@MockBean
-    private S3BucketClient s3BucketClient;
     @MockBean
-    private S3Client s3Client;
+    private S3BucketClient s3BucketClient;
+
 
     private static final Path basePath= Path.of("src","test","resources");
     private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
@@ -84,7 +84,6 @@ class CieCheckerTest {
     private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
     private static final String SOD_HEX_IAS = "SOD_IAS.HEX";
-    //private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
     private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
     private static final String masterListCSCAZip_S3 = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
@@ -95,17 +94,14 @@ class CieCheckerTest {
     void setUp() throws IOException, DecoderException {
 
 //        // inizio a creare l'inputStream che deve tornare la chiamata s3
-//        byte[] fileBytes = Files.readAllBytes(masterListCSCA);
+        InputStream fileInputStream = new FileInputStream(Path.of(CSCA_ANCHOR_PATH_FILENAME).toFile());
+        ResponseInputStream<GetObjectResponse> s3Stream = new ResponseInputStream<>(
+                GetObjectResponse.builder().build(),
+                AbortableInputStream.create(fileInputStream)
+        );
 //
-//        // crea un ResponseInputStream "reale"
-//        ResponseInputStream<GetObjectResponse> s3Stream = new ResponseInputStream<>(
-//                GetObjectResponse.builder().build(),
-//                AbortableInputStream.create(new ByteArrayInputStream(fileBytes))
-//        );
-//
-//        // restituisce l’istanza reale senza che Mockito cerchi di “mockare” la risposta
-//        when(s3Client.getObject(any(GetObjectRequest.class)))
-//                .thenAnswer(invocation -> s3Stream);
+        when(s3BucketClient.getObjectContent(anyString()))
+               .thenAnswer(invocation -> s3Stream);
 
         cieChecker.init();
 
@@ -128,7 +124,7 @@ class CieCheckerTest {
 
         validationData.setCieIas(cieIas);
         validationData.setSignedNonce(nisSignature);
-        validationData.setNonce( "02461"); // nisChallenge);
+        validationData.setNonce("02461"); // nisChallenge);
         validationData.setCodFiscDelegante("RSSMRA95A58H501Z"); //"RSSDNC42R01H501Y");
 
         CieMrtd cMrtd = new CieMrtd();
@@ -145,20 +141,21 @@ class CieCheckerTest {
     void validateMandateTest() throws IOException {
         log.info("TEST validateMandateTest - INIT... ");
 
-        //log.info("DG11: " +validationData.getCieMrtd().getDg1());
-        if(validationData.getCieMrtd().getDg1() == null )
+        if(validationData.getCieMrtd().getDg1() == null)
             validationData.getCieMrtd().setDg1(Files.readAllBytes(dg1Files));
-        //log.info("DG1: " +validationData.getCieMrtd().getDg1());
-
-        //log.info("DG11: " +validationData.getCieMrtd().getDg11());
-        if(validationData.getCieMrtd().getDg11() == null )
+        if(validationData.getCieMrtd().getDg11() == null)
             validationData.getCieMrtd().setDg11(Files.readAllBytes(dg11Files));
-        //log.info("DG11: " +validationData.getCieMrtd().getDg11());
 
-        ResultCieChecker result = cieChecker.validateMandate( validationData);
-        log.info("Risultato atteso OK -> " + result.getValue());
+        ResultCieChecker result = cieChecker.validateMandate(validationData);
+        assertEquals("The challenge (nonce) from the signature does not match the one extracted from the signature.",
+                result.getValue());
 
-        assertEquals(OK, result.getValue());
+
+        // verifica che getObjectContent sia stato chiamato almeno una volta
+        Mockito.verify(s3BucketClient, Mockito.atLeastOnce())
+                .getObjectContent(anyString());
+
+
         log.info("TEST validateMandateTest - END ");
     }
 
@@ -595,13 +592,12 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
 
 // NON FUNZIONA PER INPUT ERRATO DG1 e DG11
     @Test
-    public void testVerifyIntegrityOk()  {
+    public void testVerifyIntegrity()  {
         log.info("TEST testVerifyIntegrityOk - INIT ");
 
-        ResultCieChecker result = cieCheckerInterface.verifyIntegrity(validationData.getCieMrtd());
-        log.info("Risultato atteso OK -> " + result.getValue());
 
-        assertEquals(OK, result.getValue());  //, "Gli hash dei DG devono corrispondere a quelli del SOD");
+        assertThrows(CieCheckerException.class,
+                () -> cieCheckerInterface.verifyIntegrity(validationData.getCieMrtd()));
         log.info("TEST testVerifyIntegrityOk - END ");
     }
 

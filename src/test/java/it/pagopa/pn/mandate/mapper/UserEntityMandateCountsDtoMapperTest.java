@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.mapper;
 
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateCountsDto;
 import org.junit.jupiter.api.Assertions;
@@ -9,8 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-@SpringBootTest
-class UserEntityMandateCountsDtoMapperTest {
+class UserEntityMandateCountsDtoMapperTest extends AbstractTestConfiguration {
 
     @Autowired
     UserEntityMandateCountsDtoMapper mapper;

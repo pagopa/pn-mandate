@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.mapper;
 
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.InternalMandateDto;
@@ -13,8 +14,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-class MandateEntityInternalMandateDtoMapperTest {
+class MandateEntityInternalMandateDtoMapperTest extends AbstractTestConfiguration {
 
     @Autowired
     MandateEntityInternalMandateDtoMapper mapper;

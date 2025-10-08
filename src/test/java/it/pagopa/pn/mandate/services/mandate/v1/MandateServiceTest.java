@@ -3,6 +3,7 @@ package it.pagopa.pn.mandate.services.mandate.v1;
 import it.pagopa.pn.api.dto.events.EventType;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.ValidateUtils;
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CIEValidationData;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
@@ -66,9 +67,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest
 @ActiveProfiles("test")
-class MandateServiceTest {
+class MandateServiceTest extends AbstractTestConfiguration {
 
     private static final Duration D = Duration.ofMillis(3000);
 

@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.mapper.MandateEntityInternalMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
@@ -29,9 +30,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
 @ActiveProfiles("test")
-class MandatePrivateServiceTest {
+class MandatePrivateServiceTest extends AbstractTestConfiguration {
 
     @InjectMocks
     private MandatePrivateService mandatePrivateService;

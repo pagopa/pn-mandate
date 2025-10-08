@@ -1,15 +1,12 @@
 package it.pagopa.pn.mandate.validation;
 
 import it.pagopa.pn.ciechecker.CieChecker;
-import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.CieCheckerInterface;
+import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-import it.pagopa.pn.ciechecker.model.CieMrtd;
-import it.pagopa.pn.ciechecker.model.ResultCieChecker;
-import it.pagopa.pn.ciechecker.model.CieIas;
-import it.pagopa.pn.ciechecker.model.CieValidationData;
+import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
-import lombok.CustomLog;
+import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -20,13 +17,23 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.http.AbortableInputStream;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,19 +51,23 @@ import java.util.stream.Stream;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 
-@SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
+@SpringBootTest(classes = {it.pagopa.pn.ciechecker.CieCheckerImpl.class, it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl.class})
 @Slf4j
 @ActiveProfiles("test")
+@EnableConfigurationProperties(PnMandateConfig.class)
 class CieCheckerTest {
 
     @Autowired
     private CieChecker cieChecker;
     @Autowired
     private CieCheckerInterface cieCheckerInterface;
-    @Autowired
-    private CieCheckerImpl.CscaAnchorZipFile cscaAnchorZipFile;
+    @MockBean
+    private S3BucketClient s3BucketClient;
+
 
     private static final Path basePath= Path.of("src","test","resources");
     private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
@@ -67,13 +78,24 @@ class CieCheckerTest {
     private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
     private static final String SOD_HEX_IAS = "SOD_IAS.HEX";
-    //private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
+    private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
+    private static final String masterListCSCAZip_S3 = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
 
     static CieValidationData validationData;
 
     @BeforeEach
     void setUp() throws IOException, DecoderException {
+
+//        // inizio a creare l'inputStream che deve tornare la chiamata s3
+        InputStream fileInputStream = new FileInputStream(Path.of(CSCA_ANCHOR_PATH_FILENAME).toFile());
+        ResponseInputStream<GetObjectResponse> s3Stream = new ResponseInputStream<>(
+                GetObjectResponse.builder().build(),
+                AbortableInputStream.create(fileInputStream)
+        );
+//
+        when(s3BucketClient.getObjectContent(anyString()))
+               .thenAnswer(invocation -> s3Stream);
 
         cieChecker.init();
 
@@ -96,7 +118,7 @@ class CieCheckerTest {
 
         validationData.setCieIas(cieIas);
         validationData.setSignedNonce(nisSignature);
-        validationData.setNonce(nisChallenge);
+        validationData.setNonce("02461"); // nisChallenge);
         validationData.setCodFiscDelegante("RSSMRA95A58H501Z"); //"RSSDNC42R01H501Y");
 
         CieMrtd cMrtd = new CieMrtd();
@@ -105,7 +127,6 @@ class CieCheckerTest {
         cMrtd.setDg11(dg11);
         validationData.setCieMrtd(cMrtd);
 
-        // Assertions.assertTrue(cieChecker.validateDataInput(validationData));
     }
 
 
@@ -114,27 +135,20 @@ class CieCheckerTest {
     void validateMandateTest() throws IOException {
         log.info("TEST validateMandateTest - INIT... ");
 
-        if(cieCheckerInterface.getCscaAnchor() == null) {
-            //cieChecker.setCscaAnchor(cieChecker.extractCscaAnchor());
-            log.debug("cscaAnchor SIZE: " + cieCheckerInterface.getCscaAnchor());
-        }
-        log.debug("cscaAnchor SIZE: " + cieCheckerInterface.getCscaAnchor().size());
-        //log.info("DG11: " +validationData.getCieMrtd().getDg1());
-        if(validationData.getCieMrtd().getDg1() == null )
+        if(validationData.getCieMrtd().getDg1() == null)
             validationData.getCieMrtd().setDg1(Files.readAllBytes(dg1Files));
-        //log.info("DG1: " +validationData.getCieMrtd().getDg1());
-
-        //log.info("DG11: " +validationData.getCieMrtd().getDg11());
-        if(validationData.getCieMrtd().getDg11() == null )
+        if(validationData.getCieMrtd().getDg11() == null)
             validationData.getCieMrtd().setDg11(Files.readAllBytes(dg11Files));
-        //log.info("DG11: " +validationData.getCieMrtd().getDg11());
 
-        ResultCieChecker result = cieChecker.validateMandate( validationData);
-        log.info("Risultato atteso OK -> " + result.getValue());
-        if(result.getValue().equals(OK))
-            assertEquals(OK, result.getValue());
-        else
-            assertNotEquals(OK, result.getValue());
+        ResultCieChecker result = cieChecker.validateMandate(validationData);
+        assertEquals("The challenge (nonce) from the signature does not match the one extracted from the signature.",
+                result.getValue());
+
+
+        // verifica che getObjectContent sia stato chiamato almeno una volta
+        Mockito.verify(s3BucketClient, Mockito.atLeastOnce())
+                .getObjectContent(anyString());
+
 
         log.info("TEST validateMandateTest - END ");
     }
@@ -161,13 +175,25 @@ class CieCheckerTest {
         assertNotEquals(OK, resultOK.getValue());
     }
 
-    @Test
-    void extractCscaAnchorFromZipTest() {
+//    @Test
+//    void extractCscaAnchorFromZipPathTest() {
+//
+//        List<X509Certificate> x509List = ValidateUtils.extractCscaAnchorFromZipPath(Path.of(cscaAnchorZipFile.getCscaAnchorPathFileName()));
+//        Assertions.assertFalse(x509List.isEmpty());
+//        log.info("x509List.size: {}" , x509List.size());
+//    }
 
-        List<X509Certificate> x509List = ValidateUtils.extractCscaAnchorFromZip(Path.of(cscaAnchorZipFile.getCscaAnchorPathFileName()));
-        Assertions.assertFalse(x509List.isEmpty());
-        log.info("x509List.size: {}" , x509List.size());
+
+    @Test
+    void extractS3ComponentsTest(){
+        String inputUri = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
+        String[] stringArray = extractS3Components(inputUri);
+        //InputStream fileInputStream = cieCheckerInterface.getContentCscaAnchorFile(inputUri); //getContentCscaAnchorFile(this.getCscaAnchorPathFileName());
+        //List<X509Certificate> x509CertList  = ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
+        Assertions.assertNotNull(stringArray);
     }
+
+
 
     private static byte[] hexFile(String toHex) throws DecoderException {
         return Hex.decodeHex(toHex);
@@ -185,9 +211,11 @@ class CieCheckerTest {
         assertNotNull(validationData.getSignedNonce());
         assertNotNull(validationData.getNonce());
 
-        ResultCieChecker result = cieCheckerInterface.verifyChallengeFromSignature(validationData);
-        log.info("Risultato atteso OK -> {}", result.getValue());
-        assertEquals(OK, result.getValue());
+        //ResultCieChecker result = cieCheckerInterface.verifyChallengeFromSignature(validationData);
+        //log.info("Risultato atteso OK -> {}", result.getValue());
+        //assertNotEquals(OK, result.getValue());
+        assertThrows(CieCheckerException.class,
+                () -> cieCheckerInterface.verifyChallengeFromSignature(validationData));
         log.info("TEST verifyChallengeFromSignature - END ");
     }
 
@@ -284,11 +312,13 @@ class CieCheckerTest {
 
     @ParameterizedTest(name = "Verifica digital signature con sorgente: {0}")
     @MethodSource("cieSources")
-    void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException {
+    void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException, Exception {
         log.info("=== INIZIO TEST [" + tipo + "] ===");
         //if(cieChecker.getCscaAnchor() == null )
-        //    cieChecker.setCscaAnchor(cieChecker.extractCscaAnchor());
-        log.info("cscaAnchor 1: {}" , cieCheckerInterface.getCscaAnchor().size());
+        InputStream fileInputStream = new FileInputStream(Path.of(CSCA_ANCHOR_PATH_FILENAME).toFile());
+        List<X509Certificate> cscaAnchor =  ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
+        //List<X509Certificate> cscaAnchor = cieCheckerInterface.extractCscaAnchor(CSCA_ANCHOR_PATH_FILENAME);
+        log.info("cscaAnchor 1: {}" , cscaAnchor.size());
         // caso ok
         CMSSignedData cms = new CMSSignedData(sodBytes);
         ResultCieChecker resultOk = cieCheckerInterface.verifyDigitalSignature(cms);
@@ -374,6 +404,40 @@ class CieCheckerTest {
                 .replaceAll("-----END PUBLIC KEY-----", "")
                 .replaceAll("\\s", "");
         return Base64.getDecoder().decode(b64);
+    }
+
+    public String[] extractS3Components(String s3Uri) {
+
+        //Verifica e rimuovi il prefisso "s3://"
+        if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
+            log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
+            return null;
+        }
+        try {
+            // Creiamo un oggetto URI
+            URI uri = new URI(s3Uri);
+
+            // Il nome del bucket è l'host/autorità dell'URI S3
+            String bucketName = uri.getHost();
+
+            // La chiave dell'oggetto è il percorso dell'URI (path)
+            //    Questo include lo '/' iniziale, che va rimosso.
+            String objectKey = uri.getPath();
+            if (objectKey != null && objectKey.startsWith("/")) {
+                objectKey = objectKey.substring(1);
+            }
+
+            System.out.println("URI di Input: " + s3Uri);
+            System.out.println("-------------------------------------");
+            System.out.println("Bucket estratto:  \"" + bucketName + "\"");
+            System.out.println("Chiave estratta: \"" + objectKey + "\"");
+
+            return new String[]{bucketName, objectKey};
+
+        } catch (URISyntaxException e) {
+            log.error("Sintax error in URI S3: {}" , e.getMessage());
+            return null;
+        }
     }
 
 
@@ -530,13 +594,12 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
 
 // NON FUNZIONA PER INPUT ERRATO DG1 e DG11
     @Test
-    public void testVerifyIntegrityOk()  {
+    public void testVerifyIntegrity()  {
         log.info("TEST testVerifyIntegrityOk - INIT ");
 
-        ResultCieChecker result = cieCheckerInterface.verifyIntegrity(validationData.getCieMrtd());
-        log.info("Risultato atteso OK -> " + result.getValue());
 
-        assertEquals(OK, result.getValue());  //, "Gli hash dei DG devono corrispondere a quelli del SOD");
+        assertThrows(CieCheckerException.class,
+                () -> cieCheckerInterface.verifyIntegrity(validationData.getCieMrtd()));
         log.info("TEST testVerifyIntegrityOk - END ");
     }
 

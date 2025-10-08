@@ -1,6 +1,8 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: 'Example microservice deploy'
 
+
+
 Parameters:
   ProjectName:
     Type: String
@@ -344,6 +346,11 @@ Parameters:
     Type: String
     Description: "S3 path of the CSCA master list"
 
+
+Properties:
+  CscaMasterListS3RelativePath: !Select [1, !Split ['s3://', !Ref 'CscaMasterListS3Path']]
+
+
 Resources:
 
   # PN-Mandate microservice
@@ -451,6 +458,11 @@ Resources:
             Resource:
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/AARQrUrlConfigs'
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource: !Sub "arn:aws:s3:::${CscaMasterListS3RelativePath}"
 
   # Expose PN-Mandate microservice public API with API-GW for B2BPG usage
   MandateMicroserviceB2BPGApi:

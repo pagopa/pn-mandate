@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.LocalStackTestConfig;
 import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
@@ -39,9 +40,8 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@SpringBootTest
 @Import(LocalStackTestConfig.class)
-public class MandateDaoIT {
+public class MandateDaoIT extends AbstractTestConfiguration {
 
     private final Duration d = Duration.ofMillis(60000);
 

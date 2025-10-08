@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateDtoDto;
 import org.junit.jupiter.api.AfterAll;
@@ -23,12 +24,11 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
 
-@SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
         "pn.mandate.client_datavault_basepath=http://localhost:9997"
 })
-class PnDataVaultClientTest {
+class PnDataVaultClientTest extends AbstractTestConfiguration {
 
     @Autowired
     private PnDataVaultClient pnDataVaultClient;

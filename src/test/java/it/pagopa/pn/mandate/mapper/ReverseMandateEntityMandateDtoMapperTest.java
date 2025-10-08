@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.mapper;
 
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDtoRequest;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.UserDto;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
@@ -10,8 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-class ReverseMandateEntityMandateDtoMapperTest {
+class ReverseMandateEntityMandateDtoMapperTest extends AbstractTestConfiguration {
 
     @Autowired
     ReverseMandateEntityMandateDtoMapper mapper;

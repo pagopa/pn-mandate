@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.commons.log.PnAuditLogBuilder;
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.LocalStackTestConfig;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
@@ -27,10 +28,9 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
-@SpringBootTest
 @ExtendWith(SpringExtension.class)
 @Import(LocalStackTestConfig.class)
-class DelegateDaoIT {
+class DelegateDaoIT extends AbstractTestConfiguration {
 
     @Autowired
     private MandateDao mandateDao;

@@ -15,6 +15,7 @@ public class CieCheckerConstants {
     public static final String SHA_512 = "SHA-512";
     public static final String SHA_1_WITH_RSA = "SHA1withRSA";
     public static final String TAG_PERSONAL_NUMBER = "5F10";
+    public static final String TAG_EXPIRE_DATE = "5F1F";
 
     public static final String OK = "OK";
 
@@ -79,5 +80,9 @@ public class CieCheckerConstants {
     public static final String EXC_DECODER_ERROR = "Error occurs during the decoding process of data";
     public static final String EXC_NOFOUND_CODFISCALE_DG11 = "Error occurs during the extraction of Personal number in DG11";
     public static final String EXC_CODFISCALE_NOT_VERIFIED = "Personal number do not match with the expected value";
+    public static final String EXC_NOFOUND_EXPIRE_DATE_DG1 = "Error occurs during the extraction of Expire Date in DG1";
+    public static final String EXC_NOFOUND_TAG_DG = "Error occurs during the extraction of TAG in DG";
+    public static final String EXC_INVALID_EXPIRATIONDATE = "The date string (Date of Expiry) is invalid or is not in the 'ddmmyy' format";
+    public static final String EXC_EXPIRATIONDATE = "The CIE has expired";
 
 }

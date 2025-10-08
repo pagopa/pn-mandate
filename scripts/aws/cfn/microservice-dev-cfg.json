@@ -9,9 +9,15 @@
     "AutoscalingThreshold": "1300",
     "PendingDuration": "15m",
     "CiePendingDuration": "15m",
+    "CieValidToDuration": "15m",
+    "RevokeCieMandateOnVerificationFailure": "false",
     "EnhancedWebSecurityEnabled": "true",
     "MountEfs": "false",
     "PnCronAnalyzer": "-",
-    "WireTapLogActivation": "false"
+    "WireTapLogActivation": "false",
+    "IsLollipopActive": "false",
+    "LollipopExpectedLcOriginalUrl": "^https://api-app.io.pagopa.it/api/v1/send/aar/(qr-code-check|notifications/[A-Z]{4}-[A-Z]{4}-[A-Z]{4}-[0-9]{6}-[A-Z]{1}-[0-9]{1}|attachments/.+)$",
+    "LollipopEnableConsumerLogging": "true",
+    "CscaMasterListS3Path": "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip"
   }
 }

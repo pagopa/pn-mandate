@@ -22,13 +22,14 @@ public class MandateAppIoController implements AppIoPnMandateCreateApi {
     private final MandateService mandateService;
 
     @Override
-    public Mono<ResponseEntity<Void>> acceptIOMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String xPagopaCxTaxid, String mandateId, List<String> xPagopaPnCxGroups, String xPagopaPnCxRole, Mono<CIEValidationData> ciEValidationData, ServerWebExchange exchange) {
-        return null;
+    public Mono<ResponseEntity<Void>> acceptIOMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String mandateId, Mono<CIEValidationData> ciEValidationData,  final ServerWebExchange exchange) {
+        return mandateService.acceptMandateAppIo(xPagopaPnCxId, xPagopaPnCxType, mandateId, ciEValidationData)
+                .thenReturn(ResponseEntity.noContent().build());
     }
 
     @Override
-    public Mono<ResponseEntity<MandateCreationResponse>> createIOMandate(String xPagopaPnUid, String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String xPagopaCxTaxid, List<String> xPagopaPnCxGroups, String xPagopaLollipopUserName, String xPagopaLollipopUserFamilyName, Mono<MandateCreationRequest> mandateCreationRequest,  final ServerWebExchange exchange) {
-        return mandateService.createMandateAppIo(xPagopaPnUid, xPagopaPnCxId, xPagopaLollipopUserName, xPagopaLollipopUserFamilyName, xPagopaPnCxType, mandateCreationRequest)
+    public Mono<ResponseEntity<MandateCreationResponse>> createIOMandate(String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String xPagopaLollipopUserName, String xPagopaLollipopUserFamilyName, Mono<MandateCreationRequest> mandateCreationRequest,  final ServerWebExchange exchange) {
+        return mandateService.createMandateAppIo(xPagopaPnCxId, xPagopaLollipopUserName, xPagopaLollipopUserFamilyName, xPagopaPnCxType, mandateCreationRequest)
                 .map(response ->ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 }

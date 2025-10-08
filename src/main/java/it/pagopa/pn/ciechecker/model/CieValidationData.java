@@ -1,6 +1,7 @@
 package it.pagopa.pn.ciechecker.model;
 
 import lombok.Data;
+import lombok.ToString;
 
 @Data
 public class CieValidationData {
@@ -8,5 +9,6 @@ public class CieValidationData {
     private CieMrtd cieMrtd;
     private String nonce;
     private byte[] signedNonce;
+    @ToString.Exclude
     private String codFiscDelegante;
 }

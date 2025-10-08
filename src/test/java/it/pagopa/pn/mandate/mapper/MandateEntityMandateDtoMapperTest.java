@@ -1,14 +1,14 @@
 package it.pagopa.pn.mandate.mapper;
 
-import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
-import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.OrganizationIdDto;
+import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.utils.DateUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -16,10 +16,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@SpringBootTest
-class MandateEntityMandateDtoMapperTest {
+class MandateEntityMandateDtoMapperTest extends AbstractTestConfiguration {
 
     @Autowired
     MandateEntityMandateDtoMapper mapper;

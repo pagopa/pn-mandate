@@ -34,6 +34,8 @@ public abstract class LogsCostant {
     public static final String VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE = "ValidateUtils.verifySodPassiveDigitalSignature()";
     public static final String VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE = "ValidateUtils.verifyCodFiscDelegante()";
     public static final String VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE = "ValidateUtils.extractCodiceFiscaleByOid()";
+    public static final String VALIDATEUTILS_PARSER_TLV_TAGVALUE = "ValidateUtils.parserTLVTagValue()";
+    public static final String CIECHECKER_VERIFY_EXPIRATION_CIE = "CieCheckerImpl.verifyExpirationCie()";
 
     // ERROR
     public static final String ENDING_PROCESS_WITH_ERROR = "Ending '{}' Process with error = '{}' - '{}'";

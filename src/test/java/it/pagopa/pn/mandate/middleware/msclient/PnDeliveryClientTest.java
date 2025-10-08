@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.exceptions.PnInvalidQrCodeException;
 import it.pagopa.pn.mandate.generated.openapi.msclient.delivery.v1.dto.UserInfoQrCodeDto;
 import org.junit.jupiter.api.*;
@@ -12,12 +13,11 @@ import org.springframework.test.context.TestPropertySource;
 
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 
-@SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
         "pn.mandate.client_delivery_basepath=http://localhost:9999"
 })
-class PnDeliveryClientTest {
+class PnDeliveryClientTest extends AbstractTestConfiguration {
 
     @Autowired
     private PnDeliveryClient client;

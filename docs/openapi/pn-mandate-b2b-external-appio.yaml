@@ -51,20 +51,16 @@ paths:
       description: Crea una nuova delega in stato PENDING che in seguito all'accettazione può permettere l'accesso temporaneo ad una notifica. Restituisce i dati della delega in caso di successo
       operationId: createIOMandate
       parameters:
-        - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'                           # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'                         # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/lollipopUserName'                        # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/lollipopUserFamilyName'                  # NO EXTERNAL
-#        - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopAssertionRef'                                    # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopAssertionType'                                   # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopAuthJwt'                                         # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopAssertionRef'                                    # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopAssertionType'                                   # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopAuthJwt'                                         # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
       requestBody:
         content:
           application/json:
@@ -133,18 +129,16 @@ paths:
       summary: Accetta la delega fornendo i dati della CIE del delegante. La delega passa in stato ACTIVE in caso di successo.
       operationId: acceptIOMandate
       parameters:
-        - $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'                           # NO EXTERNAL
-        - $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'                         # NO EXTERNAL
-#        - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopAssertionRef'                                    # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopAssertionType'                                   # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopAuthJwt'                                         # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
-#        - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
+        - $ref: 'remote-refs.yaml#/components/parameters/cxTaxIdAuthFleet'                        # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopOriginalUrl'                                     # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopOriginalMethod'                                  # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopPublicKey'                                       # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopAssertionRef'                                    # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopAssertionType'                                   # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopAuthJwt'                                         # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopUserId'                                          # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopSignatureInput'                                  # ONLY EXTERNAL
+        - $ref: '#/components/parameters/lollipopSignature'                                       # ONLY EXTERNAL
         - name: mandateId
           in: path
           required: true
@@ -215,14 +209,6 @@ components:
     ############################################################################################
     ###                     PARAMETRI DI AUTENTICAZIONE E AUTORIZZAZIONE                     ###
     ############################################################################################
-    cxTypeAuthFleet: # NO EXTERNAL
-      $ref: 'remote-refs.yaml#/components/parameters/cxTypeAuthFleet'            # NO EXTERNAL
-    cxIdAuthFleet: # NO EXTERNAL
-      $ref: 'remote-refs.yaml#/components/parameters/cxIdAuthFleet'              # NO EXTERNAL
-    cxGroupsAuthFleet: # NO EXTERNAL
-      $ref: 'remote-refs.yaml#/components/parameters/cxGroupsAuthFleet'          # NO EXTERNAL
-    uidAuthFleet: # NO EXTERNAL
-      $ref: 'remote-refs.yaml#/components/parameters/uidAuthFleet'               # NO EXTERNAL
     
     
     ############################################################################################

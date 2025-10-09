@@ -27,7 +27,7 @@ class MandateEntityBuilderMapperTest {
 
     @Test
     void buildMandateEntity_shouldMapFieldsCorrectly() {
-        String delegatorUserId = "delegator";
+        String delegatorUserId = "PF-delegator";
         String delegateUserId = "delegate";
         String mandateId = "mandateId";
         UserInfoQrCodeDto dto = new UserInfoQrCodeDto();
@@ -39,6 +39,7 @@ class MandateEntityBuilderMapperTest {
         assertEquals(delegateUserId, entity.getDelegate());
         assertEquals(mandateId, entity.getMandateId());
         assertEquals(Set.of("IUN123"), entity.getIuns());
+        assertEquals("delegator", entity.getDelegatorUid());
         assertTrue(entity.getDelegatorisperson());
         assertNotNull(entity.getValidationcode());
         assertNotNull(entity.getCreated());

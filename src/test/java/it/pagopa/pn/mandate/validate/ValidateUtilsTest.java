@@ -48,8 +48,6 @@ import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_384;
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_512;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.decodeSodHr;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
 @TestPropertySource("classpath:application.properties")
@@ -73,9 +71,8 @@ class ValidateUtilsTest {
     private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
     private static final String masterListCSCAZip_S3 = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
 
-
-    private static final String fileToAddMasterListZip = "C:/PROGETTI_DGS/PAGO_PA/REPOSITORIES/pagopa/pn-mandate/prova.txt";
-    private static final String originalMasterListZip = "C:/PROGETTI_DGS/PAGO_PA/REPOSITORIES/pagopa/pn-mandate/IT_MasterListCSCA.zip";
+    private static final String fileToAddMasterListZip = "src/test/resources/prova.txt";
+    private static final String originalMasterListZip = "src/test/resources/IT_MasterListCSCA.zip";
 
 
     private static final Map<String,String> expectedIssuer = Map.of(

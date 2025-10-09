@@ -18,8 +18,6 @@ import org.bouncycastle.asn1.icao.LDSSecurityObject;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.*;

@@ -3,12 +3,8 @@ package it.pagopa.pn.ciechecker;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
-import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -76,7 +72,7 @@ public class MasterListMergeToolUtility {
         String outputPathtFile = zipFile.getParent();
         String originalFileName = zipFile.getName();
         log.debug("pathFile: {} - Name: {}" , outputPathtFile , originalFileName);
-        Path tempFilePath = Files.createTempFile(zipFile.getName(), ".tmp");
+        Path tempFilePath = Files.createTempFile(Path.of(outputPathtFile), zipFile.getName(), ".tmp");
 
         File tempFile = tempFilePath.toFile();
 
@@ -116,8 +112,9 @@ public class MasterListMergeToolUtility {
 
                 // Rinomina il file ZIP TEMPORANEO (il nuovo archivio)
                 log.debug("tempFilePath: " + tempFilePath.getFileName());
-                Path newZipName = tempFilePath.resolveSibling( outputPathtFile + "/" + originalFileName); //+ zipFile.getName());
+                Path newZipName = tempFilePath.resolveSibling( originalFileName); //+ zipFile.getName());
                 log.debug("newZipName: {}", newZipName);
+                log.debug("tempFilePath: {}", tempFilePath.toString());
                 Files.move(tempFilePath, newZipName, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
                 log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, "File '"+fileToAdd.getName()+"' aggiunto con successo a '"+ zipFile.getName()+"'");

@@ -67,6 +67,8 @@ public enum ResultCieChecker {
     KO_EXC_NOFOUND_TAG_DG(CieCheckerConstants.EXC_NOFOUND_TAG_DG),
     KO_EXC_INVALID_EXPIRATIONDATE(CieCheckerConstants.EXC_INVALID_EXPIRATIONDATE),
     KO_EXC_EXPIRATIONDATE(CieCheckerConstants.EXC_EXPIRATIONDATE),
+    KO_EXC_NOFOUND_FILEARGS(CieCheckerConstants.EXC_NOFOUND_FILEARGS),
+    KO_EXC_CREATION_FILEZIPTEMP(CieCheckerConstants.EXC_CREATION_FILEZIPTEMP),
     KO_EXC_EXCEPTION(CieCheckerConstants.EXC_KO);
 
     private final String value;

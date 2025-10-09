@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.validate;
 
+import it.pagopa.pn.ciechecker.MasterListMergeToolUtility;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
@@ -71,6 +72,10 @@ class ValidateUtilsTest {
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
     private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
     private static final String masterListCSCAZip_S3 = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
+
+
+    private static final String fileToAddMasterListZip = "C:/PROGETTI_DGS/PAGO_PA/REPOSITORIES/pagopa/pn-mandate/prova.txt";
+    private static final String originalMasterListZip = "C:/PROGETTI_DGS/PAGO_PA/REPOSITORIES/pagopa/pn-mandate/IT_MasterListCSCA.zip";
 
 
     private static final Map<String,String> expectedIssuer = Map.of(
@@ -744,5 +749,11 @@ class ValidateUtilsTest {
         }
     }
 
+    @Test
+    void mergeTest(){
 
+        MasterListMergeToolUtility master = new MasterListMergeToolUtility();
+        ResultCieChecker result = master.merge(originalMasterListZip, fileToAddMasterListZip);
+        Assertions.assertTrue(result.getValue().equals(OK));
+    }
 }

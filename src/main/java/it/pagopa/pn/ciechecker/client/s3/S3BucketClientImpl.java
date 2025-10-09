@@ -23,7 +23,7 @@ import static it.pagopa.pn.ciechecker.CieCheckerConstants.PROTOCOLLO_S3;
 
 @Service
 @AllArgsConstructor
-@Slf4j
+@lombok.CustomLog
 @Data
 public class S3BucketClientImpl  implements S3BucketClient {
 

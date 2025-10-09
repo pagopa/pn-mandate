@@ -80,7 +80,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS);
             }
 
-
             if (cscaPath.endsWith(".zip") || cscaPath.endsWith(".ZIP")) {
                   cscaAnchor = ValidateUtils.extractCscaAnchorFromZip(inputStreamCscaAnchor);
             } else if (cscaPath.endsWith(".pem") || cscaPath.endsWith(".PEM")) {

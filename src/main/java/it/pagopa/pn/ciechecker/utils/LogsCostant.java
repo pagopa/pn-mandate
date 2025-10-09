@@ -36,6 +36,8 @@ public abstract class LogsCostant {
     public static final String VALIDATEUTILS_LOAD_CSCAANCHOR_PEM = "ValidateUtils.loadCertificateFromPemFile()";
     public static final String VALIDATEUTILS_PARSER_TLV_TAGVALUE = "ValidateUtils.parserTLVTagValue()";
     public static final String CIECHECKER_VERIFY_EXPIRATION_CIE = "CieCheckerImpl.verifyExpirationCie()";
+    public static final String MASTERLISTMERGETOOL_ADDFILETOMASTERZIP = "MasterListMergeToolUtility.addFileToMasterListZip()";
+    public static final String MASTERLISTMERGETOOL_MERGE = "MasterListMergeToolUtility.merge()";
 
     // ERROR
     public static final String ENDING_PROCESS_WITH_ERROR = "Ending '{}' Process with error = '{}' - '{}'";

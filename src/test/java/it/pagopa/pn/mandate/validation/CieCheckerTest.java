@@ -80,7 +80,7 @@ class CieCheckerTest {
     private static final String SOD_HEX_IAS = "SOD_IAS.HEX";
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
     private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
-    private static final String masterListCSCAZip_S3 = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
+    private static final String masterListCSCAZip_S3 = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/IT_MasterListCSCA.zip";
 
     static CieValidationData validationData;
 
@@ -187,7 +187,7 @@ class CieCheckerTest {
     @Test
     void extractS3ComponentsTest(){
         String inputUri = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
-        String[] stringArray = extractS3Components(inputUri);
+        String[] stringArray = extractS3Components(masterListCSCAZip_S3); //  inputUri);
         //InputStream fileInputStream = cieCheckerInterface.getContentCscaAnchorFile(inputUri); //getContentCscaAnchorFile(this.getCscaAnchorPathFileName());
         //List<X509Certificate> x509CertList  = ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
         Assertions.assertNotNull(stringArray);

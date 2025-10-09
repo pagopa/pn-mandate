@@ -86,5 +86,7 @@ public class CieCheckerConstants {
     public static final String EXC_NOFOUND_TAG_DG = "Error occurs during the extraction of TAG in DG";
     public static final String EXC_INVALID_EXPIRATIONDATE = "The date string (Date of Expiry) is invalid or is not in the 'ddmmyy' format";
     public static final String EXC_EXPIRATIONDATE = "The CIE has expired";
+    public static final String EXC_NOFOUND_FILEARGS = "MasterList ZIP file or Certificate PEM file not found";
+    public static final String EXC_CREATION_FILEZIPTEMP = "Error creating the new MasterList ZIP archive";
 
 }

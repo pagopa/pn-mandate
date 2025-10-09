@@ -71,7 +71,7 @@ class ValidateUtilsTest {
     private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
     private static final String masterListCSCAZip_S3 = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
 
-    private static final String fileToAddMasterListZip = "src/test/resources/prova.txt";
+    private static final String fileToAddMasterListZip = "src/test/resources/catest.pem";
     private static final String originalMasterListZip = "src/test/resources/IT_MasterListCSCA.zip";
 
 

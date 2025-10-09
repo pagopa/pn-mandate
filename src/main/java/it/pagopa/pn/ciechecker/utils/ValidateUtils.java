@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 @lombok.CustomLog
@@ -679,43 +680,50 @@ public class ValidateUtils {
             ZipInputStream zis = new ZipInputStream(zipStream);
             ZipEntry entry;
 
-            entry = zis.getNextEntry();
-            CMSSignedData cms;
-            if (entry != null) {
-                cms = new CMSSignedData(zis);
+            while( (entry = zis.getNextEntry()) != null) {
+                log.info("ZIS: {}" , entry.getName());
+                if(entry.getName().endsWith(".pem")){
+                    List<X509Certificate> pemList = ValidateUtils.loadCertificateFromPemFile(zis);
+                    x509List.addAll(pemList);
+                }else {
+                    //entry = zis.getNextEntry();
+                    CMSSignedData cms;
+                    if (entry != null) {
+                        cms = new CMSSignedData(zis);
 
-                ASN1InputStream input = new ASN1InputStream((byte[])cms.getSignedContent().getContent());
+                        ASN1InputStream input = new ASN1InputStream((byte[]) cms.getSignedContent().getContent());
 
-                ASN1Primitive p;
-                p = input.readObject();
-                ASN1Sequence seq0Lev = ASN1Sequence.getInstance(p);
-                Enumeration<ASN1Primitive> enum0Lev = seq0Lev.getObjects();
-                ASN1Integer int1Lev = (ASN1Integer) enum0Lev.nextElement();
-                ASN1Set set1Lev = (ASN1Set) enum0Lev.nextElement();
-                Enumeration<ASN1Primitive> enum1Lev = set1Lev.getObjects();
+                        ASN1Primitive p;
+                        p = input.readObject();
+                        ASN1Sequence seq0Lev = ASN1Sequence.getInstance(p);
+                        Enumeration<ASN1Primitive> enum0Lev = seq0Lev.getObjects();
+                        ASN1Integer int1Lev = (ASN1Integer) enum0Lev.nextElement();
+                        ASN1Set set1Lev = (ASN1Set) enum0Lev.nextElement();
+                        Enumeration<ASN1Primitive> enum1Lev = set1Lev.getObjects();
 
-                while ( enum1Lev.hasMoreElements() ) {
-                    ASN1Object asn1Obj = (ASN1Object)enum1Lev.nextElement();
-                    X509CertificateHolder holder = new X509CertificateHolder(asn1Obj.toASN1Primitive().getEncoded());
+                        while (enum1Lev.hasMoreElements()) {
+                            ASN1Object asn1Obj = (ASN1Object) enum1Lev.nextElement();
+                            X509CertificateHolder holder = new X509CertificateHolder(asn1Obj.toASN1Primitive().getEncoded());
 
-                    RDN rdns [] = holder.getSubject().getRDNs(ASN1ObjectIdentifier.tryFromID("2.5.4.6"));
-                    if( rdns.length > 0 ) {
-                        RDN rdn = rdns[0];
-                        if( rdn != null
-                                && rdn.getFirst().getValue() != null ) {
-                            String country = rdn.getFirst().getValue().toString();
-                            if( country.equals("IT") ) {
-                                X509Certificate cert = new JcaX509CertificateConverter().getCertificate(holder);
-                                if( isSelfSigned(cert) ) {
-                                    x509List.add(cert);
+                            RDN rdns[] = holder.getSubject().getRDNs(ASN1ObjectIdentifier.tryFromID("2.5.4.6"));
+                            if (rdns.length > 0) {
+                                RDN rdn = rdns[0];
+                                if (rdn != null
+                                        && rdn.getFirst().getValue() != null) {
+                                    String country = rdn.getFirst().getValue().toString();
+                                    if (country.equals("IT")) {
+                                        X509Certificate cert = new JcaX509CertificateConverter().getCertificate(holder);
+                                        if (isSelfSigned(cert)) {
+                                            x509List.add(cert);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-
+                zis.closeEntry();
             }
-
             return x509List;
         } catch (Exception e) {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE, e.getClass().getName() + " - Message: " + e.getMessage());

@@ -27,7 +27,7 @@ public class PnDeliveryClient {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_DELIVERY, "Retrieving IUN and recipient information");
         return internalOnlyApi.decodeAarToken(requestDecodeQrDtoDto)
                 .onErrorResume(e -> {
-                    if(e instanceof WebClientResponseException && ((WebClientResponseException) e).getStatusCode() == HttpStatus.BAD_REQUEST){
+                    if(e instanceof WebClientResponseException && ((WebClientResponseException) e).getStatusCode() == HttpStatus.NOT_FOUND){
                         throw new PnInvalidQrCodeException("Qr Token non trovato","Token non è stato trovato",ERROR_CODE_MANDATE_QR_TOKEN_NOT_FOUND);
                     }
                     throw new PnInternalException("Internal Server Error",ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR,e);

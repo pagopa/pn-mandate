@@ -61,7 +61,7 @@ class Base64ValidatorTest {
 
     private static java.util.stream.Stream<Arguments> invalidBase64Provider() {
         return java.util.stream.Stream.of(
-                Arguments.of("not_base64", "Invalid Base64 encoding in field: nisData.nis"),
+                Arguments.of("Zm9vYmFyMTIz%45Nis", "Invalid Base64 encoding in field: nisData.nis"),
                 Arguments.of(null, "Missing or empty field: nisData.nis"),
                 Arguments.of("", "Missing or empty field: nisData.nis")
         );

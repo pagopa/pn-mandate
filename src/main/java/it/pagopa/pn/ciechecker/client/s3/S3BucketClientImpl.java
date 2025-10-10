@@ -72,16 +72,22 @@ public class S3BucketClientImpl  implements S3BucketClient {
             // La chiave dell'oggetto è il percorso dell'URI (path)
             //    Questo include lo '/' iniziale, che va rimosso.
             String objectKey = uri.getPath();
+            String nameKey = null;
             if (objectKey != null && objectKey.startsWith("/")) {
                 objectKey = objectKey.substring(1);
+                if(objectKey.lastIndexOf("/") != -1)
+                    nameKey = objectKey.substring(objectKey.lastIndexOf("/")+1);
+                else
+                    nameKey = objectKey;
             }
 
             log.debug("URI di Input: " + s3Uri);
             log.debug("-------------------------------------");
             log.debug("Bucket estratto:  " + bucketName );
             log.debug("Chiave estratta: " + objectKey );
+            log.debug("Nome estratto: " + nameKey );
 
-            return new String[]{bucketName, objectKey};
+            return new String[]{bucketName, objectKey, nameKey};
 
         } catch (URISyntaxException e) {
             log.error("Sintax error in URI S3: {}" , e.getMessage());

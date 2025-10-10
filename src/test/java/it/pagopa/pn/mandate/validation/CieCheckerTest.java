@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.validation;
 
 import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerInterface;
+import it.pagopa.pn.ciechecker.MasterListMergeToolUtility;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
@@ -27,10 +28,7 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.http.AbortableInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -82,6 +80,9 @@ class CieCheckerTest {
     private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
     private static final String masterListCSCAZip_S3 = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/IT_MasterListCSCA.zip";
 
+    private static final String fileToAddMasterListZip = "src/test/resources/catest.pem";
+    private static final String originalMasterListZip = "src/test/resources/IT_MasterListCSCA.zip";
+
     static CieValidationData validationData;
 
     @BeforeEach
@@ -96,6 +97,16 @@ class CieCheckerTest {
 //
         when(s3BucketClient.getObjectContent(anyString()))
                .thenAnswer(invocation -> s3Stream);
+
+        //PEM FILE
+//        InputStream fileInputStreamPem = new FileInputStream(Path.of(fileToAddMasterListZip).toFile());
+//        ResponseInputStream<GetObjectResponse> s3StreamPem = new ResponseInputStream<>(
+//                GetObjectResponse.builder().build(),
+//                AbortableInputStream.create(fileInputStreamPem)
+//        );
+////
+//        when(s3BucketClient.getObjectContent(anyString()))
+//                .thenAnswer(invocation -> s3StreamPem);
 
         cieChecker.init();
 
@@ -187,9 +198,12 @@ class CieCheckerTest {
     @Test
     void extractS3ComponentsTest(){
         String inputUri = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
-        String[] stringArray = extractS3Components(masterListCSCAZip_S3); //  inputUri);
+        String[] stringArray = MasterListMergeToolUtility.extractS3Components(masterListCSCAZip_S3); //  inputUri);
         //InputStream fileInputStream = cieCheckerInterface.getContentCscaAnchorFile(inputUri); //getContentCscaAnchorFile(this.getCscaAnchorPathFileName());
         //List<X509Certificate> x509CertList  = ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
+        for(String a : stringArray) {
+            log.info("stringArray {} ", a);
+        }
         Assertions.assertNotNull(stringArray);
     }
 
@@ -601,6 +615,33 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
         assertThrows(CieCheckerException.class,
                 () -> cieCheckerInterface.verifyIntegrity(validationData.getCieMrtd()));
         log.info("TEST testVerifyIntegrityOk - END ");
+    }
+
+
+    @Test
+    void mergeTest() throws FileNotFoundException {
+
+        MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient);
+
+        InputStream fileInputStream = new FileInputStream(Path.of(CSCA_ANCHOR_PATH_FILENAME).toFile());
+        ResponseInputStream<GetObjectResponse> zipS3Stream = new ResponseInputStream<>(
+                GetObjectResponse.builder().build(),
+                AbortableInputStream.create(fileInputStream)
+        );
+
+        InputStream fileInputStreamPem = new FileInputStream(Path.of(fileToAddMasterListZip).toFile());
+        ResponseInputStream<GetObjectResponse> pemS3Stream = new ResponseInputStream<>(
+                GetObjectResponse.builder().build(),
+                AbortableInputStream.create(fileInputStreamPem)
+        );
+        when(s3BucketClient.getObjectContent(anyString()))
+                // ...la prima volta restituisci lo ZIP
+                .thenReturn(zipS3Stream)
+                // ...la seconda volta restituisci il PEM
+                .thenReturn(pemS3Stream);
+
+        ResultCieChecker result = master.merge(); //originalMasterListZip, fileToAddMasterListZip);
+        Assertions.assertTrue(result.getValue().equals(OK));
     }
 
 }

@@ -746,11 +746,4 @@ class ValidateUtilsTest {
         }
     }
 
-    @Test
-    void mergeTest(){
-
-        MasterListMergeToolUtility master = new MasterListMergeToolUtility();
-        ResultCieChecker result = master.merge(originalMasterListZip, fileToAddMasterListZip);
-        Assertions.assertTrue(result.getValue().equals(OK));
-    }
 }

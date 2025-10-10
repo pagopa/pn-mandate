@@ -724,6 +724,7 @@ public class ValidateUtils {
                 }
                 zis.closeEntry();
             }
+            zis.close();
             return x509List;
         } catch (Exception e) {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE, e.getClass().getName() + " - Message: " + e.getMessage());

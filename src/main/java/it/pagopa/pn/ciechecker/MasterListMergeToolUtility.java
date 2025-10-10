@@ -4,17 +4,21 @@ import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
+import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import static it.pagopa.pn.ciechecker.CieCheckerConstants.OK;
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.PROTOCOLLO_S3;
 
 @lombok.CustomLog
@@ -32,6 +36,7 @@ public class MasterListMergeToolUtility {
     private static String[] s3UriInfoCertPem ;
 
     private static final String resourcesDir = "src/test/resources/";
+    private static final String newFileZip = "new_IT_MasterListCSCA.zip";
 
     public MasterListMergeToolUtility(S3BucketClient s3BucketClient){
         this.s3BucketClient = s3BucketClient;
@@ -48,8 +53,6 @@ public class MasterListMergeToolUtility {
         }
     }
 
-//    public ResultCieChecker merge(String originalFileNameZip, String fileNameToAdd) throws CieCheckerException{
-     // public ResultCieChecker merge(InputStream fileInputStream, InputStream fileInputStreamPem) throws CieCheckerException{
 
     public ResultCieChecker merge() throws CieCheckerException{
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE);
@@ -58,6 +61,9 @@ public class MasterListMergeToolUtility {
             log.error("ERRORE: CSCA ANCHOR PATH is NULL");
             return ResultCieChecker.KO;
         }
+
+        s3UriInfoCscaZip = ValidateUtils.extractS3Components( this.cscaPath);
+        s3UriInfoCertPem = ValidateUtils.extractS3Components( this.certPemPath);
 
         if (this.cscaPath.startsWith(PROTOCOLLO_S3) ){
 
@@ -75,20 +81,14 @@ public class MasterListMergeToolUtility {
         }
 
         try {
-            //
-//            File originalZip = createFileFromInputStream(inputStreamCscaAnchor, s3UriInfoCscaZip[2], ".tmp");
-//            File fileToAdd = createFileFromInputStream(inputStreamCscaPem, s3UriInfoCertPem[2], ".tmp");
-//
-//            if (!originalZip.exists() || !fileToAdd.exists()) {
-//                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, ResultCieChecker.KO_EXC_NOFOUND_FILEARGS.getValue());
-//                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOFOUND_FILEARGS);
-//            }
-//            addFileToMasterListZip(originalZip, fileToAdd);
-
-            addFileToMasterListZip();
+            ResultCieChecker result = addFileToMasterListZip();
             // Output atteso:
             // tre file: il file "catest.pem" da aggiungere al nuovo zip, "new_<fileNameZip>.zip" (il nuovo ZIP) e "fileNameZip.zip" (il originale ZIP)
-
+            if(result.getValue().equals(OK)) {
+                log.info("UPLOAD del file prodotto sul bucket S3...");
+                //UPLOAD del file prodotto sul bucket S3
+                writeNewMasterZip(  new FileInputStream(resourcesDir + newFileZip));
+            }
         } catch (Exception e) {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
@@ -100,8 +100,8 @@ public class MasterListMergeToolUtility {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP);
 
-        String[] s3UriInfoCscaZip = extractS3Components( this.cscaPath);
-        String[] s3UriInfoCertPem = extractS3Components( this.certPemPath);
+//        String[] s3UriInfoCscaZip = ValidateUtils.extractS3Components( this.cscaPath);
+//        String[] s3UriInfoCertPem = ValidateUtils.extractS3Components( this.certPemPath);
         log.debug("s3UriInfoCscaZip[2]: {}" , s3UriInfoCscaZip[2]);
         log.debug("s3UriInfoCertPem[2]: {}" , s3UriInfoCertPem[2]);
 
@@ -122,7 +122,7 @@ public class MasterListMergeToolUtility {
             ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempFile))){
             ZipEntry entry;
             //Copia il contenuto del file ZIP originale in quello temporaneo
-            log.debug("ZIS: {}", zis.available());
+            //log.debug("ZIS: {}", zis.available());
             while ((entry = zis.getNextEntry()) != null) {
 //                log.info("entry.getName(): {}", entry.getName());
 //                log.info("s3UriInfoCertPem_2: {}", s3UriInfoCertPem_2);
@@ -152,7 +152,7 @@ public class MasterListMergeToolUtility {
         }
         // Assicurati che il file temporaneo venga gestito correttamente
         if (success) {
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, "File '" + s3UriInfoCertPem[1] + "' aggiunto con successo a '" + s3UriInfoCscaZip[1] + "'");
+            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, "File '" + s3UriInfoCertPem[1] + "' aggiunto con successo a '" + s3UriInfoCscaZip[3] +"new_"+s3UriInfoCscaZip[2]+ "'");
             return ResultCieChecker.OK;
         } else {
             // Delete del file temporaneo in caso di eccezione
@@ -183,46 +183,15 @@ public class MasterListMergeToolUtility {
     }
 
 
-    public static String[] extractS3Components(String s3Uri) {
-
-        log.info("- s3Uri: {}", s3Uri);
-        //Verifica e rimuovi il prefisso "s3://"
-        if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
-            log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
-            return null;
+    private void writeNewMasterZip( InputStream newFileZipZos) throws Exception {
+        if (Objects.isNull(newFileZipZos)) {
+            return;
         }
-        try {
-            // Creiamo un oggetto URI
-            URI uri = new URI(s3Uri);
+        byte[] newZipFileBytes = newFileZipZos.readAllBytes();
+        InputStream newZip = new ByteArrayInputStream(newZipFileBytes);
+        //s3BucketClient.uploadContent(s3UriInfoCscaZip[3].concat(newFileZip), newZip, newZipFileBytes.length, null);
+        log.info("Call s3 bucket for upload content object with bucket: {} key: {}", s3UriInfoCscaZip[0], s3UriInfoCscaZip[3] + "new_"+ s3UriInfoCscaZip[2]);
+        s3BucketClient.uploadContent(cscaPath, newZip, newZipFileBytes.length, null);
 
-            // Il nome del bucket è l'host/autorità dell'URI S3
-            String bucketName = uri.getHost();
-
-            // La chiave dell'oggetto è il percorso dell'URI (path)
-            //    Questo include lo '/' iniziale, che va rimosso.
-            String objectKey = uri.getPath();
-            String nameKey = null;
-            if (objectKey != null && objectKey.startsWith("/")) {
-                objectKey = objectKey.substring(1);
-                if(objectKey.lastIndexOf("/") != -1)
-                    nameKey = objectKey.substring(objectKey.lastIndexOf("/")+1);
-                else
-                    nameKey = objectKey;
-            }
-
-            log.debug("URI di Input: " + s3Uri);
-            log.debug("-------------------------------------");
-            log.debug("Bucket estratto:  " + bucketName );
-            log.debug("Chiave estratta: " + objectKey );
-            log.debug("Nome estratta: " + nameKey );
-
-            return new String[]{bucketName, objectKey, nameKey};
-
-        } catch (URISyntaxException e) {
-            log.error("Sintax error in URI S3: {}" , e.getMessage());
-            return null;
-        }
     }
-
-
 }

@@ -18,6 +18,8 @@ import org.bouncycastle.asn1.icao.LDSSecurityObject;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.*;
@@ -861,5 +863,54 @@ public class ValidateUtils {
         sha1Digest.doFinal(result, 0);
         return result;
     }
+
+
+
+    public static String[] extractS3Components(String s3Uri) {
+
+        log.info("- s3Uri: {}", s3Uri);
+        //Verifica e rimuovi il prefisso "s3://"
+        if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
+            log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
+            return null;
+        }
+        try {
+            // Creiamo un oggetto URI
+            URI uri = new URI(s3Uri);
+
+            // Il nome del bucket è l'host/autorità dell'URI S3
+            String bucketName = uri.getHost();
+
+            // La chiave dell'oggetto è il percorso dell'URI (path)
+            //    Questo include lo '/' iniziale, che va rimosso.
+            String objectKey = uri.getPath();
+            String nameKey = null;
+            String key = null;
+            if (objectKey != null && objectKey.startsWith("/")) {
+                objectKey = objectKey.substring(1);
+                if(objectKey.lastIndexOf("/") != -1) {
+                    key = objectKey.substring(0, objectKey.lastIndexOf("/") +1);
+                    nameKey = objectKey.substring(objectKey.lastIndexOf("/") + 1);
+                }else {
+                    key = "/";
+                    nameKey = objectKey;
+                }
+            }
+
+            log.debug("URI di Input: " + s3Uri);
+            log.debug("-------------------------------------");
+            log.debug("Bucket estratto:  " + bucketName );
+            log.debug("Chiave estratta: " + objectKey );
+            log.debug("Nome estratta: " + nameKey );
+            log.debug("Path estratta: " + key );
+
+            return new String[]{bucketName, objectKey, nameKey, key};
+
+        } catch (URISyntaxException e) {
+            log.error("Sintax error in URI S3: {}" , e.getMessage());
+            return null;
+        }
+    }
+
 
 }

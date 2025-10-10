@@ -4,15 +4,18 @@ package it.pagopa.pn.ciechecker.client.s3;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
+import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.Data;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -34,12 +37,13 @@ public class S3BucketClientImpl  implements S3BucketClient {
 
     private final S3Client clientS3;
 
+    private static String[] s3UriInfo;
 
     @Override
     public InputStream getObjectContent(String s3Uri) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, "Call s3 bucket for read content object with s3Uri: {}", s3Uri);
-        String[] s3UriInfo = extractS3Components( s3Uri);
+        s3UriInfo = ValidateUtils.extractS3Components( s3Uri);
 
         if(Objects.isNull(s3UriInfo)) {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
@@ -54,46 +58,12 @@ public class S3BucketClientImpl  implements S3BucketClient {
         }
     }
 
-
-    private String[] extractS3Components(String s3Uri) {
-
-        //Verifica e rimuovi il prefisso "s3://"
-        if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
-            log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
-            return null;
-        }
-        try {
-            // Creiamo un oggetto URI
-            URI uri = new URI(s3Uri);
-
-            // Il nome del bucket è l'host/autorità dell'URI S3
-            String bucketName = uri.getHost();
-
-            // La chiave dell'oggetto è il percorso dell'URI (path)
-            //    Questo include lo '/' iniziale, che va rimosso.
-            String objectKey = uri.getPath();
-            String nameKey = null;
-            if (objectKey != null && objectKey.startsWith("/")) {
-                objectKey = objectKey.substring(1);
-                if(objectKey.lastIndexOf("/") != -1)
-                    nameKey = objectKey.substring(objectKey.lastIndexOf("/")+1);
-                else
-                    nameKey = objectKey;
-            }
-
-            log.debug("URI di Input: " + s3Uri);
-            log.debug("-------------------------------------");
-            log.debug("Bucket estratto:  " + bucketName );
-            log.debug("Chiave estratta: " + objectKey );
-            log.debug("Nome estratto: " + nameKey );
-
-            return new String[]{bucketName, objectKey, nameKey};
-
-        } catch (URISyntaxException e) {
-            log.error("Sintax error in URI S3: {}" , e.getMessage());
-            return null;
-        }
+    @Override
+    public void uploadContent(String s3Uri, InputStream file, long size, String checksum) throws Exception {
+        s3UriInfo = ValidateUtils.extractS3Components( s3Uri);
+        log.info("Call s3 bucket for upload content object with bucket: {} key: {}", s3UriInfo[0], s3UriInfo[3] + "new_"+ s3UriInfo[2]);
+        clientS3.putObject(PutObjectRequest.builder().bucket(s3UriInfo[0]).key(s3UriInfo[3] + "new_"+ s3UriInfo[2])
+                .contentMD5(checksum).build(), RequestBody.fromInputStream(file, size));
     }
-
 
 }

@@ -11,6 +11,7 @@ import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.IOUtils;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
@@ -25,13 +26,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.AbortableInputStream;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.*;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,8 +55,9 @@ import java.util.stream.Stream;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 
 @SpringBootTest(classes = {it.pagopa.pn.ciechecker.CieCheckerImpl.class, it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl.class})
@@ -65,6 +72,8 @@ class CieCheckerTest {
     private CieCheckerInterface cieCheckerInterface;
     @MockBean
     private S3BucketClient s3BucketClient;
+    @MockBean
+    private S3Client clientS3;
 
 
     private static final Path basePath= Path.of("src","test","resources");
@@ -198,7 +207,7 @@ class CieCheckerTest {
     @Test
     void extractS3ComponentsTest(){
         String inputUri = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
-        String[] stringArray = MasterListMergeToolUtility.extractS3Components(masterListCSCAZip_S3); //  inputUri);
+        String[] stringArray = ValidateUtils.extractS3Components(inputUri); //masterListCSCAZip_S3); //  inputUri);
         //InputStream fileInputStream = cieCheckerInterface.getContentCscaAnchorFile(inputUri); //getContentCscaAnchorFile(this.getCscaAnchorPathFileName());
         //List<X509Certificate> x509CertList  = ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
         for(String a : stringArray) {
@@ -420,40 +429,6 @@ class CieCheckerTest {
         return Base64.getDecoder().decode(b64);
     }
 
-    public String[] extractS3Components(String s3Uri) {
-
-        //Verifica e rimuovi il prefisso "s3://"
-        if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
-            log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
-            return null;
-        }
-        try {
-            // Creiamo un oggetto URI
-            URI uri = new URI(s3Uri);
-
-            // Il nome del bucket è l'host/autorità dell'URI S3
-            String bucketName = uri.getHost();
-
-            // La chiave dell'oggetto è il percorso dell'URI (path)
-            //    Questo include lo '/' iniziale, che va rimosso.
-            String objectKey = uri.getPath();
-            if (objectKey != null && objectKey.startsWith("/")) {
-                objectKey = objectKey.substring(1);
-            }
-
-            System.out.println("URI di Input: " + s3Uri);
-            System.out.println("-------------------------------------");
-            System.out.println("Bucket estratto:  \"" + bucketName + "\"");
-            System.out.println("Chiave estratta: \"" + objectKey + "\"");
-
-            return new String[]{bucketName, objectKey};
-
-        } catch (URISyntaxException e) {
-            log.error("Sintax error in URI S3: {}" , e.getMessage());
-            return null;
-        }
-    }
-
 
     @Test
     void verifySodPassiveAuthCie() throws CMSException {
@@ -643,5 +618,23 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
         ResultCieChecker result = master.merge(); //originalMasterListZip, fileToAddMasterListZip);
         Assertions.assertTrue(result.getValue().equals(OK));
     }
+
+
+//    @Test
+//    void uploadContentTest() throws Exception {
+//
+//        AbortableInputStream inStream =
+//                AbortableInputStream.create(new FileInputStream("src/test/resources/new_IT_MasterListCSCA.zip"));
+//
+//        when(clientS3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+//                .thenReturn(PutObjectResponse.builder().build());
+//
+//        s3BucketClient.uploadContent(
+//                "pn-mandate/csca-masterlist/new_IT_MasterListCSCA.zip",
+//                inStream, 4L, "");
+//
+//       verify(clientS3, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+//    }
+
 
 }

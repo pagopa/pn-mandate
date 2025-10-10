@@ -42,6 +42,7 @@ public class CieCheckerConstants {
     public static final String EXC_GENERATE_CERTIFICATE = "Error in generating the certificate object and initializes";
     public static final String EXC_VALIDATE_CERTIFICATE = "Path does not chain with any of the trust anchors";
     public static final String EXC_GENERATE_CMSSIGNEDDATA = "Error in generating CMSSignedData";
+    public static final String EXC_NO_SUPPORTED_CERTIFICATEFACTORY = "No Provider supports a CertificateFactorySpi implementation for the specified type";
     public static final String EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR = "No Provider supports a CertPathValidatorSpi implementation for the specified algorithm";
     public static final String EXC_INVALID_PARAMETER_CERTPATHVALIDATOR = "The specified parameters or the type of the specified CertPath are inappropriate for this CertPathValidator";
     public static final String EXC_IOEXCEPTION = "KO_IOEXCEPTION";

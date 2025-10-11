@@ -1,8 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: 'Example microservice deploy'
 
-
-
 Parameters:
   ProjectName:
     Type: String
@@ -342,9 +340,9 @@ Parameters:
     Default: "3000ms"
     Description: Connection timeout for Lollipop Assertion endpoint in duration format
 
-  CscaMasterListS3Path:
+  CieValidationCertS3Path:
     Type: String
-    Description: "S3 path of the CSCA master list"
+    Description: "S3 path to the validation certificate (env-specific)."
 
 Resources:
 
@@ -394,7 +392,7 @@ Resources:
         ContainerEnvEntry20: !Sub "LOLLIPOP_IDP_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopIdpRestConfigConnectionTimeout}"
         ContainerEnvEntry21: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_READ_TIMEOUT=${LollipopAssertionRestConfigReadTimeout}"
         ContainerEnvEntry22: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopAssertionRestConfigConnectionTimeout}"
-        ContainerEnvEntry23: !Sub "CSCA_MASTERLIST_S3_PATH=${CscaMasterListS3Path}"
+        ContainerEnvEntry23: !Sub 'CSCA_MASTERLIST_S3_PATH=s3://pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/${CieValidationCertS3Path}'
         ApplicativeEnvFileChecksum: !Ref ApplicativeEnvFileChecksum
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
@@ -457,9 +455,7 @@ Resources:
             Action:
               - s3:GetObject
               - s3:GetObjectVersion
-            Resource: !Sub
-              - "arn:aws:s3:::${RelativePath}"
-              - RelativePath: !Select [ 1, !Split [ 's3://', !Ref 'CscaMasterListS3Path' ] ]
+            Resource: !Sub "arn:aws:s3:::pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/pn-mandate/*"
 
   # Expose PN-Mandate microservice public API with API-GW for B2BPG usage
   MandateMicroserviceB2BPGApi:

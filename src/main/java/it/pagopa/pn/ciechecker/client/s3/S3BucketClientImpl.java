@@ -59,11 +59,22 @@ public class S3BucketClientImpl  implements S3BucketClient {
     }
 
     @Override
-    public void uploadContent(String s3Uri, InputStream file, long size, String checksum) throws Exception {
+    public void uploadContent(String s3Uri, InputStream file, long size, String checksum) throws CieCheckerException {
+
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.S3BUCKETCLIENTIMPL_PUT_OBJECT_CONTENT, "Call s3 bucket for read content object with s3Uri: {}", s3Uri);
         s3UriInfo = ValidateUtils.extractS3Components( s3Uri);
-        log.info("Call s3 bucket for upload content object with bucket: {} key: {}", s3UriInfo[0], s3UriInfo[3] + "new_"+ s3UriInfo[2]);
-        clientS3.putObject(PutObjectRequest.builder().bucket(s3UriInfo[0]).key(s3UriInfo[3] + "new_"+ s3UriInfo[2])
-                .contentMD5(checksum).build(), RequestBody.fromInputStream(file, size));
+        if(Objects.isNull(s3UriInfo)) {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS);
+        }
+        try {
+            log.info("Call s3 bucket for upload content object with bucket: {} key: {}", s3UriInfo[0], s3UriInfo[3] + "new_" + s3UriInfo[2]);
+            clientS3.putObject(PutObjectRequest.builder().bucket(s3UriInfo[0]).key(s3UriInfo[3] + "new_" + s3UriInfo[2])
+                    .contentMD5(checksum).build(), RequestBody.fromInputStream(file, size));
+        }catch (Exception e ){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.S3BUCKETCLIENTIMPL_PUT_OBJECT_CONTENT, e.getClass().getName()+" Message: " +e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_CONNECT_S3,e);
+        }
     }
 
 }

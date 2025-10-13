@@ -33,6 +33,7 @@ public abstract class LogsCostant {
     public static final String VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE = "ValidateUtils.verifyCodFiscDelegante()";
     public static final String VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE = "ValidateUtils.extractCodiceFiscaleByOid()";
     public static final String S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT = "S3BucketClientImpl.getObjectContent()";
+    public static final String S3BUCKETCLIENTIMPL_PUT_OBJECT_CONTENT = "S3BucketClientImpl.uploadContent()";
     public static final String VALIDATEUTILS_LOAD_CSCAANCHOR_PEM = "ValidateUtils.loadCertificateFromPemFile()";
     public static final String VALIDATEUTILS_PARSER_TLV_TAGVALUE = "ValidateUtils.parserTLVTagValue()";
     public static final String CIECHECKER_VERIFY_EXPIRATION_CIE = "CieCheckerImpl.verifyExpirationCie()";

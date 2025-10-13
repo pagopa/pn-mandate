@@ -85,15 +85,16 @@ public class MasterListMergeToolUtility {
             // Output atteso:
             // tre file: il file "catest.pem" da aggiungere al nuovo zip, "new_<fileNameZip>.zip" (il nuovo ZIP) e "fileNameZip.zip" (il originale ZIP)
             if(result.getValue().equals(OK)) {
-                log.info("UPLOAD del file prodotto sul bucket S3...");
+                log.debug("UPLOAD del file prodotto sul bucket S3...");
                 //UPLOAD del file prodotto sul bucket S3
+                log.info("Call s3 bucket for upload content object with bucket: {} key: {}", s3UriInfoCscaZip[0], s3UriInfoCscaZip[3] + "new_" + s3UriInfoCscaZip[2]);
                 writeNewMasterZip(  new FileInputStream(resourcesDir + newFileZip));
             }
+            return ResultCieChecker.OK;
         } catch (Exception e) {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
-        return ResultCieChecker.OK;
     }
 
     private ResultCieChecker addFileToMasterListZip() throws CieCheckerException, IOException {
@@ -183,15 +184,18 @@ public class MasterListMergeToolUtility {
     }
 
 
-    private void writeNewMasterZip( InputStream newFileZipZos) throws Exception {
-        if (Objects.isNull(newFileZipZos)) {
-            return;
-        }
-        byte[] newZipFileBytes = newFileZipZos.readAllBytes();
-        InputStream newZip = new ByteArrayInputStream(newZipFileBytes);
-        //s3BucketClient.uploadContent(s3UriInfoCscaZip[3].concat(newFileZip), newZip, newZipFileBytes.length, null);
-        log.info("Call s3 bucket for upload content object with bucket: {} key: {}", s3UriInfoCscaZip[0], s3UriInfoCscaZip[3] + "new_"+ s3UriInfoCscaZip[2]);
-        s3BucketClient.uploadContent(cscaPath, newZip, newZipFileBytes.length, null);
+    public ResultCieChecker writeNewMasterZip( InputStream newFileZipZos) throws CieCheckerException {
 
+        try {
+            byte[] newZipFileBytes = newFileZipZos.readAllBytes();
+            InputStream newZip = new ByteArrayInputStream(newZipFileBytes);
+            s3BucketClient.uploadContent(cscaPath, newZip, newZipFileBytes.length, null);
+            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, "New File Archive uploaded on S3Bucket");
+            return ResultCieChecker.OK;
+        }catch (Exception e ){
+            e.printStackTrace();
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP, e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_UPLOAD_NEWFILEZIP_TO_S3, e);
+        }
     }
 }

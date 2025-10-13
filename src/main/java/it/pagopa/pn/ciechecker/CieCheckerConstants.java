@@ -88,5 +88,6 @@ public class CieCheckerConstants {
     public static final String EXC_EXPIRATIONDATE = "The CIE has expired";
     public static final String EXC_NOFOUND_FILEARGS = "MasterList ZIP file or Certificate PEM file not found";
     public static final String EXC_CREATION_FILEZIPTEMP = "Error creating the new MasterList ZIP archive";
+    public static final String EXC_UPLOAD_NEWFILEZIP_TO_S3 = "Error uploading the new MasterList ZIP archive on S3Bucket";
 
 }

@@ -27,6 +27,7 @@ public class MandateEntityBuilderMapper {
         entity.setDelegate(delegateUserId);
         entity.setMandateId(mandateId);
         entity.setDelegator(delegatorUserId);
+        entity.setDelegatorUid(removePfPrefix(delegatorUserId));
         entity.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING));
         entity.setValidationcode(mandateUtils.generateRandomCode());
         entity.setCreated(Instant.now());
@@ -40,5 +41,9 @@ public class MandateEntityBuilderMapper {
             log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}",
                     entity.getMandateId(), entity.getDelegator(), true, entity.getValidfrom());
         return entity;
+    }
+
+    private String removePfPrefix(String delegatorUserId) {
+        return delegatorUserId.replace("PF-", "");
     }
 }

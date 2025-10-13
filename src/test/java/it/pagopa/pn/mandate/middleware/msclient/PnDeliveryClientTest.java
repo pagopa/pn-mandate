@@ -7,7 +7,6 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.delivery.v1.dto.UserInfoQ
 import org.junit.jupiter.api.*;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -81,7 +80,7 @@ class PnDeliveryClientTest extends AbstractTestConfiguration {
                 )
                 .respond(
                         org.mockserver.model.HttpResponse.response()
-                                .withStatusCode(400)
+                                .withStatusCode(404)
                 );
 
         Assertions.assertThrows(PnInvalidQrCodeException.class, () -> client.decodeAarQrCode(token).block(java.time.Duration.ofMillis(3000)));

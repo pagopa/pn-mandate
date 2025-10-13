@@ -16,6 +16,9 @@ public class CieCheckerConstants {
     public static final String SHA_1_WITH_RSA = "SHA1withRSA";
     public static final String TAG_PERSONAL_NUMBER = "5F10";
     public static final String TAG_EXPIRE_DATE = "5F1F";
+    public static final String PROTOCOLLO_S3 = "s3://";
+    public static final String CSCA_ANCHOR_PATH_FILENAME = "src/test/resources/IT_MasterListCSCA.zip";
+
 
     public static final String OK = "OK";
 
@@ -25,6 +28,8 @@ public class CieCheckerConstants {
     public static final String EXC_NOTFOUND_CMSSIGNEDDATA = "Not found CMSSignedData";
     public static final String EXC_PARSED_ZERO_CSCA_CERTIFICATES="Parsed 0 CSCA certificates";
     public static final String EXC_NO_CSCA_ANCHORS_PROVIDED= "No CSCA Anchor Files provided or is not valid";
+    public static final String EXC_NOVALID_URI_CSCA_ANCHORS= "URI S3 for CSCA Anchor Files is not valid";
+    public static final String EXC_NOVALID_CSCA_ANCHORS= "CSCA Anchor File is not valid (Valid file is .zip or .pem)";
     public static final String EXC_INPUT_PARAMETER_NULL="Input object parameter CieValidationData is null";
     public static final String EXC_NO_SIGNATURES_SIGNED_DATA="No signatures found in SignedData";
     public static final String EXC_NO_HASH_CONTENT_MATCH="No HashContent match";
@@ -37,7 +42,6 @@ public class CieCheckerConstants {
     public static final String EXC_GENERATE_CERTIFICATE = "Error in generating the certificate object and initializes";
     public static final String EXC_VALIDATE_CERTIFICATE = "Path does not chain with any of the trust anchors";
     public static final String EXC_GENERATE_CMSSIGNEDDATA = "Error in generating CMSSignedData";
-    public static final String EXC_NO_SUPPORTED_CERTIFICATEFACTORY = "No Provider supports a CertificateFactorySpi implementation for the specified type";
     public static final String EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR = "No Provider supports a CertPathValidatorSpi implementation for the specified algorithm";
     public static final String EXC_INVALID_PARAMETER_CERTPATHVALIDATOR = "The specified parameters or the type of the specified CertPath are inappropriate for this CertPathValidator";
     public static final String EXC_IOEXCEPTION = "KO_IOEXCEPTION";
@@ -51,9 +55,6 @@ public class CieCheckerConstants {
     public static final String EXC_NO_MATCH_NONCE_SIGNATURE = "The challenge (nonce) from the signature does not match the one extracted from the signature.";
     public static final String EXC_PARSING_HEX_BYTE = "Conversion error from string to byte[]";
     public static final String EXC_INVALID_CRYPTOGRAPHIC_OPERATION = "Unexpected or invalid state occurs during cryptographic operations";
-    public static final String EXC_NOT_AVAILABLE_CRYPTOGRAPHIC_ALGORITHM ="The cryptographic algorithm is not available";
-    public static final String EXC_NOT_AVAILABLE_SECURITY_PROVIDER ="The security provider is not available";
-    public static final String EXC_NOFOUND_DIGITAL_SIGNATURE ="No digital signature found in the SignedData structure";
     public static final String EXC_NOFOUND_SIGNER ="No signer found";
     public static final String EXC_NO_CMSTYPEDDATA = "Invalid or unavailable signed content";
     public static final String EXC_NO_SIGNERINFORMATIONSTORE ="SignerInformationStore is null";
@@ -80,6 +81,7 @@ public class CieCheckerConstants {
     public static final String EXC_DECODER_ERROR = "Error occurs during the decoding process of data";
     public static final String EXC_NOFOUND_CODFISCALE_DG11 = "Error occurs during the extraction of Personal number in DG11";
     public static final String EXC_CODFISCALE_NOT_VERIFIED = "Personal number do not match with the expected value";
+    public static final String EXC_NOVALID_CONNECT_S3 = "Problem with connect S3";
     public static final String EXC_NOFOUND_EXPIRE_DATE_DG1 = "Error occurs during the extraction of Expire Date in DG1";
     public static final String EXC_NOFOUND_TAG_DG = "Error occurs during the extraction of TAG in DG";
     public static final String EXC_INVALID_EXPIRATIONDATE = "The date string (Date of Expiry) is invalid or is not in the 'ddmmyy' format";

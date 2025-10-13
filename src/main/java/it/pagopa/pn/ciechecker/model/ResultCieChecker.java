@@ -1,8 +1,9 @@
 package it.pagopa.pn.ciechecker.model;
 
 import it.pagopa.pn.ciechecker.CieCheckerConstants;
+import lombok.Getter;
 
-@lombok.CustomLog
+@Getter
 public enum ResultCieChecker {
     OK("OK"),
     KO("KO"),
@@ -73,9 +74,6 @@ public enum ResultCieChecker {
     KO_EXC_EXCEPTION(CieCheckerConstants.EXC_KO);
 
     private final String value;
-    public String getValue() {
-        return value;
-    }
 
     ResultCieChecker(String value) {
         this.value = value;

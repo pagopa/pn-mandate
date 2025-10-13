@@ -7,12 +7,8 @@ import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 
 import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDate;
-import java.util.List;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -24,8 +20,8 @@ import static it.pagopa.pn.ciechecker.CieCheckerConstants.PROTOCOLLO_S3;
 @lombok.CustomLog
 public class MasterListMergeToolUtility {
 
-    private static String originalFileNameZip;
-    private static String fileNameToAdd;
+    //private static String originalFileNameZip;
+    //private static String fileNameToAdd;
     private static final String cscaPath = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/IT_MasterListCSCA.zip";
     private static final String certPemPath = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/catest.pem";
     private static S3BucketClient s3BucketClient;
@@ -46,22 +42,17 @@ public class MasterListMergeToolUtility {
 
         try {
             MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient);
-           // master.merge();
+            ResultCieChecker result = master.merge();
+            log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE, "ResultCieChecker" , result.getValue());
         }catch(CieCheckerException e){
-            e.printStackTrace();
-            log.error("MasterListMergeToolUtility.main() ", e.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
         }
     }
 
 
     public ResultCieChecker merge() throws CieCheckerException{
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE);
-        log.debug("CSCA ANCHOR PATH: {}", this.cscaPath);
-        if (Objects.isNull(this.cscaPath) || this.cscaPath.isBlank()){
-            log.error("ERRORE: CSCA ANCHOR PATH is NULL");
-            return ResultCieChecker.KO;
-        }
 
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE);
         s3UriInfoCscaZip = ValidateUtils.extractS3Components( this.cscaPath);
         s3UriInfoCertPem = ValidateUtils.extractS3Components( this.certPemPath);
 
@@ -76,7 +67,7 @@ public class MasterListMergeToolUtility {
             log.debug("inputStreamCscaAnchor: {}", inputStreamCscaAnchor);
             log.debug("inputStreamCscaPem: {}", inputStreamCscaPem);
         } else {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_INIT,ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE,ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS);
         }
 
@@ -192,7 +183,6 @@ public class MasterListMergeToolUtility {
             log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, "New File Archive uploaded on S3Bucket");
             return ResultCieChecker.OK;
         }catch (Exception e ){
-            e.printStackTrace();
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP, e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_UPLOAD_NEWFILEZIP_TO_S3, e);
         }

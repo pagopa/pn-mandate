@@ -49,7 +49,6 @@ import java.util.Objects;
 import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 @lombok.CustomLog
@@ -256,7 +255,7 @@ public class ValidateUtils {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(octetByte);
-            return Hex.toHexString(hashBytes).toString().toUpperCase();
+            return Hex.toHexString(hashBytes).toUpperCase();
         }catch(NoSuchAlgorithmException nsae){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_CALCULATE_SHA256, nsae.getClass().getName() + " - Message: " + nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MESSAGEDIGESTSPI_SUPPORTED, nsae);
@@ -751,7 +750,7 @@ public class ValidateUtils {
         }
     }
 
-
+/*
     public static String extractCodiceFiscaleByOid(byte[] dg11Bytes) throws CieCheckerException {
 
         try {
@@ -773,7 +772,7 @@ public class ValidateUtils {
             throw new CieCheckerException( ResultCieChecker.KO_EXC_DECODER_ERROR, de);
         }
     }
-
+*/
     public static String parserTLVTagValue(byte[] fileBytes, String tag) throws CieCheckerException {
 
         try {

@@ -1,6 +1,5 @@
 package it.pagopa.pn.mandate.validate;
 
-import it.pagopa.pn.ciechecker.MasterListMergeToolUtility;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
@@ -26,7 +25,6 @@ import org.springframework.test.context.TestPropertySource;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.http.AbortableInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.ByteArrayInputStream;

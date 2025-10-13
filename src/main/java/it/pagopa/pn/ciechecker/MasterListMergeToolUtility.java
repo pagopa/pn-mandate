@@ -87,7 +87,6 @@ public class MasterListMergeToolUtility {
             if(result.getValue().equals(OK)) {
                 log.debug("UPLOAD del file prodotto sul bucket S3...");
                 //UPLOAD del file prodotto sul bucket S3
-                log.info("Call s3 bucket for upload content object with bucket: {} key: {}", s3UriInfoCscaZip[0], s3UriInfoCscaZip[3] + "new_" + s3UriInfoCscaZip[2]);
                 writeNewMasterZip(  new FileInputStream(resourcesDir + newFileZip));
             }
             return ResultCieChecker.OK;
@@ -128,7 +127,7 @@ public class MasterListMergeToolUtility {
 //                log.info("entry.getName(): {}", entry.getName());
 //                log.info("s3UriInfoCertPem_2: {}", s3UriInfoCertPem_2);
                 if (!entry.getName().equals(s3UriInfoCertPem_2)) {
-                    log.info("Copia il contenuto del file ZIP originale in quello temporaneo: {}", entry.getName());
+                    log.debug("Copia il contenuto del file ZIP originale in quello temporaneo: {}", entry.getName());
                     zos.putNextEntry(new ZipEntry(entry.getName()));
                     zis.transferTo(zos);
                     zos.closeEntry();
@@ -136,7 +135,7 @@ public class MasterListMergeToolUtility {
             }
 
             //Aggiungo il nuovo file allo ZIP temporaneo
-            log.info("Aggiungo il nuovo file allo ZIP temporaneo - s3UriInfoCertPem_2: {} " , s3UriInfoCertPem_2);
+            log.debug("Aggiungo il nuovo file allo ZIP temporaneo - s3UriInfoCertPem_2: {} " , s3UriInfoCertPem_2);
             try (FileInputStream fis = convertToFileInputStream(inputStreamCscaPem, s3UriInfoCertPem_2)) {
                 ZipEntry newEntry = new ZipEntry(s3UriInfoCertPem_2);
                 zos.putNextEntry(newEntry);

@@ -683,7 +683,7 @@ public class ValidateUtils {
             ZipEntry entry;
 
             while( (entry = zis.getNextEntry()) != null) {
-                log.info("ZIS: {}" , entry.getName());
+                log.debug("ZIS: {}" , entry.getName());
                 if(entry.getName().endsWith(".pem")){
                     List<X509Certificate> pemList = ValidateUtils.loadCertificateFromPemFile(zis);
                     x509List.addAll(pemList);
@@ -868,7 +868,7 @@ public class ValidateUtils {
 
     public static String[] extractS3Components(String s3Uri) {
 
-        log.info("- s3Uri: {}", s3Uri);
+        log.debug("- s3Uri: {}", s3Uri);
         //Verifica e rimuovi il prefisso "s3://"
         if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
             log.error("Error: L'URI S3 is not valid o not begin with 's3://'");

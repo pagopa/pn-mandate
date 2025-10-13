@@ -8,15 +8,14 @@ import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.DelegateType;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.InternalMandateDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateByDelegatorRequestDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnum;
+import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.utils.PgUtils;
+import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @lombok.CustomLog
@@ -35,9 +34,26 @@ public class MandatePrivateService {
                                                            CxTypeAuthFleet xPagopaPnCxType, List<String> groups) {
         // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE
         log.info("listing private mandates by delegate for internaluserId={} mandateId={}", internaluserId, mandateId);
-        return mandateDao.listMandatesByDelegate(internaluserId, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE), mandateId, xPagopaPnCxType, groups)
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
+                .delegateId(internaluserId)
+                .status(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE))
+                .mandateId(mandateId)
+                .cxType(xPagopaPnCxType)
+                .groups(groups)
+                .build();
+        return mandateDao.listMandatesByDelegate(inputSearchMandateDto, TypeSegregatorFilter.STANDARD)
                 .map(mandateEntityInternalMandateDtoMapper::toDto)
                 .doOnNext(mand -> log.info("listMandatesByDelegate found mandate={}", mand));
+    }
+
+    public Flux<InternalMandateDto> listMandatesByDelegateV2(InputSearchMandateDto inputSearchMandateDto) {
+        // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE
+        String internaluserId = inputSearchMandateDto.getDelegateId();
+        String mandateId = inputSearchMandateDto.getMandateId();
+        log.info("listing private mandates by delegate v2 for internaluserId={} mandateId={}", internaluserId, mandateId);
+        return mandateDao.listMandatesByDelegate(inputSearchMandateDto, null)
+                .map(mandateEntityInternalMandateDtoMapper::toDto)
+                .doOnNext(mand -> log.info("listMandatesByDelegateV2 found mandate={}", mand));
     }
 
     public Flux<InternalMandateDto> listMandatesByDelegator(String internaluserId,

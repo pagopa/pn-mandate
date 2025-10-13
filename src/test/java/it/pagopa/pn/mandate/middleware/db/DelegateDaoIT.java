@@ -1,12 +1,14 @@
 package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.commons.log.PnAuditLogBuilder;
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.LocalStackTestConfig;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.DelegateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,10 +28,9 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.fail;
 
 
-@SpringBootTest
 @ExtendWith(SpringExtension.class)
 @Import(LocalStackTestConfig.class)
-class DelegateDaoIT {
+class DelegateDaoIT extends AbstractTestConfiguration {
 
     @Autowired
     private MandateDao mandateDao;
@@ -77,6 +78,44 @@ class DelegateDaoIT {
         } finally {
             try {
                 testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            } catch (Exception e) {
+                System.out.println("Nothing to remove");
+            }
+        }
+    }
+
+    @Test
+    void countMandatesPendingOnlyExceptCIE() {
+        //Given
+        MandateEntity mandateToInsert = MandateDaoIT.newMandate(false);
+        MandateEntity mandateToInsertCIE = MandateDaoIT.newMandate(false);
+        mandateToInsertCIE.setWorkflowType(WorkFlowType.CIE);
+        mandateToInsertCIE.setMandateId(mandateToInsertCIE.getMandateId() + "_CIE");
+        mandateToInsertCIE.setDelegator(mandateToInsertCIE.getDelegator() + "_CIE");
+        mandateToInsertCIE.setWorkflowType(WorkFlowType.CIE);
+        try {
+            testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+            testDao.delete(mandateToInsertCIE.getDelegator(), mandateToInsertCIE.getSk());
+            mandateDao.createMandate(mandateToInsert).block(Duration.ofMillis(3000));
+            mandateDao.createMandate(mandateToInsertCIE).block(Duration.ofMillis(3000));
+        } catch (Exception e) {
+            System.out.println("Nothing to remove");
+        }
+
+        //When
+        DelegateEntity result = delegateDao.countMandates(mandateToInsert.getDelegate(), CxTypeAuthFleet.PF, null)
+                .block(Duration.ofMillis(3000));
+
+        //Then
+        try {
+            Assertions.assertNotNull( result);
+            Assertions.assertEquals(1,  result.getPendingcount());
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            try {
+                testDao.delete(mandateToInsert.getDelegator(), mandateToInsert.getSk());
+                testDao.delete(mandateToInsertCIE.getDelegator(), mandateToInsertCIE.getSk());
             } catch (Exception e) {
                 System.out.println("Nothing to remove");
             }

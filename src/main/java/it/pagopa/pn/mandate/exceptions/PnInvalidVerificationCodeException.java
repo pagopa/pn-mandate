@@ -11,4 +11,8 @@ public class PnInvalidVerificationCodeException extends PnRuntimeException {
         super("Codice verifica non valido", "Il codice passato non è corretto", HttpStatus.UNPROCESSABLE_ENTITY.value(), ERROR_CODE_INVALID_VERIFICATION_CODE, null, null);
     }
 
+    public PnInvalidVerificationCodeException(String detail) {
+        super("Codice verifica non valido", "Il codice passato non è corretto", HttpStatus.UNPROCESSABLE_ENTITY.value(), ERROR_CODE_INVALID_VERIFICATION_CODE, null, detail);
+    }
+
 }

@@ -142,6 +142,22 @@ Parameters:
     Type: String
     Description: 'Durata del pending massima oltre il quale la delega non accettata scade'
 
+  CiePendingDuration:
+    Type: String
+    Description: 'Durata del pending massima oltre il quale la delega creata con AppIO non accettata scade'
+
+  CieValidToDuration:
+    Type: String
+    Description: 'Durata della validità della delega creata con AppIO (impostata nel processo di accettazione)'
+
+  RevokeCieMandateOnVerificationFailure:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: 'Se true, la revoca della delega CIE viene effettuata automaticamente in caso di nonce incongruente rispetto al validationCode della delega'
+
   PnMandateExpiredTriggerLambdaEventSourceMappingBatchSize:
     Type: String
     Description: 'BatchSize stream mapping'
@@ -296,6 +312,53 @@ Parameters:
     Type: String
     Description: 'S3 bucket prefix for the CSCA Masterlist zip file'
   
+  IoApiDnsName:
+    Type: String
+    Description: "The DNS name used for IO rest API."
+  
+  IOBackendCidrs:
+    Type: String
+    Default: ''
+
+  ApplicativeEnvFileChecksum:
+    Type: String
+    Default: ''
+    Description: 'Applicative environment variable file checksum'
+
+  IsLollipopActive:
+    Type: String
+    Description: "lollipop authorization activation flag"
+    AllowedValues: [ true, false ]
+    Default: false
+
+  LollipopExpectedLcOriginalUrl:
+    Type: String
+    Description: "expected lollipop consumer original url"
+
+  LollipopEnableConsumerLogging:
+    Type: String
+    Description: "enable lollipop consumer logging"
+
+  LollipopIdpRestConfigReadTimeout:
+    Type: String
+    Default: "8000ms"
+    Description: Read timeout for Lollipop Idp endpoint in duration format
+
+  LollipopIdpRestConfigConnectionTimeout:
+    Type: String
+    Default: "3000ms"
+    Description: Connection timeout for Lollipop Idp endpoint in duration format
+
+  LollipopAssertionRestConfigReadTimeout:
+    Type: String
+    Default: "8000ms"
+    Description: Read timeout for Lollipop Assertion endpoint in duration format
+
+  LollipopAssertionRestConfigConnectionTimeout:
+    Type: String
+    Default: "3000ms"
+    Description: Connection timeout for Lollipop Assertion endpoint in duration format
+
   CieValidationCertS3Path:
     Type: String
     Description: "S3 path to the validation certificate (env-specific)."
@@ -337,7 +400,19 @@ Resources:
         ContainerEnvEntry9: !Sub 'PN_MANDATE_PENDINGDURATION=${PendingDuration}'
         ContainerEnvEntry10: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
         ContainerEnvEntry11: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
-        ContainerEnvEntry12: !Sub 'CSCA_MASTERLIST_S3_PATH=s3://pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/${CieValidationCertS3Path}'
+        ContainerEnvEntry12: !Sub 'PN_MANDATE_CLIENT_DELIVERY_BASEPATH=http://${ApplicationLoadBalancerDomain}:8080'
+        ContainerEnvEntry13: !Sub 'PN_MANDATE_CIEPENDINGDURATION=${CiePendingDuration}'
+        ContainerEnvEntry14: !Sub 'PN_MANDATE_CIEVALIDTODURATION=${CieValidToDuration}'
+        ContainerEnvEntry15: !Sub 'PN_MANDATE_REVOKECIEMANDATEONVERIFICATIONFAILURE=${RevokeCieMandateOnVerificationFailure}'
+        ContainerEnvEntry16: !Sub "LOLLIPOP_ACTIVE=${IsLollipopActive}"
+        ContainerEnvEntry17: !Sub "LOLLIPOP_EXPECTED_LC_ORIGINAL_URL=${LollipopExpectedLcOriginalUrl}"
+        ContainerEnvEntry18: !Sub "LOLLIPOP_ENABLE_CONSUMER_LOGGING=${LollipopEnableConsumerLogging}"
+        ContainerEnvEntry19: !Sub "LOLLIPOP_IDP_REST_CONFIG_READ_TIMEOUT=${LollipopIdpRestConfigReadTimeout}"
+        ContainerEnvEntry20: !Sub "LOLLIPOP_IDP_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopIdpRestConfigConnectionTimeout}"
+        ContainerEnvEntry21: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_READ_TIMEOUT=${LollipopAssertionRestConfigReadTimeout}"
+        ContainerEnvEntry22: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopAssertionRestConfigConnectionTimeout}"
+        ContainerEnvEntry23: !Sub 'CSCA_MASTERLIST_S3_PATH=s3://pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/${CieValidationCertS3Path}'
+        ApplicativeEnvFileChecksum: !Ref ApplicativeEnvFileChecksum
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -394,6 +469,12 @@ Resources:
               - ssm:GetParameters
             Resource:
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
+              - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/AARQrUrlConfigs'
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource: !Sub "arn:aws:s3:::pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/pn-mandate/*"
 
   # Expose PN-Mandate microservice public API with API-GW for B2BPG usage
   MandateMicroserviceB2BPGApi:
@@ -423,6 +504,35 @@ Resources:
         APIGatewayARNs: !GetAtt MandateMicroserviceB2BPGApi.Outputs.APIGatewayARN
         Limit: !Ref B2bPgLimit
         ExcludedRule0: CrossSiteScripting_BODY,SizeRestrictions_BODY
+  
+  # Expose PN-MANDATE microservice public API with API-GW for IO Backend usage
+  MandateMicroservicePublicIoAPI:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service-openapi.yaml"
+      Parameters:
+        MicroServiceUniqueName: !Sub "${ProjectName}-mandate"
+        IntendedUsage: IO
+        DnsName: !Ref IoApiDnsName
+        ProjectName: !Ref ProjectName
+        ServiceApiPath: "mandate"
+        NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
+        ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
+        OpenApiBucketName: !Ref MicroserviceBucketName
+        OpenApiBucketKey: !Sub ${MicroserviceBucketBaseKey}/docs/openapi/aws/api-mandate-IO-aws.yaml
+  
+  MandateMicroservicePublicIoApiWaf:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
+      Parameters:
+        WAFName: !Sub "${ProjectName}-mandate-io"
+        IntendedUsage: IO
+        APIGatewayARNs: !GetAtt MandateMicroservicePublicIoAPI.Outputs.APIGatewayARN
+        Limit: 0 # disable IP limit based rule
+        AllowedCidrs: !Ref IOBackendCidrs
 
   MandateMicroserviceCloudWatchDashboard:
     Type: AWS::CloudFormation::Stack

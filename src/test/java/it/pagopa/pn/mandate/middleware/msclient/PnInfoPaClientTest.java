@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.middleware.msclient;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,12 +25,11 @@ import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
-@SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
     "pn.mandate.client_extreg_basepath=http://localhost:9999"
 })
-class PnInfoPaClientTest {
+class PnInfoPaClientTest extends AbstractTestConfiguration {
 
     @Autowired
     private PnInfoPaClient pnInfoPaClient;

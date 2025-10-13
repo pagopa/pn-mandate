@@ -24,8 +24,8 @@ public class ReverseMandateController implements MandateReverseServiceApi {
 
 
     @Override
-    public Mono<ResponseEntity<String>> createReverseMandate(String xPagopaPnUid, String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, List<String> xPagopaPnCxGroups, String xPagopaPnCxRole, Mono<MandateDtoRequest> mandateDtoRequest, final ServerWebExchange exchange) {
-        return mandateDtoRequest.flatMap(request -> mandateService.createReverseMandate(request, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnCxGroups, xPagopaPnCxRole)
+    public Mono<ResponseEntity<String>> createReverseMandate(String xPagopaPnUid, String xPagopaPnCxId, CxTypeAuthFleet xPagopaPnCxType, String xPagopaPnSrcCh, List<String> xPagopaPnCxGroups, String xPagopaPnCxRole, Mono<MandateDtoRequest> mandateDtoRequest, final ServerWebExchange exchange) {
+        return mandateDtoRequest.flatMap(request -> mandateService.createReverseMandate(request, xPagopaPnUid, xPagopaPnCxId, xPagopaPnCxType, xPagopaPnSrcCh, xPagopaPnCxGroups, xPagopaPnCxRole)
                 .map(m -> ResponseEntity.status(HttpStatus.CREATED).body(m)));
     }
 }

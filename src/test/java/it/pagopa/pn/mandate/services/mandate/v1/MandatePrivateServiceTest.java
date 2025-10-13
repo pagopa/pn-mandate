@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.mapper.MandateEntityInternalMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
@@ -7,6 +8,7 @@ import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.utils.PgUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,9 +30,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
 @ActiveProfiles("test")
-class MandatePrivateServiceTest {
+class MandatePrivateServiceTest extends AbstractTestConfiguration {
 
     @InjectMocks
     private MandatePrivateService mandatePrivateService;
@@ -51,12 +52,33 @@ class MandatePrivateServiceTest {
         MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
         List<MandateEntity> list = new ArrayList<>();
         list.add(mandateEntity);
-        when(mandateDao.listMandatesByDelegate(Mockito.same(mandateEntity.getDelegate()), any(), any(), any(), any()))
+        when(mandateDao.listMandatesByDelegate(any(), any()))
                 .thenReturn(Flux.fromIterable(list));
         when(mapper.toDto(Mockito.same(mandateEntity))).thenReturn(new InternalMandateDto());
 
         //When
         List<InternalMandateDto> result = mandatePrivateService.listMandatesByDelegate(mandateEntity.getDelegate(), null, CxTypeAuthFleet.PF, null)
+                .collectList()
+                .block(Duration.ofMillis(3000));
+
+        //Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void listMandatesByDelegateV2() {
+        //Given
+        InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder().build();
+        MandateEntity mandateEntity = MandateDaoIT.newMandate(true);
+        List<MandateEntity> list = new ArrayList<>();
+        list.add(mandateEntity);
+        when(mandateDao.listMandatesByDelegate(any(), any()))
+                .thenReturn(Flux.fromIterable(list));
+        when(mapper.toDto(Mockito.same(mandateEntity))).thenReturn(new InternalMandateDto());
+
+        //When
+        List<InternalMandateDto> result = mandatePrivateService.listMandatesByDelegateV2(inputSearchMandateDto)
                 .collectList()
                 .block(Duration.ofMillis(3000));
 

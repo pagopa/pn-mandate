@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.middleware.db;
 
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateByDelegatorRequestDto;
@@ -26,9 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
 @ActiveProfiles("test")
-class MandateDaoTest {
+class MandateDaoTest extends AbstractTestConfiguration {
 
     @Mock
     DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;

@@ -1,5 +1,6 @@
 package it.pagopa.pn.mandate.middleware.db.entities;
 
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -39,6 +40,10 @@ public class MandateEntity {
     public static final String COL_A_VISIBILITYIDS = "a_visibilityids";
     public static final String COL_I_TTL = "i_ttl";
     public static final String COL_A_GROUPS = "a_groups";
+    public static final String COL_S_WORKFLOW_TYPE = "s_workflowtype";
+    public static final String COL_A_IUNS = "a_iuns";
+    public static final String COL_A_TAXONOMY_CODES = "a_taxonomycodes";
+    public static final String COL_S_SRC_CHANNEL = "s_srcchannel";
 
     public MandateEntity(String delegator, String mandateId) {
         this.setDelegator(delegator);
@@ -67,6 +72,10 @@ public class MandateEntity {
             this.setGroups(new HashSet<>(mandateEntity.getGroups()));
         }
         this.setTtl(mandateEntity.getTtl());
+        this.setWorkflowType(mandateEntity.getWorkflowType());
+        this.setIuns(mandateEntity.getIuns());
+        this.setSrcChannel(mandateEntity.getSrcChannel());
+        this.setTaxonomyCodes(mandateEntity.getTaxonomyCodes());
     }
 
     @DynamoDbAttribute(COL_S_MANDATEID)
@@ -101,6 +110,11 @@ public class MandateEntity {
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_S_DELEGATORUID)}))  private String delegatorUid;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_A_GROUPS)})) private Set<String> groups;
+
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_S_WORKFLOW_TYPE)}))  private WorkFlowType workflowType;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_S_SRC_CHANNEL)}))  private String srcChannel;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_A_IUNS)}))  private Set<String> iuns;
+    @Getter(onMethod=@__({@DynamoDbAttribute(COL_A_TAXONOMY_CODES)}))  private Set<String> taxonomyCodes;
 
     // per lo storico e per la struttura dati di appoggio
     @Getter(onMethod=@__({@DynamoDbAttribute(COL_I_TTL)}))  private Long ttl;

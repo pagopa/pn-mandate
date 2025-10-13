@@ -308,6 +308,7 @@ paths:
         - 'REVERSE_MANDATE'
       #      security:                                                                # ONLY EXTERNAL
       #        - bearerAuth: [ ]                                                      # ONLY EXTERNAL
+
       requestBody:
         content:
           application/json:

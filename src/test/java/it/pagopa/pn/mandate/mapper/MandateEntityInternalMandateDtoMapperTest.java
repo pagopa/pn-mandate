@@ -1,8 +1,10 @@
 package it.pagopa.pn.mandate.mapper;
 
+import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.InternalMandateDto;
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +14,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-class MandateEntityInternalMandateDtoMapperTest {
+class MandateEntityInternalMandateDtoMapperTest extends AbstractTestConfiguration {
 
     @Autowired
     MandateEntityInternalMandateDtoMapper mapper;
@@ -72,5 +73,35 @@ class MandateEntityInternalMandateDtoMapperTest {
         assertNotNull(result);
         assertNotNull(result.getVisibilityIds());
         assertTrue(result.getVisibilityIds().contains("G"));
+    }
+
+    @Test
+    void toDtoWorkflowType() {
+        //Given
+        MandateEntity mandate = MandateDaoIT.newMandate(true);
+        mandate.setWorkflowType(WorkFlowType.STANDARD);
+
+        //When
+        InternalMandateDto result = mapper.toDto(mandate);
+
+        //Then
+        assertNotNull(result);
+        assertNotNull(result.getWorkflowType());
+        assertEquals("STANDARD", result.getWorkflowType().toString());
+    }
+
+    @Test
+    void toDtoIuns() {
+        //Given
+        MandateEntity mandate = MandateDaoIT.newMandate(true);
+        mandate.setIuns(Set.of("IUN1", "IUN2"));
+
+        //When
+        InternalMandateDto result = mapper.toDto(mandate);
+
+        //Then
+        assertNotNull(result);
+        assertNotNull(result.getIuns());
+        assertEquals(2, result.getIuns().size());
     }
 }

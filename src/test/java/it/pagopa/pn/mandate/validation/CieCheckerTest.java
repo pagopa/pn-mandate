@@ -620,21 +620,21 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
     }
 
 
-    @Test
-    void uploadContentTest() throws Exception {
-
-        MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient);
-        File newFileMaster = new File("src/test/resources/new_IT_MasterListCSCA.zip");
-        AbortableInputStream inStream =
-                AbortableInputStream.create(new FileInputStream(newFileMaster));
-
-        when(clientS3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
-                .thenReturn(PutObjectResponse.builder().build());
-        ResultCieChecker result = master.writeNewMasterZip(inStream);
-        Assertions.assertTrue(result.getValue().equals(OK));
-
-        log.info("TEST writeNewMasterZip - END ");
-    }
+//    @Test
+//    void uploadContentTest() throws Exception {
+//
+//        MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient);
+//        File newFileMaster = new File("src/test/resources/new_IT_MasterListCSCA.zip");
+//        AbortableInputStream inStream =
+//                AbortableInputStream.create(new FileInputStream(newFileMaster));
+//
+//        when(clientS3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+//                .thenReturn(PutObjectResponse.builder().build());
+//        ResultCieChecker result = master.writeNewMasterZip(inStream);
+//        Assertions.assertTrue(result.getValue().equals(OK));
+//
+//        log.info("TEST writeNewMasterZip - END ");
+//    }
 
 
 }

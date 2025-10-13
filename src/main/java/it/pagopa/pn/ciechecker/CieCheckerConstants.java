@@ -14,11 +14,15 @@ public class CieCheckerConstants {
     public static final String SHA_384 = "SHA-384";
     public static final String SHA_512 = "SHA-512";
     public static final String SHA_1_WITH_RSA = "SHA1withRSA";
+    public static final String SHA_256_WITH_RSA = "SHA256withRSA";
     public static final String TAG_PERSONAL_NUMBER = "5F10";
     public static final String TAG_EXPIRE_DATE = "5F1F";
     public static final String PROTOCOLLO_S3 = "s3://";
     public static final String CSCA_ANCHOR_PATH_FILENAME = "src/test/resources/IT_MasterListCSCA.zip";
+    public static final String RSA_ECB_PKCS1_PADDING = "RSA/ECB/PKCS1Padding";
 
+    public static final String CERTIFICATE_START= "-----BEGIN CERTIFICATE-----\n";
+    public static final String CERTIFICATE_END = "\n-----END CERTIFICATE-----\n";
 
     public static final String OK = "OK";
 
@@ -87,5 +91,11 @@ public class CieCheckerConstants {
     public static final String EXC_NOFOUND_TAG_DG = "Error occurs during the extraction of TAG in DG";
     public static final String EXC_INVALID_EXPIRATIONDATE = "The date string (Date of Expiry) is invalid or is not in the 'ddmmyy' format";
     public static final String EXC_EXPIRATIONDATE = "The CIE has expired";
-
+    public static final String EXC_ISSUER_NULL = "issuer must not be null";
+    public static final String EXC_DOC_SIGNER_CERT_NULL = "Document Signer must not be null";
+    public static final String EXC_DOC_SIGNER_KEY_NULL = "Document Signer private key must not be null";
+    public static final String EXC_IAS_SIGN_FAILED = "IAS private sign failed";
+    public static final String EXC_DER_ENCODING_FAILED = "DER encoding failed";
+    public static final String EXC_PEM_ENCODING_FAILED = "PEM encoding failed";
+    public static final String EXC_CERT_ISSUANCE_FAILED = "Certificate issuance failed";
 }

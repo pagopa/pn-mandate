@@ -15,6 +15,10 @@ import org.apache.commons.io.IOUtils;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.encodings.PKCS1Encoding;
+import org.bouncycastle.crypto.engines.RSAEngine;
+import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -218,11 +222,11 @@ class CieCheckerTest {
 
 
 
-    private static byte[] hexFile(String toHex) throws DecoderException {
+    public static byte[] hexFile(String toHex) throws DecoderException {
         return Hex.decodeHex(toHex);
     }
 
-    private static String cleanString(Path file) throws IOException {
+    public static String cleanString(Path file) throws IOException {
         return Files.readString(file).replaceAll("\\s+", "");
     }
 
@@ -620,21 +624,21 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
     }
 
 
-//    @Test
-//    void uploadContentTest() throws Exception {
-//
-//        MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient);
-//        File newFileMaster = new File("src/test/resources/new_IT_MasterListCSCA.zip");
-//        AbortableInputStream inStream =
-//                AbortableInputStream.create(new FileInputStream(newFileMaster));
-//
-//        when(clientS3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
-//                .thenReturn(PutObjectResponse.builder().build());
-//        ResultCieChecker result = master.writeNewMasterZip(inStream);
-//        Assertions.assertTrue(result.getValue().equals(OK));
-//
-//        log.info("TEST writeNewMasterZip - END ");
-//    }
+    @Test
+    void uploadContentTest() throws Exception {
+
+        MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient);
+        File newFileMaster = new File("src/test/resources/new_IT_MasterListCSCA.zip");
+        AbortableInputStream inStream =
+                AbortableInputStream.create(new FileInputStream(newFileMaster));
+
+        when(clientS3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+                .thenReturn(PutObjectResponse.builder().build());
+        ResultCieChecker result = master.writeNewMasterZip(inStream);
+        Assertions.assertTrue(result.getValue().equals(OK));
+
+        log.info("TEST writeNewMasterZip - END ");
+    }
 
 
 }

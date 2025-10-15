@@ -20,10 +20,9 @@ import static it.pagopa.pn.ciechecker.CieCheckerConstants.PROTOCOLLO_S3;
 @lombok.CustomLog
 public class MasterListMergeToolUtility {
 
-    //private static String originalFileNameZip;
-    //private static String fileNameToAdd;
-    private static final String cscaPath = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/IT_MasterListCSCA.zip";
-    private static final String certPemPath = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/catest.pem";
+    private static String cscaPath;
+    //private static final String cscaPath = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/IT_MasterListCSCA.zip";
+    //private static final String certPemPath = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/catest.pem";
     private static S3BucketClient s3BucketClient;
     private static InputStream inputStreamCscaAnchor;
     private static InputStream inputStreamCscaPem;
@@ -34,32 +33,26 @@ public class MasterListMergeToolUtility {
     private static final String resourcesDir = "src/test/resources/";
     private static final String newFileZip = "new_IT_MasterListCSCA.zip";
 
-    public MasterListMergeToolUtility(S3BucketClient s3BucketClient){
+    public MasterListMergeToolUtility(S3BucketClient s3BucketClient, String cscaPath) throws CieCheckerException {
         this.s3BucketClient = s3BucketClient;
-    }
-
-    public static void main(String[] args) {
-
-        try {
-            MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient);
-            ResultCieChecker result = master.merge();
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE, "ResultCieChecker" , result.getValue());
-        }catch(CieCheckerException e){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
-        }
+        if(Objects.isNull(cscaPath) || cscaPath.isBlank())
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
+        if(!cscaPath.endsWith("/"))
+            cscaPath += "/";
+        this.cscaPath = cscaPath;
     }
 
 
     public ResultCieChecker merge() throws CieCheckerException{
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE);
-        s3UriInfoCscaZip = ValidateUtils.extractS3Components( this.cscaPath);
-        s3UriInfoCertPem = ValidateUtils.extractS3Components( this.certPemPath);
+        s3UriInfoCscaZip = ValidateUtils.extractS3Components( this.cscaPath + "IT_MasterListCSCA.zip");
+        s3UriInfoCertPem = ValidateUtils.extractS3Components( this.cscaPath + "catest.pem");
 
         if (this.cscaPath.startsWith(PROTOCOLLO_S3) ){
 
-            inputStreamCscaAnchor = s3BucketClient.getObjectContent(this.cscaPath);
-            inputStreamCscaPem = s3BucketClient.getObjectContent(certPemPath);
+            inputStreamCscaAnchor = s3BucketClient.getObjectContent(this.cscaPath+ "IT_MasterListCSCA.zip");
+            inputStreamCscaPem = s3BucketClient.getObjectContent(this.cscaPath + "catest.pem");
             if (Objects.isNull(inputStreamCscaAnchor) || Objects.isNull(inputStreamCscaPem) ) {
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, ResultCieChecker.KO_EXC_NOFOUND_FILEARGS.getValue());
                 return ResultCieChecker.KO_EXC_NOFOUND_FILEARGS;
@@ -90,9 +83,6 @@ public class MasterListMergeToolUtility {
     private ResultCieChecker addFileToMasterListZip() throws CieCheckerException, IOException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP);
-
-//        String[] s3UriInfoCscaZip = ValidateUtils.extractS3Components( this.cscaPath);
-//        String[] s3UriInfoCertPem = ValidateUtils.extractS3Components( this.certPemPath);
         log.debug("s3UriInfoCscaZip[2]: {}" , s3UriInfoCscaZip[2]);
         log.debug("s3UriInfoCertPem[2]: {}" , s3UriInfoCertPem[2]);
 

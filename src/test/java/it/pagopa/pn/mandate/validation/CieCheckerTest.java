@@ -6,6 +6,7 @@ import it.pagopa.pn.ciechecker.MasterListMergeToolUtility;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
+import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -600,7 +601,10 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
     @Test
     void mergeTest() throws FileNotFoundException {
 
-        MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient);
+        String cscaPath = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/";
+
+        //Include nello ZIP file "/new_IT_MasterListCSCA.zip" il file "/catest.pem"
+        MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient, cscaPath);
 
         InputStream fileInputStream = new FileInputStream(Path.of(CSCA_ANCHOR_PATH_FILENAME).toFile());
         ResponseInputStream<GetObjectResponse> zipS3Stream = new ResponseInputStream<>(
@@ -627,7 +631,10 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
     @Test
     void uploadContentTest() throws Exception {
 
-        MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient);
+        String cscaPath = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist";
+
+        //Update del file "/new_IT_MasterListCSCA.zip"
+        MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient, cscaPath );
         File newFileMaster = new File("src/test/resources/new_IT_MasterListCSCA.zip");
         AbortableInputStream inStream =
                 AbortableInputStream.create(new FileInputStream(newFileMaster));

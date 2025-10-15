@@ -37,6 +37,9 @@ public abstract class LogsCostant {
     public static final String VALIDATEUTILS_PARSER_TLV_TAGVALUE = "ValidateUtils.parserTLVTagValue()";
     public static final String CIECHECKER_VERIFY_EXPIRATION_CIE = "CieCheckerImpl.verifyExpirationCie()";
 
+    public static final String CIEFILEGENERATOR_VALIDATE_DATA_INPUT = "CieFileGenerator.validateDataInput()";
+    public static final String CIEFILEGENERATOR_GENERATEFILES = "CieFileGenerator.generateFiles()";
+
     // ERROR
     public static final String ENDING_PROCESS_WITH_ERROR = "Ending '{}' Process with error = '{}' - '{}'";
 

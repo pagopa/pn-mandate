@@ -98,4 +98,9 @@ public class CieCheckerConstants {
     public static final String EXC_DER_ENCODING_FAILED = "DER encoding failed";
     public static final String EXC_PEM_ENCODING_FAILED = "PEM encoding failed";
     public static final String EXC_CERT_ISSUANCE_FAILED = "Certificate issuance failed";
+    public static final String EXC_INVALID_PARAMETER_CERTPEM = "Input parameter CERT PEM is null";
+    public static final String EXC_INVALID_PARAMETER_CERTKEY = "Input parameter CERT KEY is null";
+    public static final String EXC_INVALID_PARAMETER_BASEDIR = "Input parameter BASEDIR is null";
+    public static final String EXC_DELETEEXISTFILE = "Errore durante l'eliminazione del file esistente";
+    public static final String EXC_ATTRIBUTO_NULL = "Attributo is null";
 }

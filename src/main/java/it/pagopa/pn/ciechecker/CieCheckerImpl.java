@@ -15,6 +15,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.*;
 import java.security.cert.X509Certificate;
@@ -229,7 +230,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             engine2.init(false, publicKey);
             // estrae dalla signature i byte del nonce/challenge
             byte[] recovered = engine2.processBlock(data.getSignedNonce(), 0, data.getSignedNonce().length);
-            if (!(Arrays.equals(recovered, ValidateUtils.calculateSha1(data.getNonce())))) {
+            if (!(Arrays.equals(recovered, data.getNonce().getBytes(StandardCharsets.UTF_8))) ){
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE);
             }else {

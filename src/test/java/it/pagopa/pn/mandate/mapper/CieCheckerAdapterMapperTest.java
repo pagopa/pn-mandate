@@ -14,10 +14,10 @@ class CieCheckerAdapterMapperTest {
     private final CieCheckerAdapterMapper mapper = new CieCheckerAdapterMapper();
 
     @Test
-    @DisplayName("Should correctly map valid input data to library DTO")
-    void mapToLibDtoWithValidInputShouldMapFieldsCorrectly() {
+    @DisplayName("Should throw PnInternalException when NISData.nis is invalid base64")
+    void mapToLibDtoWithInvalidNisBase64ShouldThrowException() {
         NISData nisData = new NISData();
-        nisData.setNis("dGVzdA==");
+        nisData.setNis("Zm9vYmFyMTIz%45Nis");
         nisData.setSod("c29k");
         nisData.setPubKey("cHVia2V5");
         MRTDData mrtdData = new MRTDData();
@@ -29,20 +29,35 @@ class CieCheckerAdapterMapperTest {
         input.setMrtdData(mrtdData);
         input.setSignedNonce("c2lnbmVkTm9uY2U=");
 
-        String nonce = "nonceValue";
-        String delegatorTaxId = "ABCDEF12G34H567I";
+        assertThrows(it.pagopa.pn.commons.exceptions.PnInternalException.class, () ->
+                mapper.mapToLibDto(input, "nonceValue", "ABCDEF12G34H567I"));
+    }
 
-        CieValidationData result = mapper.mapToLibDto(input, nonce, delegatorTaxId);
+    @Test
+    @DisplayName("Should map empty strings as empty byte arrays")
+    void mapToLibDtoWithEmptyStringsShouldMapToEmptyByteArrays() {
+        NISData nisData = new NISData();
+        nisData.setNis("");
+        nisData.setSod("");
+        nisData.setPubKey("");
+        MRTDData mrtdData = new MRTDData();
+        mrtdData.setSod("");
+        mrtdData.setDg1("");
+        mrtdData.setDg11("");
+        CIEValidationData input = new CIEValidationData();
+        input.setNisData(nisData);
+        input.setMrtdData(mrtdData);
+        input.setSignedNonce("");
+
+        CieValidationData result = mapper.mapToLibDto(input, "nonceValue", "ABCDEF12G34H567I");
 
         assertNotNull(result);
-        assertEquals(nonce, result.getNonce());
-        assertEquals(delegatorTaxId, result.getCodFiscDelegante());
-        assertArrayEquals("test".getBytes(), result.getCieIas().getNis());
-        assertArrayEquals("sod".getBytes(), result.getCieIas().getSod());
-        assertArrayEquals("pubkey".getBytes(), result.getCieIas().getPublicKey());
-        assertArrayEquals("mrtdSod".getBytes(), result.getCieMrtd().getSod());
-        assertArrayEquals("dg1".getBytes(), result.getCieMrtd().getDg1());
-        assertArrayEquals("dg11".getBytes(), result.getCieMrtd().getDg11());
-        assertArrayEquals("signedNonce".getBytes(), result.getSignedNonce());
+        assertArrayEquals(new byte[0], result.getCieIas().getNis());
+        assertArrayEquals(new byte[0], result.getCieIas().getSod());
+        assertArrayEquals(new byte[0], result.getCieIas().getPublicKey());
+        assertArrayEquals(new byte[0], result.getCieMrtd().getSod());
+        assertArrayEquals(new byte[0], result.getCieMrtd().getDg1());
+        assertArrayEquals(new byte[0], result.getCieMrtd().getDg11());
+        assertArrayEquals(new byte[0], result.getSignedNonce());
     }
 }

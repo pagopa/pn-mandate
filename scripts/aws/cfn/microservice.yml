@@ -1,8 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: 'Example microservice deploy'
 
-
-
 Parameters:
   ProjectName:
     Type: String
@@ -295,6 +293,25 @@ Parameters:
     Default: '-'
     Description: Cron for which you send the metric to CloudWatch
   
+  CscaMasterlistUrl:
+    Type: String
+    Default: 'https://csca-ita.interno.gov.it/certificatiCSCA/IT_MasterListCSCA.zip'
+    Description: 'URL of the CSCA masterlist zip file to download'
+
+  CscaSyncSchedule:
+    Type: String
+    Default: 'rate(10 minutes)'
+    Description: 'Schedule expression for the CSCA masterlist sync lambda (e.g., rate(1 hour) or cron expression)'
+
+  CscaSha256SsmParameterName:
+    Type: String
+    Default: '/pn-mandate/csca-masterlist/latest-sha256'
+    Description: 'Full name of the SSM Parameter Store parameter to store the last SHA256 hash'
+  
+  CscaSyncS3BucketPrefix:
+    Type: String
+    Description: 'S3 bucket prefix for the CSCA Masterlist zip file'
+  
   IoApiDnsName:
     Type: String
     Description: "The DNS name used for IO rest API."
@@ -342,9 +359,9 @@ Parameters:
     Default: "3000ms"
     Description: Connection timeout for Lollipop Assertion endpoint in duration format
 
-  CscaMasterListS3Path:
+  CieValidationCertS3Path:
     Type: String
-    Description: "S3 path of the CSCA master list"
+    Description: "S3 path to the validation certificate (env-specific)."
 
 Resources:
 
@@ -394,7 +411,7 @@ Resources:
         ContainerEnvEntry20: !Sub "LOLLIPOP_IDP_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopIdpRestConfigConnectionTimeout}"
         ContainerEnvEntry21: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_READ_TIMEOUT=${LollipopAssertionRestConfigReadTimeout}"
         ContainerEnvEntry22: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopAssertionRestConfigConnectionTimeout}"
-        ContainerEnvEntry23: !Sub "CSCA_MASTERLIST_S3_PATH=${CscaMasterListS3Path}"
+        ContainerEnvEntry23: !Sub 'CSCA_MASTERLIST_S3_PATH=s3://pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/${CieValidationCertS3Path}'
         ApplicativeEnvFileChecksum: !Ref ApplicativeEnvFileChecksum
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
@@ -457,9 +474,7 @@ Resources:
             Action:
               - s3:GetObject
               - s3:GetObjectVersion
-            Resource: !Sub
-              - "arn:aws:s3:::${RelativePath}"
-              - RelativePath: !Select [ 1, !Split [ 's3://', !Ref 'CscaMasterListS3Path' ] ]
+            Resource: !Sub "arn:aws:s3:::pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/pn-mandate/*"
 
   # Expose PN-Mandate microservice public API with API-GW for B2BPG usage
   MandateMicroserviceB2BPGApi:
@@ -553,7 +568,6 @@ Resources:
           - ','
           - - !Sub '/aws/ecs/${ProjectName}-mandate'
 
-  # Lambda function role
   PnMandateExpiredTriggerLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -568,8 +582,6 @@ Resources:
             Action:
               - sts:AssumeRole
       Path: /
-      # ManagedPolicyArns:
-      #   - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
       Policies:
         - PolicyName: !Sub ${ProjectName}-PnMandateExpiredTriggerLambdaRolePolicy
           PolicyDocument:
@@ -706,3 +718,112 @@ Resources:
           };
       #ENDpnmandateexpiredtrigger
       #Non rimuovere o modificare il commento sopra, è usato come placeholder negli script
+  
+  CscaMasterlistSyncRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-CscaMasterlistSyncRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-CscaMasterlistSyncPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowSSMAccess
+                Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                Resource: 
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${CscaSha256SsmParameterName}"
+              - Sid: AllowS3PutObject
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub "arn:aws:s3:::pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/pn-mandate/*"
+              - Sid: AllowECSUpdateService
+                Effect: Allow
+                Action:
+                  - ecs:UpdateService
+                Resource: !GetAtt MandateMicroservice.Outputs.ServiceARN
+    
+  CscaMasterlistSync:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-CscaMasterlistSync
+      Runtime: nodejs22.x
+      Handler: "index.handler"
+      Code:
+        S3Bucket: !Ref MicroserviceBucketName
+        S3Key: !Sub "${MicroserviceBucketBaseKey}/functions_zip/CscaMasterlistSync.zip"
+      Role: !GetAtt CscaMasterlistSyncRole.Arn
+      MemorySize: 256
+      Timeout: 300
+      Environment:
+        Variables:
+          CSCA_MASTERLIST_URL: !Ref CscaMasterlistUrl
+          SHA256_SSM_PARAMETER_NAME: !Ref CscaSha256SsmParameterName
+          S3_BUCKET_NAME: !Sub pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}
+          S3_OBJECT_KEY: !Ref CscaSyncS3BucketPrefix
+          ECS_CLUSTER_NAME: !Ref ECSClusterName
+          ECS_SERVICE_NAME: !GetAtt MandateMicroservice.Outputs.ServiceName
+
+  CscaMasterlistSyncSchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-CscaMasterlistSyncSchedulerRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-CscaMasterlistSyncSchedulerInvokePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt CscaMasterlistSync.Arn
+
+  CscaMasterlistSyncSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: !Sub ${ProjectName}-CscaMasterlistSyncSchedule
+      Description: 'Triggers the CscaMasterlistSync Lambda periodically'
+      ScheduleExpression: !Ref CscaSyncSchedule
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      State: ENABLED
+      Target:
+        Arn: !GetAtt CscaMasterlistSync.Arn
+        RoleArn: !GetAtt CscaMasterlistSyncSchedulerRole.Arn
+
+  CscaMasterlistSyncInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt CscaMasterlistSync.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "scheduler.amazonaws.com"
+      SourceArn: !GetAtt CscaMasterlistSyncSchedule.Arn
+      SourceAccount: !Ref AWS::AccountId
+  
+  CscaMasterlistSyncAlarms:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/lambda-alarms.yaml"
+      Parameters:
+        FunctionName: !Ref CscaMasterlistSync
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn

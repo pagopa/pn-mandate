@@ -1,13 +1,8 @@
 package it.pagopa.pn.ciechecker.generator.files;
 
-import it.pagopa.pn.ciechecker.CieChecker;
-import it.pagopa.pn.ciechecker.CieCheckerImpl;
-import it.pagopa.pn.ciechecker.CieCheckerInterface;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,7 +61,7 @@ public class CieFileGenerator {
     /**
      * Itera su tutti gli attributi definiti nell'Enum e genera un file con il percorso definito.
      * @return Una mappa contenente il percorso del file generato e la dimensione in byte.
-     * @throws Exception Se la Reflection fallisce o si verifica un errore I/O.
+     * @throws CieCheckerException Se la Reflection fallisce o si verifica un errore I/O.
      */
     public Map<String, Long> generateFiles() throws CieCheckerException {
 
@@ -130,7 +125,7 @@ public class CieFileGenerator {
         if (currentObject == null) {
             throw new IllegalArgumentException("Oggetto non trovato: " + objectName);
         }
-        Field targetField = null;
+        Field targetField;
         String fieldPath = parts[1]; // Il percorso rimanente (es. "certPem" o "cieIas.sod")
         if (parts.length == 2) {
             // CASO 1: Campo di Primo Livello (es. cieCaAndKey.certPem o validationData.signedNonce)

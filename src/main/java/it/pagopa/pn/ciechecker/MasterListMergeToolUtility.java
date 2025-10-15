@@ -42,6 +42,17 @@ public class MasterListMergeToolUtility {
         this.cscaPath = cscaPath;
     }
 
+    public static void main(String[] args) throws CieCheckerException{
+
+        try {
+            MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient, args[0]);
+            ResultCieChecker result = master.merge();
+            log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE, "ResultCieChecker" , result.getValue());
+        }catch(CieCheckerException e){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
+            throw new CieCheckerException(e.getResult());
+        }
+    }
 
     public ResultCieChecker merge() throws CieCheckerException{
 

@@ -1,10 +1,12 @@
 package it.pagopa.pn.ciechecker;
 
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
+import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -45,6 +47,9 @@ public class MasterListMergeToolUtility {
     public static void main(String[] args) throws CieCheckerException{
 
         try {
+            AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext("it.pagopa.pn.ciechecker.client.s3");
+            s3BucketClient = context.getBean(S3BucketClientImpl.class);
+
             MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient, args[0]);
             ResultCieChecker result = master.merge();
             log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE, "ResultCieChecker" , result.getValue());

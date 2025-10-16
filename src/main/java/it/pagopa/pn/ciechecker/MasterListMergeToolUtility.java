@@ -44,18 +44,25 @@ public class MasterListMergeToolUtility {
         this.cscaPath = cscaPath;
     }
 
-    public static void main(String[] args) throws CieCheckerException{
-
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = null;
         try {
-            AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext("it.pagopa.pn.ciechecker.client.s3");
+            context = new AnnotationConfigApplicationContext("it.pagopa.pn.ciechecker.client.s3");
             s3BucketClient = context.getBean(S3BucketClientImpl.class);
 
             MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient, args[0]);
             ResultCieChecker result = master.merge();
             log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE, "ResultCieChecker" , result.getValue());
+            System.exit(0);
         }catch(CieCheckerException e){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
-            throw new CieCheckerException(e.getResult());
+            System.exit(1);
+        }catch(Exception e){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
+            System.exit(1);
+        }finally {
+            if(Objects.nonNull(context))
+                context.close();
         }
     }
 

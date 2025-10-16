@@ -25,7 +25,6 @@ import org.springframework.test.context.TestPropertySource;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.http.AbortableInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.ByteArrayInputStream;
@@ -47,8 +46,6 @@ import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_384;
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.SHA_512;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.decodeSodHr;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
 @TestPropertySource("classpath:application.properties")
@@ -71,6 +68,9 @@ class ValidateUtilsTest {
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
     private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
     private static final String masterListCSCAZip_S3 = "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
+
+    private static final String fileToAddMasterListZip = "src/test/resources/catest.pem";
+    private static final String originalMasterListZip = "src/test/resources/IT_MasterListCSCA.zip";
 
 
     private static final Map<String,String> expectedIssuer = Map.of(
@@ -743,6 +743,5 @@ class ValidateUtilsTest {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE, ce);
         }
     }
-
 
 }

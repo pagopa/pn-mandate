@@ -7,7 +7,6 @@ import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.Data;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -25,17 +24,17 @@ import java.util.Objects;
 @Data
 public class S3BucketClientImpl  implements S3BucketClient {
 
-
-    private static final DefaultCredentialsProvider DEFAULT_CREDENTIALS_PROVIDER_V2 = DefaultCredentialsProvider.create();
-
-    private final PnMandateConfig pnMandateConfig;
-
-    private final S3Client clientS3;
+    private PnMandateConfig pnMandateConfig;
+    private S3Client clientS3;
 
     private static String[] s3UriInfo;
 
     @Override
     public InputStream getObjectContent(String s3Uri) throws CieCheckerException {
+
+        if(Objects.isNull(this.clientS3 )) {
+            this.clientS3 = pnMandateConfig.s3Client();
+        }
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, "Call s3 bucket for read content object with s3Uri: {}", s3Uri);
         s3UriInfo = ValidateUtils.extractS3Components( s3Uri);
@@ -55,6 +54,10 @@ public class S3BucketClientImpl  implements S3BucketClient {
 
     @Override
     public void uploadContent(String s3Uri, InputStream file, long size, String checksum) throws CieCheckerException {
+
+        if(Objects.isNull(this.clientS3 )) {
+            this.clientS3 = pnMandateConfig.s3Client();
+        }
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.S3BUCKETCLIENTIMPL_PUT_OBJECT_CONTENT, "Call s3 bucket for read content object with s3Uri: {}", s3Uri);
         s3UriInfo = ValidateUtils.extractS3Components( s3Uri);

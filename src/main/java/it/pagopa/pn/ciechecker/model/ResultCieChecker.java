@@ -1,8 +1,9 @@
 package it.pagopa.pn.ciechecker.model;
 
 import it.pagopa.pn.ciechecker.CieCheckerConstants;
+import lombok.Getter;
 
-@lombok.CustomLog
+@Getter
 public enum ResultCieChecker {
     OK("OK"),
     KO("KO"),
@@ -67,12 +68,12 @@ public enum ResultCieChecker {
     KO_EXC_NOFOUND_TAG_DG(CieCheckerConstants.EXC_NOFOUND_TAG_DG),
     KO_EXC_INVALID_EXPIRATIONDATE(CieCheckerConstants.EXC_INVALID_EXPIRATIONDATE),
     KO_EXC_EXPIRATIONDATE(CieCheckerConstants.EXC_EXPIRATIONDATE),
+    KO_EXC_NOFOUND_FILEARGS(CieCheckerConstants.EXC_NOFOUND_FILEARGS),
+    KO_EXC_CREATION_FILEZIPTEMP(CieCheckerConstants.EXC_CREATION_FILEZIPTEMP),
+    KO_EXC_UPLOAD_NEWFILEZIP_TO_S3(CieCheckerConstants.EXC_UPLOAD_NEWFILEZIP_TO_S3),
     KO_EXC_EXCEPTION(CieCheckerConstants.EXC_KO);
 
     private final String value;
-    public String getValue() {
-        return value;
-    }
 
     ResultCieChecker(String value) {
         this.value = value;

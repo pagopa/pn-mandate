@@ -81,7 +81,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS);
             }
 
-
             if (cscaPath.endsWith(".zip") || cscaPath.endsWith(".ZIP")) {
                   cscaAnchor = ValidateUtils.extractCscaAnchorFromZip(inputStreamCscaAnchor);
             } else if (cscaPath.endsWith(".pem") || cscaPath.endsWith(".PEM")) {
@@ -89,7 +88,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             }
 
             this.setCscaAnchor(cscaAnchor);
-            log.debug("CSCA ANCHOR SIZE: " + cscaAnchor.size());
+            log.debug("CSCA ANCHOR SIZE: {}", cscaAnchor.size());
         }catch (Exception e){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_INIT, e.getClass().getName()+" Message: "+e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS, e);
@@ -270,7 +269,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      * @param cms CMSSignedData
      * @param cieIasNis byte[]
      * @return boolean
-     * @throws CieCheckerException
+     * @throws CieCheckerException ce
      */
     @Override
     public boolean verifySodPassiveAuthCie(CMSSignedData cms, byte[] cieIasNis) throws CieCheckerException {
@@ -379,11 +378,11 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      * - usa ValidateUtils.decodeSodHr(...) per ottenere SodSummary (equivalente a sod_summary dello script)
      * - per ogni DG contenuto in dgFiles verifica hash
      * Ritorna true solo se tutti i DG verificati combaciano.
-     * @param sodBytes
-     * @param dg1
-     * @param dg11
-     * @return
-     * @throws Exception
+     * @param sodBytes byte[]
+     * @param dg1 byte[]
+     * @param dg11 byte[]
+     * @return result ResultCieChecker
+     * @throws Exception e
      */
     public ResultCieChecker verifyIntegrityCore(byte[] sodBytes, byte[] dg1, byte[] dg11) throws Exception {
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_VERIFY_INTEGRITY_CORE);
@@ -469,31 +468,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.CIECHECKER_VERIFY_DIGITAL_SIGNATURE, result.getValue());
             return result;
         }
-    }
-
-
-    public List<X509Certificate> extractCscaAnchorZip(InputStream cscaAnchorFileInputStream) throws CieCheckerException {
-
-       // log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR);
-        if(Objects.isNull(cscaAnchorFileInputStream) ) {
-            log.debug("la variabile 'pn.mandate.ciechecker.csca-anchor.pathFileName' nel property file IS NULL o BLANK");
-            throw new CieCheckerException(ResultCieChecker.KO);
-        }
-        log.debug("InputStream: {}",cscaAnchorFileInputStream);
-
-            return ValidateUtils.extractCscaAnchorFromZip(cscaAnchorFileInputStream);
-//                } else if (cscaAnchorPathFileName.endsWith(".pem") || cscaAnchorPathFileName.endsWith(".PEM")) {
-//                    return ValidateUtils.loadCertificateFromPemFile(fileInputStream);
-//                } else {
-//                    log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR);
-//                    throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_CSCA_ANCHORS);
-//                }
-//            }else{
-//                fileInputStream = new FileInputStream(Path.of(cscaAnchorPathFileName).toFile());
-//                return ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
-//            }
-
-
     }
 
 

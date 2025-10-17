@@ -750,7 +750,7 @@ public class ValidateUtils {
         }
     }
 
-/*
+
     public static String extractCodiceFiscaleByOid(byte[] dg11Bytes) throws CieCheckerException {
 
         try {
@@ -772,7 +772,7 @@ public class ValidateUtils {
             throw new CieCheckerException( ResultCieChecker.KO_EXC_DECODER_ERROR, de);
         }
     }
-*/
+
     public static String parserTLVTagValue(byte[] fileBytes, String tag) throws CieCheckerException {
 
         try {
@@ -802,7 +802,7 @@ public class ValidateUtils {
         }
     }
 
-      public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
+    public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP);
         try{
@@ -840,11 +840,11 @@ public class ValidateUtils {
     private static X509Certificate getCertificateFromPemFile(InputStream pemFileStream)
             throws CertificateException {
 
-            CertificateFactory factory =
-                    CertificateFactory.getInstance("X.509", new BouncyCastleProvider());
-            X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemFileStream);
+        CertificateFactory factory =
+                CertificateFactory.getInstance("X.509", new BouncyCastleProvider());
+        X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemFileStream);
 
-            return certificate;
+        return certificate;
     }
 
 

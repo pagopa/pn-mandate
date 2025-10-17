@@ -63,5 +63,9 @@ Resources:
               t_revoked:struct<S:string,NULL:boolean>,
               a_visibilityids:struct<L:array<struct<S:string>>,NULL:boolean>,
               a_groups:struct<L:array<struct<S:string>>,NULL:boolean>,
+              s_workflowtype:struct<S:string,NULL:boolean>,
+              s_srcchannel:struct<S:string,NULL:boolean>,
+              a_iuns:struct<L:array<struct<S:string>>,NULL:boolean>,
+              a_taxonomycodes:struct<L:array<struct<S:string>>,NULL:boolean>,
               i_pendingcount:struct<N:string,NULL:boolean>
             >

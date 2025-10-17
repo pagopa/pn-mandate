@@ -98,4 +98,8 @@ public class CieCheckerConstants {
     public static final String EXC_DER_ENCODING_FAILED = "DER encoding failed";
     public static final String EXC_PEM_ENCODING_FAILED = "PEM encoding failed";
     public static final String EXC_CERT_ISSUANCE_FAILED = "Certificate issuance failed";
+    public static final String EXC_NOFOUND_FILEARGS = "MasterList ZIP file or Certificate PEM file not found";
+    public static final String EXC_CREATION_FILEZIPTEMP = "Error creating the new MasterList ZIP archive";
+    public static final String EXC_UPLOAD_NEWFILEZIP_TO_S3 = "Error uploading the new MasterList ZIP archive on S3Bucket";
+
 }

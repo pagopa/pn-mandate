@@ -255,7 +255,7 @@ public class ValidateUtils {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(octetByte);
-            return Hex.toHexString(hashBytes).toString().toUpperCase();
+            return Hex.toHexString(hashBytes).toUpperCase();
         }catch(NoSuchAlgorithmException nsae){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_CALCULATE_SHA256, nsae.getClass().getName() + " - Message: " + nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MESSAGEDIGESTSPI_SUPPORTED, nsae);
@@ -681,43 +681,51 @@ public class ValidateUtils {
             ZipInputStream zis = new ZipInputStream(zipStream);
             ZipEntry entry;
 
-            entry = zis.getNextEntry();
-            CMSSignedData cms;
-            if (entry != null) {
-                cms = new CMSSignedData(zis);
+            while( (entry = zis.getNextEntry()) != null) {
+                log.debug("ZIS: {}" , entry.getName());
+                if(entry.getName().endsWith(".pem")){
+                    List<X509Certificate> pemList = ValidateUtils.loadCertificateFromPemFile(zis);
+                    x509List.addAll(pemList);
+                }else {
+                    //entry = zis.getNextEntry();
+                    CMSSignedData cms;
+                    if (entry != null) {
+                        cms = new CMSSignedData(zis);
 
-                ASN1InputStream input = new ASN1InputStream((byte[])cms.getSignedContent().getContent());
+                        ASN1InputStream input = new ASN1InputStream((byte[]) cms.getSignedContent().getContent());
 
-                ASN1Primitive p;
-                p = input.readObject();
-                ASN1Sequence seq0Lev = ASN1Sequence.getInstance(p);
-                Enumeration<ASN1Primitive> enum0Lev = seq0Lev.getObjects();
-                ASN1Integer int1Lev = (ASN1Integer) enum0Lev.nextElement();
-                ASN1Set set1Lev = (ASN1Set) enum0Lev.nextElement();
-                Enumeration<ASN1Primitive> enum1Lev = set1Lev.getObjects();
+                        ASN1Primitive p;
+                        p = input.readObject();
+                        ASN1Sequence seq0Lev = ASN1Sequence.getInstance(p);
+                        Enumeration<ASN1Primitive> enum0Lev = seq0Lev.getObjects();
+                        ASN1Integer int1Lev = (ASN1Integer) enum0Lev.nextElement();
+                        ASN1Set set1Lev = (ASN1Set) enum0Lev.nextElement();
+                        Enumeration<ASN1Primitive> enum1Lev = set1Lev.getObjects();
 
-                while ( enum1Lev.hasMoreElements() ) {
-                    ASN1Object asn1Obj = (ASN1Object)enum1Lev.nextElement();
-                    X509CertificateHolder holder = new X509CertificateHolder(asn1Obj.toASN1Primitive().getEncoded());
+                        while (enum1Lev.hasMoreElements()) {
+                            ASN1Object asn1Obj = (ASN1Object) enum1Lev.nextElement();
+                            X509CertificateHolder holder = new X509CertificateHolder(asn1Obj.toASN1Primitive().getEncoded());
 
-                    RDN rdns [] = holder.getSubject().getRDNs(ASN1ObjectIdentifier.tryFromID("2.5.4.6"));
-                    if( rdns.length > 0 ) {
-                        RDN rdn = rdns[0];
-                        if( rdn != null
-                                && rdn.getFirst().getValue() != null ) {
-                            String country = rdn.getFirst().getValue().toString();
-                            if( country.equals("IT") ) {
-                                X509Certificate cert = new JcaX509CertificateConverter().getCertificate(holder);
-                                if( isSelfSigned(cert) ) {
-                                    x509List.add(cert);
+                            RDN rdns[] = holder.getSubject().getRDNs(ASN1ObjectIdentifier.tryFromID("2.5.4.6"));
+                            if (rdns.length > 0) {
+                                RDN rdn = rdns[0];
+                                if (rdn != null
+                                        && rdn.getFirst().getValue() != null) {
+                                    String country = rdn.getFirst().getValue().toString();
+                                    if (country.equals("IT")) {
+                                        X509Certificate cert = new JcaX509CertificateConverter().getCertificate(holder);
+                                        if (isSelfSigned(cert)) {
+                                            x509List.add(cert);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-
+                zis.closeEntry();
             }
-
+            zis.close();
             return x509List;
         } catch (Exception e) {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE, e.getClass().getName() + " - Message: " + e.getMessage());
@@ -742,7 +750,7 @@ public class ValidateUtils {
         }
     }
 
-
+/*
     public static String extractCodiceFiscaleByOid(byte[] dg11Bytes) throws CieCheckerException {
 
         try {
@@ -764,7 +772,7 @@ public class ValidateUtils {
             throw new CieCheckerException( ResultCieChecker.KO_EXC_DECODER_ERROR, de);
         }
     }
-
+*/
     public static String parserTLVTagValue(byte[] fileBytes, String tag) throws CieCheckerException {
 
         try {
@@ -854,5 +862,54 @@ public class ValidateUtils {
         sha1Digest.doFinal(result, 0);
         return result;
     }
+
+
+
+    public static String[] extractS3Components(String s3Uri) {
+
+        log.debug("- s3Uri: {}", s3Uri);
+        //Verifica e rimuovi il prefisso "s3://"
+        if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
+            log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
+            return null;
+        }
+        try {
+            // Creiamo un oggetto URI
+            URI uri = new URI(s3Uri);
+
+            // Il nome del bucket è l'host/autorità dell'URI S3
+            String bucketName = uri.getHost();
+
+            // La chiave dell'oggetto è il percorso dell'URI (path)
+            //    Questo include lo '/' iniziale, che va rimosso.
+            String objectKey = uri.getPath();
+            String nameKey = null;
+            String key = null;
+            if (objectKey != null && objectKey.startsWith("/")) {
+                objectKey = objectKey.substring(1);
+                if(objectKey.lastIndexOf("/") != -1) {
+                    key = objectKey.substring(0, objectKey.lastIndexOf("/") +1);
+                    nameKey = objectKey.substring(objectKey.lastIndexOf("/") + 1);
+                }else {
+                    key = "/";
+                    nameKey = objectKey;
+                }
+            }
+
+            log.debug("URI di Input: " + s3Uri);
+            log.debug("-------------------------------------");
+            log.debug("Bucket estratto:  " + bucketName );
+            log.debug("Chiave estratta: " + objectKey );
+            log.debug("Nome estratta: " + nameKey );
+            log.debug("Path estratta: " + key );
+
+            return new String[]{bucketName, objectKey, nameKey, key};
+
+        } catch (URISyntaxException e) {
+            log.error("Sintax error in URI S3: {}" , e.getMessage());
+            return null;
+        }
+    }
+
 
 }

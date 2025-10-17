@@ -40,10 +40,31 @@ public class Base64Validator {
             throw new PnMandateBadRequestException("Mandate Bad Request", "CIE Data missing values", ERROR_CODE_MANDATE_BAD_REQUEST, missingFieldLog);
         }
 
+        boolean isValid = isValidDefaultBase64Standard(base64String) || isValidBase64UrlEncoded(base64String);
+
+        if(!isValid) {
+            String invalidFieldLog = String.format("Invalid Base64 encoding in field: %s", fieldName);
+            throw new PnMandateBadRequestException("Mandate Bad Request", "CIE Data with invalid encoding", ERROR_CODE_MANDATE_BAD_REQUEST, invalidFieldLog);
+        }
+    }
+
+    private boolean isValidDefaultBase64Standard(String base64String) {
         try {
             Base64.getDecoder().decode(base64String);
         } catch (IllegalArgumentException e) {
-            throw new PnMandateBadRequestException("Mandate Bad Request", "CIE Data with invalid encoding", ERROR_CODE_MANDATE_BAD_REQUEST, "Invalid Base64 encoding in field: " + fieldName);
+            return false;
         }
+
+        return true;
+    }
+
+    private boolean isValidBase64UrlEncoded(String base64String) {
+        try {
+            Base64.getUrlDecoder().decode(base64String);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+
+        return true;
     }
 }

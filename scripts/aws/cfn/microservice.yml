@@ -60,7 +60,7 @@ Parameters:
     Description: 'network load balancer link for API-GW'
 
   EnableAPIGatewayAppIO:
-    type: String
+    Type: String
     Description: 'Determina se le risorse API Gateway debbano essere create (true/false)'
     AllowedValues:
       - 'true'

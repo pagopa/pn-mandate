@@ -543,6 +543,7 @@ Resources:
   
   MandateMicroservicePublicIoApiWaf:
     Type: AWS::CloudFormation::Stack
+    Condition: ShouldEnableApiGatewayIO
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
       Parameters:

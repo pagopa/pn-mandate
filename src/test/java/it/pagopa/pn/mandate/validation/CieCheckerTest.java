@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.validation;
 
 import it.pagopa.pn.ciechecker.CieChecker;
+import it.pagopa.pn.ciechecker.CieCheckerConstants;
 import it.pagopa.pn.ciechecker.CieCheckerInterface;
 import it.pagopa.pn.ciechecker.MasterListMergeToolUtility;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
@@ -82,14 +83,14 @@ class CieCheckerTest {
 
 
     private static final Path basePath= Path.of("src","test","resources");
-    private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");
-    private static final Path dg1Files = Paths.get("src/test/resources/EF.DG1");
+    private static final Path sodFile = Paths.get("src/test/resources/EF_FABIO.SOD");
+    private static final Path dg1Files = Paths.get("src/test/resources/DG1_FABIO.HEX");
     private static final Path dg11Files = Paths.get("src/test/resources/EF.DG11");
-    private static final Path dg11FilesHex = Paths.get("src/test/resources/DG11.HEX");
+    private static final Path dg11FilesHex = Paths.get("src/test/resources/DG11_FABIO.HEX");
     private static final Path dg1FilesCorrupted = Paths.get("src/test/resources/DG1_CORROTTO.HEX");
     private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
-    private static final String SOD_HEX_IAS = "SOD_IAS.HEX";
+    private static final String SOD_HEX_IAS = "SOD_IAS_FABIO.HEX"; //"SOD_IAS_MARIO.HEX";
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
     private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
     private static final String masterListCSCAZip_S3 = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/IT_MasterListCSCA.zip";
@@ -124,14 +125,14 @@ class CieCheckerTest {
 
         cieChecker.init();
 
-        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
-        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX")));
+        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY_FABIO.HEX"))); //"NIS_PUBKEY_MARIO.HEX")));
+        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE_FABIO.HEX")));
         String nisChallenge = cleanString(basePath.resolve("NIS_CHALLENGE.HEX"));
-        byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));
+        byte[] nisHexToCheck = "910718464654".getBytes(); //hexFile(cleanString(basePath.resolve("NIS.HEX")));
         byte[] sodIasByteArray = loadSodBytes(basePath.resolve(SOD_HEX_IAS));
 
         byte[] sodMrtd = Files.readAllBytes(sodFile);
-        byte[] dg1 = Files.readAllBytes(dg1Files);
+        byte[] dg1 = hexFile(Files.readString(dg1Files));
         byte[] dg11 = hexFile(Files.readString(dg11FilesHex));
         //byte[] dg11 = Files.readAllBytes(dg11Files);
 
@@ -144,7 +145,7 @@ class CieCheckerTest {
         validationData.setCieIas(cieIas);
         validationData.setSignedNonce(nisSignature);
         validationData.setNonce("02461"); // nisChallenge);
-        validationData.setCodFiscDelegante("RSSMRA95A58H501Z"); //"RSSDNC42R01H501Y");
+        validationData.setCodFiscDelegante("TTNMRA63S21H501V"); //"RSSDNC42R01H501Y");
 
         CieMrtd cMrtd = new CieMrtd();
         cMrtd.setSod(sodMrtd);
@@ -166,8 +167,7 @@ class CieCheckerTest {
             validationData.getCieMrtd().setDg11(Files.readAllBytes(dg11Files));
 
         ResultCieChecker result = cieChecker.validateMandate(validationData);
-        assertEquals("The challenge (nonce) from the signature does not match the one extracted from the signature.",
-                result.getValue());
+        assertEquals(CieCheckerConstants.OK , result.getValue());
 
 
         // verifica che getObjectContent sia stato chiamato almeno una volta

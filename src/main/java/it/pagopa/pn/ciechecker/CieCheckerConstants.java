@@ -68,6 +68,7 @@ public class CieCheckerConstants {
     public static final String EXC_NO_NIS_HASHES_DATAGROUP ="The NIS hashes DataGroup List is null";
     public static final String EXC_ERROR_CREATE_VERIFIER = "Unable to create verifier";
     public static final String EXC_NOVALID_DIGITAL_SIGNATURE = "No valid digital Signature";
+    public static final String KO_EXC_ERROR_SOD_DECODE= "Error in decode Sod Mrtd";
     public static final String EXC_NOT_SAME_DIGEST = "Digest mismatch between expected and actual DG";
     public static final String EXC_DIGEST_NOT_VERIFIED = "Digest are different, validation of integrity not passed";
     public static final String EXC_INVALID_PARAMETER_CIESOD = "Input parameter SOD CIE is null";
@@ -79,7 +80,7 @@ public class CieCheckerConstants {
     public static final String EXC_INVALID_PARAMETER_MRTDDG1 = "Input parameter DG1 MRTD is null";
     public static final String EXC_INVALID_PARAMETER_MRTDDG11 = "Input parameter DG11 MRTD is null";
     public static final String EXC_INVALID_PARAMETER_CODFISCDELEGANTE = "Input parameter CODICE FISCALE DELEGANTE is null";
-    public static final String EXC_INVALID_VERIFIER = "Verifier not valid at signingTime";
+    public static final String EXC_INVALID_VERIFIER = "Signed Attributes are not valid or do not match the data";
     public static final String EXC_INVALID_SIGNATURE = "Signature object is not initialized properly";
     public static final String EXC_INVALID_ALGORITHM = "No Provider supports a Signature implementation for the specified algorithm";
     public static final String EXC_INVALID_PUBLICKEY = "PublicKey is not valid";

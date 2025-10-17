@@ -190,6 +190,42 @@
 
 	<build>
 		<plugins>
+		<!-- Plugin per creare un JAR eseguibile -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.5.0</version>
+				<executions>
+					<execution>
+						<id>shade-generator</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<finalName>chiechecker-generator-tool</finalName>
+
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>it.pagopa.pn.ciechecker.generator.Main</mainClass>
+								</transformer>
+							</transformers>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<includes>
+										<include>it/pagopa/pn/ciechecker/generator/**</include>
+									</includes>
+									<excludes>
+										<exclude>it/pagopa/pn/mandate/**</exclude>
+									</excludes>
+								</filter>
+							</filters>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

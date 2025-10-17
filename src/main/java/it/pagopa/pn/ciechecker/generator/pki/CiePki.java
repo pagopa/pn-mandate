@@ -36,7 +36,7 @@ import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 public class CiePki {
 
     static final String SIGNATURE_ALGORITHM = SHA_256_WITH_RSA;
-    static final int RSA_BITS_IAS = 2048;
+    public static final int RSA_BITS_IAS = 2048;
 
 
     public KeyPair generateRsaKeyPair(int bits) throws NoSuchAlgorithmException {

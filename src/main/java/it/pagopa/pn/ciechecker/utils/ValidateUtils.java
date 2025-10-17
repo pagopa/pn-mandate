@@ -750,7 +750,7 @@ public class ValidateUtils {
         }
     }
 
-/*
+
     public static String extractCodiceFiscaleByOid(byte[] dg11Bytes) throws CieCheckerException {
 
         try {
@@ -772,7 +772,7 @@ public class ValidateUtils {
             throw new CieCheckerException( ResultCieChecker.KO_EXC_DECODER_ERROR, de);
         }
     }
-*/
+
     public static String parserTLVTagValue(byte[] fileBytes, String tag) throws CieCheckerException {
 
         try {

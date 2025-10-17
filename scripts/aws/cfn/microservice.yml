@@ -525,6 +525,7 @@ Resources:
   # Expose PN-MANDATE microservice public API with API-GW for IO Backend usage
   MandateMicroservicePublicIoAPI:
     Type: AWS::CloudFormation::Stack
+    Condition: ShouldEnableApiGatewayIO
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service-openapi.yaml"
       Parameters:
@@ -542,7 +543,6 @@ Resources:
   
   MandateMicroservicePublicIoApiWaf:
     Type: AWS::CloudFormation::Stack
-    Condition: ShouldEnableApiGatewayIO
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
       Parameters:

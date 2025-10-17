@@ -16,6 +16,7 @@ public abstract class LogsCostant {
     public static final String CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE = "CieCheckerImpl.verifyChallengeFromSignature()";
     public static final String CIECHECKER_VERIFY_INTEGRITY = "CieCheckerImpl.verifyIntegrity()";
     public static final String CIECHECKER_VERIFY_INTEGRITY_CORE = "CieCheckerImpl.verifyIntegrityCore()";
+    public static final String VALIDATEUTILS_DECEODESODHR = "ValidateUtils.decodeSodHr()";
     public static final String CIECHECKER_VERIFY_DIGESTLIST = "CieCheckerImpl.verifyDigestList()";
     public static final String VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE = "ValidateUtils.verifyDscAgainstTrustBundle()";
     public static final String VALIDATEUTILS_EXTRACT_DSC_CERT_DER = "ValidateUtils.extractDscCertDer()";

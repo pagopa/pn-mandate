@@ -614,32 +614,39 @@ public class ValidateUtils {
 
     //creazione oggetto rappresentante EF.SOD -> decode_sod_hr.sh
     public static SodSummary decodeSodHr(byte[] sodBytes) throws Exception {
-        CMSSignedData cms = new CMSSignedData(sodBytes);
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_DECEODESODHR);
+        try {
+            CMSSignedData cms = new CMSSignedData(sodBytes);
 
-        String contentTypeOid = cms.getSignedContentTypeOID();
-        byte[] eContent = (byte[]) Objects.requireNonNull(cms.getSignedContent()).getContent();
-        LDSSecurityObject lds = LDSSecurityObject.getInstance(
-                ASN1Sequence.getInstance(ASN1Primitive.fromByteArray(eContent)));
+            String contentTypeOid = cms.getSignedContentTypeOID();
+            byte[] eContent = (byte[]) Objects.requireNonNull(cms.getSignedContent()).getContent();
+            LDSSecurityObject lds = LDSSecurityObject.getInstance(
+                    ASN1Sequence.getInstance(ASN1Primitive.fromByteArray(eContent)));
 
-        AlgorithmIdentifier dgDigestAlg = lds.getDigestAlgorithmIdentifier();
+            AlgorithmIdentifier dgDigestAlg = lds.getDigestAlgorithmIdentifier();
 
-        LinkedHashMap<Integer, byte[]> dgMap = new LinkedHashMap<>();
-        for (DataGroupHash dgh : lds.getDatagroupHash()) {
-            dgMap.put(dgh.getDataGroupNumber(), dgh.getDataGroupHashValue().getOctets());
+            LinkedHashMap<Integer, byte[]> dgMap = new LinkedHashMap<>();
+            for (DataGroupHash dgh : lds.getDatagroupHash()) {
+                dgMap.put(dgh.getDataGroupNumber(), dgh.getDataGroupHashValue().getOctets());
+            }
+
+            SignerInformation si = cms.getSignerInfos().getSigners().iterator().next();
+            AlgorithmIdentifier sigAlg = AlgorithmIdentifier.getInstance(si.getDigestAlgorithmID());
+            byte[] signature = si.getSignature();
+
+            X509Certificate dsc = null;
+            //X509CertificateHolder holder = extractDscCertDer(sodBytes);
+            X509CertificateHolder holder = extractDscCertDer(cms);
+            if (holder != null) {
+                dsc = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(holder);
+            }
+
+            return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
+        }catch(Exception e ){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, e.getClass().getName() + " - Message: " + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_ERROR_SOD_DECODE , e);
+
         }
-
-        SignerInformation si = cms.getSignerInfos().getSigners().iterator().next();
-        AlgorithmIdentifier sigAlg = AlgorithmIdentifier.getInstance(si.getDigestAlgorithmID());
-        byte[] signature = si.getSignature();
-
-        X509Certificate dsc = null;
-        //X509CertificateHolder holder = extractDscCertDer(sodBytes);
-        X509CertificateHolder holder = extractDscCertDer(cms);
-        if (holder != null) {
-            dsc = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(holder);
-        }
-
-        return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
     }
 
 /*

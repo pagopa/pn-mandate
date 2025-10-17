@@ -3,12 +3,15 @@ package it.pagopa.pn.ciechecker.generator.pki;
 import it.pagopa.pn.ciechecker.generator.model.CaAndKey;
 import it.pagopa.pn.ciechecker.generator.model.CertAndKey;
 import it.pagopa.pn.ciechecker.generator.model.Issuer;
+import org.bouncycastle.cert.CertIOException;
+import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import javax.crypto.Cipher;
 import java.io.ByteArrayInputStream;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -88,7 +91,7 @@ class CiePkiTest {
     }
 
     @Test
-    void certificatesValidityTest() throws NoSuchAlgorithmException {
+    void certificatesValidityTest() throws NoSuchAlgorithmException, CertificateException, OperatorCreationException, CertIOException {
         CaAndKey ca = pki.createDevTestCA("CN=ValidityCA,O=PagoPA,C=IT", 3072, 3650);
         Issuer issuer = new Issuer(ca.certificate(), ca.keyPair().getPrivate());
         CertAndKey ds = pki.issueDocumentSigner("CN=DS,O=PagoPA,C=IT", issuer, 2048, 1825);
@@ -102,7 +105,7 @@ class CiePkiTest {
     }
 
     @Test
-    void wrongIssuerDoesNotVerifyDs() {
+    void wrongIssuerDoesNotVerifyDs() throws CertificateException, NoSuchAlgorithmException, OperatorCreationException, CertIOException {
         CaAndKey ca1 = pki.createDevTestCA("CN=CA1,O=PagoPA,C=IT", 3072, 3650);
         assertTrue(ca1.certificate().getNotBefore().toInstant().isBefore(Instant.now()));
         assertTrue(ca1.certificate().getNotAfter().toInstant().isAfter(Instant.now()));

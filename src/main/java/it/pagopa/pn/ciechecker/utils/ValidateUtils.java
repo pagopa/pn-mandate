@@ -682,7 +682,7 @@ public class ValidateUtils {
             ZipEntry entry;
 
             while( (entry = zis.getNextEntry()) != null) {
-                log.debug("ZIS: {}" , entry.getName());
+                log.info("ZIS: {}" , entry.getName());
                 if(entry.getName().endsWith(".pem")){
                     List<X509Certificate> pemList = ValidateUtils.loadCertificateFromPemFile(zis);
                     x509List.addAll(pemList);
@@ -802,7 +802,7 @@ public class ValidateUtils {
         }
     }
 
-      public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
+    public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP);
         try{
@@ -840,11 +840,11 @@ public class ValidateUtils {
     private static X509Certificate getCertificateFromPemFile(InputStream pemFileStream)
             throws CertificateException {
 
-            CertificateFactory factory =
-                    CertificateFactory.getInstance("X.509", new BouncyCastleProvider());
-            X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemFileStream);
+        CertificateFactory factory =
+                CertificateFactory.getInstance("X.509", new BouncyCastleProvider());
+        X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemFileStream);
 
-            return certificate;
+        return certificate;
     }
 
 

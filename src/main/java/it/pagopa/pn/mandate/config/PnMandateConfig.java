@@ -49,6 +49,9 @@ public class PnMandateConfig {
     @Value("${aws.region-code}")
     private String regionCode;
 
+    private String generatorBucketName;
+    private String generatorZipName;
+
     private static final DefaultCredentialsProvider DEFAULT_CREDENTIALS_PROVIDER_V2 = DefaultCredentialsProvider.create();
 
     @Bean

@@ -59,6 +59,14 @@ Parameters:
     Type: String
     Description: 'network load balancer link for API-GW'
 
+  EnableAPIGatewayAppIO:
+    type: String
+    Description: 'Determina se le risorse API Gateway debbano essere create (true/false)'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'true'
+
   # OpenApi Bucket params
   MicroserviceBucketName:
     Type: String
@@ -363,6 +371,14 @@ Parameters:
     Type: String
     Description: "S3 path to the validation certificate (env-specific)."
 
+  LollipopWhiteList:
+    Type: String
+    Description: "Comma separated list of whitelisted CNs for Lollipop requests"
+    Default: ""
+
+Conditions:
+    ShouldEnableApiGatewayIO: !Equals [!Ref EnableAPIGatewayAppIO, "true"]
+
 Resources:
 
   # PN-Mandate microservice
@@ -412,6 +428,7 @@ Resources:
         ContainerEnvEntry21: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_READ_TIMEOUT=${LollipopAssertionRestConfigReadTimeout}"
         ContainerEnvEntry22: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopAssertionRestConfigConnectionTimeout}"
         ContainerEnvEntry23: !Sub 'CSCA_MASTERLIST_S3_PATH=s3://pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/${CieValidationCertS3Path}'
+        ContainerEnvEntry24: !Sub 'LOLLIPOP_WHITE_LIST=${LollipopWhiteList}'
         ApplicativeEnvFileChecksum: !Ref ApplicativeEnvFileChecksum
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
@@ -525,6 +542,7 @@ Resources:
   
   MandateMicroservicePublicIoApiWaf:
     Type: AWS::CloudFormation::Stack
+    Condition: ShouldEnableApiGatewayIO
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
       Parameters:

@@ -102,4 +102,9 @@ public class CieCheckerConstants {
     public static final String EXC_CREATION_FILEZIPTEMP = "Error creating the new MasterList ZIP archive";
     public static final String EXC_UPLOAD_NEWFILEZIP_TO_S3 = "Error uploading the new MasterList ZIP archive on S3Bucket";
 
+    public static final String EXC_INVALID_PARAMETER_CERTPEM = "Input parameter CERT PEM is null";
+    public static final String EXC_INVALID_PARAMETER_CERTKEY = "Input parameter CERT KEY is null";
+    public static final String EXC_INVALID_PARAMETER_BASEDIR = "Input parameter BASEDIR is null";
+    public static final String EXC_DELETEEXISTFILE = "Errore durante l'eliminazione del file esistente";
+    public static final String EXC_ATTRIBUTO_NULL = "Attributo is null";
 }

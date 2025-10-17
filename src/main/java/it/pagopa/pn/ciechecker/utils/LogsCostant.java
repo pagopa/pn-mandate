@@ -40,6 +40,9 @@ public abstract class LogsCostant {
     public static final String MASTERLISTMERGETOOL_ADDFILETOMASTERZIP = "MasterListMergeToolUtility.addFileToMasterListZip()";
     public static final String MASTERLISTMERGETOOL_MERGE = "MasterListMergeToolUtility.merge()";
 
+    public static final String CIEFILEGENERATOR_VALIDATE_DATA_INPUT = "CieFileGenerator.validateDataInput()";
+    public static final String CIEFILEGENERATOR_GENERATEFILES = "CieFileGenerator.generateFiles()";
+
     // ERROR
     public static final String ENDING_PROCESS_WITH_ERROR = "Ending '{}' Process with error = '{}' - '{}'";
 

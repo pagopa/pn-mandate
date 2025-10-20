@@ -73,6 +73,8 @@ class ValidateUtilsTest {
     private static final String fileToAddMasterListZip = "src/test/resources/catest.pem";
     private static final String originalMasterListZip = "src/test/resources/IT_MasterListCSCA.zip";
 
+    private static final String DIGEST_OID_SHA_256 = "2.16.840.1.101.3.4.2.1";
+
 
     private static final Map<String,String> expectedIssuer = Map.of(
             "2.5.4.3", "Italian Country Signer CA",
@@ -445,6 +447,7 @@ class ValidateUtilsTest {
         Assertions.assertTrue(signaturesToHex.equalsIgnoreCase(signaturesToVerify.replaceAll("\\s+", "")));
     }
 
+
     @Test
     void extractFirstAndFiveHashesOctetString() throws IOException, DecoderException, CMSException {
 
@@ -473,7 +476,7 @@ class ValidateUtilsTest {
         ASN1OctetString newFive = ValidateUtils.extractHashSigned(cms);
         //getHexFromOctetString - fiveStr: C9002855CB7A5D366DB2CD6CCD6E148B7F8265E765C520ACC88855C2F3338FEB
         log.info("QUINTA OCCORRENZA DI octetString: {}" , newFive.toString());
-        Assertions.assertTrue(ValidateUtils.verifyOctetStrings(dataToHash, newFive));
+        Assertions.assertTrue(ValidateUtils.verifyOctetStrings(dataToHash, newFive, DIGEST_OID_SHA_256));
     }
 
     @Test
@@ -543,7 +546,7 @@ class ValidateUtilsTest {
         byte[] nisHexToCheck = hexFile(NIS_HEX_TO_CHECK);
         log.info("DECODED_NIS_STRING : {}" , Arrays.toString(nisHexToCheck));
 
-        String nisSha256Str = ValidateUtils.calculateSha256(nisHexToCheck);
+        String nisSha256Str = ValidateUtils.calculateDigest(nisHexToCheck, DIGEST_OID_SHA_256);
         log.info("nisHexToCheckStr : {}" , nisSha256Str);
         // E0C47E69639807307D6DB3EE8E3C4E5893B6093E2F04397E140BA26F29C54663
         return nisSha256Str;
@@ -578,7 +581,7 @@ class ValidateUtilsTest {
         byte[] nisPublicKeyToCheck = hexFile(fileString);
         log.info("DECODED_NIS_PUBLICKEY_STRING : {}", Arrays.toString(nisPublicKeyToCheck));
 
-        String nisSha256PublicKeyStr = ValidateUtils.calculateSha256(nisPublicKeyToCheck);
+        String nisSha256PublicKeyStr = ValidateUtils.calculateDigest(nisPublicKeyToCheck, DIGEST_OID_SHA_256);
         log.info("nisSha256PublicKeyStr : {}", nisSha256PublicKeyStr);
         // A77DBDB693EDD191EC82412C1462C70DF7901CDCA12088CD23CAF74429681A86
         Assertions.assertNotNull(nisSha256PublicKeyStr);
@@ -705,7 +708,7 @@ class ValidateUtilsTest {
         if (cmsData == null || nisSha256PublicKey == null) {
             throw new CieCheckerException("Input parameters NULL: CMSSignedData is " + cmsData + " - String is " + nisSha256PublicKey);
         }
-        String nisSha256PublicKeyToCheck = ValidateUtils.calculateSha256(nisSha256PublicKey);
+        String nisSha256PublicKeyToCheck = ValidateUtils.calculateDigest(nisSha256PublicKey, DIGEST_OID_SHA_256);
         List<String> dataGroupList = ValidateUtils.extractDataGroupHashes(cmsData);
         if(dataGroupList.contains(nisSha256PublicKeyToCheck)){
             return true;

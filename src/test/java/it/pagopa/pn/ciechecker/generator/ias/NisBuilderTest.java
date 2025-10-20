@@ -89,8 +89,8 @@ public class NisBuilderTest {
     @Test
     public void generateRandom_defaultLen_valid() {
         NisBuilder nb = new NisBuilder(new SecureRandom());
-        byte[] a = nb.generateRandom();
-        byte[] b = nb.generateRandom();
+        byte[] a = nb.generateNumeric(DEFAULT_NIS_LEN).getBytes();
+        byte[] b = nb.generateNumeric(DEFAULT_NIS_LEN).getBytes();
 
         assertEquals(NisBuilder.DEFAULT_NIS_LEN, a.length);
         assertEquals(NisBuilder.DEFAULT_NIS_LEN, b.length);
@@ -118,7 +118,7 @@ public class NisBuilderTest {
     @Test
     public void asReadOnlyBuffer_works() {
         NisBuilder nb = new NisBuilder();
-        byte[] nis = nb.generateRandom();
+        byte[] nis = nb.generateNumeric(DEFAULT_NIS_LEN).getBytes();
         ByteBuffer ro = NisBuilder.asReadOnlyBuffer(nis);
         assertEquals(nis.length, ro.remaining());
         assertTrue(ro.isReadOnly());
@@ -129,10 +129,8 @@ public class NisBuilderTest {
         PrivateKey caPrivateKey = loadPrivateKeyFromPem(caKeyBytes);
         X509Certificate caCert = loadCertificateFromPem(caCertBytes);
 
-        byte[] nis = new NisBuilder().generateRandom();
+        byte[] nis = new NisBuilder().generateNumeric(DEFAULT_NIS_LEN).getBytes();
         CieIas cieIas = createCieIas(nis, caCert.getPublicKey().getEncoded(), caPrivateKey, caCert);
-        byte[] sodBytes = cieIas.getSod();
-
 
         assertNotNull(cieIas.getSod());
         assertNotNull(cieIas.getNis());
@@ -150,53 +148,53 @@ public class NisBuilderTest {
     }
 
     //creato per verifica locale sul sod
-    @Test
-    public void generateSodFileInTestResources() throws Exception {
-        PrivateKey caPrivateKey = loadPrivateKeyFromPem(caKeyBytes);
-        X509Certificate caCert = loadCertificateFromPem(caCertBytes);
-
-        byte[] nis = new NisBuilder().generateRandom(); // genera NIS 32 byte
-        CieIas cieIas = createCieIas(nis, caCert.getPublicKey().getEncoded(), caPrivateKey, caCert);
-        byte[] sodBytes = cieIas.getSod();
-
-        Path output = Path.of("src/test/resources/generetedFiles/generated_test.sod");
-        File file = output.toFile();
-        file.getParentFile().mkdirs(); 
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-            fos.write(sodBytes);
-        }
-
-        System.out.println("SOD generato in: " + file.getAbsolutePath());
-        CMSSignedData cms = new CMSSignedData(sodBytes);
-        assertNotNull(cms);
-        assertFalse(cms.getSignerInfos().getSigners().isEmpty(), "CMS non contiene firmatari");
-    }
-
-//
 //    @Test
-//    public void testVerifySodPassiveAuthCie() throws Exception {
-//        // ca reale
+//    public void generateSodFileInTestResources() throws Exception {
 //        PrivateKey caPrivateKey = loadPrivateKeyFromPem(caKeyBytes);
 //        X509Certificate caCert = loadCertificateFromPem(caCertBytes);
 //
-//        // nis random
-//        byte[] nis = new NisBuilder().generateRandom();
-//        CieIas cieIas = createCieIas(nis,caCert.getPublicKey().getEncoded(),caPrivateKey,caCert);
+//        byte[] nis = new NisBuilder().generateRandom(); // genera NIS 32 byte
+//        CieIas cieIas = createCieIas(nis, caCert.getPublicKey().getEncoded(), caPrivateKey, caCert);
+//        byte[] sodBytes = cieIas.getSod();
 //
-//        // cms sod ias
-//        CMSSignedData cms = new CMSSignedData(cieIas.getSod());
-//        System.out.println("getName: " +caCert.getSubjectX500Principal().getName());
+//        Path output = Path.of("src/test/resources/generetedFiles/generated_test.sod");
+//        File file = output.toFile();
+//        file.getParentFile().mkdirs();
+//        try (FileOutputStream fos = new FileOutputStream(file)) {
+//            fos.write(sodBytes);
+//        }
 //
+//        System.out.println("SOD generato in: " + file.getAbsolutePath());
+//        CMSSignedData cms = new CMSSignedData(sodBytes);
 //        assertNotNull(cms);
 //        assertFalse(cms.getSignerInfos().getSigners().isEmpty(), "CMS non contiene firmatari");
-//
-//        // verifica firma digitale e catena
-//        ResultCieChecker result = cieCheckerInterface.verifyDigitalSignature(cms);
-//        assertEquals(OK, result.getValue());
-//
-//        // verifica hash NIS + firma
-//       assertTrue(cieCheckerInterface.verifySodPassiveAuthCie(cms, cieIas.getNis()));
 //    }
+
+
+    @Test
+    public void testVerifySodPassiveAuthCie() throws Exception {
+        // ca reale
+        PrivateKey caPrivateKey = loadPrivateKeyFromPem(caKeyBytes);
+        X509Certificate caCert = loadCertificateFromPem(caCertBytes);
+
+        // nis random
+        byte[] nis = new NisBuilder().generateNumeric(DEFAULT_NIS_LEN).getBytes();
+        CieIas cieIas = createCieIas(nis,caCert.getPublicKey().getEncoded(),caPrivateKey,caCert);
+
+        // cms sod ias
+        CMSSignedData cms = new CMSSignedData(cieIas.getSod());
+        System.out.println("getName: " +caCert.getSubjectX500Principal().getName());
+
+        assertNotNull(cms);
+        assertFalse(cms.getSignerInfos().getSigners().isEmpty(), "CMS non contiene firmatari");
+
+        // verifica firma digitale e catena
+        ResultCieChecker result = cieCheckerInterface.verifyDigitalSignature(cms);
+        assertEquals(OK, result.getValue());
+
+        // verifica hash NIS + firma
+       assertTrue(cieCheckerInterface.verifySodPassiveAuthCie(cms, nis));
+    }
 
 
 

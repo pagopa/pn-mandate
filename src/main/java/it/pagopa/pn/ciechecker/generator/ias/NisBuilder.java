@@ -1,30 +1,21 @@
 package it.pagopa.pn.ciechecker.generator.ias;
 
-import it.pagopa.pn.ciechecker.generator.model.CertAndKey;
-import it.pagopa.pn.ciechecker.generator.sod.SodBuilder;
+
 import it.pagopa.pn.ciechecker.model.CieIas;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.*;
 import org.bouncycastle.asn1.icao.DataGroupHash;
-import org.bouncycastle.asn1.icao.ICAOObjectIdentifiers;
 import org.bouncycastle.asn1.icao.LDSSecurityObject;
 import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaCertStore;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
-import org.bouncycastle.cms.*;
 import org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder;
-import org.bouncycastle.cms.jcajce.JcaSignerInfoVerifierBuilder;
-import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoGeneratorBuilder;
 import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.DigestCalculatorProvider;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
+import org.bouncycastle.util.Store;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -33,10 +24,6 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.CMSSignedDataGenerator;
 import org.bouncycastle.cms.CMSProcessableByteArray;
@@ -48,7 +35,7 @@ public class NisBuilder {
 
     public static final int DEFAULT_NIS_LEN = 12;
     private final SecureRandom rng;
-
+    private static final String DIGITS = "0123456789";
 
     public NisBuilder() {
         this.rng = new SecureRandom();
@@ -57,6 +44,19 @@ public class NisBuilder {
     public NisBuilder(SecureRandom rng) {
         this.rng = rng;
     }
+
+    public String generateNumeric(int length) {
+        if (length <= 0) {
+            throw new IllegalArgumentException("Length must be > 0");
+        }
+        Random rng = new SecureRandom();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(DIGITS.charAt(rng.nextInt(DIGITS.length())));
+        }
+        return sb.toString();
+    }
+
 
     public byte[] generateRandom() {
         return generateRandom(DEFAULT_NIS_LEN);
@@ -119,7 +119,7 @@ public class NisBuilder {
     ) throws Exception {
 
         Map<Integer, byte[]> dgHashMap = new LinkedHashMap<>();
-        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+        MessageDigest sha256 = MessageDigest.getInstance("SHA-1");
         dgHashMap.put(1, sha256.digest(nis));
         dgHashMap.put(5, sha256.digest(iasPublicKeyDer));
         return buildSignedSod(dgHashMap, privateKey, cscaCert);
@@ -127,36 +127,47 @@ public class NisBuilder {
 
     public static byte[] buildSignedSod(Map<Integer, byte[]> dgHashMap,
                                  PrivateKey dsKey, X509Certificate dsCert) throws Exception {
-        byte[] eContent = encodeLdsSecurityObject(dgHashMap);
 
-        CMSTypedData msg = new CMSProcessableByteArray(
-                ICAOObjectIdentifiers.id_icao_ldsSecurityObject, eContent
-        );
-
-        CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
-        JcaSignerInfoGeneratorBuilder signerInfoBuilder =
-                new JcaSignerInfoGeneratorBuilder(new JcaDigestCalculatorProviderBuilder().build());
-
-        signerInfoBuilder.setSignedAttributeGenerator(new DefaultSignedAttributeTableGenerator());
-
-        gen.addSignerInfoGenerator(
-                signerInfoBuilder.build(new JcaContentSignerBuilder("SHA1withRSA").build(dsKey), dsCert)
-        );
-
-        gen.addCertificate(new JcaX509CertificateHolder(dsCert));
-        CMSSignedData sd = gen.generate(msg, true);
-        return sd.getEncoded();
+    // DataGroupHash sequence
+    ASN1EncodableVector dgHashVector = new ASN1EncodableVector();
+    for (Map.Entry<Integer, byte[]> entry : dgHashMap.entrySet()) {
+        ASN1EncodableVector dgEntry = new ASN1EncodableVector();
+        dgEntry.add(new ASN1Integer(entry.getKey()));
+        dgEntry.add(new DEROctetString(entry.getValue()));
+        dgHashVector.add(new DERSequence(dgEntry));
     }
 
-    public static byte[] encodeLdsSecurityObject(Map<Integer, byte[]> dgHashMap) throws Exception {
-        AlgorithmIdentifier dgDigestAlgId =
-                new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256, DERNull.INSTANCE);
-        DataGroupHash[] dghArray = dgHashMap.entrySet().stream()
-                .map(e -> new DataGroupHash(e.getKey(), new DEROctetString(e.getValue())))
-                .toArray(DataGroupHash[]::new);
-        LDSSecurityObject lds = new LDSSecurityObject(dgDigestAlgId, dghArray);
-        return lds.getEncoded(ASN1Encoding.DER);
-    }
+    DataGroupHash[] dghArray = dgHashMap.entrySet().stream()
+        .map(e -> new DataGroupHash(e.getKey(), new DEROctetString(e.getValue())))
+        .toArray(DataGroupHash[]::new);
+    //LDSSecurityObject
+    LDSSecurityObject ldsSO = new LDSSecurityObject(
+        new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256),
+        dghArray
+    );
+    
+    // Encode LDSSecurityObject
+    byte[] ldsSOBytes = ldsSO.getEncoded("DER");
+    CMSTypedData cmsData = new CMSProcessableByteArray(CMSObjectIdentifiers.data, ldsSOBytes);
+
+    // CMS Signature
+    ContentSigner contentSigner = new JcaContentSignerBuilder("SHA1withRSA")
+        .setProvider("BC").build(dsKey);
+
+    CMSSignedDataGenerator generator = new CMSSignedDataGenerator();
+    generator.addSignerInfoGenerator(
+        new JcaSignerInfoGeneratorBuilder(
+            new JcaDigestCalculatorProviderBuilder().setProvider("BC").build()
+        ).build(contentSigner, dsCert)
+    );
+
+    Store certs = new JcaCertStore(Collections.singletonList(dsCert));
+    generator.addCertificates(certs);
+
+    CMSSignedData signedData = generator.generate(cmsData, true);
+
+    return signedData.getEncoded();
+}
 
 //creato e usato solo per stampare la struttura degli attributi
     public static void debugAsn1Structure(byte[] eContent) {
@@ -180,11 +191,6 @@ public class NisBuilder {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private byte[] digestSHA256(byte[] input) throws Exception {
-        java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
-        return md.digest(input);
     }
 
 }

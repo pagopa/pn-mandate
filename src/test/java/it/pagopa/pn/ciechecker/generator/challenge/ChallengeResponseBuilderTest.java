@@ -59,7 +59,7 @@ public class ChallengeResponseBuilderTest {
     @Test
     void generateSignedNonce() throws Exception {
 
-        CieValidationData data = builder.sgenerateSignedNonce(validationData.getNonce(), certX509, privateKey);
+        CieValidationData data = builder.generateSignedNonce(validationData.getNonce(), certX509, privateKey);
 
         String signedNonceBase64 = Base64.getEncoder().encodeToString(validationData.getSignedNonce());
 

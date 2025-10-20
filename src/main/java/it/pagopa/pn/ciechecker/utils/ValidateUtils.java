@@ -613,7 +613,7 @@ public class ValidateUtils {
 
 
     //creazione oggetto rappresentante EF.SOD -> decode_sod_hr.sh
-    public static SodSummary decodeSodHr(byte[] sodBytes) throws Exception {
+    public static SodSummary decodeSodHr(byte[] sodBytes) throws CieCheckerException {
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_DECEODESODHR);
         try {
             CMSSignedData cms = new CMSSignedData(sodBytes);
@@ -642,10 +642,15 @@ public class ValidateUtils {
             }
 
             return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
+        }catch(CMSException ce ){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, ce.getClass().getName() + " - Message: " + ce.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA , ce);
+        } catch (CieCheckerException cce) {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, cce.getClass().getName() + " - Message: " + cce.getMessage());
+            throw new CieCheckerException(cce.getResult(), cce);
         }catch(Exception e ){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, e.getClass().getName() + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_ERROR_SOD_DECODE , e);
-
         }
     }
 

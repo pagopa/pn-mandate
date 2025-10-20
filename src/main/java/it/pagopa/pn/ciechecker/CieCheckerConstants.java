@@ -70,6 +70,8 @@ public class CieCheckerConstants {
     public static final String EXC_NOVALID_DIGITAL_SIGNATURE = "No valid digital Signature";
     public static final String KO_EXC_ERROR_SOD_DECODE= "Error in decode Sod Mrtd";
     public static final String EXC_NOT_SAME_DIGEST = "Digest mismatch between expected and actual DG";
+    public static final String EXC_NOT_SAME_DIGEST_1 = "Digest mismatch between expected and actual DG1";
+    public static final String EXC_NOT_SAME_DIGEST_11 = "Digest mismatch between expected and actual DG11";
     public static final String EXC_DIGEST_NOT_VERIFIED = "Digest are different, validation of integrity not passed";
     public static final String EXC_INVALID_PARAMETER_CIESOD = "Input parameter SOD CIE is null";
     public static final String EXC_INVALID_PARAMETER_MRTDSOD = "Input parameter SOD MRTD is null";

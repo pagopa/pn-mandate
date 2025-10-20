@@ -19,7 +19,7 @@ public class ChallengeResponseBuilder {
     }
 
     //Crea e setta in CieValidationData il SignedNonce
-    public CieValidationData setSignedNonce(String nonce, X509Certificate cert, PrivateKey privateKey) throws Exception {
+    public CieValidationData generateSignedNonce(String nonce, X509Certificate cert, PrivateKey privateKey) throws Exception {
 
         byte[] nonceByte = nonce.getBytes(StandardCharsets.UTF_8);
         byte[] response = generateRsaSignature(nonceByte, privateKey);

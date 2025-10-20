@@ -1,31 +1,15 @@
 package it.pagopa.pn.ciechecker.generator.challenge;
 
-import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerConstants;
-import it.pagopa.pn.ciechecker.CieCheckerInterface;
 import it.pagopa.pn.ciechecker.model.CieIas;
 import it.pagopa.pn.ciechecker.model.CieValidationData;
-import it.pagopa.pn.ciechecker.model.ResultCieChecker;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.DecoderException;
-import org.bouncycastle.asn1.pkcs.RSAPrivateKey;
-import org.bouncycastle.asn1.pkcs.RSAPublicKey;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.encodings.PKCS1Encoding;
-import org.bouncycastle.crypto.engines.RSAEngine;
-import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.util.Base64Utils;
 import org.testcontainers.shaded.org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,14 +17,11 @@ import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPrivateCrtKeySpec;
-import java.util.Arrays;
+import java.util.Base64;
 
 
 public class ChallengeResponseBuilderTest {
 
-    private static final Path basePath= Path.of("src","test","resources");
     private static final Path privatekeyPathTest = Paths.get("src/test/resources/catest.key");
     private static final Path certificatoPathTest = Paths.get("src/test/resources/catest.pem");
 
@@ -48,18 +29,22 @@ public class ChallengeResponseBuilderTest {
     private ChallengeResponseBuilder builder;
     private X509Certificate certX509;
     private PrivateKey privateKey;
-
+    private PublicKey publicKey;
 
     @BeforeEach
     void setUp() throws Exception {
+        Security.addProvider(new BouncyCastleProvider());
 
         byte[] certificatoByte = Files.readAllBytes(certificatoPathTest);
         byte[] privateKeyByte = Files.readAllBytes(privatekeyPathTest);
 
         certX509 = (X509Certificate) CertificateFactory.getInstance("X.509")
                 .generateCertificate(new ByteArrayInputStream(certificatoByte));
+        System.out.println("Certificato caricato: " + certX509.getSubjectDN());
+
         privateKey = parsePrivateKey(privateKeyByte);
 
+        publicKey = certX509.getPublicKey();
         byte[] publicKey = certX509.getPublicKey().getEncoded();
 
         CieIas ias = new CieIas();
@@ -71,30 +56,26 @@ public class ChallengeResponseBuilderTest {
 
     }
 
+    @Test
+    void generateSignedNonce() throws Exception {
 
-//    @Test
-//    void verifyChallengeResponseTest() throws Exception {
-//
-//        builder.setSignedNonce(validationData.getNonce(), certX509, privateKey);
-//
-//        PublicKey publicKey = certX509.getPublicKey();
-//        SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
-//        RSAPublicKey pkcs1PublicKey = RSAPublicKey.getInstance(spki.parsePublicKey());
-//        BigInteger modulus = pkcs1PublicKey.getModulus();
-//        BigInteger publicExponent = pkcs1PublicKey.getPublicExponent();
-//        RSAKeyParameters publicKeyParam = new RSAKeyParameters(false, modulus, publicExponent);
-//
-//        RSAEngine engine = new RSAEngine();
-//        PKCS1Encoding engine2 = new PKCS1Encoding(engine);
-//        engine2.init(false, publicKeyParam);
-//
-//        byte[] recovered = engine2.processBlock(validationData.getSignedNonce(), 0, validationData.getSignedNonce().length);
-//        System.out.println("recovered: " + recovered);
-//        System.out.println("nonce: " + validationData.getNonce().getBytes(StandardCharsets.UTF_8));
-//
-//        Assertions.assertTrue(Arrays.equals(recovered, validationData.getNonce().getBytes(StandardCharsets.UTF_8)));
-//    }
+        CieValidationData data = builder.generateSignedNonce(validationData.getNonce(), certX509, privateKey);
 
+        String signedNonceBase64 = Base64.getEncoder().encodeToString(validationData.getSignedNonce());
+
+        System.out.println("Nonce: " + validationData.getNonce());
+        System.out.println("SignedNonce (Base64): " + signedNonceBase64);
+
+        Assertions.assertTrue(verifySignedNonce(validationData.getNonce(), validationData.getSignedNonce(), publicKey));
+    }
+
+
+    private static boolean verifySignedNonce(String nonce, byte[] signedNonce, PublicKey publicKey) throws Exception {
+        Signature signature = Signature.getInstance(CieCheckerConstants.SHA_1_WITH_RSA, "BC");
+        signature.initVerify(publicKey);
+        signature.update(nonce.getBytes(StandardCharsets.UTF_8));
+        return signature.verify(signedNonce);
+    }
 
     private static PrivateKey parsePrivateKey(byte[] derOrPem) throws GeneralSecurityException, IOException {
         try {

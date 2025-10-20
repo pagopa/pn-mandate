@@ -409,8 +409,9 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_EXPECTED_HASHES_SOD);
         }
 
-        log.debug("Verifica DG1 e DG11");
+        log.info("Verifica DG1 ...");
         verifyDigestList(md, dg1, expectedHashes, 1);
+        log.info("Verifica DG11 ...");
         verifyDigestList(md, dg11, expectedHashes, 11);
 
         log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.CIECHECKER_VERIFY_INTEGRITY_CORE, "ResultCieChecker", ResultCieChecker.OK.getValue());
@@ -419,8 +420,11 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
     private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum) throws CieCheckerException {
         if (!isVerifyDigest(md, dg, expectedHashes.get(dgNum))) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS_DG_VALIDATE, LogsCostant.CIECHECKER_VERIFY_DIGESTLIST, ResultCieChecker.KO_EXC_NOT_SAME_DIGEST.getValue(),dgNum);
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST);
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS_DG_VALIDATE, LogsCostant.CIECHECKER_VERIFY_DIGESTLIST, ResultCieChecker.KO_EXC_NOT_SAME_DIGEST.getValue(), dgNum);
+            if(dgNum == 1) {
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST1);
+            }else
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST11);
         }
     }
 

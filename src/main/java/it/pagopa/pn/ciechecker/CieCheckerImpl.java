@@ -319,7 +319,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             // ** PASSO 1B: ANALISI DEGLI HASH DEI DATI (DataGroupHashes)
             // *********************************************************************/
             log.debug("Estrazione e verifica della lista degli hash dei DataGroup ...");
-            if (!ValidateUtils.verifyNisSha256FromDataGroup(cms, cieIasNis)) {
+            if (!ValidateUtils.verifyNisShaFromDataGroup(cms, cieIasNis)) {
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP);
             }

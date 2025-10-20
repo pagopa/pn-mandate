@@ -22,7 +22,7 @@ public abstract class LogsCostant {
     public static final String VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER = "ValidateUtils.extractPublicKeyFromHolder()";
     public static final String VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT = "ValidateUtils.verifyMatchHashContent()";
     public static final String VALIDATEUTILS_VERIFY_OCTECTSTRINGS = "ValidateUtils.verifyOctetStrings()";
-    public static final String VALIDATEUTILS_CALCULATE_SHA256 = "ValidateUtils.calculateSha256()";
+    public static final String VALIDATEUTILS_CALCULATE_DIGEST_SHA = "ValidateUtils.calculateDigest()";
     public static final String VALIDATEUTILS_EXTRACT_HASHSIGNED = "ValidateUtils.extractHashSigned()";
     public static final String VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR = "ValidateUtils.extractAllSignedAttributes()";
     public static final String VALIDATEUTILS_EXTRACT_DATAGROUP = "ValidateUtils.extractDataGroupHashes()";

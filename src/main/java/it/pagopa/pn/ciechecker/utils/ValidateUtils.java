@@ -201,7 +201,9 @@ public class ValidateUtils {
             }
             // --- PARTE 2: ESTRAI L'HASH FIRMATO (messageDigest) ---
             ASN1OctetString signedHash = ValidateUtils.extractHashSigned(cms);
-            return ValidateUtils.verifyOctetStrings(hashSignedData, signedHash);
+            String digestOid = extractDigestAlgorithmOidFromSod(cms);
+
+            return ValidateUtils.verifyOctetStrings(hashSignedData, signedHash, digestOid);
         }catch(CieCheckerException ce){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, CieCheckerException.class.getName() + " - Message: " + ce.getMessage());
             throw new CieCheckerException(ce.getResult(), ce);
@@ -218,7 +220,7 @@ public class ValidateUtils {
      * @return boolean
      * @throws CieCheckerException ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA, KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP
      */
-    public static boolean verifyOctetStrings(byte[] firstOctetString, ASN1OctetString fiveOctetString) throws CieCheckerException {
+    public static boolean verifyOctetStrings(byte[] firstOctetString, ASN1OctetString fiveOctetString, String digestOid) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS);
         if ( Objects.isNull(firstOctetString)  || firstOctetString.length == 0) {
@@ -232,7 +234,7 @@ public class ValidateUtils {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
         }
 
-        String firstStr = calculateSha256(firstOctetString);
+        String firstStr = calculateDigest(firstOctetString, digestOid);
         String fiveStr = getHexFromOctetString(fiveOctetString);
         log.debug("calculateSha256 --> firstStr: {} - getHexFromOctetString --> fiveStr: {}", firstStr, fiveStr);
         if (firstStr.equalsIgnoreCase(fiveStr)) {
@@ -246,21 +248,28 @@ public class ValidateUtils {
     }
 
     /**
-     * Converte byte[] in String esadecimale Sha256
-     * @param octetByte byte[]
-     * @return String
-     * @throws CieCheckerException exception
+     * Calcola l'hash di un array di byte utilizzando l'algoritmo specificato
+     * (es. SHA-1, SHA-256, SHA-384, SHA-512)
      */
-    public static String calculateSha256(byte[] octetByte) throws CieCheckerException {
+    public static String calculateDigest(byte[] data, String digestOid) throws CieCheckerException {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(octetByte);
+            String digestName = getDigestName(digestOid);
+            MessageDigest digest = MessageDigest.getInstance(digestName);
+            byte[] hashBytes = digest.digest(data);
             return Hex.toHexString(hashBytes).toUpperCase();
-        }catch(NoSuchAlgorithmException nsae){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_CALCULATE_SHA256, nsae.getClass().getName() + " - Message: " + nsae.getMessage());
+        } catch (NoSuchAlgorithmException nsae) {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS,
+                    LogsCostant.VALIDATEUTILS_CALCULATE_DIGEST_SHA,
+                    nsae.getClass().getName() + " - Message: " + nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MESSAGEDIGESTSPI_SUPPORTED, nsae);
         }
     }
+
+    public static String extractDigestAlgorithmOidFromSod(CMSSignedData cms) {
+        SignerInformation signer = cms.getSignerInfos().getSigners().iterator().next();
+        return signer.getDigestAlgorithmID().getAlgorithm().getId();
+    }
+
 
     /**
      * Metodo di conversione per il digest di un ASN1OctetString di BouncyCastle in una stringa
@@ -462,13 +471,13 @@ public class ValidateUtils {
     /**
      * Estrazione e verifica della lista degli hash dei Data Group
      * @param cmsData CMSSignedData
-     * @param nisSha256 byte[]
+     * @param nisSha byte[]
      * @return boolean
      * @throws CieCheckerException c
      */
-    public static boolean verifyNisSha256FromDataGroup(CMSSignedData cmsData, byte[] nisSha256) throws CieCheckerException {
-
-        String nisHexToCheck = calculateSha256(nisSha256);
+    public static boolean verifyNisShaFromDataGroup(CMSSignedData cmsData, byte[] nisSha) throws CieCheckerException {
+        String digestOid = extractDigestAlgorithmOidFromSod(cmsData);
+        String nisHexToCheck = calculateDigest(nisSha, digestOid);
         List<String> dataGroupList = extractDataGroupHashes(cmsData);
         if(dataGroupList.isEmpty() ) {
             log.error("Error in verifyNisSha256FromDataGroup: " + CieCheckerException.class.getName() + " - Message: " + EXC_NO_NIS_HASHES_DATAGROUP);

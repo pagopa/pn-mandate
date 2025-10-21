@@ -17,9 +17,11 @@
     "WireTapLogActivation": "false",
     "CscaMasterlistUrl": "https://csca-ita.interno.gov.it/certificatiCSCA/IT_MasterListCSCA.zip",
     "CscaSyncS3BucketPrefix": "pn-mandate/csca-masterlist/IT_MasterListCSCA.zip",
-    "IsLollipopActive": "false",
-    "LollipopExpectedLcOriginalUrl": "^https://api-app.io.pagopa.it/api/v1/(?:third-party-messages/[a-zA-Z0-9]{26}(?:/attachments/delivery/notifications/received/([A-Z]{4}-[A-Z]{4}-[A-Z]{4}-[0-9]{6}-[A-Z]-[0-9])/attachments/documents/[0-9])?(?:/attachments/delivery/notifications/received/([A-Z]{4}-[A-Z]{4}-[A-Z]{4}-[0-9]{6}-[A-Z]-[0-9])/attachments/payment/(F24|PAGOPA)(/?\\\\?attachmentIdx\\\\x3D\\\\d+))?|send/aar/(?:qr-code-check(?:\\?isTest=true)?|notifications/[A-Z]{4}-[A-Z]{4}-[A-Z]{4}-[0-9]{6}-[A-Z]-[0-9]|attachments/.*))?$",
+    "IsLollipopActive": "true",
+    "LollipopExpectedLcOriginalUrl": "^(?:https://api-app.io.pagopa.it/api/v1/(?:third-party-messages/[a-zA-Z0-9]{26}(?:/attachments/delivery/notifications/received/([A-Z]{4}-[A-Z]{4}-[A-Z]{4}-[0-9]{6}-[A-Z]-[0-9])/attachments/documents/[0-9])?(?:/attachments/delivery/notifications/received/([A-Z]{4}-[A-Z]{4}-[A-Z]{4}-[0-9]{6}-[A-Z]-[0-9])/attachments/payment/(F24|PAGOPA)(/?\\?attachmentIdx\\x3D\\d+))?|send/aar/(?:qr-code-check|notifications/[A-Z]{4}-[A-Z]{4}-[A-Z]{4}-[0-9]{6}-[A-Z]-[0-9]|attachments/.*)(?:\\?isTest=true)?))?$",
     "LollipopEnableConsumerLogging": "true",
-    "CieValidationCertS3Path": "pn-mandate/csca-masterlist/IT_MasterListCSCA.zip"
+    "CieValidationCertS3Path": "pn-mandate/csca-masterlist/IT_MasterListCSCA.zip",
+    "EnableAPIGatewayAppIO": "true",
+    "LollipopWhiteList": "CLMCST42R12D969Z:Cristoforo:Colombo"
   }
 }

@@ -22,6 +22,6 @@
     "LollipopEnableConsumerLogging": "true",
     "CieValidationCertS3Path": "pn-mandate/csca-masterlist/IT_MasterListCSCA.zip",
     "EnableAPIGatewayAppIO": "true",
-    "LollipopWhiteList": "CLMCST42R12D969Z:Cristoforo:Colombo"
+    "LollipopWhiteList": "CLMCST42R12D969Z:Cristoforo:Colombo;FRMTTR76M06B715E:Ettore:Fieramosca;GLLGLL64B15G702I:Galileo:Galilei"
   }
 }

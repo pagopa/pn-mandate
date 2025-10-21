@@ -15,6 +15,7 @@ import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.icao.DataGroupHash;
 import org.bouncycastle.asn1.icao.LDSSecurityObject;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 
@@ -23,6 +24,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.*;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.stream.Collectors;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
@@ -38,7 +40,12 @@ import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.util.DigestFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.util.Store;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -654,29 +661,6 @@ public class ValidateUtils {
         }
     }
 
-/*
-    public static List<X509Certificate> extractCscaAnchorFromZipPath(Path cscaAnchorZipFilePath) throws CieCheckerException {
-
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR);
-        log.debug("PATH CSCA: {}", cscaAnchorZipFilePath);
-
-        try (InputStream fileInputStream = new FileInputStream(cscaAnchorZipFilePath.toFile())) {
-            List<X509Certificate> x509CertList = ValidateUtils.getX509CertListFromZipFile(fileInputStream);
-            if ( x509CertList.isEmpty()) {
-                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED.getValue());
-                throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
-            }
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR);
-            return x509CertList;
-        } catch (IOException ioe) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, ioe.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, ioe);
-        }catch (Exception e ){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e);
-        }
-    }
-*/
 
     /**
      * Estrae la lista di certificati da un archivio ZIP
@@ -762,29 +746,6 @@ public class ValidateUtils {
         }
     }
 
-/*
-    public static String extractCodiceFiscaleByOid(byte[] dg11Bytes) throws CieCheckerException {
-
-        try {
-            //parser TLV
-            log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE);
-            BerTlvParser parser = new BerTlvParser();
-            BerTlvs tlvs = parser.parse(dg11Bytes, 0, dg11Bytes.length);
-            BerTag bTag = new BerTag(org.apache.commons.codec.binary.Hex.decodeHex(CieCheckerConstants.TAG_PERSONAL_NUMBER));
-            BerTlv bTlv = tlvs.find(bTag);
-            if (bTlv != null) {
-                //log.debug("CODICE_FISCALE DELEGANTE: " + bTlv.getTextValue());
-                return bTlv.getTextValue();
-            } else {
-                log.error("ResultCieChecker: {}", ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
-                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
-            }
-        } catch (DecoderException de) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE, de.getClass().getName() + " - Message: " + de.getMessage());
-            throw new CieCheckerException( ResultCieChecker.KO_EXC_DECODER_ERROR, de);
-        }
-    }
-*/
     public static String parserTLVTagValue(byte[] fileBytes, String tag) throws CieCheckerException {
 
         try {
@@ -923,5 +884,29 @@ public class ValidateUtils {
         }
     }
 
+    public static PrivateKey parsePrivateKey(byte[] derOrPem) throws GeneralSecurityException, IOException {
+        try {
+            return KeyFactory.getInstance("RSA")
+                    .generatePrivate(new PKCS8EncodedKeySpec(derOrPem));
+        } catch (Exception ignore) { /* non era PKCS#8 DER */ }
+
+        try (PEMParser pp = new PEMParser(
+                new StringReader(new String(derOrPem, StandardCharsets.US_ASCII)))) {
+
+            Object obj = pp.readObject();
+            var conv = new JcaPEMKeyConverter().setProvider(new BouncyCastleProvider());
+
+            if (obj instanceof PrivateKeyInfo pki) {
+                return conv.getPrivateKey(pki);
+            } else if (obj instanceof PEMKeyPair kp) {
+                return conv.getKeyPair(kp).getPrivate();
+            } else if (obj instanceof PEMEncryptedKeyPair
+                    || obj instanceof PKCS8EncryptedPrivateKeyInfo) {
+                throw new InvalidKeyException("Chiave privata cifrata: serve password e decrypt esplicito.");
+            }
+        }
+
+        throw new InvalidKeyException("Formato chiave non supportato (attesi PKCS#8 DER/PEM o PKCS#1 PEM non cifrati).");
+    }
 
 }

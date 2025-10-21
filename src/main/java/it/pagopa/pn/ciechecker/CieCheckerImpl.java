@@ -6,12 +6,15 @@ import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.*;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
+import org.bouncycastle.asn1.x509.DigestInfo;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -117,6 +120,8 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             verifyChallengeFromSignature(data);
 
             //16051 MRTD: verify_integrity.sh
+            //ASN1InputStream inputStream = new ASN1InputStream(new ByteArrayInputStream( data.getCieMrtd().getSod()));
+
             verifyIntegrity(data.getCieMrtd());
 
             //16052 MRTD: verify_signature.sh
@@ -191,7 +196,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
         String expirationDate = dataElement.substring(38, 38+6);
         log.debug("expirationDate: {} ", expirationDate);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyy");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMdd");
 
         try {
             LocalDate inputDate = LocalDate.parse(expirationDate, formatter);
@@ -246,6 +251,56 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 //            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, de.getClass().getName() + " - Message: " + de.getMessage());
 //            throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_HEX_BYTE, de);
        }
+    }
+
+    public ResultCieChecker verifyChallengeFromSignature2(CieValidationData data) throws CieCheckerException {
+
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE);
+        try {
+            RSAEngine engine = new RSAEngine();
+            PKCS1Encoding engine2 = new PKCS1Encoding(engine);
+            // estrazione public key dall'oggetto firma
+            //RSAKeyParameters publicKey = extractPublicKeyFromSignature(data.getCieIas().getPublicKey());
+            RSAKeyParameters keyParams = (RSAKeyParameters) PublicKeyFactory.createKey(data.getCieIas().getPublicKey());
+            engine2.init(false, keyParams);
+            // estrae dalla signature i byte del nonce/challenge
+            byte[] recoveredDigestInfo = engine2.processBlock(data.getSignedNonce(), 0, data.getSignedNonce().length);
+
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] calculatedHash = digest.digest(data.getNonce().getBytes(StandardCharsets.UTF_8));
+
+            DigestInfo recoveredInfo;
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(recoveredDigestInfo)) {
+                recoveredInfo = DigestInfo.getInstance(ASN1Primitive.fromByteArray(recoveredDigestInfo));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            // Estrae l'hash effettivo dal blocco recuperato
+            byte[] recoveredHash = recoveredInfo.getDigest();
+
+            if (!(Arrays.equals(recoveredHash, calculatedHash)) ){
+                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE.getValue());
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE);
+            }else {
+                log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, "ResultCieChecker", ResultCieChecker.OK.getValue());
+                return ResultCieChecker.OK;
+            }
+        }catch (IllegalArgumentException ie){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ie.getClass().getName() + " Message: " +  ie.getMessage());
+           ie.printStackTrace();
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_PUBLICKEY, ie);
+        }catch( CryptoException cre){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, cre.getClass().getName() + " - Message: " + cre.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CRYPTOGRAPHIC_OPERATION, cre);
+//        } catch (DecoderException de) {
+//            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, de.getClass().getName() + " - Message: " + de.getMessage());
+//            throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_HEX_BYTE, de);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

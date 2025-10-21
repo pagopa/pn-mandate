@@ -1,26 +1,28 @@
 package it.pagopa.pn.mandate.validation;
 
-import it.pagopa.pn.ciechecker.CieChecker;
-import it.pagopa.pn.ciechecker.CieCheckerConstants;
-import it.pagopa.pn.ciechecker.CieCheckerInterface;
-import it.pagopa.pn.ciechecker.MasterListMergeToolUtility;
+import it.pagopa.pn.ciechecker.*;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
+import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
+import it.pagopa.pn.ciechecker.generator.challenge.ChallengeResponseBuilder;
 import it.pagopa.pn.ciechecker.model.*;
-import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.IOUtils;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.encodings.PKCS1Encoding;
-import org.bouncycastle.crypto.engines.RSAEngine;
-import org.bouncycastle.crypto.params.RSAKeyParameters;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -31,6 +33,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.shaded.org.bouncycastle.jce.provider.BouncyCastleProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.AbortableInputStream;
@@ -41,9 +44,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.*;
 import java.math.BigInteger;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,6 +54,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -66,7 +67,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 
-@SpringBootTest(classes = {it.pagopa.pn.ciechecker.CieCheckerImpl.class, it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl.class})
+@SpringBootTest(classes = {CieCheckerImpl.class, S3BucketClientImpl.class})
 @Slf4j
 @ActiveProfiles("test")
 @EnableConfigurationProperties(PnMandateConfig.class)
@@ -83,20 +84,23 @@ class CieCheckerTest {
 
 
     private static final Path basePath= Path.of("src","test","resources");
-    private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");  //_FABIO
-    private static final Path dg1Files = Paths.get("src/test/resources/DG1.HEX");  //_FABIO
+    private static final Path sodFile = Paths.get("src/test/resources/EF.SOD");  //test real
+    private static final Path dg1Files = Paths.get("src/test/resources/DG1.HEX");  //test real
     private static final Path dg11Files = Paths.get("src/test/resources/EF.DG11");
-    private static final Path dg11FilesHex = Paths.get("src/test/resources/DG11.HEX"); //_FABIO
+    private static final Path dg11FilesHex = Paths.get("src/test/resources/DG11.HEX"); //test real
     private static final Path dg1FilesCorrupted = Paths.get("src/test/resources/DG1_CORROTTO.HEX");
     private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
-    private static final String SOD_HEX_IAS = "SOD_IAS.HEX"; //"SOD_IAS.HEX";  //_FABIO
+    private static final String SOD_HEX_IAS = "SOD_IAS.HEX";   //test real
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
     private static final Path masterListCSCA = Paths.get("src/test/resources/IT_MasterListCSCA.zip");
     private static final String masterListCSCAZip_S3 = "s3://pn-runtime-environment-variables-eu-south-1-830192246553/pn-mandate/csca-masterlist/IT_MasterListCSCA.zip";
 
     private static final String fileToAddMasterListZip = "src/test/resources/catest.pem";
     private static final String originalMasterListZip = "src/test/resources/IT_MasterListCSCA.zip";
+
+    private static final Path privatekeyPathTest = Paths.get("src/test/resources/catest.key");
+    private static final Path certificatoPathTest = Paths.get("src/test/resources/catest.pem");
 
     static CieValidationData validationData;
 
@@ -125,10 +129,10 @@ class CieCheckerTest {
 
         cieChecker.init();
 
-        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX"))); //"NIS_PUBKEY_MARIO.HEX"))); //_FABIO
-        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX"))); //_FABIO
+        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX"))); //test real
+        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NIS_SIGNATURE.HEX"))); //test real
         String nisChallenge = cleanString(basePath.resolve("NIS_CHALLENGE.HEX"));
-        byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));  //"910718464654".getBytes(); //
+        byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX"))); //"910718464654".getBytes();
         byte[] sodIasByteArray = loadSodBytes(basePath.resolve(SOD_HEX_IAS));
 
         byte[] sodMrtd = Files.readAllBytes(sodFile);
@@ -144,8 +148,8 @@ class CieCheckerTest {
 
         validationData.setCieIas(cieIas);
         validationData.setSignedNonce(nisSignature);
-        validationData.setNonce("02461"); // nisChallenge);
-        validationData.setCodFiscDelegante("TTNMRA63S21H501V"); //"RSSDNC42R01H501Y");
+        validationData.setNonce( "02461"); //
+        validationData.setCodFiscDelegante("RSSDNC42R01H501Y");
 
         CieMrtd cMrtd = new CieMrtd();
         cMrtd.setSod(sodMrtd);
@@ -197,7 +201,7 @@ class CieCheckerTest {
 
         ResultCieChecker resultOK = cieCheckerInterface.verifyExpirationCie(validationData.getCieMrtd().getDg1());
         log.info("Risultato atteso OK -> " + resultOK.getValue());
-        assertNotEquals(OK, resultOK.getValue());
+        assertEquals(OK, resultOK.getValue());
     }
 
 //    @Test
@@ -218,7 +222,7 @@ class CieCheckerTest {
         for(String a : stringArray) {
             log.info("stringArray {} ", a);
         }
-        Assertions.assertNotNull(stringArray);
+        assertNotNull(stringArray);
     }
 
 
@@ -231,21 +235,19 @@ class CieCheckerTest {
         return Files.readString(file).replaceAll("\\s+", "");
     }
 
-    @Test
-    void checkExtractChallengeTest() {
-
-        log.info("TEST verifyChallengeFromSignature - INIT... ");
-        assertNotNull(validationData.getCieIas().getPublicKey());
-        assertNotNull(validationData.getSignedNonce());
-        assertNotNull(validationData.getNonce());
-
-        //ResultCieChecker result = cieCheckerInterface.verifyChallengeFromSignature(validationData);
-        //log.info("Risultato atteso OK -> {}", result.getValue());
-        //assertNotEquals(OK, result.getValue());
-        assertThrows(CieCheckerException.class,
-                () -> cieCheckerInterface.verifyChallengeFromSignature(validationData));
-        log.info("TEST verifyChallengeFromSignature - END ");
-    }
+//    @Test
+//    void checkExtractChallengeTest() {
+//
+//        log.info("TEST verifyChallengeFromSignature - INIT... ");
+//        assertNotNull(validationData.getCieIas().getPublicKey());
+//        assertNotNull( validationData.getSignedNonce());
+//        assertNotNull(validationData.getNonce());
+//
+//        ResultCieChecker result = cieCheckerInterface.verifyChallengeFromSignature(validationData);
+//        log.info("Risultato atteso OK -> {}", result.getValue());
+//        assertEquals(OK, result.getValue());
+//        log.info("TEST verifyChallengeFromSignature - END ");
+//    }
 
     @Test
     void generatedPublicKeyTest() throws NoSuchAlgorithmException, InvalidKeySpecException {
@@ -645,6 +647,48 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
         Assertions.assertTrue(result.getValue().equals(OK));
 
         log.info("TEST writeNewMasterZip - END ");
+    }
+
+
+    @Test
+    void generateChallengeTest() throws Exception {
+
+        log.info("TEST generateSignedNonce - INIT... ");
+        assertNotNull(validationData.getCieIas().getPublicKey());
+        assertNotNull(validationData.getNonce());
+
+        byte[] certificatoByte = Files.readAllBytes(certificatoPathTest);
+        byte[] privateKeyByte = Files.readAllBytes(privatekeyPathTest);
+
+        X509Certificate certX509 = (X509Certificate) CertificateFactory.getInstance("X.509", new BouncyCastleProvider())
+                .generateCertificate(new ByteArrayInputStream(certificatoByte));
+        X509CertificateHolder holder = new JcaX509CertificateHolder(certX509);
+
+        System.out.println("Certificato caricato: " + certX509.getSubjectDN());
+
+        PrivateKey privateKey = ValidateUtils.parsePrivateKey(privateKeyByte);
+
+        byte[] publicKeyByte = certX509.getPublicKey().getEncoded();
+        SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(publicKeyByte);
+        byte[] rawRsaKeyBytes = spki.getPublicKeyData().getBytes();
+
+        CieIas ias = new CieIas();
+        ias.setPublicKey( rawRsaKeyBytes ); //publicKeyByte);
+        validationData = new CieValidationData();
+        validationData.setNonce("02461");
+        validationData.setCieIas(ias);
+
+        byte[] signedNonce = ChallengeResponseBuilder.generateSignedNonceRaw(validationData.getNonce(), privateKey);
+
+        validationData.setSignedNonce(signedNonce);
+        String signedNonceBase64 = Base64.getEncoder().encodeToString(validationData.getSignedNonce());
+
+        System.out.println("Nonce: " + validationData.getNonce());
+        System.out.println("SignedNonce (Base64): " + signedNonceBase64);
+        ResultCieChecker result = cieCheckerInterface.verifyChallengeFromSignature(validationData);
+        Assertions.assertTrue(result.getValue().equals(OK));
+
+        log.info("TEST generateSignedNonce - END ");
     }
 
 

@@ -370,6 +370,10 @@ Parameters:
   CieValidationCertS3Path:
     Type: String
     Description: "S3 path to the validation certificate (env-specific)."
+  
+  CscaMasterlistSyncLambdaName:
+    Type: String
+    Description: 'Name of the CscaMasterlistSync lambda function, valorized by storage.yml related output.'
 
   LollipopWhiteList:
     Type: String
@@ -779,7 +783,7 @@ Resources:
   CscaMasterlistSync:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${ProjectName}-CscaMasterlistSync
+      FunctionName: !Ref CscaMasterlistSyncLambdaName
       Runtime: nodejs22.x
       Handler: "index.handler"
       Code:

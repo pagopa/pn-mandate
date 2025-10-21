@@ -145,7 +145,7 @@ class CieCheckerTest {
         validationData.setCieIas(cieIas);
         validationData.setSignedNonce(nisSignature);
         validationData.setNonce("02461"); // nisChallenge);
-        validationData.setCodFiscDelegante("TTNMRA63S21H501V"); //"RSSDNC42R01H501Y");
+        validationData.setCodFiscDelegante("xxx"); //"RSSDNC42R01H501Y");
 
         CieMrtd cMrtd = new CieMrtd();
         cMrtd.setSod(sodMrtd);

@@ -48,7 +48,7 @@ import java.util.List;
 @Service
 public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
-    private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
+    private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_1, CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
 
     private final PnMandateConfig pnMandateConfig;
 
@@ -191,7 +191,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
         String expirationDate = dataElement.substring(38, 38+6);
         log.debug("expirationDate: {} ", expirationDate);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyy");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMdd");
 
         try {
             LocalDate inputDate = LocalDate.parse(expirationDate, formatter);

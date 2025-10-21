@@ -131,8 +131,8 @@ class CieCheckerTest {
         byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));  //"910718464654".getBytes(); //
         byte[] sodIasByteArray = loadSodBytes(basePath.resolve(SOD_HEX_IAS));
 
-        byte[] sodMrtd = Files.readAllBytes(sodFile);
-        byte[] dg1 = hexFile(Files.readString(dg1Files));
+        byte[] sodMrtd = loadSodBytes(basePath.resolve("SOD_MRTD.HEX")); //Files.readAllBytes(sodFile);
+        byte[] dg1 = hexFile(Files.readString(dg1Files)); //Files.readAllBytes(dg1Files);
         byte[] dg11 = hexFile(Files.readString(dg11FilesHex));
         //byte[] dg11 = Files.readAllBytes(dg11Files);
 
@@ -167,7 +167,7 @@ class CieCheckerTest {
             validationData.getCieMrtd().setDg11(Files.readAllBytes(dg11Files));
 
         ResultCieChecker result = cieChecker.validateMandate(validationData);
-        assertNotEquals(CieCheckerConstants.OK , result.getValue());
+        assertEquals(CieCheckerConstants.OK , result.getValue());
 
 
         // verifica che getObjectContent sia stato chiamato almeno una volta
@@ -197,7 +197,7 @@ class CieCheckerTest {
 
         ResultCieChecker resultOK = cieCheckerInterface.verifyExpirationCie(validationData.getCieMrtd().getDg1());
         log.info("Risultato atteso OK -> " + resultOK.getValue());
-        assertNotEquals(OK, resultOK.getValue());
+        assertEquals(OK, resultOK.getValue());
     }
 
 //    @Test
@@ -239,11 +239,9 @@ class CieCheckerTest {
         assertNotNull(validationData.getSignedNonce());
         assertNotNull(validationData.getNonce());
 
-        //ResultCieChecker result = cieCheckerInterface.verifyChallengeFromSignature(validationData);
-        //log.info("Risultato atteso OK -> {}", result.getValue());
-        //assertNotEquals(OK, result.getValue());
-        assertThrows(CieCheckerException.class,
-                () -> cieCheckerInterface.verifyChallengeFromSignature(validationData));
+        ResultCieChecker result = cieCheckerInterface.verifyChallengeFromSignature(validationData);
+        log.info("Risultato atteso OK -> {}", result.getValue());
+        assertEquals(OK, result.getValue());
         log.info("TEST verifyChallengeFromSignature - END ");
     }
 
@@ -591,9 +589,8 @@ System.out.println("cscaAnchor 3: " + cscaAnchor);
     public void testVerifyIntegrity()  {
         log.info("TEST testVerifyIntegrityOk - INIT ");
 
-
-        assertThrows(CieCheckerException.class,
-                () -> cieCheckerInterface.verifyIntegrity(validationData.getCieMrtd()));
+        ResultCieChecker result = cieCheckerInterface.verifyIntegrity(validationData.getCieMrtd()); 
+        assertTrue(result.getValue().equals("OK"));
         log.info("TEST testVerifyIntegrityOk - END ");
     }
 

@@ -189,6 +189,7 @@ public class MandateService {
                 .zipWhen(dto -> pnDatavaultClient.ensureRecipientByExternalId(true, dto.getRecipientInfo().getTaxId())
                                 .doOnNext(delegatorInternalUserId -> log.debug("Retrieved delegatorInternalUserId: {}", delegatorInternalUserId))
                                 .map(delegatorInternalUserId -> {
+                                    validateUtils.validateCreationRequestHimself(CxTypeAuthFleet.PF, delegatorInternalUserId, xPagopaPnCxId);
                                     var entity = mandateEntityBuilderMapper.buildMandateEntity(delegatorInternalUserId, dto, mandateId, xPagopaPnCxId);
                                     log.debug("Built MandateEntity: {}", entity);
                                     return entity;

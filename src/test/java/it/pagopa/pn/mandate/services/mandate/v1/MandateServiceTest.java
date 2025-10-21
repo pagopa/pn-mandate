@@ -45,7 +45,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Flux;
@@ -2042,6 +2041,34 @@ class MandateServiceTest extends AbstractTestConfiguration {
                 Arguments.of("John", " "),
                 Arguments.of("John", null)
         );
+    }
+
+    @Test
+    void createMandateAppIo_shouldNotAllowRequestForHimself() {
+        // Given
+        MandateCreationRequest request = new MandateCreationRequest();
+        request.setAarQrCodeValue("qrCodeValue");
+
+        String decodedQr = "decodedQr";
+        UserInfoQrCodeDto userInfoQrCodeDto = new UserInfoQrCodeDto();
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setTaxId("TAXID123");
+        userInfoQrCodeDto.setRecipientInfo(userInfoDto);
+        String delegatorInternalUserId = "internalUserId";
+        String delegateInternalUserId = "internalUserId";
+
+        when(aarQrUtils.extractQrToken("qrCodeValue")).thenReturn(decodedQr);
+        when(pnDeliveryClient.decodeAarQrCode(decodedQr)).thenReturn(Mono.just(userInfoQrCodeDto));
+        when(pnDatavaultClient.ensureRecipientByExternalId(true, "TAXID123")).thenReturn(Mono.just(delegatorInternalUserId));
+
+
+        Mono<MandateCreationResponse> result = mandateService.createMandateAppIo(
+                delegateInternalUserId, "John", "Doe", it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CxTypeAuthFleet.PF, Mono.just(request)
+        );
+
+        StepVerifier.create(result)
+                .expectError(PnMandateByHimselfException.class)
+                .verify();
     }
 
     @Test

@@ -6,10 +6,12 @@ import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.*;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
+import org.bouncycastle.asn1.x509.DigestInfo;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.FileInputStream;
@@ -48,7 +50,7 @@ import java.util.List;
 @Service
 public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
-    private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
+    private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_1, CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
 
     private final PnMandateConfig pnMandateConfig;
 
@@ -191,7 +193,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
         String expirationDate = dataElement.substring(38, 38+6);
         log.debug("expirationDate: {} ", expirationDate);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyy");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMdd");
 
         try {
             LocalDate inputDate = LocalDate.parse(expirationDate, formatter);

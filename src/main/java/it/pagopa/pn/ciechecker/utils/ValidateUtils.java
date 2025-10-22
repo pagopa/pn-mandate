@@ -15,6 +15,7 @@ import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.icao.DataGroupHash;
 import org.bouncycastle.asn1.icao.LDSSecurityObject;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 
@@ -23,6 +24,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.*;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.stream.Collectors;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
@@ -38,7 +40,12 @@ import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.util.DigestFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.util.Store;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -201,7 +208,9 @@ public class ValidateUtils {
             }
             // --- PARTE 2: ESTRAI L'HASH FIRMATO (messageDigest) ---
             ASN1OctetString signedHash = ValidateUtils.extractHashSigned(cms);
-            return ValidateUtils.verifyOctetStrings(hashSignedData, signedHash);
+            String digestOid = extractDigestAlgorithmOidFromSod(cms);
+
+            return ValidateUtils.verifyOctetStrings(hashSignedData, signedHash, digestOid);
         }catch(CieCheckerException ce){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, CieCheckerException.class.getName() + " - Message: " + ce.getMessage());
             throw new CieCheckerException(ce.getResult(), ce);
@@ -218,7 +227,7 @@ public class ValidateUtils {
      * @return boolean
      * @throws CieCheckerException ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA, KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP
      */
-    public static boolean verifyOctetStrings(byte[] firstOctetString, ASN1OctetString fiveOctetString) throws CieCheckerException {
+    public static boolean verifyOctetStrings(byte[] firstOctetString, ASN1OctetString fiveOctetString, String digestOid) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS);
         if ( Objects.isNull(firstOctetString)  || firstOctetString.length == 0) {
@@ -232,7 +241,7 @@ public class ValidateUtils {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
         }
 
-        String firstStr = calculateSha256(firstOctetString);
+        String firstStr = calculateDigest(firstOctetString, digestOid);
         String fiveStr = getHexFromOctetString(fiveOctetString);
         log.debug("calculateSha256 --> firstStr: {} - getHexFromOctetString --> fiveStr: {}", firstStr, fiveStr);
         if (firstStr.equalsIgnoreCase(fiveStr)) {
@@ -246,21 +255,28 @@ public class ValidateUtils {
     }
 
     /**
-     * Converte byte[] in String esadecimale Sha256
-     * @param octetByte byte[]
-     * @return String
-     * @throws CieCheckerException exception
+     * Calcola l'hash di un array di byte utilizzando l'algoritmo specificato
+     * (es. SHA-1, SHA-256, SHA-384, SHA-512)
      */
-    public static String calculateSha256(byte[] octetByte) throws CieCheckerException {
+    public static String calculateDigest(byte[] data, String digestOid) throws CieCheckerException {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(octetByte);
-            return Hex.toHexString(hashBytes).toString().toUpperCase();
-        }catch(NoSuchAlgorithmException nsae){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_CALCULATE_SHA256, nsae.getClass().getName() + " - Message: " + nsae.getMessage());
+            String digestName = getDigestName(digestOid);
+            MessageDigest digest = MessageDigest.getInstance(digestName);
+            byte[] hashBytes = digest.digest(data);
+            return Hex.toHexString(hashBytes).toUpperCase();
+        } catch (NoSuchAlgorithmException nsae) {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS,
+                    LogsCostant.VALIDATEUTILS_CALCULATE_DIGEST_SHA,
+                    nsae.getClass().getName() + " - Message: " + nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MESSAGEDIGESTSPI_SUPPORTED, nsae);
         }
     }
+
+    public static String extractDigestAlgorithmOidFromSod(CMSSignedData cms) {
+        SignerInformation signer = cms.getSignerInfos().getSigners().iterator().next();
+        return signer.getDigestAlgorithmID().getAlgorithm().getId();
+    }
+
 
     /**
      * Metodo di conversione per il digest di un ASN1OctetString di BouncyCastle in una stringa
@@ -462,13 +478,13 @@ public class ValidateUtils {
     /**
      * Estrazione e verifica della lista degli hash dei Data Group
      * @param cmsData CMSSignedData
-     * @param nisSha256 byte[]
+     * @param nisSha byte[]
      * @return boolean
      * @throws CieCheckerException c
      */
-    public static boolean verifyNisSha256FromDataGroup(CMSSignedData cmsData, byte[] nisSha256) throws CieCheckerException {
-
-        String nisHexToCheck = calculateSha256(nisSha256);
+    public static boolean verifyNisShaFromDataGroup(CMSSignedData cmsData, byte[] nisSha) throws CieCheckerException {
+        String digestOid = extractDigestAlgorithmOidFromSod(cmsData);
+        String nisHexToCheck = calculateDigest(nisSha, digestOid);
         List<String> dataGroupList = extractDataGroupHashes(cmsData);
         if(dataGroupList.isEmpty() ) {
             log.error("Error in verifyNisSha256FromDataGroup: " + CieCheckerException.class.getName() + " - Message: " + EXC_NO_NIS_HASHES_DATAGROUP);
@@ -613,33 +629,45 @@ public class ValidateUtils {
 
 
     //creazione oggetto rappresentante EF.SOD -> decode_sod_hr.sh
-    public static SodSummary decodeSodHr(byte[] sodBytes) throws Exception {
-        CMSSignedData cms = new CMSSignedData(sodBytes);
+    public static SodSummary decodeSodHr(byte[] sodBytes) throws CieCheckerException {
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_DECEODESODHR);
+        try {
+            CMSSignedData cms = new CMSSignedData(sodBytes);
 
-        String contentTypeOid = cms.getSignedContentTypeOID();
-        byte[] eContent = (byte[]) Objects.requireNonNull(cms.getSignedContent()).getContent();
-        LDSSecurityObject lds = LDSSecurityObject.getInstance(
-                ASN1Sequence.getInstance(ASN1Primitive.fromByteArray(eContent)));
+            String contentTypeOid = cms.getSignedContentTypeOID();
+            byte[] eContent = (byte[]) Objects.requireNonNull(cms.getSignedContent()).getContent();
+            LDSSecurityObject lds = LDSSecurityObject.getInstance(
+                    ASN1Sequence.getInstance(ASN1Primitive.fromByteArray(eContent)));
 
-        AlgorithmIdentifier dgDigestAlg = lds.getDigestAlgorithmIdentifier();
+            AlgorithmIdentifier dgDigestAlg = lds.getDigestAlgorithmIdentifier();
 
-        LinkedHashMap<Integer, byte[]> dgMap = new LinkedHashMap<>();
-        for (DataGroupHash dgh : lds.getDatagroupHash()) {
-            dgMap.put(dgh.getDataGroupNumber(), dgh.getDataGroupHashValue().getOctets());
+            LinkedHashMap<Integer, byte[]> dgMap = new LinkedHashMap<>();
+            for (DataGroupHash dgh : lds.getDatagroupHash()) {
+                dgMap.put(dgh.getDataGroupNumber(), dgh.getDataGroupHashValue().getOctets());
+            }
+
+            SignerInformation si = cms.getSignerInfos().getSigners().iterator().next();
+            AlgorithmIdentifier sigAlg = AlgorithmIdentifier.getInstance(si.getDigestAlgorithmID());
+            byte[] signature = si.getSignature();
+
+            X509Certificate dsc = null;
+            //X509CertificateHolder holder = extractDscCertDer(sodBytes);
+            X509CertificateHolder holder = extractDscCertDer(cms);
+            if (holder != null) {
+                dsc = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(holder);
+            }
+
+            return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
+        }catch(CMSException ce ){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, ce.getClass().getName() + " - Message: " + ce.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA , ce);
+        } catch (CieCheckerException cce) {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, cce.getClass().getName() + " - Message: " + cce.getMessage());
+            throw new CieCheckerException(cce.getResult(), cce);
+        }catch(Exception e ){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, e.getClass().getName() + " - Message: " + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_ERROR_SOD_DECODE , e);
         }
-
-        SignerInformation si = cms.getSignerInfos().getSigners().iterator().next();
-        AlgorithmIdentifier sigAlg = AlgorithmIdentifier.getInstance(si.getDigestAlgorithmID());
-        byte[] signature = si.getSignature();
-
-        X509Certificate dsc = null;
-        //X509CertificateHolder holder = extractDscCertDer(sodBytes);
-        X509CertificateHolder holder = extractDscCertDer(cms);
-        if (holder != null) {
-            dsc = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(holder);
-        }
-
-        return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
     }
 
 /*
@@ -681,43 +709,51 @@ public class ValidateUtils {
             ZipInputStream zis = new ZipInputStream(zipStream);
             ZipEntry entry;
 
-            entry = zis.getNextEntry();
-            CMSSignedData cms;
-            if (entry != null) {
-                cms = new CMSSignedData(zis);
+            while( (entry = zis.getNextEntry()) != null) {
+                log.info("ZIS: {}" , entry.getName());
+                if(entry.getName().endsWith(".pem")){
+                    List<X509Certificate> pemList = ValidateUtils.loadCertificateFromPemFile(zis);
+                    x509List.addAll(pemList);
+                }else {
+                    //entry = zis.getNextEntry();
+                    CMSSignedData cms;
+                    if (entry != null) {
+                        cms = new CMSSignedData(zis);
 
-                ASN1InputStream input = new ASN1InputStream((byte[])cms.getSignedContent().getContent());
+                        ASN1InputStream input = new ASN1InputStream((byte[]) cms.getSignedContent().getContent());
 
-                ASN1Primitive p;
-                p = input.readObject();
-                ASN1Sequence seq0Lev = ASN1Sequence.getInstance(p);
-                Enumeration<ASN1Primitive> enum0Lev = seq0Lev.getObjects();
-                ASN1Integer int1Lev = (ASN1Integer) enum0Lev.nextElement();
-                ASN1Set set1Lev = (ASN1Set) enum0Lev.nextElement();
-                Enumeration<ASN1Primitive> enum1Lev = set1Lev.getObjects();
+                        ASN1Primitive p;
+                        p = input.readObject();
+                        ASN1Sequence seq0Lev = ASN1Sequence.getInstance(p);
+                        Enumeration<ASN1Primitive> enum0Lev = seq0Lev.getObjects();
+                        ASN1Integer int1Lev = (ASN1Integer) enum0Lev.nextElement();
+                        ASN1Set set1Lev = (ASN1Set) enum0Lev.nextElement();
+                        Enumeration<ASN1Primitive> enum1Lev = set1Lev.getObjects();
 
-                while ( enum1Lev.hasMoreElements() ) {
-                    ASN1Object asn1Obj = (ASN1Object)enum1Lev.nextElement();
-                    X509CertificateHolder holder = new X509CertificateHolder(asn1Obj.toASN1Primitive().getEncoded());
+                        while (enum1Lev.hasMoreElements()) {
+                            ASN1Object asn1Obj = (ASN1Object) enum1Lev.nextElement();
+                            X509CertificateHolder holder = new X509CertificateHolder(asn1Obj.toASN1Primitive().getEncoded());
 
-                    RDN rdns [] = holder.getSubject().getRDNs(ASN1ObjectIdentifier.tryFromID("2.5.4.6"));
-                    if( rdns.length > 0 ) {
-                        RDN rdn = rdns[0];
-                        if( rdn != null
-                                && rdn.getFirst().getValue() != null ) {
-                            String country = rdn.getFirst().getValue().toString();
-                            if( country.equals("IT") ) {
-                                X509Certificate cert = new JcaX509CertificateConverter().getCertificate(holder);
-                                if( isSelfSigned(cert) ) {
-                                    x509List.add(cert);
+                            RDN rdns[] = holder.getSubject().getRDNs(ASN1ObjectIdentifier.tryFromID("2.5.4.6"));
+                            if (rdns.length > 0) {
+                                RDN rdn = rdns[0];
+                                if (rdn != null
+                                        && rdn.getFirst().getValue() != null) {
+                                    String country = rdn.getFirst().getValue().toString();
+                                    if (country.equals("IT")) {
+                                        X509Certificate cert = new JcaX509CertificateConverter().getCertificate(holder);
+                                        if (isSelfSigned(cert)) {
+                                            x509List.add(cert);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-
+                zis.closeEntry();
             }
-
+            zis.close();
             return x509List;
         } catch (Exception e) {
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE, e.getClass().getName() + " - Message: " + e.getMessage());
@@ -794,7 +830,7 @@ public class ValidateUtils {
         }
     }
 
-      public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
+    public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP);
         try{
@@ -832,11 +868,11 @@ public class ValidateUtils {
     private static X509Certificate getCertificateFromPemFile(InputStream pemFileStream)
             throws CertificateException {
 
-            CertificateFactory factory =
-                    CertificateFactory.getInstance("X.509", new BouncyCastleProvider());
-            X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemFileStream);
+        CertificateFactory factory =
+                CertificateFactory.getInstance("X.509", new BouncyCastleProvider());
+        X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemFileStream);
 
-            return certificate;
+        return certificate;
     }
 
 
@@ -853,6 +889,79 @@ public class ValidateUtils {
         // Memorizza il risultato nell'array
         sha1Digest.doFinal(result, 0);
         return result;
+    }
+
+
+
+    public static String[] extractS3Components(String s3Uri) {
+
+        log.debug("- s3Uri: {}", s3Uri);
+        //Verifica e rimuovi il prefisso "s3://"
+        if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
+            log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
+            return null;
+        }
+        try {
+            // Creiamo un oggetto URI
+            URI uri = new URI(s3Uri);
+
+            // Il nome del bucket è l'host/autorità dell'URI S3
+            String bucketName = uri.getHost();
+
+            // La chiave dell'oggetto è il percorso dell'URI (path)
+            //    Questo include lo '/' iniziale, che va rimosso.
+            String objectKey = uri.getPath();
+            String nameKey = null;
+            String key = null;
+            if (objectKey != null && objectKey.startsWith("/")) {
+                objectKey = objectKey.substring(1);
+                if(objectKey.lastIndexOf("/") != -1) {
+                    key = objectKey.substring(0, objectKey.lastIndexOf("/") +1);
+                    nameKey = objectKey.substring(objectKey.lastIndexOf("/") + 1);
+                }else {
+                    key = "/";
+                    nameKey = objectKey;
+                }
+            }
+
+            log.debug("URI di Input: " + s3Uri);
+            log.debug("-------------------------------------");
+            log.debug("Bucket estratto:  " + bucketName );
+            log.debug("Chiave estratta: " + objectKey );
+            log.debug("Nome estratta: " + nameKey );
+            log.debug("Path estratta: " + key );
+
+            return new String[]{bucketName, objectKey, nameKey, key};
+
+        } catch (URISyntaxException e) {
+            log.error("Sintax error in URI S3: {}" , e.getMessage());
+            return null;
+        }
+    }
+
+    public static PrivateKey parsePrivateKey(byte[] derOrPem) throws GeneralSecurityException, IOException {
+        try {
+            return KeyFactory.getInstance("RSA")
+                    .generatePrivate(new PKCS8EncodedKeySpec(derOrPem));
+        } catch (Exception ignore) { /* non era PKCS#8 DER */ }
+
+        try (PEMParser pp = new PEMParser(
+                new StringReader(new String(derOrPem, StandardCharsets.US_ASCII)))) {
+
+            Object obj = pp.readObject();
+            var conv = new JcaPEMKeyConverter().setProvider(new BouncyCastleProvider());
+
+            if (obj instanceof PrivateKeyInfo pki) {
+                return conv.getPrivateKey(pki);
+            } else if (obj instanceof PEMKeyPair kp) {
+                return conv.getKeyPair(kp).getPrivate();
+            } else if (obj instanceof PEMEncryptedKeyPair
+                    || obj instanceof PKCS8EncryptedPrivateKeyInfo) {
+                throw new InvalidKeyException("Chiave privata cifrata: serve password e decrypt esplicito.");
+            }
+        }
+
+        throw new InvalidKeyException("Formato chiave non supportato (attesi PKCS#8 DER/PEM o PKCS#1 PEM non cifrati).");
     }
 
 }

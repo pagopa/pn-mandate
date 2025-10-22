@@ -6,15 +6,18 @@ import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.*;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
+import org.bouncycastle.asn1.x509.DigestInfo;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.*;
 import java.security.cert.X509Certificate;
@@ -47,7 +50,7 @@ import java.util.List;
 @Service
 public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
-    private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
+    private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_1, CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
 
     private final PnMandateConfig pnMandateConfig;
 
@@ -80,7 +83,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS);
             }
 
-
             if (cscaPath.endsWith(".zip") || cscaPath.endsWith(".ZIP")) {
                   cscaAnchor = ValidateUtils.extractCscaAnchorFromZip(inputStreamCscaAnchor);
             } else if (cscaPath.endsWith(".pem") || cscaPath.endsWith(".PEM")) {
@@ -88,7 +90,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             }
 
             this.setCscaAnchor(cscaAnchor);
-            log.debug("CSCA ANCHOR SIZE: " + cscaAnchor.size());
+            log.debug("CSCA ANCHOR SIZE: {}", cscaAnchor.size());
         }catch (Exception e){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_INIT, e.getClass().getName()+" Message: "+e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS, e);
@@ -191,7 +193,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
         String expirationDate = dataElement.substring(38, 38+6);
         log.debug("expirationDate: {} ", expirationDate);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyy");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMdd");
 
         try {
             LocalDate inputDate = LocalDate.parse(expirationDate, formatter);
@@ -229,7 +231,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             engine2.init(false, publicKey);
             // estrae dalla signature i byte del nonce/challenge
             byte[] recovered = engine2.processBlock(data.getSignedNonce(), 0, data.getSignedNonce().length);
-            if (!(Arrays.equals(recovered, ValidateUtils.calculateSha1(data.getNonce())))) {
+            if (!(Arrays.equals(recovered, data.getNonce().getBytes(StandardCharsets.UTF_8))) ){
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE);
             }else {
@@ -269,7 +271,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      * @param cms CMSSignedData
      * @param cieIasNis byte[]
      * @return boolean
-     * @throws CieCheckerException
+     * @throws CieCheckerException ce
      */
     @Override
     public boolean verifySodPassiveAuthCie(CMSSignedData cms, byte[] cieIasNis) throws CieCheckerException {
@@ -319,7 +321,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             // ** PASSO 1B: ANALISI DEGLI HASH DEI DATI (DataGroupHashes)
             // *********************************************************************/
             log.debug("Estrazione e verifica della lista degli hash dei DataGroup ...");
-            if (!ValidateUtils.verifyNisSha256FromDataGroup(cms, cieIasNis)) {
+            if (!ValidateUtils.verifyNisShaFromDataGroup(cms, cieIasNis)) {
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP);
             }
@@ -378,11 +380,11 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      * - usa ValidateUtils.decodeSodHr(...) per ottenere SodSummary (equivalente a sod_summary dello script)
      * - per ogni DG contenuto in dgFiles verifica hash
      * Ritorna true solo se tutti i DG verificati combaciano.
-     * @param sodBytes
-     * @param dg1
-     * @param dg11
-     * @return
-     * @throws Exception
+     * @param sodBytes byte[]
+     * @param dg1 byte[]
+     * @param dg11 byte[]
+     * @return result ResultCieChecker
+     * @throws Exception e
      */
     public ResultCieChecker verifyIntegrityCore(byte[] sodBytes, byte[] dg1, byte[] dg11) throws Exception {
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_VERIFY_INTEGRITY_CORE);
@@ -409,8 +411,9 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_EXPECTED_HASHES_SOD);
         }
 
-        log.debug("Verifica DG1 e DG11");
+        log.info("Verifica DG1 ...");
         verifyDigestList(md, dg1, expectedHashes, 1);
+        log.info("Verifica DG11 ...");
         verifyDigestList(md, dg11, expectedHashes, 11);
 
         log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.CIECHECKER_VERIFY_INTEGRITY_CORE, "ResultCieChecker", ResultCieChecker.OK.getValue());
@@ -419,8 +422,11 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
     private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum) throws CieCheckerException {
         if (!isVerifyDigest(md, dg, expectedHashes.get(dgNum))) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS_DG_VALIDATE, LogsCostant.CIECHECKER_VERIFY_DIGESTLIST, ResultCieChecker.KO_EXC_NOT_SAME_DIGEST.getValue(),dgNum);
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST);
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS_DG_VALIDATE, LogsCostant.CIECHECKER_VERIFY_DIGESTLIST, ResultCieChecker.KO_EXC_NOT_SAME_DIGEST.getValue(), dgNum);
+            if(dgNum == 1) {
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST1);
+            }else
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST11);
         }
     }
 
@@ -468,31 +474,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.CIECHECKER_VERIFY_DIGITAL_SIGNATURE, result.getValue());
             return result;
         }
-    }
-
-
-    public List<X509Certificate> extractCscaAnchorZip(InputStream cscaAnchorFileInputStream) throws CieCheckerException {
-
-       // log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR);
-        if(Objects.isNull(cscaAnchorFileInputStream) ) {
-            log.debug("la variabile 'pn.mandate.ciechecker.csca-anchor.pathFileName' nel property file IS NULL o BLANK");
-            throw new CieCheckerException(ResultCieChecker.KO);
-        }
-        log.debug("InputStream: {}",cscaAnchorFileInputStream);
-
-            return ValidateUtils.extractCscaAnchorFromZip(cscaAnchorFileInputStream);
-//                } else if (cscaAnchorPathFileName.endsWith(".pem") || cscaAnchorPathFileName.endsWith(".PEM")) {
-//                    return ValidateUtils.loadCertificateFromPemFile(fileInputStream);
-//                } else {
-//                    log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR);
-//                    throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_CSCA_ANCHORS);
-//                }
-//            }else{
-//                fileInputStream = new FileInputStream(Path.of(cscaAnchorPathFileName).toFile());
-//                return ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
-//            }
-
-
     }
 
 

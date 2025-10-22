@@ -379,9 +379,7 @@ public class MandateDao extends BaseDao {
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
                 .flatMap(mandate -> {
-                    if (!isMandateStandardSegregation(mandate)) {
-                        return Mono.error(new PnMandateBadRequestException());
-                    }
+                    checkMandateSegregation(mandate, TypeSegregatorFilter.STANDARD);
                     editMandateState(mandate, verificationCode, cxTypeAuthFleet, groups);
                     return save(mandate);
                 })
@@ -410,9 +408,8 @@ public class MandateDao extends BaseDao {
         return retrieveMandateForDelegate(delegateId, mandateId)
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
                 .flatMap(mandate -> {
-                    if (!isMandateStandardSegregation(mandate)) {
-                        return Mono.error(new PnMandateBadRequestException());
-                    } else if (StatusEnumMapper.fromValue(mandate.getState()) != StatusEnum.ACTIVE) {
+                    checkMandateSegregation(mandate, TypeSegregatorFilter.STANDARD);
+                    if (StatusEnumMapper.fromValue(mandate.getState()) != StatusEnum.ACTIVE) {
                         log.warn("mandate is not ACTIVE, throw error");
                         return Mono.error(new PnInvalidMandateStatusException("update an inactive mandate is not permitted", "Invalid mandate status", 500, PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOTUPDATABLE, "update an inactive mandate is not permitted"));
                     } else if (mandate.getValidto() != null && mandate.getValidto().isBefore(Instant.now())) {
@@ -548,9 +545,8 @@ public class MandateDao extends BaseDao {
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
                 .flatMap(mandate -> {
                     log.info("rejectMandate mandate for delegate retrieved mandateobj={}", mandate);
-                    if (!isMandateStandardSegregation(mandate)) {
-                        return Mono.error(new PnMandateBadRequestException());
-                    }else if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
+                    checkMandateSegregation(mandate, TypeSegregatorFilter.STANDARD);
+                    if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                             || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {
                         // aggiorno lo stato, solo se era in pending o active, ignoro eventuali altri stati (che NON dovrebbero essere presenti)
                         mandate.setRejected(Instant.now());
@@ -966,10 +962,4 @@ public class MandateDao extends BaseDao {
             throw new PnMandateBadRequestException();
         }
     }
-
-   private boolean isMandateStandardSegregation(MandateEntity mandate) {
-       return mandate.getWorkflowType() == null ||
-              WorkFlowType.STANDARD.equals(mandate.getWorkflowType()) ||
-              WorkFlowType.REVERSE.equals(mandate.getWorkflowType());
-   }
 }

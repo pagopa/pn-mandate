@@ -26,16 +26,24 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 @Slf4j
-
 public class CertAndKeyLoader {
 
     PnMandateConfig pnMandateConfig;
     S3Client s3;
+    String bucket;
+    String key;
+
+
+    public CertAndKeyLoader() {
+        this.s3 = S3Client.builder().build();
+        this.bucket=System.getProperty("cie.generator.bucket");
+        this.key=System.getProperty("cie.generator.file-key");
+    }
 
     public CertAndKey loadCaAndKeyFromS3() throws IOException, GeneralSecurityException {
         GetObjectRequest request = GetObjectRequest.builder()
-                .bucket(pnMandateConfig.getGeneratorBucketName())
-                .key(pnMandateConfig.getGeneratorZipName())
+                .bucket(bucket)
+                .key(key)
                 .build();
 
         X509Certificate certificate = null;
@@ -68,11 +76,6 @@ public class CertAndKeyLoader {
 
 
         return new CertAndKey(certificate, new KeyPair(certificate.getPublicKey(), privateKey));
-    }
-
-    public CertAndKeyLoader(PnMandateConfig pnMandateConfig, S3Client s3) {
-        this.pnMandateConfig = pnMandateConfig;
-        this.s3 = s3;
     }
 
     private static byte[] readAll(InputStream in) throws IOException {

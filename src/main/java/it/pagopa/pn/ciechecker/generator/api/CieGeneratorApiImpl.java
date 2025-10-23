@@ -22,12 +22,7 @@ import java.time.LocalDate;
 @Slf4j
 public class CieGeneratorApiImpl implements CieGeneratorApi {
 
-    private PnMandateConfig config;
-    private S3Client s3Client;
-
-    public CieGeneratorApiImpl(PnMandateConfig config, S3Client s3Client) {
-        this.config=config;
-        this.s3Client=s3Client;
+    public CieGeneratorApiImpl() {
     }
 
     @Override
@@ -35,11 +30,10 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
                                                        String codiceFiscale,
                                                        LocalDate expirationDate,
                                                        String nonce) {
+
         try {
             //recupero cert e key
             CertAndKey caCertAndKey = new CertAndKeyLoader(
-                    config,
-                    s3Client
             ).loadCaAndKeyFromS3();
 
 

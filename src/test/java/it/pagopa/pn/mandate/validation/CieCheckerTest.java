@@ -65,7 +65,7 @@ import static org.mockito.Mockito.*;
 @EnableConfigurationProperties(PnMandateConfig.class)
 class CieCheckerTest {
 
-    @Autowired
+	@Autowired
     private CieChecker cieChecker;
     @Autowired
     private CieCheckerInterface cieCheckerInterface;
@@ -89,6 +89,8 @@ class CieCheckerTest {
     private static final String nisChallengeFileName="NIS_CHALLENGE.HEX";
     private static final String nisFileName = "NIS.HEX";
 
+    private static final String SOD_IAS_HEX = "SOD_IAS.HEX";
+    private static final String SOD_MRTD_HEX = "SOD_MRTD.HEX";
 
     private static final String originalMasterListZip = "IT_MasterListCSCA.zip";
 
@@ -114,25 +116,15 @@ class CieCheckerTest {
         when(s3BucketClient.getObjectContent(anyString()))
                .thenAnswer(invocation -> s3Stream);
 
-        //PEM FILE
-//        InputStream fileInputStreamPem = new FileInputStream(Path.of(fileToAddMasterListZip).toFile());
-//        ResponseInputStream<GetObjectResponse> s3StreamPem = new ResponseInputStream<>(
-//                GetObjectResponse.builder().build(),
-//                AbortableInputStream.create(fileInputStreamPem)
-//        );
-////
-//        when(s3BucketClient.getObjectContent(anyString()))
-//                .thenAnswer(invocation -> s3StreamPem);
-
         cieChecker.init();
 
         byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
         byte[] nisSignature = hexFile(cleanString(basePath.resolve("NONCE_SIGNATURE.HEX")));
         byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));
-        byte[] sodIasByteArray = hexFile(Files.readString(basePath.resolve("SOD_IAS.HEX")));
+		byte[] sodIasByteArray = hexFile(Files.readString(basePath.resolve(SOD_IAS_HEX)));
         truncatedSODIAS = Arrays.copyOfRange(sodIasByteArray, 4, sodIasByteArray.length);
 
-        byte[] sodMrtd = hexFile(Files.readString(basePath.resolve("SOD_MRTD.HEX")));
+        byte[] sodMrtd = hexFile(Files.readString(basePath.resolve(SOD_MRTD_HEX)));
         truncatedSODMRTD = Arrays.copyOfRange(sodMrtd, 4, sodMrtd.length);
         byte[] dg1 = hexFile(Files.readString(dg1Files));
         byte[] dg11 = hexFile(Files.readString(dg11Files));
@@ -145,8 +137,8 @@ class CieCheckerTest {
 
         validationData.setCieIas(cieIas);
         validationData.setSignedNonce(nisSignature);
-        validationData.setNonce("02461"); // nisChallenge);
-        validationData.setCodFiscDelegante("RSSMRA95A58H501Z"); 
+        validationData.setNonce(cleanString(basePath.resolve("NONCE.txt"))); 
+        validationData.setCodFiscDelegante(cleanString(basePath.resolve("CODFISC.txt")));  
 
         CieMrtd cMrtd = new CieMrtd();
         cMrtd.setSod(sodMrtd);
@@ -186,7 +178,12 @@ class CieCheckerTest {
         log.info("Risultato atteso OK -> " + resultKO.getValue());
         assertNotEquals(OK, resultKO.getValue());
 
-        validationData.setCodFiscDelegante("RSSMRA95A58H501Z");
+        try {
+			validationData.setCodFiscDelegante(cleanString(basePath.resolve("CODFISC.txt")));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}  
         ResultCieChecker resultOK = cieCheckerInterface.verifyCodFiscDelegante(validationData);
         log.info("Risultato atteso OK -> " + resultOK.getValue());
         assertEquals(OK, resultOK.getValue());
@@ -296,120 +293,43 @@ class CieCheckerTest {
 
         log.info("TEST testVerifyIntegritySOD_null - END ");
     }
-/*
-    @Test
-    void testVerifyIntegrityFailDG1() throws Exception {
-        byte[] sod = Files.readAllBytes(sodFile);
 
-        // DG1 corrotto (modifica 1 byte)
-        byte[] dg1 = Files.readAllBytes(dg1FilesCorrupted);
-
-        CieMrtd mrtd = new CieMrtd();
-        mrtd.setSod(sod);
-        mrtd.setDg1(dg1);
-        mrtd.setDg11(dg1);
-
-        ResultCieChecker result = cieChecker.verifyIntegrity(mrtd);
-        assertEquals(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST, result, "Digest mismatch between expected and actual DG");
-        //assertFalse(ResultCieChecker.OK.getValue().equals(OK));
-    }
-
-
-    @Test
-    void testVerifyIntegrityFailDG11() throws Exception {
-        byte[] sod = Files.readAllBytes(sodFile);
-
-        byte[] dg1 = Files.readAllBytes(dg1Files);
-
-        // DG11 corrotto (mancano dei caratteri)
-        byte[] dg11 = Files.readAllBytes(dg11FilesCorroupted);
-
-        CieMrtd mrtd = new CieMrtd();
-        mrtd.setSod(sod);
-        mrtd.setDg1(dg1);
-        mrtd.setDg11(dg11);
-
-        ResultCieChecker result = cieChecker.verifyIntegrity(mrtd);
-        assertEquals(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST, result, "DG11 corrotto deve dare KO");
-    }
-
-     */
-
-    // TODO to uncomment when useful test data are available
-//    @ParameterizedTest(name = "Verifica digital signature con sorgente: {0}")
-//    @MethodSource("cieSources")
-//    void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException, Exception {
-//        log.info("=== INIZIO TEST [" + tipo + "] ===");
-//        //if(cieChecker.getCscaAnchor() == null )
-//        InputStream fileInputStream = new FileInputStream(Path.of(CSCA_ANCHOR_PATH_FILENAME).toFile());
-//        List<X509Certificate> cscaAnchor =  ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
-//        //List<X509Certificate> cscaAnchor = cieCheckerInterface.extractCscaAnchor(CSCA_ANCHOR_PATH_FILENAME);
-//        log.info("cscaAnchor 1: {}" , cscaAnchor.size());
-//        // caso ok
-//        CMSSignedData cms = new CMSSignedData(sodBytes);
-//        ResultCieChecker resultOk = cieCheckerInterface.verifyDigitalSignature(cms);
-//        log.info("[" + tipo + "] - Risultato atteso OK -> " + resultOk.getValue());
-//        assertEquals("OK", resultOk.getValue());
+//    @Test
+//    void testVerifyIntegrityFailDG1() throws Exception {
+//        byte[] sod = Files.readAllBytes(sodFile);
 //
-//        // caso ko: SOD nullo
-//        log.info("[" + tipo + "] - Test con SOD nullo");
-//        assertThrows(CieCheckerException.class,
-//                () -> cieCheckerInterface.verifyDigitalSignature(null));
+//        // DG1 corrotto (modifica 1 byte)
+//        byte[] dg1 = Files.readAllBytes(dg1FilesCorrupted);
 //
-//        // caso ko: anchors null
-//        log.info("[" + tipo + "] - Test con anchors null");
-//        cieCheckerInterface.setCscaAnchor(null);
-//        log.info("cscaAnchor SET: {}" , cieCheckerInterface.getCscaAnchor());
-//        assertThrows(Exception.class,
-//               () -> cieCheckerInterface.verifyDigitalSignature(cms)); //, null));
+//        CieMrtd mrtd = new CieMrtd();
+//        mrtd.setSod(sod);
+//        mrtd.setDg1(dg1);
+//        mrtd.setDg11(dg1);
 //
-//        // caso ko: SOD non corretto
-//        log.info("[" + tipo + "] - Test con SOD non corretto");
-//        String efSodPem = """
-//        -----BEGIN PUBLIC KEY-----
-//        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAytYrOy71s5KcL8FpSOwC
-//        MI/6+ZyaZkjMMbl/BDBtC59hlt8q5CptJihGqaRl5LeLJG7OqMfRteLtpHmsac5r
-//        ZmTUncm+mCPMKy1p8EDpYscHneyFGnbbSyH9xKt8QLHV/O8d96dGl/iYNsk7wF8R
-//        ihEy62qwfVUgeqhpaVNfEg1FYSOLLbR9OcBKRLamZcJrOqd5vuGNHZKyToqoWqhS
-//        ZntbKyZIC93ibnLiQkhetPnrZoCm1s81v8EW6ASbhpWaJEcv3xwe9nZxqjr9tMkO
-//        x9sOAT7gIN2hBQZasVxeCelfCZRjyh+P0j37DMpBaPCMlWLUeYQgKrd+aJty
-//        /QIDAQAB
-//        -----END PUBLIC KEY-----
-//        """;
-//        byte[] sodErrato = decodePublicKeyPemToDer(efSodPem);
-//        assertThrows(CMSException.class,
-//                () -> new CMSSignedData(sodErrato));
-//
-////        CMSSignedData cmsWithSodErrato = new CMSSignedData(sodErrato);
-////        Assertions.assertThrows(CMSException.class,
-////                () -> cieChecker.verifyDigitalSignature(cmsWithSodErrato));
-//
-////        // caso ko: blob corrotto : questo test non sussiste perchè l'eccezione scatterebbe sul 'generateCertificate'
-////        List<byte[]> blobZip = new ArrayList<>();
-////        List<X509Certificate> anchorZip = cieChecker.extractCscaAnchor();
-////        for( X509Certificate x : anchorZip){
-////            blobZip.add(x.getEncoded());
-////        }
-////        String concatenatedPem = blobZip.stream()
-////                .map(d -> new String(toPem(d), StandardCharsets.UTF_8))
-////                .collect(Collectors.joining());
-////        byte[] caBlobZip = concatenatedPem.getBytes(StandardCharsets.UTF_8);
-////        log.info("[" + tipo + "] - Test con blob corrotto");
-////        byte[] blobErrato = ArrayUtils.addAll(sodBytes, caBlobZip);
-////        var cf = CertificateFactory.getInstance(X_509);
-////        X509Certificate ca = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(blobErrato));
-////        cieChecker.setCscaAnchor(List.of(ca));
-////        Assertions.assertThrows(CieCheckerException.class,
-////                () -> cieChecker.verifyDigitalSignature(sodBytes));
-//
-//        log.info("=== FINE TEST [" + tipo + "] ===");
+//        ResultCieChecker result = CieCheckerImpl.verifyIntegrity(mrtd);
+//        assertEquals(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST, result, "Digest mismatch between expected and actual DG");
+//        //assertFalse(ResultCieChecker.OK.getValue().equals(OK));
 //    }
-//    private static Stream<Arguments> cieSources() throws IOException, DecoderException {
-//        return Stream.of(
-//                Arguments.of("CIE MRTD",loadSodBytes(basePath.resolve(sodMrtdFileName))),
-//                Arguments.of("CIE IAS", loadSodBytes(basePath.resolve(sodIasFileName)))
-//        );
+
+
+//    @Test
+//    void testVerifyIntegrityFailDG11() throws Exception {
+//        byte[] sod = Files.readAllBytes(sodFile);
+//
+//        byte[] dg1 = Files.readAllBytes(dg1Files);
+//
+//        // DG11 corrotto (mancano dei caratteri)
+//        byte[] dg11 = Files.readAllBytes(dg11FilesCorroupted);
+//
+//        CieMrtd mrtd = new CieMrtd();
+//        mrtd.setSod(sod);
+//        mrtd.setDg1(dg1);
+//        mrtd.setDg11(dg11);
+//
+//        ResultCieChecker result = cieChecker.verifyIntegrity(mrtd);
+//        assertEquals(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST, result, "DG11 corrotto deve dare KO");
 //    }
+
 
     private static byte[] toPem(byte[] der) {
         String b64 = Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(der);
@@ -425,165 +345,8 @@ class CieCheckerTest {
         return Base64.getDecoder().decode(b64);
     }
 
-/*
-    @Test
-    void verifySodPassiveAuthCie() throws CMSException {
-        log.info("TEST verifySodPassiveAuthCie - INIT ");
 
-        assertNotNull(validationData.getCieIas());
-        assertNotNull(validationData.getCieIas().getSod());
-        assertNotNull(validationData.getCieIas().getNis());
 
-        assertTrue(cieCheckerInterface.verifySodPassiveAuthCie(new CMSSignedData(truncatedSODIAS), validationData.getCieIas().getNis()));
-        log.info("TEST verifySodPassiveAuthCie - END ");
-    }
-
-// TODO to uncomment when useful test data are available
-/// INIT TEST LETTURA FILE ZIP DELLA CATENA DI CERTIFICATI E VALIDAZIONE
-//    @Test
-//    void verifyDscAgainstAnchorBytes_derDsc_pemZIP_true() throws Exception {
-//        log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - INIT ");
-//
-//        byte[] pkcs7 = hexFile(Files.readString(basePath.resolve(SOD_HEX_IAS)));
-//        assertNotNull(pkcs7);
-//        CMSSignedData cms = new CMSSignedData(pkcs7);
-//        X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
-//        byte[] dscDer = certHolder.getEncoded();
-//        List<X509Certificate> cscaAnchor = cieCheckerInterface.getCscaAnchor();   //extractCscaAnchor();
-//System.out.println("cscaAnchor 3: " + cscaAnchor);
-//        ResultCieChecker result =
-//                ValidateUtils.verifyDscAgainstTrustBundle(dscDer, cscaAnchor, null);
-//
-//        log.info("Risultato atteso OK -> " + result.getValue());
-//        assertEquals(OK, result.getValue());
-//
-//        log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - END ");
-//
-//    }
-
- */
-
-    // TODO to uncomment when useful test data are available
-    
-//    @Test
-//    void verifyDscAgainstAnchorBytes_pemDsc_pemBundle_true() throws Exception {
-//
-//        byte[] pkcs7 = hexFile(Files.readString(basePath.resolve(SOD_HEX_IAS)));
-//        CMSSignedData cms = new CMSSignedData(pkcs7);
-//        X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
-//        byte[] dscPem = toPem(certHolder.getEncoded());
-//        cieCheckerInterface.setCscaAnchor(cieCheckerInterface.getCscaAnchor()); ///extractCscaAnchor());
-//        System.out.println("cscaAnchor 4 : " + cieCheckerInterface.getCscaAnchor());
-//        ResultCieChecker resultCieChecker =ValidateUtils.verifyDscAgainstTrustBundle(dscPem, cieCheckerInterface.getCscaAnchor(), null);
-//        log.info("TEST resultCieChecker: " + resultCieChecker.getValue());
-//
-//        assertEquals(OK, resultCieChecker.getValue());
-//    }
-
-    // TODO to uncomment when useful test data are available
-    
-//    @Test
-//    void verifyDscAgainstAnchorBytes_false_when_all_parents_removed() throws Exception {
-//        var cf = CertificateFactory.getInstance(X_509);
-//
-//        // DSC (DER)
-//        byte[] pkcs7 = hexFile(Files.readString(basePath.resolve(SOD_HEX_IAS)));
-//        CMSSignedData cms = new CMSSignedData(pkcs7);
-//        X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
-//        byte[] dscDer = certHolder.getEncoded();
-//        X509Certificate dscX509 = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(dscDer));
-//
-//        // Anchors
-//        //List<byte[]> anchorsDer = pickManyDerFromResources(-1);
-//        List<byte[]> anchorsDer = new ArrayList<>();
-//        List<X509Certificate> anchorZip = cieCheckerInterface.getCscaAnchor();
-//        for( X509Certificate x : anchorZip){
-//            anchorsDer.add(x.getEncoded());
-//        }
-//
-//        // filtering all valid anchors
-//        List<byte[]> wrongAnchorBlobs = new ArrayList<>();
-//        List<X509Certificate> wrongAnchorX509 = new ArrayList<>();
-//        int removed = 0;
-//        for (byte[] der : anchorsDer) {
-//            X509Certificate ca = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(der));
-//            boolean verifies;
-//            try {
-//                dscX509.verify(ca.getPublicKey());
-//                verifies = true;
-//            } catch (Exception e) {
-//                verifies = false;
-//            }
-//            if (!verifies) {
-//                wrongAnchorBlobs.add(der);
-//                wrongAnchorX509.add(ca);
-//            } else
-//                removed++;
-//        }
-//        assertTrue(removed > 0);
-//
-//        //ResultCieChecker resultCieChecker = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, wrongAnchorBlobs, null);
-//        //Assertions.assertFalse(resultCieChecker.getValue().equals(OK));
-//        assertThrows(CieCheckerException.class,
-//                () -> ValidateUtils.verifyDscAgainstTrustBundle(dscDer, wrongAnchorX509, null));
-//    }
-
-    // TODO to uncomment when useful test data are available
-//    @Test
-//    void verifyDscAgainstAnchorBytes_edgeCases() throws Exception {
-//
-//        log.info("TEST verifyDscAgainstAnchorBytes_edgeCases - INIT ");
-//        // Anchors
-//        List<byte[]> ders = new ArrayList<>();
-//        for( X509Certificate x : cieCheckerInterface.getCscaAnchor()){
-//            ders.add(x.getEncoded());
-//        }
-//        var cf = CertificateFactory.getInstance(X_509);
-//        String concatenatedPem = ders.stream()
-//                .map(d -> new String(toPem(d), StandardCharsets.UTF_8))
-//                .collect(Collectors.joining());
-//        byte[] caBlob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
-//        X509Certificate ca = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(caBlob));
-//
-//        //Sod null
-//        //ResultCieChecker resultSODNull =ValidateUtils.verifyDscAgainstAnchorBytes(null, List.of(caBlob), null);
-//        //Assertions.assertFalse(resultSODNull.getValue().equals(OK));
-//        assertThrows(CieCheckerException.class,
-//                () ->ValidateUtils.verifyDscAgainstTrustBundle(null, List.of(ca), null));
-//
-//        // anchors null
-//        byte[] pkcs7 = hexFile(Files.readString(basePath.resolve(SOD_HEX_IAS)));
-//        CMSSignedData cms = new CMSSignedData(pkcs7);
-//        X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
-//        byte[] dscDer = certHolder.getEncoded();
-//        //ResultCieChecker resultNull = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, null, null);
-//        //Assertions.assertFalse(resultNull.getValue().equals(OK));
-//        assertThrows(CieCheckerException.class,
-//                () ->ValidateUtils.verifyDscAgainstTrustBundle(dscDer, null, null));
-//
-//        // anchors empty
-//        //ResultCieChecker resultEmpty = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(), null);
-//        //Assertions.assertFalse(resultEmpty.getValue().equals(OK));
-//        assertThrows(CieCheckerException.class,
-//                () -> ValidateUtils.verifyDscAgainstTrustBundle(dscDer, List.of(), null));
-//
-//        // anchor malformed
-//        byte[] malformed = "INVALID".getBytes(StandardCharsets.UTF_8);
-//        //ResultCieChecker resultMalformed = ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(malformed), null);
-//        //Assertions.assertFalse(resultMalformed.getValue().equals(OK));
-//        assertThrows(CertificateException.class, () -> cf.generateCertificate(new ByteArrayInputStream(malformed)) );
-//
-//        /*X509Certificate caMalFormed = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(malformed));
-//        Assertions.assertThrows(CieCheckerException.class,
-//                () -> ValidateUtils.verifyDscAgainstAnchorBytes(dscDer, List.of(caMalFormed), null));
-//
-//         */
-//        log.info("TEST verifyDscAgainstAnchorBytes_edgeCases - END ");
-//    }
-
-    /// fine test verifyDscAgainstAnchorBytes partendo dal file ZIP
-
-// NON FUNZIONA PER INPUT ERRATO DG1 e DG11
     @Test
     public void testVerifyIntegrity()  {
         log.info("TEST testVerifyIntegrityOk - INIT ");
@@ -685,6 +448,200 @@ class CieCheckerTest {
 
         log.info("TEST generateSignedNonce - END ");
     }
+
+    @Test
+    void verifyDscAgainstAnchorBytes_edgeCases() throws Exception {
+
+        log.info("TEST verifyDscAgainstAnchorBytes_edgeCases - INIT ");
+        // Anchors
+        List<byte[]> ders = new ArrayList<>();
+        for( X509Certificate x : cieCheckerInterface.getCscaAnchor()){
+            ders.add(x.getEncoded());
+        }
+        var cf = CertificateFactory.getInstance(X_509);
+        String concatenatedPem = ders.stream()
+                .map(d -> new String(toPem(d), StandardCharsets.UTF_8))
+                .collect(Collectors.joining());
+        byte[] caBlob = concatenatedPem.getBytes(StandardCharsets.UTF_8);
+        X509Certificate ca = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(caBlob));
+
+        //Sod null
+        assertThrows(CieCheckerException.class,
+                () ->ValidateUtils.verifyDscAgainstTrustBundle(null, List.of(ca), null));
+
+        // anchors null
+        byte[] pkcs7 = hexFile(Files.readString(basePath.resolve(SOD_IAS_HEX)));
+        byte [] sod = Arrays.copyOfRange(pkcs7, 4, pkcs7.length);
+        CMSSignedData cms = new CMSSignedData(sod);
+        X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
+        byte[] dscDer = certHolder.getEncoded();
+        assertThrows(CieCheckerException.class,
+                () ->ValidateUtils.verifyDscAgainstTrustBundle(dscDer, null, null));
+
+        // anchors empty
+        assertThrows(CieCheckerException.class,
+                () -> ValidateUtils.verifyDscAgainstTrustBundle(dscDer, List.of(), null));
+
+        // anchor malformed
+        byte[] malformed = "INVALID".getBytes(StandardCharsets.UTF_8);
+        assertThrows(CertificateException.class, () -> cf.generateCertificate(new ByteArrayInputStream(malformed)) );
+
+        log.info("TEST verifyDscAgainstAnchorBytes_edgeCases - END ");
+    }
+
+// TODO to uncomment when useful test data are available
+//  @ParameterizedTest(name = "Verifica digital signature con sorgente: {0}")
+//  @MethodSource("cieSources")
+//  void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException, Exception {
+//      log.info("=== INIZIO TEST [" + tipo + "] ===");
+//      InputStream fileInputStream = new FileInputStream(Path.of(CSCA_ANCHOR_PATH_FILENAME).toFile());
+//      List<X509Certificate> cscaAnchor =  ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
+//      log.info("cscaAnchor 1: {}" , cscaAnchor.size());
+//      // caso ok
+//      byte[] sod = Arrays.copyOfRange(sodBytes, 4, sodBytes.length);
+//      CMSSignedData cms = new CMSSignedData(sod);
+//      ResultCieChecker resultOk = cieCheckerInterface.verifyDigitalSignature(cms);
+//      log.info("[" + tipo + "] - Risultato atteso OK -> " + resultOk.getValue());
+//      assertEquals("OK", resultOk.getValue());
+//
+//      // caso ko: SOD nullo
+//      log.info("[" + tipo + "] - Test con SOD nullo");
+//      assertThrows(CieCheckerException.class,
+//              () -> cieCheckerInterface.verifyDigitalSignature(null));
+//
+//      // caso ko: anchors null
+//      log.info("[" + tipo + "] - Test con anchors null");
+//      cieCheckerInterface.setCscaAnchor(null);
+//      log.info("cscaAnchor SET: {}" , cieCheckerInterface.getCscaAnchor());
+//      assertThrows(Exception.class,
+//             () -> cieCheckerInterface.verifyDigitalSignature(cms)); //, null));
+//
+//      // caso ko: SOD non corretto
+//      log.info("[" + tipo + "] - Test con SOD non corretto");
+//      String efSodPem = """
+//      -----BEGIN PUBLIC KEY-----
+//      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAytYrOy71s5KcL8FpSOwC
+//      MI/6+ZyaZkjMMbl/BDBtC59hlt8q5CptJihGqaRl5LeLJG7OqMfRteLtpHmsac5r
+//      ZmTUncm+mCPMKy1p8EDpYscHneyFGnbbSyH9xKt8QLHV/O8d96dGl/iYNsk7wF8R
+//      ihEy62qwfVUgeqhpaVNfEg1FYSOLLbR9OcBKRLamZcJrOqd5vuGNHZKyToqoWqhS
+//      ZntbKyZIC93ibnLiQkhetPnrZoCm1s81v8EW6ASbhpWaJEcv3xwe9nZxqjr9tMkO
+//      x9sOAT7gIN2hBQZasVxeCelfCZRjyh+P0j37DMpBaPCMlWLUeYQgKrd+aJty
+//      /QIDAQAB
+//      -----END PUBLIC KEY-----
+//      """;
+//      byte[] sodErrato = decodePublicKeyPemToDer(efSodPem);
+//      assertThrows(CMSException.class,
+//              () -> new CMSSignedData(sodErrato));
+//
+//      log.info("=== FINE TEST [" + tipo + "] ===");
+//  }
+//  private static Stream<Arguments> cieSources() throws IOException, DecoderException {
+//      return Stream.of(
+//              Arguments.of("CIE MRTD",hexFile(Files.readString(basePath.resolve(SOD_MRTD_HEX)))),
+//              Arguments.of("CIE IAS", hexFile(Files.readString(basePath.resolve(SOD_IAS_HEX))))
+//              
+//      );
+//  }
+
+// TODO to uncomment when useful test data are available
+// INIT TEST LETTURA FILE ZIP DELLA CATENA DI CERTIFICATI E VALIDAZIONE
+//      @Test
+//      void verifyDscAgainstAnchorBytes_derDsc_pemZIP_true() throws Exception {
+//          log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - INIT ");
+//  
+//          byte[] pkcs7 = hexFile(Files.readString(basePath.resolve(SOD_IAS_HEX)));
+//          assertNotNull(pkcs7);
+//          byte [] sod = Arrays.copyOfRange(pkcs7, 4, pkcs7.length);
+//          CMSSignedData cms = new CMSSignedData(sod);
+//          X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
+//          byte[] dscDer = certHolder.getEncoded();
+//          List<X509Certificate> cscaAnchor = cieCheckerInterface.getCscaAnchor();   //extractCscaAnchor();
+//  System.out.println("cscaAnchor 3: " + cscaAnchor);
+//          ResultCieChecker result =
+//                  ValidateUtils.verifyDscAgainstTrustBundle(dscDer, cscaAnchor, null);
+//  
+//          log.info("Risultato atteso OK -> " + result.getValue());
+//          assertEquals(OK, result.getValue());
+//  
+//          log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - END ");
+//  
+//      }
+
+// TODO to uncomment when useful test data are available    
+//  @Test
+//  void verifyDscAgainstAnchorBytes_pemDsc_pemBundle_true() throws Exception {
+//
+//      byte[] pkcs7 = hexFile(Files.readString(basePath.resolve(SOD_IAS_HEX)));
+//      byte [] sod = Arrays.copyOfRange(pkcs7, 4, pkcs7.length);
+//      CMSSignedData cms = new CMSSignedData(sod);
+//      X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
+//      byte[] dscPem = toPem(certHolder.getEncoded());
+//      cieCheckerInterface.setCscaAnchor(cieCheckerInterface.getCscaAnchor()); ///extractCscaAnchor());
+//      System.out.println("cscaAnchor 4 : " + cieCheckerInterface.getCscaAnchor());
+//      ResultCieChecker resultCieChecker =ValidateUtils.verifyDscAgainstTrustBundle(dscPem, cieCheckerInterface.getCscaAnchor(), null);
+//      log.info("TEST resultCieChecker: " + resultCieChecker.getValue());
+//
+//      assertEquals(OK, resultCieChecker.getValue());
+//  }
+
+// TODO to uncomment when useful test data are available
+//  @Test
+//  void verifyDscAgainstAnchorBytes_false_when_all_parents_removed() throws Exception {
+//      var cf = CertificateFactory.getInstance(X_509);
+//
+//      // DSC (DER)
+//      byte[] pkcs7 = hexFile(Files.readString(basePath.resolve(SOD_IAS_HEX)));
+//      byte [] sod = Arrays.copyOfRange(pkcs7, 4, pkcs7.length);
+//      CMSSignedData cms = new CMSSignedData(sod);
+//      X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
+//      byte[] dscDer = certHolder.getEncoded();
+//      X509Certificate dscX509 = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(dscDer));
+//
+//      // Anchors
+//      //List<byte[]> anchorsDer = pickManyDerFromResources(-1);
+//      List<byte[]> anchorsDer = new ArrayList<>();
+//      List<X509Certificate> anchorZip = cieCheckerInterface.getCscaAnchor();
+//      for( X509Certificate x : anchorZip){
+//          anchorsDer.add(x.getEncoded());
+//      }
+//
+//      // filtering all valid anchors
+//      List<byte[]> wrongAnchorBlobs = new ArrayList<>();
+//      List<X509Certificate> wrongAnchorX509 = new ArrayList<>();
+//      int removed = 0;
+//      for (byte[] der : anchorsDer) {
+//          X509Certificate ca = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(der));
+//          boolean verifies;
+//          try {
+//              dscX509.verify(ca.getPublicKey());
+//              verifies = true;
+//          } catch (Exception e) {
+//              verifies = false;
+//          }
+//          if (!verifies) {
+//              wrongAnchorBlobs.add(der);
+//              wrongAnchorX509.add(ca);
+//          } else
+//              removed++;
+//      }
+//      assertTrue(removed > 0);
+//
+//      assertThrows(CieCheckerException.class,
+//              () -> ValidateUtils.verifyDscAgainstTrustBundle(dscDer, wrongAnchorX509, null));
+//  }
+
+// TODO to uncomment when useful test data are available
+//  @Test
+//  void verifySodPassiveAuthCie() throws CMSException {
+//      log.info("TEST verifySodPassiveAuthCie - INIT ");
+//
+//      assertNotNull(validationData.getCieIas());
+//      assertNotNull(validationData.getCieIas().getSod());
+//      assertNotNull(validationData.getCieIas().getNis());
+//
+//      assertTrue(cieCheckerInterface.verifySodPassiveAuthCie(new CMSSignedData(truncatedSODIAS), validationData.getCieIas().getNis()));
+//      log.info("TEST verifySodPassiveAuthCie - END ");
+//  }
 
 
 }

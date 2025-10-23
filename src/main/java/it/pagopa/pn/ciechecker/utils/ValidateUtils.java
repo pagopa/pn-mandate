@@ -17,6 +17,7 @@ import org.bouncycastle.asn1.icao.DataGroupHash;
 import org.bouncycastle.asn1.icao.LDSSecurityObject;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.operator.DefaultSignatureNameFinder;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -43,6 +44,8 @@ import org.bouncycastle.util.Store;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.security.cert.X509Certificate;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PSSParameterSpec;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Objects;
@@ -199,9 +202,11 @@ public class ValidateUtils {
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
             }
+            String firstStr = calculateDigest(hashSignedData, getFirstDigestAlgorithm(cms));
+
             // --- PARTE 2: ESTRAI L'HASH FIRMATO (messageDigest) ---
             ASN1OctetString signedHash = ValidateUtils.extractHashSigned(cms);
-            return ValidateUtils.verifyOctetStrings(hashSignedData, signedHash);
+            return ValidateUtils.verifyOctetStrings(firstStr, signedHash);
         }catch(CieCheckerException ce){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, CieCheckerException.class.getName() + " - Message: " + ce.getMessage());
             throw new CieCheckerException(ce.getResult(), ce);
@@ -211,6 +216,11 @@ public class ValidateUtils {
         }
     }
 
+    public static String getFirstDigestAlgorithm(CMSSignedData cms) {
+        Set<AlgorithmIdentifier> setAlgos = cms.getDigestAlgorithmIDs();
+        Iterator<AlgorithmIdentifier> iAlgos = setAlgos.iterator();
+        return iAlgos.next().getAlgorithm().toString();
+    }
     /**
      * Verifica che la 1a OctetString sia identica alla 5a OctetString
      * @param firstOctetString byte[]
@@ -218,10 +228,10 @@ public class ValidateUtils {
      * @return boolean
      * @throws CieCheckerException ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA, KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP
      */
-    public static boolean verifyOctetStrings(byte[] firstOctetString, ASN1OctetString fiveOctetString) throws CieCheckerException {
+    public static boolean verifyOctetStrings(String firstOctetString, ASN1OctetString fiveOctetString) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS);
-        if ( Objects.isNull(firstOctetString)  || firstOctetString.length == 0) {
+        if ( Objects.isNull(firstOctetString)  || firstOctetString.length() == 0) {
             //log.error("Error in verifyOctetStrings: byte[] firstOctetString: ", firstOctetString );
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
@@ -232,10 +242,9 @@ public class ValidateUtils {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
         }
 
-        String firstStr = calculateSha256(firstOctetString);
         String fiveStr = getHexFromOctetString(fiveOctetString);
-        log.debug("calculateSha256 --> firstStr: {} - getHexFromOctetString --> fiveStr: {}", firstStr, fiveStr);
-        if (firstStr.equalsIgnoreCase(fiveStr)) {
+        log.debug("calculateSha256 --> firstStr: {} - getHexFromOctetString --> fiveStr: {}", firstOctetString, fiveStr);
+        if (firstOctetString.equalsIgnoreCase(fiveStr)) {
             log.debug("VERIFICA RIUSCITA: Gli hash corrispondono.");
             log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, "boolean", true);
             return true;
@@ -251,9 +260,10 @@ public class ValidateUtils {
      * @return String
      * @throws CieCheckerException exception
      */
-    public static String calculateSha256(byte[] octetByte) throws CieCheckerException {
+    public static String calculateDigest(byte[] octetByte, String sHasHOID) throws CieCheckerException {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        	
+            MessageDigest digest = MessageDigest.getInstance(getDigestName(sHasHOID));
             byte[] hashBytes = digest.digest(octetByte);
             return Hex.toHexString(hashBytes).toString().toUpperCase();
         }catch(NoSuchAlgorithmException nsae){
@@ -468,7 +478,7 @@ public class ValidateUtils {
      */
     public static boolean verifyNisSha256FromDataGroup(CMSSignedData cmsData, byte[] nisSha256) throws CieCheckerException {
 
-        String nisHexToCheck = calculateSha256(nisSha256);
+        String nisHexToCheck = calculateDigest(nisSha256, getFirstDigestAlgorithm(cmsData));
         List<String> dataGroupList = extractDataGroupHashes(cmsData);
         if(dataGroupList.isEmpty() ) {
             log.error("Error in verifyNisSha256FromDataGroup: " + CieCheckerException.class.getName() + " - Message: " + EXC_NO_NIS_HASHES_DATAGROUP);
@@ -484,6 +494,12 @@ public class ValidateUtils {
 
     // END : ESTRAZIONE DEGLI HASH: CONTENT
 
+    public static String decodeSignatureAlgo(String sOid){
+        ASN1ObjectIdentifier oid = new ASN1ObjectIdentifier(sOid);
+
+        DefaultSignatureNameFinder nameFinder = new DefaultSignatureNameFinder();
+        return nameFinder.getAlgorithmName(oid);
+    }
     /**
      * VERIFICA FINALE DELLA FIRMA DIGITALE -
      * @param cms CMSSignedData
@@ -501,7 +517,15 @@ public class ValidateUtils {
             log.debug("signerInfo.getEncryptionAlgOID(): {}", signerInfo.getEncryptionAlgOID());
             log.debug("signerInfo.getDigestAlgOID(): {} ", signerInfo.getDigestAlgOID());
 
-            Signature verifier = Signature.getInstance(CieCheckerConstants.SHA_1_WITH_RSA, Security.getProvider(CieCheckerConstants.BOUNCY_CASTLE_PROVIDER));
+            Signature verifier = Signature.getInstance(decodeSignatureAlgo(signerInfo.getEncryptionAlgOID())); //publicKey.getAlgorithm());
+            if( signerInfo.getEncryptionAlgOID().equals(PKCSObjectIdentifiers.id_RSASSA_PSS.getId()) ){
+                try {
+    				verifier.setParameter(new PSSParameterSpec("SHA512", "MGF1", MGF1ParameterSpec.SHA512, 64,1));
+    			} catch (InvalidAlgorithmParameterException e) {
+    	            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, e.getClass().getName() + " - Message: " + e.getMessage());
+    	            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION, e);
+    			}
+            }
 
             // 2. Ottieni i byte della firma
             byte[] signatureBytes = signerInfo.getSignature();

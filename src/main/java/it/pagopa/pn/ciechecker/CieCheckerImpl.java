@@ -15,6 +15,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
 import java.security.cert.X509Certificate;
@@ -26,6 +27,8 @@ import java.util.*;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import it.pagopa.pn.ciechecker.model.*;
+
+import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -104,7 +107,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         try {
             validateDataInput(data);
 
-            cms = new CMSSignedData(data.getCieIas().getSod());
+            cms = new CMSSignedData(truncSodBytes(data.getCieIas().getSod()));
             log.debug(LogsCostant.CIECHECKER_VALIDATE_MANDATE, "CMSSignedData={}", cms);
 
             //16048-bis - NIS: nis_verify_sod.sh
@@ -116,6 +119,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             //16050 NIS: nis_verify_challenge.sh - verifica del nonce: verifica la firma di una challenge IAS
             verifyChallengeFromSignature(data);
 
+            data.getCieMrtd().setSod(truncSodBytes(data.getCieMrtd().getSod()));
             //16051 MRTD: verify_integrity.sh
             verifyIntegrity(data.getCieMrtd());
 
@@ -164,6 +168,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         return true;
     }
 
+    private static byte[] truncSodBytes(byte [] inSod) throws IOException, DecoderException {
+    	return Arrays.copyOfRange(inSod, 4, inSod.length);
+    }
+
     /**
      * Verifica codice fiscale del delegante con quanto presente nei dati della CIE
      * @param data CieValidationData
@@ -191,7 +199,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
         String expirationDate = dataElement.substring(38, 38+6);
         log.debug("expirationDate: {} ", expirationDate);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyy");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMdd");
 
         try {
             LocalDate inputDate = LocalDate.parse(expirationDate, formatter);
@@ -229,7 +237,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             engine2.init(false, publicKey);
             // estrae dalla signature i byte del nonce/challenge
             byte[] recovered = engine2.processBlock(data.getSignedNonce(), 0, data.getSignedNonce().length);
-            if (!(Arrays.equals(recovered, ValidateUtils.calculateSha1(data.getNonce())))) {
+            if (!(Arrays.equals(recovered, data.getNonce().getBytes()))) {
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE);
             }else {

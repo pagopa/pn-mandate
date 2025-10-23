@@ -270,7 +270,7 @@ public class ValidateUtils {
         	
             MessageDigest digest = MessageDigest.getInstance(getDigestName(sHasHOID));
             byte[] hashBytes = digest.digest(octetByte);
-            return Hex.toHexString(hashBytes).toString().toUpperCase();
+            return Hex.toHexString(hashBytes).toUpperCase();
         }catch(NoSuchAlgorithmException nsae){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_CALCULATE_DIGEST, nsae.getClass().getName() + " - Message: " + nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MESSAGEDIGESTSPI_SUPPORTED, nsae);
@@ -729,7 +729,7 @@ public class ValidateUtils {
             ZipEntry entry;
 
             while( (entry = zis.getNextEntry()) != null) {
-                log.info("ZIS: {}" , entry.getName());
+                log.debug("ZIS: {}" , entry.getName());
                 if(entry.getName().endsWith(".pem")){
                     List<X509Certificate> pemList = ValidateUtils.loadCertificateFromPemFile(zis);
                     x509List.addAll(pemList);
@@ -797,7 +797,7 @@ public class ValidateUtils {
         }
     }
 
-
+/*
     public static String extractCodiceFiscaleByOid(byte[] dg11Bytes) throws CieCheckerException {
 
         try {
@@ -819,7 +819,7 @@ public class ValidateUtils {
             throw new CieCheckerException( ResultCieChecker.KO_EXC_DECODER_ERROR, de);
         }
     }
-
+*/
     public static String parserTLVTagValue(byte[] fileBytes, String tag) throws CieCheckerException {
 
         try {

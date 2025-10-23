@@ -6,17 +6,23 @@ import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.generator.challenge.ChallengeResponseBuilder;
 import it.pagopa.pn.ciechecker.model.*;
+import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.apache.commons.io.IOUtils;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.encodings.PKCS1Encoding;
+import org.bouncycastle.crypto.engines.RSAEngine;
+import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -37,6 +43,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.*;
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -115,6 +124,16 @@ class CieCheckerTest {
 //
         when(s3BucketClient.getObjectContent(anyString()))
                .thenAnswer(invocation -> s3Stream);
+
+        //PEM FILE
+//        InputStream fileInputStreamPem = new FileInputStream(Path.of(fileToAddMasterListZip).toFile());
+//        ResponseInputStream<GetObjectResponse> s3StreamPem = new ResponseInputStream<>(
+//                GetObjectResponse.builder().build(),
+//                AbortableInputStream.create(fileInputStreamPem)
+//        );
+////
+//        when(s3BucketClient.getObjectContent(anyString()))
+//                .thenAnswer(invocation -> s3StreamPem);
 
         cieChecker.init();
 
@@ -345,8 +364,6 @@ class CieCheckerTest {
         return Base64.getDecoder().decode(b64);
     }
 
-
-
     @Test
     public void testVerifyIntegrity()  {
         log.info("TEST testVerifyIntegrityOk - INIT ");
@@ -387,7 +404,6 @@ class CieCheckerTest {
         Assertions.assertTrue(result.getValue().equals(OK));
     }
 
-
     @Test
     void uploadContentTest() throws Exception {
 
@@ -406,7 +422,6 @@ class CieCheckerTest {
 
         log.info("TEST writeNewMasterZip - END ");
     }
-
 
     @Test
     void generateChallengeTest() throws Exception { //TODO to move in generator test package
@@ -642,6 +657,5 @@ class CieCheckerTest {
 //      assertTrue(cieCheckerInterface.verifySodPassiveAuthCie(new CMSSignedData(truncatedSODIAS), validationData.getCieIas().getNis()));
 //      log.info("TEST verifySodPassiveAuthCie - END ");
 //  }
-
 
 }

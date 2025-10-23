@@ -214,7 +214,7 @@
 								<filter>
 									<artifact>*:*</artifact>
 									<includes>
-										<include>it/pagopa/pn/ciechecker/generator/**</include>
+										<include>it/pagopa/pn/ciechecker/**</include>
 									</includes>
 									<excludes>
 										<exclude>it/pagopa/pn/mandate/**</exclude>

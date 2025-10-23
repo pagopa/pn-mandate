@@ -1,8 +1,9 @@
 package it.pagopa.pn.ciechecker.model;
 
 import it.pagopa.pn.ciechecker.CieCheckerConstants;
+import lombok.Getter;
 
-@lombok.CustomLog
+@Getter
 public enum ResultCieChecker {
     OK("OK"),
     KO("KO"),
@@ -54,7 +55,10 @@ public enum ResultCieChecker {
     KO_EXC_ERROR_CREATE_VERIFIER(CieCheckerConstants.EXC_ERROR_CREATE_VERIFIER),
     KO_EXC_NOVALID_DIGITAL_SIGNATURE(CieCheckerConstants.EXC_NOVALID_DIGITAL_SIGNATURE),
     KO_EXC_NOT_SAME_DIGEST(CieCheckerConstants.EXC_NOT_SAME_DIGEST),
+    KO_EXC_NOT_SAME_DIGEST1(CieCheckerConstants.EXC_NOT_SAME_DIGEST_1),
+    KO_EXC_NOT_SAME_DIGEST11(CieCheckerConstants.EXC_NOT_SAME_DIGEST_11),
     KO_EXC_DIGEST_NOT_VERIFIED(CieCheckerConstants.EXC_DIGEST_NOT_VERIFIED),
+    KO_EXC_ERROR_SOD_DECODE(CieCheckerConstants.KO_EXC_ERROR_SOD_DECODE),
     KO_EXC_INVALID_VERIFIER(CieCheckerConstants.EXC_INVALID_VERIFIER),
     KO_EXC_INVALID_SIGNATURE(CieCheckerConstants.EXC_INVALID_SIGNATURE),
     KO_EXC_INVALID_ALGORITHM(CieCheckerConstants.EXC_INVALID_ALGORITHM),
@@ -67,12 +71,17 @@ public enum ResultCieChecker {
     KO_EXC_NOFOUND_TAG_DG(CieCheckerConstants.EXC_NOFOUND_TAG_DG),
     KO_EXC_INVALID_EXPIRATIONDATE(CieCheckerConstants.EXC_INVALID_EXPIRATIONDATE),
     KO_EXC_EXPIRATIONDATE(CieCheckerConstants.EXC_EXPIRATIONDATE),
+    KO_EXC_NOFOUND_FILEARGS(CieCheckerConstants.EXC_NOFOUND_FILEARGS),
+    KO_EXC_CREATION_FILEZIPTEMP(CieCheckerConstants.EXC_CREATION_FILEZIPTEMP),
+    KO_EXC_UPLOAD_NEWFILEZIP_TO_S3(CieCheckerConstants.EXC_UPLOAD_NEWFILEZIP_TO_S3),
+    KO_EXC_INVALID_PARAMETER_CERTPEM(CieCheckerConstants.EXC_INVALID_PARAMETER_CERTPEM),
+    KO_EXC_INVALID_PARAMETER_CERTKEY(CieCheckerConstants.EXC_INVALID_PARAMETER_CERTKEY),
+    KO_EXC_INVALID_PARAMETER_BASEDIR(CieCheckerConstants.EXC_INVALID_PARAMETER_BASEDIR),
+    KO_EXC_DELETEEXISTFILE(CieCheckerConstants.EXC_DELETEEXISTFILE),
+    KO_EXC_ATTRIBUTO_NULL(CieCheckerConstants.EXC_ATTRIBUTO_NULL),
     KO_EXC_EXCEPTION(CieCheckerConstants.EXC_KO);
 
     private final String value;
-    public String getValue() {
-        return value;
-    }
 
     ResultCieChecker(String value) {
         this.value = value;

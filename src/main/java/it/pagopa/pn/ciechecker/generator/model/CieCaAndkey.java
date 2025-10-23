@@ -1,4 +1,4 @@
-package it.pagopa.pn.ciechecker.model;
+package it.pagopa.pn.ciechecker.generator.model;
 
 import lombok.Data;
 

@@ -6,12 +6,11 @@ import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.*;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
-import org.bouncycastle.asn1.x509.DigestInfo;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.FileInputStream;
@@ -257,7 +256,14 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      * @return RSAKeyParameters result
      */
     private RSAKeyParameters extractPublicKeyFromSignature(byte[] pubKey) {
-        RSAPublicKey pkcs1PublicKey = RSAPublicKey.getInstance(pubKey);
+        RSAPublicKey pkcs1PublicKey;
+        try {
+            SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(pubKey);
+            byte[] rawRsaKeyBytes = spki.getPublicKeyData().getBytes();
+            pkcs1PublicKey = RSAPublicKey.getInstance(rawRsaKeyBytes);
+        } catch (IllegalArgumentException iae) {
+            pkcs1PublicKey = RSAPublicKey.getInstance(pubKey);
+        }
         BigInteger modulus = pkcs1PublicKey.getModulus();
         BigInteger publicExponent = pkcs1PublicKey.getPublicExponent();
 

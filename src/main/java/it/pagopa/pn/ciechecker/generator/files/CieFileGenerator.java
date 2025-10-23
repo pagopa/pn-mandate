@@ -1,6 +1,7 @@
 package it.pagopa.pn.ciechecker.generator.files;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
+import it.pagopa.pn.ciechecker.generator.model.CieCaAndkey;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
 

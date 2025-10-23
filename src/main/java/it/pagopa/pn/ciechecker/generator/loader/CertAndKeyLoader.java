@@ -22,7 +22,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -33,11 +32,6 @@ public class CertAndKeyLoader {
     PnMandateConfig pnMandateConfig;
     S3Client s3;
 
-    public CertAndKeyLoader(PnMandateConfig pnMandateConfig, S3Client s3) {
-        this.pnMandateConfig = pnMandateConfig;
-        this.s3 = s3;
-    }
-
     public CertAndKey loadCaAndKeyFromS3() throws IOException, GeneralSecurityException {
         GetObjectRequest request = GetObjectRequest.builder()
                 .bucket(pnMandateConfig.getGeneratorBucketName())
@@ -46,7 +40,6 @@ public class CertAndKeyLoader {
 
         X509Certificate certificate = null;
         PrivateKey privateKey = null;
-        PublicKey publicKey = null;
 
         try (InputStream s3Input = s3.getObject(request);
              ZipInputStream zis = new ZipInputStream(s3Input)) {
@@ -73,12 +66,13 @@ public class CertAndKeyLoader {
             throw new FileNotFoundException("catest.key non trovato nello zip " + pnMandateConfig.getGeneratorZipName());
         }
 
-        if (privateKey instanceof java.security.interfaces.RSAPrivateCrtKey crt) {
-            var spec = new RSAPublicKeySpec(crt.getModulus(), crt.getPublicExponent());
-            publicKey = KeyFactory.getInstance("RSA").generatePublic(spec);
-        }
 
-        return new CertAndKey(certificate, new KeyPair(publicKey, privateKey));
+        return new CertAndKey(certificate, new KeyPair(certificate.getPublicKey(), privateKey));
+    }
+
+    public CertAndKeyLoader(PnMandateConfig pnMandateConfig, S3Client s3) {
+        this.pnMandateConfig = pnMandateConfig;
+        this.s3 = s3;
     }
 
     private static byte[] readAll(InputStream in) throws IOException {

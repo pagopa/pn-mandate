@@ -15,14 +15,17 @@ import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.icao.DataGroupHash;
 import org.bouncycastle.asn1.icao.LDSSecurityObject;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.operator.DefaultSignatureNameFinder;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.*;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.stream.Collectors;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
@@ -38,11 +41,18 @@ import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.util.DigestFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.util.Store;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.security.cert.X509Certificate;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PSSParameterSpec;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Objects;
@@ -199,9 +209,11 @@ public class ValidateUtils {
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
             }
+            String firstStr = calculateDigest(hashSignedData, getFirstDigestAlgorithm(cms));
+
             // --- PARTE 2: ESTRAI L'HASH FIRMATO (messageDigest) ---
             ASN1OctetString signedHash = ValidateUtils.extractHashSigned(cms);
-            return ValidateUtils.verifyOctetStrings(hashSignedData, signedHash);
+            return ValidateUtils.verifyOctetStrings(firstStr, signedHash);
         }catch(CieCheckerException ce){
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, CieCheckerException.class.getName() + " - Message: " + ce.getMessage());
             throw new CieCheckerException(ce.getResult(), ce);
@@ -211,6 +223,11 @@ public class ValidateUtils {
         }
     }
 
+    public static String getFirstDigestAlgorithm(CMSSignedData cms) {
+        Set<AlgorithmIdentifier> setAlgos = cms.getDigestAlgorithmIDs();
+        Iterator<AlgorithmIdentifier> iAlgos = setAlgos.iterator();
+        return iAlgos.next().getAlgorithm().toString();
+    }
     /**
      * Verifica che la 1a OctetString sia identica alla 5a OctetString
      * @param firstOctetString byte[]
@@ -218,10 +235,10 @@ public class ValidateUtils {
      * @return boolean
      * @throws CieCheckerException ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA, KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP
      */
-    public static boolean verifyOctetStrings(byte[] firstOctetString, ASN1OctetString fiveOctetString) throws CieCheckerException {
+    public static boolean verifyOctetStrings(String firstOctetString, ASN1OctetString fiveOctetString) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS);
-        if ( Objects.isNull(firstOctetString)  || firstOctetString.length == 0) {
+        if ( Objects.isNull(firstOctetString)  || firstOctetString.length() == 0) {
             //log.error("Error in verifyOctetStrings: byte[] firstOctetString: ", firstOctetString );
             log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
@@ -232,10 +249,9 @@ public class ValidateUtils {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
         }
 
-        String firstStr = calculateSha256(firstOctetString);
         String fiveStr = getHexFromOctetString(fiveOctetString);
-        log.debug("calculateSha256 --> firstStr: {} - getHexFromOctetString --> fiveStr: {}", firstStr, fiveStr);
-        if (firstStr.equalsIgnoreCase(fiveStr)) {
+        log.debug("calculateSha256 --> firstStr: {} - getHexFromOctetString --> fiveStr: {}", firstOctetString, fiveStr);
+        if (firstOctetString.equalsIgnoreCase(fiveStr)) {
             log.debug("VERIFICA RIUSCITA: Gli hash corrispondono.");
             log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, "boolean", true);
             return true;
@@ -246,21 +262,26 @@ public class ValidateUtils {
     }
 
     /**
-     * Converte byte[] in String esadecimale Sha256
-     * @param octetByte byte[]
-     * @return String
-     * @throws CieCheckerException exception
+     * Calcola l'hash di un array di byte utilizzando l'algoritmo specificato
+     * (es. SHA-1, SHA-256, SHA-384, SHA-512)
      */
-    public static String calculateSha256(byte[] octetByte) throws CieCheckerException {
+    public static String calculateDigest(byte[] octetByte, String sHasHOID) throws CieCheckerException {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        	
+            MessageDigest digest = MessageDigest.getInstance(getDigestName(sHasHOID));
             byte[] hashBytes = digest.digest(octetByte);
             return Hex.toHexString(hashBytes).toUpperCase();
         }catch(NoSuchAlgorithmException nsae){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_CALCULATE_SHA256, nsae.getClass().getName() + " - Message: " + nsae.getMessage());
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_CALCULATE_DIGEST, nsae.getClass().getName() + " - Message: " + nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MESSAGEDIGESTSPI_SUPPORTED, nsae);
         }
     }
+
+    public static String extractDigestAlgorithmOidFromSod(CMSSignedData cms) {
+        SignerInformation signer = cms.getSignerInfos().getSigners().iterator().next();
+        return signer.getDigestAlgorithmID().getAlgorithm().getId();
+    }
+
 
     /**
      * Metodo di conversione per il digest di un ASN1OctetString di BouncyCastle in una stringa
@@ -462,13 +483,13 @@ public class ValidateUtils {
     /**
      * Estrazione e verifica della lista degli hash dei Data Group
      * @param cmsData CMSSignedData
-     * @param nisSha256 byte[]
+     * @param nisSha byte[]
      * @return boolean
      * @throws CieCheckerException c
      */
-    public static boolean verifyNisSha256FromDataGroup(CMSSignedData cmsData, byte[] nisSha256) throws CieCheckerException {
+    public static boolean verifyNisShaFromDataGroup(CMSSignedData cmsData, byte[] nisSha256) throws CieCheckerException {
 
-        String nisHexToCheck = calculateSha256(nisSha256);
+        String nisHexToCheck = calculateDigest(nisSha256, getFirstDigestAlgorithm(cmsData));
         List<String> dataGroupList = extractDataGroupHashes(cmsData);
         if(dataGroupList.isEmpty() ) {
             log.error("Error in verifyNisSha256FromDataGroup: " + CieCheckerException.class.getName() + " - Message: " + EXC_NO_NIS_HASHES_DATAGROUP);
@@ -484,6 +505,12 @@ public class ValidateUtils {
 
     // END : ESTRAZIONE DEGLI HASH: CONTENT
 
+    public static String decodeSignatureAlgo(String sOid){
+        ASN1ObjectIdentifier oid = new ASN1ObjectIdentifier(sOid);
+
+        DefaultSignatureNameFinder nameFinder = new DefaultSignatureNameFinder();
+        return nameFinder.getAlgorithmName(oid);
+    }
     /**
      * VERIFICA FINALE DELLA FIRMA DIGITALE -
      * @param cms CMSSignedData
@@ -501,7 +528,15 @@ public class ValidateUtils {
             log.debug("signerInfo.getEncryptionAlgOID(): {}", signerInfo.getEncryptionAlgOID());
             log.debug("signerInfo.getDigestAlgOID(): {} ", signerInfo.getDigestAlgOID());
 
-            Signature verifier = Signature.getInstance(CieCheckerConstants.SHA_1_WITH_RSA, Security.getProvider(CieCheckerConstants.BOUNCY_CASTLE_PROVIDER));
+            Signature verifier = Signature.getInstance(decodeSignatureAlgo(signerInfo.getEncryptionAlgOID())); //publicKey.getAlgorithm());
+            if( signerInfo.getEncryptionAlgOID().equals(PKCSObjectIdentifiers.id_RSASSA_PSS.getId()) ){
+                try {
+    				verifier.setParameter(new PSSParameterSpec("SHA512", "MGF1", MGF1ParameterSpec.SHA512, 64,1));
+    			} catch (InvalidAlgorithmParameterException e) {
+    	            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, e.getClass().getName() + " - Message: " + e.getMessage());
+    	            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION, e);
+    			}
+            }
 
             // 2. Ottieni i byte della firma
             byte[] signatureBytes = signerInfo.getSignature();
@@ -613,33 +648,45 @@ public class ValidateUtils {
 
 
     //creazione oggetto rappresentante EF.SOD -> decode_sod_hr.sh
-    public static SodSummary decodeSodHr(byte[] sodBytes) throws Exception {
-        CMSSignedData cms = new CMSSignedData(sodBytes);
+    public static SodSummary decodeSodHr(byte[] sodBytes) throws CieCheckerException {
+        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_DECEODESODHR);
+        try {
+            CMSSignedData cms = new CMSSignedData(sodBytes);
 
-        String contentTypeOid = cms.getSignedContentTypeOID();
-        byte[] eContent = (byte[]) Objects.requireNonNull(cms.getSignedContent()).getContent();
-        LDSSecurityObject lds = LDSSecurityObject.getInstance(
-                ASN1Sequence.getInstance(ASN1Primitive.fromByteArray(eContent)));
+            String contentTypeOid = cms.getSignedContentTypeOID();
+            byte[] eContent = (byte[]) Objects.requireNonNull(cms.getSignedContent()).getContent();
+            LDSSecurityObject lds = LDSSecurityObject.getInstance(
+                    ASN1Sequence.getInstance(ASN1Primitive.fromByteArray(eContent)));
 
-        AlgorithmIdentifier dgDigestAlg = lds.getDigestAlgorithmIdentifier();
+            AlgorithmIdentifier dgDigestAlg = lds.getDigestAlgorithmIdentifier();
 
-        LinkedHashMap<Integer, byte[]> dgMap = new LinkedHashMap<>();
-        for (DataGroupHash dgh : lds.getDatagroupHash()) {
-            dgMap.put(dgh.getDataGroupNumber(), dgh.getDataGroupHashValue().getOctets());
+            LinkedHashMap<Integer, byte[]> dgMap = new LinkedHashMap<>();
+            for (DataGroupHash dgh : lds.getDatagroupHash()) {
+                dgMap.put(dgh.getDataGroupNumber(), dgh.getDataGroupHashValue().getOctets());
+            }
+
+            SignerInformation si = cms.getSignerInfos().getSigners().iterator().next();
+            AlgorithmIdentifier sigAlg = AlgorithmIdentifier.getInstance(si.getDigestAlgorithmID());
+            byte[] signature = si.getSignature();
+
+            X509Certificate dsc = null;
+            //X509CertificateHolder holder = extractDscCertDer(sodBytes);
+            X509CertificateHolder holder = extractDscCertDer(cms);
+            if (holder != null) {
+                dsc = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(holder);
+            }
+
+            return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
+        }catch(CMSException ce ){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, ce.getClass().getName() + " - Message: " + ce.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA , ce);
+        } catch (CieCheckerException cce) {
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, cce.getClass().getName() + " - Message: " + cce.getMessage());
+            throw new CieCheckerException(cce.getResult(), cce);
+        }catch(Exception e ){
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, e.getClass().getName() + " - Message: " + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_ERROR_SOD_DECODE , e);
         }
-
-        SignerInformation si = cms.getSignerInfos().getSigners().iterator().next();
-        AlgorithmIdentifier sigAlg = AlgorithmIdentifier.getInstance(si.getDigestAlgorithmID());
-        byte[] signature = si.getSignature();
-
-        X509Certificate dsc = null;
-        //X509CertificateHolder holder = extractDscCertDer(sodBytes);
-        X509CertificateHolder holder = extractDscCertDer(cms);
-        if (holder != null) {
-            dsc = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(holder);
-        }
-
-        return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
     }
 
 /*
@@ -802,7 +849,7 @@ public class ValidateUtils {
         }
     }
 
-      public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
+    public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
 
         log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP);
         try{
@@ -840,11 +887,11 @@ public class ValidateUtils {
     private static X509Certificate getCertificateFromPemFile(InputStream pemFileStream)
             throws CertificateException {
 
-            CertificateFactory factory =
-                    CertificateFactory.getInstance("X.509", new BouncyCastleProvider());
-            X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemFileStream);
+        CertificateFactory factory =
+                CertificateFactory.getInstance("X.509", new BouncyCastleProvider());
+        X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemFileStream);
 
-            return certificate;
+        return certificate;
     }
 
 
@@ -911,5 +958,29 @@ public class ValidateUtils {
         }
     }
 
+    public static PrivateKey parsePrivateKey(byte[] derOrPem) throws GeneralSecurityException, IOException {
+        try {
+            return KeyFactory.getInstance("RSA")
+                    .generatePrivate(new PKCS8EncodedKeySpec(derOrPem));
+        } catch (Exception ignore) { /* non era PKCS#8 DER */ }
+
+        try (PEMParser pp = new PEMParser(
+                new StringReader(new String(derOrPem, StandardCharsets.US_ASCII)))) {
+
+            Object obj = pp.readObject();
+            var conv = new JcaPEMKeyConverter().setProvider(new BouncyCastleProvider());
+
+            if (obj instanceof PrivateKeyInfo pki) {
+                return conv.getPrivateKey(pki);
+            } else if (obj instanceof PEMKeyPair kp) {
+                return conv.getKeyPair(kp).getPrivate();
+            } else if (obj instanceof PEMEncryptedKeyPair
+                    || obj instanceof PKCS8EncryptedPrivateKeyInfo) {
+                throw new InvalidKeyException("Chiave privata cifrata: serve password e decrypt esplicito.");
+            }
+        }
+
+        throw new InvalidKeyException("Formato chiave non supportato (attesi PKCS#8 DER/PEM o PKCS#1 PEM non cifrati).");
+    }
 
 }

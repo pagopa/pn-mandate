@@ -16,13 +16,14 @@ public abstract class LogsCostant {
     public static final String CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE = "CieCheckerImpl.verifyChallengeFromSignature()";
     public static final String CIECHECKER_VERIFY_INTEGRITY = "CieCheckerImpl.verifyIntegrity()";
     public static final String CIECHECKER_VERIFY_INTEGRITY_CORE = "CieCheckerImpl.verifyIntegrityCore()";
+    public static final String VALIDATEUTILS_DECEODESODHR = "ValidateUtils.decodeSodHr()";
     public static final String CIECHECKER_VERIFY_DIGESTLIST = "CieCheckerImpl.verifyDigestList()";
     public static final String VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE = "ValidateUtils.verifyDscAgainstTrustBundle()";
     public static final String VALIDATEUTILS_EXTRACT_DSC_CERT_DER = "ValidateUtils.extractDscCertDer()";
     public static final String VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER = "ValidateUtils.extractPublicKeyFromHolder()";
     public static final String VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT = "ValidateUtils.verifyMatchHashContent()";
     public static final String VALIDATEUTILS_VERIFY_OCTECTSTRINGS = "ValidateUtils.verifyOctetStrings()";
-    public static final String VALIDATEUTILS_CALCULATE_SHA256 = "ValidateUtils.calculateSha256()";
+    public static final String VALIDATEUTILS_CALCULATE_DIGEST = "ValidateUtils.calculateDigest()";
     public static final String VALIDATEUTILS_EXTRACT_HASHSIGNED = "ValidateUtils.extractHashSigned()";
     public static final String VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR = "ValidateUtils.extractAllSignedAttributes()";
     public static final String VALIDATEUTILS_EXTRACT_DATAGROUP = "ValidateUtils.extractDataGroupHashes()";
@@ -39,6 +40,8 @@ public abstract class LogsCostant {
     public static final String CIECHECKER_VERIFY_EXPIRATION_CIE = "CieCheckerImpl.verifyExpirationCie()";
     public static final String MASTERLISTMERGETOOL_ADDFILETOMASTERZIP = "MasterListMergeToolUtility.addFileToMasterListZip()";
     public static final String MASTERLISTMERGETOOL_MERGE = "MasterListMergeToolUtility.merge()";
+    public static final String CIEFILEGENERATOR_VALIDATE_DATA_INPUT = "CieFileGenerator.validateDataInput()";
+    public static final String CIEFILEGENERATOR_GENERATEFILES = "CieFileGenerator.generateFiles()";
 
     // ERROR
     public static final String ENDING_PROCESS_WITH_ERROR = "Ending '{}' Process with error = '{}' - '{}'";

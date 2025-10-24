@@ -1,7 +1,7 @@
 package it.pagopa.pn.ciechecker.utils;
 
 
-public abstract class LogsCostant {
+public abstract class LogsConstant {
 
     // METODO API
     public static final String CIECHECKER_VALIDATE_MANDATE = "CieCheckerImpl.validateMandate()";
@@ -41,7 +41,7 @@ public abstract class LogsCostant {
     public static final String MASTERLISTMERGETOOL_ADDFILETOMASTERZIP = "MasterListMergeToolUtility.addFileToMasterListZip()";
     public static final String MASTERLISTMERGETOOL_MERGE = "MasterListMergeToolUtility.merge()";
     public static final String CIEFILEGENERATOR_VALIDATE_DATA_INPUT = "CieFileGenerator.validateDataInput()";
-    public static final String CIEFILEGENERATOR_GENERATEFILES = "CieFileGenerator.generateFiles()";
+    public static final String CIEFILEGENERATOR_EXPORTFILES = "CieFileGenerator.exportCieArtifactsToFiles()";
 
     // ERROR
     public static final String ENDING_PROCESS_WITH_ERROR = "Ending '{}' Process with error = '{}' - '{}'";
@@ -54,7 +54,7 @@ public abstract class LogsCostant {
     public static final String INVOKING_OPERATION_LABEL_WITH_ARGS = "Invoking operation '{}' with args: {}";
     public static final String INVOKING_OPERATION_LABEL = "Invoking operation '{}'";
 
-    private LogsCostant() {
+    private LogsConstant() {
         throw new IllegalStateException("LogsCostant is a utility class");
     }
 }

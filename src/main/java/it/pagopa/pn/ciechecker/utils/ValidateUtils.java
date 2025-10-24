@@ -68,7 +68,7 @@ public class ValidateUtils {
 
     public static ResultCieChecker verifyDscAgainstTrustBundle(byte[] dscDer, Collection<X509Certificate> cscaTrustAnchors, Date atTime) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE);
         if (Objects.isNull(dscDer) || dscDer.length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_CERTIFICATION);
         if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
 
@@ -87,23 +87,23 @@ public class ValidateUtils {
 
             CertPathValidator.getInstance(PKIX).validate(path, params); // No exception thrown = ok
 
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, "ResultCieChecker", ResultCieChecker.OK.getValue());
+            log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, "ResultCieChecker", ResultCieChecker.OK.getValue());
             return ResultCieChecker.OK;
 
         } catch (CertificateException ce) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, ce.getClass().getName() +  " - Message: " + ce.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, ce.getClass().getName() +  " - Message: " + ce.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE, ce);
         }catch (CertPathValidatorException cpe) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, cpe.getClass().getName() +  " - Message: " +cpe.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, cpe.getClass().getName() +  " - Message: " +cpe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE, cpe);
         }catch (NoSuchAlgorithmException nsae){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, nsae.getClass().getName() +  " - Message: " + nsae.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, nsae.getClass().getName() +  " - Message: " + nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR, nsae);
         } catch ( InvalidAlgorithmParameterException ie) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, ie.getClass().getName()  + " - Message: " + ie.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, ie.getClass().getName()  + " - Message: " + ie.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR, ie);
         } catch (Exception e){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, e.getClass().getName() + " - Message: " + e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE, e.getClass().getName() + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_EXCEPTION, e);
         }
     }
@@ -115,7 +115,7 @@ public class ValidateUtils {
 
     public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_DSC_CERT_DER);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DSC_CERT_DER);
         if(Objects.isNull(cms)) throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CMSSIGNEDDATA);
         try {
             log.debug("Invoke extractDscCertDer() for cms signed content type OID={}", cms.getSignedContentTypeOID());
@@ -127,10 +127,10 @@ public class ValidateUtils {
                 return matches.iterator().next();
             }
         }catch (Exception e){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_DSC_CERT_DER, e.getClass().getName() + " - Message: " + ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES.getValue());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DSC_CERT_DER, e.getClass().getName() + " - Message: " + ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES, e);
         }
-        log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_DSC_CERT_DER, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES.getValue());
+        log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DSC_CERT_DER, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES.getValue());
         throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CERTIFICATES);
     }
 
@@ -142,9 +142,9 @@ public class ValidateUtils {
      */
     public static PublicKey extractPublicKeyFromHolder(X509CertificateHolder certHolder) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER);
         if (  Objects.isNull(certHolder) ) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER, CieCheckerException.class.getName() + " Message: " + ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE.getValue());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER, CieCheckerException.class.getName() + " Message: " + ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE);
         }
         try {
@@ -159,7 +159,7 @@ public class ValidateUtils {
             return certificate.getPublicKey();
 
         } catch (CertificateException ce) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER, ce.getClass().getName() + " - Message: " + ce.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER, ce.getClass().getName() + " - Message: " + ce.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_CERTIFICATION, ce);
         }
     }
@@ -201,12 +201,12 @@ public class ValidateUtils {
      */
     public static boolean verifyMatchHashContent(CMSSignedData cms) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT);
         try {
             // --- PARTE 1: ESTRAI E CALCOLA L'HASH DEI DATI FIRMATI ---
             byte[] hashSignedData = ValidateUtils.extractHashBlock(cms);
             if ( Objects.isNull(hashSignedData)  || hashSignedData.length == 0) {
-                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
+                log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
             }
             String firstStr = calculateDigest(hashSignedData, getFirstDigestAlgorithm(cms));
@@ -215,10 +215,10 @@ public class ValidateUtils {
             ASN1OctetString signedHash = ValidateUtils.extractHashSigned(cms);
             return ValidateUtils.verifyOctetStrings(firstStr, signedHash);
         }catch(CieCheckerException ce){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, CieCheckerException.class.getName() + " - Message: " + ce.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, CieCheckerException.class.getName() + " - Message: " + ce.getMessage());
             throw new CieCheckerException(ce.getResult(), ce);
         }catch(Exception e){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, e.getClass().getName() + " - Message: " + e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT, e.getClass().getName() + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
@@ -237,15 +237,15 @@ public class ValidateUtils {
      */
     public static boolean verifyOctetStrings(String firstOctetString, ASN1OctetString fiveOctetString) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS);
         if ( Objects.isNull(firstOctetString)  || firstOctetString.length() == 0) {
             //log.error("Error in verifyOctetStrings: byte[] firstOctetString: ", firstOctetString );
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
         }
         if (Objects.isNull(fiveOctetString)) {
             //log.error("Error in verifyOctetStrings: ASN1OctetString fiveOctetString is null" );
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
         }
 
@@ -253,10 +253,10 @@ public class ValidateUtils {
         log.debug("calculateSha256 --> firstStr: {} - getHexFromOctetString --> fiveStr: {}", firstOctetString, fiveStr);
         if (firstOctetString.equalsIgnoreCase(fiveStr)) {
             log.debug("VERIFICA RIUSCITA: Gli hash corrispondono.");
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, "boolean", true);
+            log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, "boolean", true);
             return true;
         } else {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP.getValue());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP);
         }
     }
@@ -272,7 +272,7 @@ public class ValidateUtils {
             byte[] hashBytes = digest.digest(octetByte);
             return Hex.toHexString(hashBytes).toUpperCase();
         }catch(NoSuchAlgorithmException nsae){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_CALCULATE_DIGEST, nsae.getClass().getName() + " - Message: " + nsae.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_CALCULATE_DIGEST, nsae.getClass().getName() + " - Message: " + nsae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MESSAGEDIGESTSPI_SUPPORTED, nsae);
         }
     }
@@ -341,11 +341,11 @@ public class ValidateUtils {
      */
     public static ASN1OctetString extractHashSigned(CMSSignedData signedData) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_HASHSIGNED);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_HASHSIGNED);
         try {
             SignerInformationStore signers = signedData.getSignerInfos();
             if (Objects.isNull(signers) || signers.size() == 0) {
-                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_HASHSIGNED, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_SIGNERINFORMATIONSTORE.getValue());
+                log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_HASHSIGNED, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_SIGNERINFORMATIONSTORE.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATIONSTORE);  //"SignerInformationStore is empty");
             }
 
@@ -361,7 +361,7 @@ public class ValidateUtils {
             // Estrai l'OCTET STRING che contiene il valore dell'hash
             return (ASN1OctetString) messageDigestAttribute.getAttrValues().getObjectAt(0);
         }catch(Exception e){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_HASHSIGNED, e.getClass().getName() + " - Message: " + e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_HASHSIGNED, e.getClass().getName() + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_EXCEPTION, e);
         }
     }
@@ -377,7 +377,7 @@ public class ValidateUtils {
      */
     public static Hashtable<ASN1ObjectIdentifier, Attribute> extractAllSignedAttributes(CMSSignedData signedData) throws CieCheckerException, CMSException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR);
         SignerInformationStore signers = signedData.getSignerInfos();
         if (signers.size() == 0) {
             throw new CMSException("SignerInformationStore is empty");
@@ -416,16 +416,16 @@ public class ValidateUtils {
      */
     public static List<String> extractDataGroupHashes(CMSSignedData cmsData) throws CieCheckerException {
         List<String> hashes = new ArrayList<>();
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_DATAGROUP);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP);
 
         // Ottieni il contenuto firmato: il primo OCTET STRING che contiene gli hash.
         CMSTypedData signedContent = cmsData.getSignedContent();
         if (Objects.isNull(signedContent) ) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_DATAGROUP, CMSException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_CMSTYPEDDATA);
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, CMSException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_NO_CMSTYPEDDATA);
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CMSTYPEDDATA);
         }
         if(!(signedContent.getContent() instanceof byte[])){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_DATAGROUP, CMSException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA);
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, CMSException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA);
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA);
         }
         byte[] contentBytes = (byte[]) signedContent.getContent();
@@ -455,28 +455,28 @@ public class ValidateUtils {
                                 // Aggiungi l'hash alla lista in formato esadecimale.
                                 hashes.add(Hex.toHexString(dgHash.getOctets()).toUpperCase());
                             }else {
-                                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_DATAGROUP, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA.getValue());
+                                log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA.getValue());
                                 throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA);//"Il contenuto firmato non è una sequenza di hash valida.");
                             }
                         }else {
-                            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_DATAGROUP, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA.getValue());
+                            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA.getValue());
                             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA);//"Il contenuto firmato non è una sequenza di hash valida.");
                         }
                     }
                 }else {
-                    log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_DATAGROUP, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA.getValue());
+                    log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA.getValue());
                     throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA);//"Il contenuto firmato non è una sequenza di hash valida.");
                 }
             } else {
-                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_DATAGROUP, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA.getValue());
+                log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, CieCheckerException.class.getName() + " - Message: " + ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA);//"Il contenuto firmato non è una sequenza di hash valida.");
             }
         } catch (IOException ioe) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_DATAGROUP, ioe.getClass().getName() + " - Message: " +ioe.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, ioe.getClass().getName() + " - Message: " +ioe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION, ioe);
         }
         log.debug("Founded DataGroup Hashes SIZE: {}", hashes.size());
-        log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_DATAGROUP, "List<String>", hashes);
+        log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, "List<String>", hashes);
         return hashes;
     }
 
@@ -520,7 +520,7 @@ public class ValidateUtils {
      */
     public static ResultCieChecker verifySodPassiveDigitalSignature(CMSSignedData cms, PublicKey publicKey) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE);
         try {
 
             // 1. Ottieni il primo SignerInformation (presumendo che ce ne sia uno solo)
@@ -533,7 +533,7 @@ public class ValidateUtils {
                 try {
     				verifier.setParameter(new PSSParameterSpec("SHA512", "MGF1", MGF1ParameterSpec.SHA512, 64,1));
     			} catch (InvalidAlgorithmParameterException e) {
-    	            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, e.getClass().getName() + " - Message: " + e.getMessage());
+    	            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, e.getClass().getName() + " - Message: " + e.getMessage());
     	            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION, e);
     			}
             }
@@ -541,7 +541,7 @@ public class ValidateUtils {
             // 2. Ottieni i byte della firma
             byte[] signatureBytes = signerInfo.getSignature();
             if (Objects.isNull(signatureBytes) || signatureBytes.length == 0) {
-                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_NO_SIGNATURES_SIGNED_DATA.getValue());
+                log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_NO_SIGNATURES_SIGNED_DATA.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNATURES_SIGNED_DATA);
             }
             // 3. Ottieni i byte degli attributi firmati (i dati originali)
@@ -557,22 +557,22 @@ public class ValidateUtils {
                 return ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE;
             }
         }catch (NoSuchElementException nee){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, nee.getClass().getName() + " - Message: " + nee.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, nee.getClass().getName() + " - Message: " + nee.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION, nee);
         }catch (SignatureException se){
             // if this signature object is not initialized properly
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, se.getClass().getName() + " - Message: " + se.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, se.getClass().getName() + " - Message: " + se.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_SIGNATURE, se);
         }catch (InvalidKeyException ike){
             //se la chiave è invalida
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, ike.getClass().getName() + " - Message: " +ike.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, ike.getClass().getName() + " - Message: " +ike.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PUBLICKEY, ike);
         }catch (NoSuchAlgorithmException nae){
             //no Provider supports a Signature implementation for the specified algorithm
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, nae.getClass().getName() + " - Message: " + nae.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, nae.getClass().getName() + " - Message: " + nae.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_ALGORITHM, nae);
         }catch (IOException ioe){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, ioe.getClass().getName() + " - Message: " + ioe.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE, ioe.getClass().getName() + " - Message: " + ioe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_ERROR_CREATE_VERIFIER, ioe);
         }
     }
@@ -585,7 +585,7 @@ public class ValidateUtils {
      */
     public static ResultCieChecker verifyDigitalSignature(CMSSignedData cms) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE);
         log.debug("Cms signed content type OID={}", cms.getSignedContentTypeOID());
         try {
             SignerInformationStore signers = cms.getSignerInfos();
@@ -602,20 +602,20 @@ public class ValidateUtils {
                 JcaSimpleSignerInfoVerifierBuilder verifierBuilder = new JcaSimpleSignerInfoVerifierBuilder(); //.setProvider(BouncyCastleProvider.PROVIDER_NAME);
                 verifierBuilder.setProvider(new BouncyCastleProvider());
                 if (!signer.verify(verifierBuilder.build(pubKey))) {
-                    log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_INVALID_VERIFIER.getValue());
+                    log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_INVALID_VERIFIER.getValue());
                     throw new CMSException(CieCheckerConstants.EXC_INVALID_VERIFIER);
                 }
-                log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE, "ResultCieChecker", ResultCieChecker.OK.getValue());
+                log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE, "ResultCieChecker", ResultCieChecker.OK.getValue());
                 return ResultCieChecker.OK;
             }
         }catch (OperatorCreationException oce){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE, oce.getClass().getName() + " - Message: " +oce.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE, oce.getClass().getName() + " - Message: " +oce.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_ERROR_CREATE_VERIFIER, oce);
         }catch( CMSException cmse){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE, cmse.getClass().getName() + " - Message: " +cmse.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE, cmse.getClass().getName() + " - Message: " +cmse.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, cmse);
         }
-        log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION.getValue());
+        log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION.getValue());
         throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION);
     }
 
@@ -649,7 +649,7 @@ public class ValidateUtils {
 
     //creazione oggetto rappresentante EF.SOD -> decode_sod_hr.sh
     public static SodSummary decodeSodHr(byte[] sodBytes) throws CieCheckerException {
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_DECEODESODHR);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_DECEODESODHR);
         try {
             CMSSignedData cms = new CMSSignedData(sodBytes);
 
@@ -678,13 +678,13 @@ public class ValidateUtils {
 
             return new SodSummary(contentTypeOid, dgDigestAlg, dgMap, sigAlg, signature, dsc);
         }catch(CMSException ce ){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, ce.getClass().getName() + " - Message: " + ce.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_DECEODESODHR, ce.getClass().getName() + " - Message: " + ce.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA , ce);
         } catch (CieCheckerException cce) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, cce.getClass().getName() + " - Message: " + cce.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_DECEODESODHR, cce.getClass().getName() + " - Message: " + cce.getMessage());
             throw new CieCheckerException(cce.getResult(), cce);
         }catch(Exception e ){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_DECEODESODHR, e.getClass().getName() + " - Message: " + e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_DECEODESODHR, e.getClass().getName() + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_ERROR_SOD_DECODE , e);
         }
     }
@@ -722,7 +722,7 @@ public class ValidateUtils {
      */
     public static List<X509Certificate> getX509CertListFromZipFile(InputStream zipStream) throws CieCheckerException {
         List<X509Certificate> x509List;
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE);
         try {
             x509List = new ArrayList<>();
             ZipInputStream zis = new ZipInputStream(zipStream);
@@ -775,7 +775,7 @@ public class ValidateUtils {
             zis.close();
             return x509List;
         } catch (Exception e) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE, e.getClass().getName() + " - Message: " + e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE, e.getClass().getName() + " - Message: " + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e); // File .ml non trovato nello ZIP
         }
     }
@@ -824,7 +824,7 @@ public class ValidateUtils {
 
         try {
             //parser TLV
-            log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_PARSER_TLV_TAGVALUE);
+            log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_PARSER_TLV_TAGVALUE);
             BerTlvParser parser = new BerTlvParser();
             BerTlvs tlvs = parser.parse(fileBytes, 0, fileBytes.length);
             BerTag bTag = new BerTag(org.apache.commons.codec.binary.Hex.decodeHex(tag));
@@ -844,24 +844,24 @@ public class ValidateUtils {
                 }
             }
         } catch (DecoderException de) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_PARSER_TLV_TAGVALUE, de.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_PARSER_TLV_TAGVALUE, de.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_DECODER_ERROR, de);
         }
     }
 
     public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP);
         try{
             List<X509Certificate> x509CertList = ValidateUtils.getX509CertListFromZipFile(fileInputStream);
             if ( x509CertList.isEmpty()) {
-                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP, CieCheckerException.class.getName()  + " - Message: " +ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED.getValue());
+                log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP, CieCheckerException.class.getName()  + " - Message: " +ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
             }
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP);
+            log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP);
             return x509CertList;
         }catch (Exception e ){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP, e.getClass().getName() + " - Message: " +e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP, e.getClass().getName() + " - Message: " +e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e);
         }
     }
@@ -869,17 +869,17 @@ public class ValidateUtils {
 
     public static List<X509Certificate> loadCertificateFromPemFile(InputStream fileInputStream) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_LOAD_CSCAANCHOR_PEM);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_LOAD_CSCAANCHOR_PEM);
         try{
             List<X509Certificate> x509CertList = List.of(getCertificateFromPemFile(fileInputStream));
             if ( x509CertList.isEmpty()) {
-                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_LOAD_CSCAANCHOR_PEM, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED.getValue());
+                log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_LOAD_CSCAANCHOR_PEM, CieCheckerException.class.getName() + " - Message: " +ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
             }
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsCostant.VALIDATEUTILS_LOAD_CSCAANCHOR_PEM);
+            log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsConstant.VALIDATEUTILS_LOAD_CSCAANCHOR_PEM);
             return x509CertList;
         }catch (Exception e ){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_LOAD_CSCAANCHOR_PEM, e.getClass().getName() + " - Message: " +e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_LOAD_CSCAANCHOR_PEM, e.getClass().getName() + " - Message: " +e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e);
         }
     }

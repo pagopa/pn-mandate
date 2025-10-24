@@ -40,7 +40,7 @@ public class CertAndKeyLoader {
         this.key=System.getProperty("cie.generator.file-key");
     }
 
-    public CertAndKey loadCaAndKeyFromS3() throws IOException, GeneralSecurityException {
+    public CertAndKey loadIssuerCertAndKeyFromS3() throws IOException, GeneralSecurityException {
         GetObjectRequest request = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)

@@ -2,18 +2,16 @@ package it.pagopa.pn.ciechecker.generator.api;
 
 import it.pagopa.pn.ciechecker.generator.challenge.ChallengeResponseBuilder;
 import it.pagopa.pn.ciechecker.generator.constants.CieGeneratorConstants;
-import it.pagopa.pn.ciechecker.generator.files.CieFileGenerator;
-import it.pagopa.pn.ciechecker.generator.ias.NisBuilder;
+import it.pagopa.pn.ciechecker.generator.files.CieFilesExporter;
+import it.pagopa.pn.ciechecker.generator.ias.IasBuilder;
 import it.pagopa.pn.ciechecker.generator.loader.CertAndKeyLoader;
 import it.pagopa.pn.ciechecker.generator.model.CertAndKey;
-import it.pagopa.pn.ciechecker.generator.model.CieCaAndkey;
+import it.pagopa.pn.ciechecker.generator.model.CieCaAndKey;
 import it.pagopa.pn.ciechecker.generator.sod.SodMrtdBuilder;
 import it.pagopa.pn.ciechecker.model.CieIas;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.model.CieValidationData;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
-import software.amazon.awssdk.services.s3.S3Client;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -22,8 +20,6 @@ import java.time.LocalDate;
 @Slf4j
 public class CieGeneratorApiImpl implements CieGeneratorApi {
 
-    public CieGeneratorApiImpl() {
-    }
 
     @Override
     public CieValidationData generateCieValidationData(Path outputDir,
@@ -33,31 +29,31 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
 
         try {
             //recupero cert e key
-            CertAndKey caCertAndKey = new CertAndKeyLoader(
-            ).loadCaAndKeyFromS3();
+            CertAndKey issuerCertAndKeyFromS3 = new CertAndKeyLoader(
+            ).loadIssuerCertAndKeyFromS3();
 
 
-            NisBuilder iasBuilder = new NisBuilder();
+            IasBuilder iasBuilder = new IasBuilder();
             // creazione ias
             CieIas ias = iasBuilder.createCieIas(
-                    iasBuilder.generateNumeric(NisBuilder.DEFAULT_NIS_LEN).getBytes(),  //NIS
-                    caCertAndKey.keyPair().getPublic().getEncoded(),                      //PUBKEY
-                    caCertAndKey.keyPair().getPrivate(),                                  //PRVKEY
-                    caCertAndKey.certificate()                                            //CERT
+                    iasBuilder.generateNisNumericString(IasBuilder.DEFAULT_NIS_LEN).getBytes(),  //NIS
+                    issuerCertAndKeyFromS3.keyPair().getPublic().getEncoded(),                      //PUBKEY
+                    issuerCertAndKeyFromS3.keyPair().getPrivate(),                                  //PRVKEY
+                    issuerCertAndKeyFromS3.certificate()                                            //CERT
             );
 
-            CieMrtd mrtd = new SodMrtdBuilder().buildCieMrtd(
-                    CieGeneratorConstants.SURNAME,
-                    CieGeneratorConstants.GIVEN_NAME,
-                    CieGeneratorConstants.DOCUMENT_NUMBER,
-                    CieGeneratorConstants.NATIONALITY,
-                    CieGeneratorConstants.DATE_OF_BIRTH,
-                    CieGeneratorConstants.SEX,
-                    CieGeneratorConstants.EXPIRY_DATE,
+            CieMrtd mrtd = new SodMrtdBuilder().buildCieMrtdAndSignSodWithDocumentSigner(
+                    CieGeneratorConstants.DEFAULT_SURNAME,
+                    CieGeneratorConstants.DEFAULT_GIVEN_NAME,
+                    CieGeneratorConstants.DEFAULT_DOCUMENT_NUMBER,
+                    CieGeneratorConstants.DEFAULT_NATIONALITY,
+                    CieGeneratorConstants.DEFAULT_DATE_OF_BIRTH,
+                    CieGeneratorConstants.DEFAULT_SEX,
+                    CieGeneratorConstants.DEFAULT_EXPIRY_DATE,
                     codiceFiscale,
-                    CieGeneratorConstants.PLACE_OF_BIRTH,
-                    caCertAndKey.keyPair().getPrivate(),
-                    caCertAndKey.certificate()
+                    CieGeneratorConstants.DEFAULT_PLACE_OF_BIRTH,
+                    issuerCertAndKeyFromS3.keyPair().getPrivate(),
+                    issuerCertAndKeyFromS3.certificate()
             );
 
 
@@ -69,17 +65,17 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
             validationData.setNonce(nonce);
             validationData.setCodFiscDelegante(codiceFiscale);
 
-            validationData.setSignedNonce(ChallengeResponseBuilder.generateSignedNonce(nonce,caCertAndKey.keyPair().getPrivate()));
+            validationData.setSignedNonce(ChallengeResponseBuilder.signNonce(nonce,issuerCertAndKeyFromS3.keyPair().getPrivate()));
 
             // CONVERT TO CIECAANDKEY
-            CieCaAndkey cieCaAndkey = new CieCaAndkey();
-            cieCaAndkey.setCertPem(caCertAndKey.certificate().getEncoded());
-            cieCaAndkey.setCertKey(caCertAndKey.keyPair().getPublic().getEncoded());
+            CieCaAndKey cieCaAndkey = new CieCaAndKey();
+            cieCaAndkey.setCertPem(issuerCertAndKeyFromS3.certificate().getEncoded());
+            cieCaAndkey.setCertKey(issuerCertAndKeyFromS3.keyPair().getPublic().getEncoded());
             //
 
             //EXPORT FILES
-            CieFileGenerator generator = new CieFileGenerator(validationData,cieCaAndkey,outputDir.toAbsolutePath().toString());
-            generator.generateFiles().keySet().stream().forEach(key -> {
+            CieFilesExporter generator = new CieFilesExporter(validationData,cieCaAndkey,outputDir.toAbsolutePath().toString());
+            generator.exportCieArtifactsToFiles().keySet().stream().forEach(key -> {
                 log.info("Exported file: {} ",key);
             });
             //

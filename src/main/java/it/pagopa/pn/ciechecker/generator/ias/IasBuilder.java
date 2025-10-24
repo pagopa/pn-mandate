@@ -31,21 +31,21 @@ import org.bouncycastle.cms.CMSTypedData;
 
 import java.util.Map;
 
-public class NisBuilder {
+public class IasBuilder {
 
     public static final int DEFAULT_NIS_LEN = 12;
     private final SecureRandom rng;
     private static final String DIGITS = "0123456789";
 
-    public NisBuilder() {
+    public IasBuilder() {
         this.rng = new SecureRandom();
     }
 
-    public NisBuilder(SecureRandom rng) {
+    public IasBuilder(SecureRandom rng) {
         this.rng = rng;
     }
 
-    public String generateNumeric(int length) {
+    public String generateNisNumericString(int length) {
         if (length <= 0) {
             throw new IllegalArgumentException("Length must be > 0");
         }
@@ -58,11 +58,11 @@ public class NisBuilder {
     }
 
 
-    public byte[] generateRandom() {
-        return generateRandom(DEFAULT_NIS_LEN);
+    public byte[] generateNisRandomBytes() {
+        return generateNisRandomBytes(DEFAULT_NIS_LEN);
     }
 
-    public byte[] generateRandom(int length) {
+    public byte[] generateNisRandomBytes(int length) {
         if (length <= 0 || length > 64) {
             throw new IllegalArgumentException("NIS length must be 1..64");
         }
@@ -107,12 +107,12 @@ public class NisBuilder {
                                PrivateKey dsKey, X509Certificate caCert) throws Exception {
         CieIas cieIas = new CieIas();
         cieIas.setNis(nis);
-        cieIas.setSod(buildIasSodWithSodBuilder(nis, iasPublicKeyDer, caCert, dsKey));
+        cieIas.setSod(buildIasSodWithDocumentSigner(nis, iasPublicKeyDer, caCert, dsKey));
         cieIas.setPublicKey(iasPublicKeyDer);
         return cieIas;
     }
 
-    public static byte[] buildIasSodWithSodBuilder(
+    public static byte[] buildIasSodWithDocumentSigner(
             byte[] nis,
             byte[] iasPublicKeyDer,
             X509Certificate cscaCert, PrivateKey privateKey

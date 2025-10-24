@@ -6,6 +6,7 @@ import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.*;
 import org.bouncycastle.asn1.pkcs.RSAPublicKey;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
 import org.bouncycastle.crypto.engines.RSAEngine;
@@ -15,6 +16,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.*;
@@ -27,6 +29,8 @@ import java.util.*;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import it.pagopa.pn.ciechecker.model.*;
+
+import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -48,7 +52,7 @@ import java.util.List;
 @Service
 public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
-    private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
+    private static final Set<String> COMPATIBLE_ALGOS = Set.of(CieCheckerConstants.SHA_1, CieCheckerConstants.SHA_256, CieCheckerConstants.SHA_384, CieCheckerConstants.SHA_512);
 
     private final PnMandateConfig pnMandateConfig;
 
@@ -104,7 +108,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         try {
             validateDataInput(data);
 
-            cms = new CMSSignedData(data.getCieIas().getSod());
+            cms = new CMSSignedData(truncSodBytes(data.getCieIas().getSod()));
             log.debug(LogsCostant.CIECHECKER_VALIDATE_MANDATE, "CMSSignedData={}", cms);
 
             //16048-bis - NIS: nis_verify_sod.sh
@@ -116,6 +120,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             //16050 NIS: nis_verify_challenge.sh - verifica del nonce: verifica la firma di una challenge IAS
             verifyChallengeFromSignature(data);
 
+            data.getCieMrtd().setSod(truncSodBytes(data.getCieMrtd().getSod()));
             //16051 MRTD: verify_integrity.sh
             verifyIntegrity(data.getCieMrtd());
 
@@ -164,6 +169,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         return true;
     }
 
+    private static byte[] truncSodBytes(byte [] inSod) throws IOException, DecoderException {
+    	return Arrays.copyOfRange(inSod, 4, inSod.length);
+    }
+
     /**
      * Verifica codice fiscale del delegante con quanto presente nei dati della CIE
      * @param data CieValidationData
@@ -191,7 +200,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
         String expirationDate = dataElement.substring(38, 38+6);
         log.debug("expirationDate: {} ", expirationDate);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyy");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMdd");
 
         try {
             LocalDate inputDate = LocalDate.parse(expirationDate, formatter);
@@ -229,7 +238,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             engine2.init(false, publicKey);
             // estrae dalla signature i byte del nonce/challenge
             byte[] recovered = engine2.processBlock(data.getSignedNonce(), 0, data.getSignedNonce().length);
-            if (!(Arrays.equals(recovered, data.getNonce().getBytes(StandardCharsets.UTF_8))) ){
+            if (!(Arrays.equals(recovered, data.getNonce().getBytes()))) {
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE);
             }else {
@@ -255,7 +264,14 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      * @return RSAKeyParameters result
      */
     private RSAKeyParameters extractPublicKeyFromSignature(byte[] pubKey) {
-        RSAPublicKey pkcs1PublicKey = RSAPublicKey.getInstance(pubKey);
+        RSAPublicKey pkcs1PublicKey;
+        try {
+            SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(pubKey);
+            byte[] rawRsaKeyBytes = spki.getPublicKeyData().getBytes();
+            pkcs1PublicKey = RSAPublicKey.getInstance(rawRsaKeyBytes);
+        } catch (IllegalArgumentException iae) {
+            pkcs1PublicKey = RSAPublicKey.getInstance(pubKey);
+        }
         BigInteger modulus = pkcs1PublicKey.getModulus();
         BigInteger publicExponent = pkcs1PublicKey.getPublicExponent();
 
@@ -319,7 +335,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             // ** PASSO 1B: ANALISI DEGLI HASH DEI DATI (DataGroupHashes)
             // *********************************************************************/
             log.debug("Estrazione e verifica della lista degli hash dei DataGroup ...");
-            if (!ValidateUtils.verifyNisSha256FromDataGroup(cms, cieIasNis)) {
+            if (!ValidateUtils.verifyNisShaFromDataGroup(cms, cieIasNis)) {
                 log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP);
             }
@@ -409,8 +425,9 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_EXPECTED_HASHES_SOD);
         }
 
-        log.debug("Verifica DG1 e DG11");
+        log.info("Verifica DG1 ...");
         verifyDigestList(md, dg1, expectedHashes, 1);
+        log.info("Verifica DG11 ...");
         verifyDigestList(md, dg11, expectedHashes, 11);
 
         log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.CIECHECKER_VERIFY_INTEGRITY_CORE, "ResultCieChecker", ResultCieChecker.OK.getValue());
@@ -419,8 +436,11 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
     private void verifyDigestList(MessageDigest md, byte[] dg, Map<Integer, byte[]> expectedHashes, int dgNum) throws CieCheckerException {
         if (!isVerifyDigest(md, dg, expectedHashes.get(dgNum))) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS_DG_VALIDATE, LogsCostant.CIECHECKER_VERIFY_DIGESTLIST, ResultCieChecker.KO_EXC_NOT_SAME_DIGEST.getValue(),dgNum);
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST);
+            log.error(LogsCostant.EXCEPTION_IN_PROCESS_DG_VALIDATE, LogsCostant.CIECHECKER_VERIFY_DIGESTLIST, ResultCieChecker.KO_EXC_NOT_SAME_DIGEST.getValue(), dgNum);
+            if(dgNum == 1) {
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST1);
+            }else
+                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST11);
         }
     }
 

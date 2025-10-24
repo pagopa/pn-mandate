@@ -14,11 +14,15 @@ public class CieCheckerConstants {
     public static final String SHA_384 = "SHA-384";
     public static final String SHA_512 = "SHA-512";
     public static final String SHA_1_WITH_RSA = "SHA1withRSA";
+    public static final String SHA_256_WITH_RSA = "SHA256withRSA";
     public static final String TAG_PERSONAL_NUMBER = "5F10";
     public static final String TAG_EXPIRE_DATE = "5F1F";
     public static final String PROTOCOLLO_S3 = "s3://";
     public static final String CSCA_ANCHOR_PATH_FILENAME = "src/test/resources/IT_MasterListCSCA.zip";
+    public static final String RSA_ECB_PKCS1_PADDING = "RSA/ECB/PKCS1Padding";
 
+    public static final String CERTIFICATE_START= "-----BEGIN CERTIFICATE-----\n";
+    public static final String CERTIFICATE_END = "\n-----END CERTIFICATE-----\n";
 
     public static final String OK = "OK";
 
@@ -42,6 +46,7 @@ public class CieCheckerConstants {
     public static final String EXC_GENERATE_CERTIFICATE = "Error in generating the certificate object and initializes";
     public static final String EXC_VALIDATE_CERTIFICATE = "Path does not chain with any of the trust anchors";
     public static final String EXC_GENERATE_CMSSIGNEDDATA = "Error in generating CMSSignedData";
+    public static final String EXC_NO_SUPPORTED_CERTIFICATEFACTORY = "No Provider supports a CertificateFactorySpi implementation for the specified type";
     public static final String EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR = "No Provider supports a CertPathValidatorSpi implementation for the specified algorithm";
     public static final String EXC_INVALID_PARAMETER_CERTPATHVALIDATOR = "The specified parameters or the type of the specified CertPath are inappropriate for this CertPathValidator";
     public static final String EXC_IOEXCEPTION = "KO_IOEXCEPTION";
@@ -63,7 +68,10 @@ public class CieCheckerConstants {
     public static final String EXC_NO_NIS_HASHES_DATAGROUP ="The NIS hashes DataGroup List is null";
     public static final String EXC_ERROR_CREATE_VERIFIER = "Unable to create verifier";
     public static final String EXC_NOVALID_DIGITAL_SIGNATURE = "No valid digital Signature";
+    public static final String KO_EXC_ERROR_SOD_DECODE= "Error in decode Sod Mrtd";
     public static final String EXC_NOT_SAME_DIGEST = "Digest mismatch between expected and actual DG";
+    public static final String EXC_NOT_SAME_DIGEST_1 = "Digest mismatch between expected and actual DG1";
+    public static final String EXC_NOT_SAME_DIGEST_11 = "Digest mismatch between expected and actual DG11";
     public static final String EXC_DIGEST_NOT_VERIFIED = "Digest are different, validation of integrity not passed";
     public static final String EXC_INVALID_PARAMETER_CIESOD = "Input parameter SOD CIE is null";
     public static final String EXC_INVALID_PARAMETER_MRTDSOD = "Input parameter SOD MRTD is null";
@@ -74,7 +82,7 @@ public class CieCheckerConstants {
     public static final String EXC_INVALID_PARAMETER_MRTDDG1 = "Input parameter DG1 MRTD is null";
     public static final String EXC_INVALID_PARAMETER_MRTDDG11 = "Input parameter DG11 MRTD is null";
     public static final String EXC_INVALID_PARAMETER_CODFISCDELEGANTE = "Input parameter CODICE FISCALE DELEGANTE is null";
-    public static final String EXC_INVALID_VERIFIER = "Verifier not valid at signingTime";
+    public static final String EXC_INVALID_VERIFIER = "Signed Attributes are not valid or do not match the data";
     public static final String EXC_INVALID_SIGNATURE = "Signature object is not initialized properly";
     public static final String EXC_INVALID_ALGORITHM = "No Provider supports a Signature implementation for the specified algorithm";
     public static final String EXC_INVALID_PUBLICKEY = "PublicKey is not valid";
@@ -86,8 +94,21 @@ public class CieCheckerConstants {
     public static final String EXC_NOFOUND_TAG_DG = "Error occurs during the extraction of TAG in DG";
     public static final String EXC_INVALID_EXPIRATIONDATE = "The date string (Date of Expiry) is invalid or is not in the 'ddmmyy' format";
     public static final String EXC_EXPIRATIONDATE = "The CIE has expired";
+    public static final String EXC_ISSUER_NULL = "issuer must not be null";
+    public static final String EXC_DOC_SIGNER_CERT_NULL = "Document Signer must not be null";
+    public static final String EXC_DOC_SIGNER_KEY_NULL = "Document Signer private key must not be null";
+    public static final String EXC_IAS_SIGN_FAILED = "IAS private sign failed";
+    public static final String EXC_DER_ENCODING_FAILED = "DER encoding failed";
+    public static final String EXC_PEM_ENCODING_FAILED = "PEM encoding failed";
+    public static final String EXC_CERT_ISSUANCE_FAILED = "Certificate issuance failed";
     public static final String EXC_NOFOUND_FILEARGS = "MasterList ZIP file or Certificate PEM file not found";
     public static final String EXC_CREATION_FILEZIPTEMP = "Error creating the new MasterList ZIP archive";
     public static final String EXC_UPLOAD_NEWFILEZIP_TO_S3 = "Error uploading the new MasterList ZIP archive on S3Bucket";
+
+    public static final String EXC_INVALID_PARAMETER_CERTPEM = "Input parameter CERT PEM is null";
+    public static final String EXC_INVALID_PARAMETER_CERTKEY = "Input parameter CERT KEY is null";
+    public static final String EXC_INVALID_PARAMETER_BASEDIR = "Input parameter BASEDIR is null";
+    public static final String EXC_DELETEEXISTFILE = "Errore durante l'eliminazione del file esistente";
+    public static final String EXC_ATTRIBUTO_NULL = "Attributo is null";
 
 }

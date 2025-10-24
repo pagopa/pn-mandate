@@ -10,6 +10,7 @@ import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.cert.jcajce.JcaCertStore;
 import org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
@@ -152,12 +153,12 @@ public class NisBuilder {
 
     // CMS Signature
     ContentSigner contentSigner = new JcaContentSignerBuilder("SHA512withRSA")
-        .setProvider("BC").build(dsKey);
+        .setProvider(new BouncyCastleProvider()).build(dsKey);
 
     CMSSignedDataGenerator generator = new CMSSignedDataGenerator();
     generator.addSignerInfoGenerator(
         new JcaSignerInfoGeneratorBuilder(
-            new JcaDigestCalculatorProviderBuilder().setProvider("BC").build()
+            new JcaDigestCalculatorProviderBuilder().setProvider(new BouncyCastleProvider()).build()
         ).build(contentSigner, dsCert)
     );
 

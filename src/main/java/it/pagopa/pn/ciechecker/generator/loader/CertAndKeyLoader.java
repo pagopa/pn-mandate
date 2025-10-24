@@ -28,7 +28,6 @@ import java.util.zip.ZipInputStream;
 @Slf4j
 public class CertAndKeyLoader {
 
-    PnMandateConfig pnMandateConfig;
     S3Client s3;
     String bucket;
     String key;
@@ -68,10 +67,10 @@ public class CertAndKeyLoader {
         }
 
         if (certificate == null) {
-            throw new FileNotFoundException("catest.pem non trovato nello zip " + pnMandateConfig.getGeneratorZipName());
+            throw new FileNotFoundException(".pem non trovato nello zip");
         }
         if (privateKey == null) {
-            throw new FileNotFoundException("catest.key non trovato nello zip " + pnMandateConfig.getGeneratorZipName());
+            throw new FileNotFoundException(".key non trovato nello zip");
         }
 
 

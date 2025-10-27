@@ -503,7 +503,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         try {
             if (cscaAnchorPathFileName.startsWith(PROTOCOLLO_S3) ){
                 fileInputStream  = getContentCscaAnchorFile(cscaAnchorPathFileName);
-                log.debug("PAOLA fileInputStream ");
                 if(cscaAnchorPathFileName.endsWith(".zip") || cscaAnchorPathFileName.endsWith(".ZIP")) {
                     return ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
                 } else if (cscaAnchorPathFileName.endsWith(".pem") || cscaAnchorPathFileName.endsWith(".PEM")) {
@@ -525,7 +524,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
 
     public InputStream getContentCscaAnchorFile(String key) {
-        log.debug("PAOLA getContentCscaAnchorFile ");
         return s3BucketClient.getObjectContent(key);
     }
 

@@ -983,4 +983,29 @@ public class ValidateUtils {
         throw new InvalidKeyException("Formato chiave non supportato (attesi PKCS#8 DER/PEM o PKCS#1 PEM non cifrati).");
     }
 
+    public static byte[] readAll(InputStream in) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(8192);
+        byte[] buf = new byte[8192];
+        int r;
+        while ((r = in.read(buf)) != -1) bos.write(buf, 0, r);
+        return bos.toByteArray();
+    }
+
+    public static X509Certificate parseCertificate(byte[] derOrPem) throws CertificateException, IOException {
+        try {
+            return (X509Certificate) CertificateFactory.getInstance("X.509")
+                    .generateCertificate(new ByteArrayInputStream(derOrPem));
+        } catch (CertificateException ignore) { /* non era DER */ }
+
+        try (PEMParser pp = new PEMParser(
+                new java.io.StringReader(new String(derOrPem, StandardCharsets.US_ASCII)))) {
+            Object obj = pp.readObject();
+            if (obj instanceof X509CertificateHolder holder) {
+                return new JcaX509CertificateConverter()
+                        .setProvider(new BouncyCastleProvider()).getCertificate(holder);
+            }
+        }
+        throw new CertificateException("Formato certificato non riconosciuto (attesi DER o PEM).");
+    }
+
 }

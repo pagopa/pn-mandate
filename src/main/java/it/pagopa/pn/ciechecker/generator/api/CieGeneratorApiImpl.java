@@ -36,10 +36,10 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
             IasBuilder iasBuilder = new IasBuilder();
             // creazione ias
             CieIas ias = iasBuilder.createCieIas(
-                    iasBuilder.generateNisNumericString(IasBuilder.DEFAULT_NIS_LEN).getBytes(),  //NIS
-                    issuerCertAndKeyFromS3.keyPair().getPublic().getEncoded(),                      //PUBKEY
-                    issuerCertAndKeyFromS3.keyPair().getPrivate(),                                  //PRVKEY
-                    issuerCertAndKeyFromS3.certificate()                                            //CERT
+                    iasBuilder.generateNisNumericString(IasBuilder.DEFAULT_NIS_LEN).getBytes(),     //NIS
+                    issuerCertAndKeyFromS3.getEncodedPublicKey(),                                   //PUBKEY
+                    issuerCertAndKeyFromS3.getPrivateKey(),                                         //PRVKEY
+                    issuerCertAndKeyFromS3.getCertificate()                                         //CERT
             );
 
             CieMrtd mrtd = new SodMrtdBuilder().buildCieMrtdAndSignSodWithDocumentSigner(
@@ -52,8 +52,8 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
                     CieGeneratorConstants.DEFAULT_EXPIRY_DATE,
                     codiceFiscale,
                     CieGeneratorConstants.DEFAULT_PLACE_OF_BIRTH,
-                    issuerCertAndKeyFromS3.keyPair().getPrivate(),
-                    issuerCertAndKeyFromS3.certificate()
+                    issuerCertAndKeyFromS3.getPrivateKey(),
+                    issuerCertAndKeyFromS3.getCertificate()
             );
 
 
@@ -65,12 +65,12 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
             validationData.setNonce(nonce);
             validationData.setCodFiscDelegante(codiceFiscale);
 
-            validationData.setSignedNonce(ChallengeResponseBuilder.signNonce(nonce,issuerCertAndKeyFromS3.keyPair().getPrivate()));
+            validationData.setSignedNonce(ChallengeResponseBuilder.signNonce(nonce,issuerCertAndKeyFromS3.getPrivateKey()));
 
             // CONVERT TO CIECAANDKEY
             CieCaAndKey cieCaAndkey = new CieCaAndKey();
-            cieCaAndkey.setCertPem(issuerCertAndKeyFromS3.certificate().getEncoded());
-            cieCaAndkey.setCertKey(issuerCertAndKeyFromS3.keyPair().getPublic().getEncoded());
+            cieCaAndkey.setCertPem(issuerCertAndKeyFromS3.getEncodedCertificate());
+            cieCaAndkey.setCertKey(issuerCertAndKeyFromS3.getEncodedPublicKey());
             //
 
             //EXPORT FILES

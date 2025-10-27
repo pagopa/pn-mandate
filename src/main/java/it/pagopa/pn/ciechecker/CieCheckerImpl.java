@@ -489,40 +489,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
     }
 
 
-    public List<X509Certificate> extractCscaAnchor(String cscaAnchorPathFileName) throws CieCheckerException {
-
-      //  log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR);
-        if(Objects.isNull(cscaAnchorPathFileName) || cscaAnchorPathFileName.isBlank()) {
-            log.debug("la variabile 'pn.mandate.ciechecker.csca-anchor.pathFileName' nel property file IS NULL o BLANK");
-            cscaAnchorPathFileName =  "s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
-                    //CieCheckerConstants.CSCA_ANCHOR_PATH_FILENAME; //"s3://dgs-temp-089813480515/IT_MasterListCSCA.zip";
-        }
-        log.debug("Variable 'pn.mandate.ciechecker.csca-anchor.pathFileName': {}",cscaAnchorPathFileName);
-
-        InputStream fileInputStream ;
-        try {
-            if (cscaAnchorPathFileName.startsWith(PROTOCOLLO_S3) ){
-                fileInputStream  = getContentCscaAnchorFile(cscaAnchorPathFileName);
-                if(cscaAnchorPathFileName.endsWith(".zip") || cscaAnchorPathFileName.endsWith(".ZIP")) {
-                    return ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
-                } else if (cscaAnchorPathFileName.endsWith(".pem") || cscaAnchorPathFileName.endsWith(".PEM")) {
-                    return ValidateUtils.loadCertificateFromPemFile(fileInputStream);
-                } else {
-                  //  log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR);
-                    throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_CSCA_ANCHORS);
-                }
-            }else{
-                fileInputStream = new FileInputStream(Path.of(cscaAnchorPathFileName).toFile());
-                return ValidateUtils.extractCscaAnchorFromZip(fileInputStream);
-            }
-
-        }catch (IOException ioe) {
-           // log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_EXTRACT_CSCAANCHOR, ioe.getClass().getName() + " - Message: " + ioe.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, ioe);
-        }
-    }
-
-
     public InputStream getContentCscaAnchorFile(String key) {
         return s3BucketClient.getObjectContent(key);
     }

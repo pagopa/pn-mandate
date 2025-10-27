@@ -13,10 +13,8 @@ import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.nio.file.Path;
 import java.security.*;
 import java.security.cert.X509Certificate;
 import java.time.LocalDate;
@@ -28,7 +26,6 @@ import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import it.pagopa.pn.ciechecker.model.*;
 
-import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.cert.X509CertificateHolder;

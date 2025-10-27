@@ -125,7 +125,7 @@ class SodMrtdBuilderTest {
     private CieMrtd getCieMrtd(X509Certificate caCert, PrivateKey caPrivateKey) throws Exception {
         SodMrtdBuilder sb = new SodMrtdBuilder();
 
-        return sb.buildCieMrtd(
+        return sb.buildCieMrtdAndSignSodWithDocumentSigner(
                 SURNAME,
                 GIVEN_NAME,
                 DOCUMENT_NUMBER,

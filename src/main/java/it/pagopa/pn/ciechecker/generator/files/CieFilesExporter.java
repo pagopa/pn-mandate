@@ -1,9 +1,9 @@
 package it.pagopa.pn.ciechecker.generator.files;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-import it.pagopa.pn.ciechecker.generator.model.CieCaAndkey;
+import it.pagopa.pn.ciechecker.generator.model.CieCaAndKey;
 import it.pagopa.pn.ciechecker.model.*;
-import it.pagopa.pn.ciechecker.utils.LogsCostant;
+import it.pagopa.pn.ciechecker.utils.LogsConstant;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,29 +17,32 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static it.pagopa.pn.ciechecker.generator.constants.CieGeneratorConstants.CTX_DOCUMENT_SIGNER_INFO;
+import static it.pagopa.pn.ciechecker.generator.constants.CieGeneratorConstants.CTX_VALIDATION_DATA;
+
 
 @lombok.CustomLog
-public class CieFileGenerator {
+public class CieFilesExporter {
 
     // Mappa per memorizzare tutti gli oggetti sorgente: { "nomeCampo", istanzaOggetto }
     private final Map<String, Object> sourceObjects;
-    private final String baseDir; // Directory base per l'output
+    private final String outputBaseDir; // Directory base per l'output
 
-    public CieFileGenerator(CieValidationData validationData, CieCaAndkey cieCaAndKey, String baseDir) throws CieCheckerException{
+    public CieFilesExporter(CieValidationData validationData, CieCaAndKey cieCaAndKey, String baseDir) throws CieCheckerException{
 
         if(!validateDataInput(validationData, cieCaAndKey, baseDir))
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
 
         this.sourceObjects = new HashMap<>();
-        this.sourceObjects.put("validationData", validationData);
-        this.sourceObjects.put("cieCaAndKey", cieCaAndKey);
+        this.sourceObjects.put(CTX_VALIDATION_DATA, validationData);
+        this.sourceObjects.put(CTX_DOCUMENT_SIGNER_INFO, cieCaAndKey);
 
-        this.baseDir = baseDir;
+        this.outputBaseDir = baseDir;
     }
 
-    public boolean validateDataInput(CieValidationData data, CieCaAndkey cieCaAndkey, String baseDir) throws CieCheckerException {
+    public boolean validateDataInput(CieValidationData data, CieCaAndKey cieCaAndkey, String baseDir) throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIEFILEGENERATOR_VALIDATE_DATA_INPUT);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.CIEFILEGENERATOR_VALIDATE_DATA_INPUT);
         if ( Objects.isNull(data) || Objects.isNull(data.getCieIas()) || Objects.isNull(data.getCieMrtd())) throw new CieCheckerException(ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
         if ( Objects.isNull(data.getCieIas().getSod()) || data.getCieIas().getSod().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIESOD);
         if ( Objects.isNull(data.getCieIas().getNis()) || data.getCieIas().getNis().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIENIS);
@@ -55,7 +58,7 @@ public class CieFileGenerator {
         if ( Objects.isNull(cieCaAndkey.getCertKey()) || cieCaAndkey.getCertKey().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTKEY);
 
         if(Objects.isNull(baseDir) || baseDir.isBlank()) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_BASEDIR);
-        log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsCostant.CIEFILEGENERATOR_VALIDATE_DATA_INPUT);
+        log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsConstant.CIEFILEGENERATOR_VALIDATE_DATA_INPUT);
         return true;
     }
 
@@ -64,22 +67,22 @@ public class CieFileGenerator {
      * @return Una mappa contenente il percorso del file generato e la dimensione in byte.
      * @throws CieCheckerException Se la Reflection fallisce o si verifica un errore I/O.
      */
-    public Map<String, Long> generateFiles() throws CieCheckerException {
+    public Map<String, Long> exportCieArtifactsToFiles() throws CieCheckerException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.CIEFILEGENERATOR_GENERATEFILES);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.CIEFILEGENERATOR_EXPORTFILES);
         Map<String, Long> exportResults = new HashMap<>();
         try {
             for (CieFileAttribute attr : CieFileAttribute.values()) {
 
                 //System.out.println("attr.getRelativeFilePath(): " + attr.getRelativeFilePath());
                 // Determina il percorso completo
-                String fullPath = baseDir + File.separator + attr.getRelativeFilePath();
+                String fullPath = outputBaseDir + File.separator + attr.getRelativeFilePath();
                 if (attr.getAttributePath().indexOf("cieCaAndKey") == 0 && Files.exists(Path.of(fullPath))) {
                     //  System.out.println("SALTO");
                     continue;
                 }
                 //Cancello il file esistente prima di rigenerarlo
-                deleteExistingFile(fullPath);
+                deleteIfExists(fullPath);
 
                 //System.out.println("NON SALTO ");
                 // Determina il byte[] tramite reflection
@@ -97,17 +100,17 @@ public class CieFileGenerator {
             }
             return exportResults;
         }catch (Exception e ){
-            log.logEndingProcess(LogsCostant.CIEFILEGENERATOR_GENERATEFILES, false, e.getMessage());
+            log.logEndingProcess(LogsConstant.CIEFILEGENERATOR_EXPORTFILES, false, e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
 
-    private boolean deleteExistingFile(String fileNamePath) throws CieCheckerException {
+    private boolean deleteIfExists(String fileNamePath) throws CieCheckerException {
         try {
             Path fileToDelete = Paths.get(fileNamePath);
             return Files.deleteIfExists(fileToDelete);
         } catch (IOException e) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIEFILEGENERATOR_GENERATEFILES, ResultCieChecker.KO_EXC_DELETEEXISTFILE.getValue());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIEFILEGENERATOR_EXPORTFILES, ResultCieChecker.KO_EXC_DELETEEXISTFILE.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_DELETEEXISTFILE, e);
         }
     }

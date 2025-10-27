@@ -42,7 +42,7 @@ public final class SodMrtdBuilder {
         return buildSignedSod(map, dsKey, dsCert);
     }
 
-    public CieMrtd buildCieMrtd(
+    public CieMrtd buildCieMrtdAndSignSodWithDocumentSigner(
             String surname,
             String givenName,
             String documentNumber,

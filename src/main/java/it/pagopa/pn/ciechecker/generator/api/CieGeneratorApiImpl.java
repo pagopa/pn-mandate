@@ -1,5 +1,6 @@
 package it.pagopa.pn.ciechecker.generator.api;
 
+import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.generator.challenge.ChallengeResponseBuilder;
 import it.pagopa.pn.ciechecker.generator.constants.CieGeneratorConstants;
 import it.pagopa.pn.ciechecker.generator.files.CieFilesExporter;
@@ -75,13 +76,13 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
 
             //EXPORT FILES
             CieFilesExporter generator = new CieFilesExporter(validationData,cieCaAndkey,outputDir.toAbsolutePath().toString());
-            generator.exportCieArtifactsToFiles().keySet().stream().forEach(key -> {
-                log.info("Exported file: {} ",key);
+            generator.exportCieArtifactsToFiles().keySet().forEach(key -> {
+                log.debug("Exported file: {} ",key);
             });
             //
             return validationData;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new CieCheckerException(e);
         }
     }
 

@@ -167,7 +167,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         return true;
     }
 
-    private static byte[] truncSodBytes(byte [] inSod) throws IOException, DecoderException {
+    private static byte[] truncSodBytes(byte [] inSod) {
     	return Arrays.copyOfRange(inSod, 4, inSod.length);
     }
 

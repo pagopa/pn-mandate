@@ -1,31 +1,20 @@
 package it.pagopa.pn.ciechecker.generator.pki;
 
-import it.pagopa.pn.ciechecker.generator.files.CieFilesExporter;
 import it.pagopa.pn.ciechecker.generator.model.CertAndKey;
-import it.pagopa.pn.ciechecker.generator.model.CieCaAndKey;
 import it.pagopa.pn.ciechecker.generator.model.Issuer;
-import it.pagopa.pn.ciechecker.model.CieIas;
-import it.pagopa.pn.ciechecker.model.CieMrtd;
-import it.pagopa.pn.ciechecker.model.CieValidationData;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import javax.crypto.Cipher;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 

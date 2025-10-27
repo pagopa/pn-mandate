@@ -7,14 +7,12 @@ import it.pagopa.pn.ciechecker.model.CieValidationData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.util.Map;
 
-public class CieFilesExporterTest {
+class CieFilesExporterTest {
 
     @Test
-    void generatorFileCieTEST() throws GeneralSecurityException, IOException {
+    void generatorFileCieTEST() {
 
         // Dati fittizi
         byte[] sodIasBytes = "IAS_SOD_DATA".getBytes();
@@ -56,7 +54,6 @@ public class CieFilesExporterTest {
 
         CieFilesExporter generator = new CieFilesExporter(data, cieCaAndKey, outputDir);
         Map<String, Long> results = generator.exportCieArtifactsToFiles();
-        //log.info("File esportati con successo: {}", results.size());
-        Assertions.assertTrue(results.size()>=7);
+        Assertions.assertTrue(results.size() >= 7);
     }
 }

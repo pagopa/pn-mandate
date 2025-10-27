@@ -483,7 +483,7 @@ public class ValidateUtils {
     /**
      * Estrazione e verifica della lista degli hash dei Data Group
      * @param cmsData CMSSignedData
-     * @param nisSha byte[]
+     * @param nisSha256 byte[]
      * @return boolean
      * @throws CieCheckerException c
      */

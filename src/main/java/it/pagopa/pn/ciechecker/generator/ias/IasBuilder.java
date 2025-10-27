@@ -15,7 +15,6 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.bouncycastle.util.Store;
 
-import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -156,8 +155,7 @@ public class IasBuilder {
                 ).build(contentSigner, dsCert)
         );
 
-        Store certs = new JcaCertStore(Collections.singletonList(dsCert));
-        generator.addCertificates(certs);
+        generator.addCertificates(new JcaCertStore(Collections.singletonList(dsCert)));
 
         CMSSignedData signedData = generator.generate(cmsData, true);
 

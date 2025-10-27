@@ -14,9 +14,14 @@ import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
+import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,6 +50,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -489,7 +495,7 @@ class CieCheckerTest {
         log.info("TEST verifyDscAgainstAnchorBytes_edgeCases - END ");
     }
 
-// TODO to uncomment when useful test data are available
+//// TODO to uncomment when useful test data are available
 //  @ParameterizedTest(name = "Verifica digital signature con sorgente: {0}")
 //  @MethodSource("cieSources")
 //  void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException, Exception {
@@ -542,9 +548,9 @@ class CieCheckerTest {
 //              
 //      );
 //  }
-
-// TODO to uncomment when useful test data are available
-// INIT TEST LETTURA FILE ZIP DELLA CATENA DI CERTIFICATI E VALIDAZIONE
+//
+//// TODO to uncomment when useful test data are available
+//// INIT TEST LETTURA FILE ZIP DELLA CATENA DI CERTIFICATI E VALIDAZIONE
 //      @Test
 //      void verifyDscAgainstAnchorBytes_derDsc_pemZIP_true() throws Exception {
 //          log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - INIT ");
@@ -566,8 +572,8 @@ class CieCheckerTest {
 //          log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - END ");
 //  
 //      }
-
-// TODO to uncomment when useful test data are available    
+//
+//// TODO to uncomment when useful test data are available    
 //  @Test
 //  void verifyDscAgainstAnchorBytes_pemDsc_pemBundle_true() throws Exception {
 //
@@ -583,8 +589,8 @@ class CieCheckerTest {
 //
 //      assertEquals(OK, resultCieChecker.getValue());
 //  }
-
-// TODO to uncomment when useful test data are available
+//
+//// TODO to uncomment when useful test data are available
 //  @Test
 //  void verifyDscAgainstAnchorBytes_false_when_all_parents_removed() throws Exception {
 //      var cf = CertificateFactory.getInstance(X_509);
@@ -629,8 +635,8 @@ class CieCheckerTest {
 //      assertThrows(CieCheckerException.class,
 //              () -> ValidateUtils.verifyDscAgainstTrustBundle(dscDer, wrongAnchorX509, null));
 //  }
-
-// TODO to uncomment when useful test data are available
+//
+//// TODO to uncomment when useful test data are available
 //  @Test
 //  void verifySodPassiveAuthCie() throws CMSException {
 //      log.info("TEST verifySodPassiveAuthCie - INIT ");

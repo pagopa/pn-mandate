@@ -203,7 +203,7 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
-							<finalName>chiechecker-generator-tool</finalName>
+							<finalName>ciechecker-generator-tool</finalName>
 
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">

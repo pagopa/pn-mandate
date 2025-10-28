@@ -12,13 +12,16 @@ import it.pagopa.pn.ciechecker.generator.sod.SodMrtdBuilder;
 import it.pagopa.pn.ciechecker.model.CieIas;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.model.CieValidationData;
+import it.pagopa.pn.ciechecker.model.ResultCieChecker;
+import it.pagopa.pn.ciechecker.utils.LogsConstant;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.Set;
 
 
-@Slf4j
+@lombok.CustomLog
 public class CieGeneratorApiImpl implements CieGeneratorApi {
 
 
@@ -26,7 +29,7 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
     public CieValidationData generateCieValidationData(Path outputDir,
                                                        String codiceFiscale,
                                                        LocalDate expirationDate,
-                                                       String nonce) {
+                                                       String nonce) throws CieCheckerException {
 
         try {
             //recupero cert e key
@@ -75,14 +78,16 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
             //
 
             //EXPORT FILES
-            CieFilesExporter generator = new CieFilesExporter(validationData,cieCaAndkey,outputDir.toAbsolutePath().toString());
-            generator.exportCieArtifactsToFiles().keySet().forEach(key -> {
-                log.debug("Exported file: {} ",key);
-            });
+            final CieFilesExporter generator = new CieFilesExporter(validationData,cieCaAndkey,outputDir.toAbsolutePath().toString());
+            final Set<String> exportedKeys = generator.exportCieArtifactsToFiles().keySet();
+            exportedKeys.forEach(key ->
+                log.debug("Exported file: {} ",key)
+            );
             //
             return validationData;
-        } catch (Exception e) {
-            throw new CieCheckerException(e);
+        }catch (Exception e ){
+            log.error(Exception.class + LogsConstant.MESSAGE  + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
 

@@ -4,6 +4,8 @@ import java.time.LocalDate;
 
 public class CieGeneratorConstants {
 
+    private CieGeneratorConstants(){}
+
     public static final String MASTERLIST_FILENAME ="new_IT_MasterListCSCA.zip";
     public static final String CA_CERT_FILENAME ="catest.pem";
     public static final String CA_KEY_FILENAME ="catest.key";

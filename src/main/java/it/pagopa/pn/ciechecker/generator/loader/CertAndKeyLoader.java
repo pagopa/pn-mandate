@@ -1,7 +1,6 @@
 package it.pagopa.pn.ciechecker.generator.loader;
 
 import it.pagopa.pn.ciechecker.generator.model.CertAndKey;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;

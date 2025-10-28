@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+@lombok.CustomLog
 public class CieDataGroupBuilder {
 
     private static final DateTimeFormatter YYMMDD = DateTimeFormatter.ofPattern("yyMMdd");

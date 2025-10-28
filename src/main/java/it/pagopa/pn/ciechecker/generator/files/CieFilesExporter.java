@@ -25,7 +25,6 @@ import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
 @lombok.CustomLog
 public class CieFilesExporter {
 
-    // Mappa per memorizzare tutti gli oggetti sorgente: { "nomeCampo", istanzaOggetto }
     private final Map<String, Object> sourceObjects;
     private final String outputBaseDir; // Directory base per l'output
 
@@ -54,7 +53,7 @@ public class CieFilesExporter {
         try {
             for (CieFileAttribute attr : CieFileAttribute.values()) {
 
-                //System.out.println("attr.getRelativeFilePath(): " + attr.getRelativeFilePath());
+                log.debug("AttributePath: {} - RelativeFilePath: {}", attr.getAttributePath() ,attr.getRelativeFilePath());
                 // Determina il percorso completo
                 String fullPath = outputBaseDir + File.separator + attr.getRelativeFilePath();
                 if (attr.getAttributePath().indexOf("cieCaAndKey") == 0 && Files.exists(Path.of(fullPath))) {

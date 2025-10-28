@@ -1,7 +1,10 @@
 package it.pagopa.pn.ciechecker.generator.ias;
 
 
+import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.CieIas;
+import it.pagopa.pn.ciechecker.model.ResultCieChecker;
+import it.pagopa.pn.ciechecker.utils.LogsConstant;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.*;
 import org.bouncycastle.asn1.icao.DataGroupHash;
@@ -30,6 +33,7 @@ import org.bouncycastle.cms.CMSTypedData;
 
 import java.util.Map;
 
+@lombok.CustomLog
 public class IasBuilder {
 
     public static final int DEFAULT_NIS_LEN = 12;
@@ -48,10 +52,10 @@ public class IasBuilder {
         if (length <= 0) {
             throw new IllegalArgumentException("Length must be > 0");
         }
-        Random rng = new SecureRandom();
+        Random random = new SecureRandom();
         StringBuilder sb = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
-            sb.append(DIGITS.charAt(rng.nextInt(DIGITS.length())));
+            sb.append(DIGITS.charAt(random.nextInt(DIGITS.length())));
         }
         return sb.toString();
     }
@@ -98,71 +102,85 @@ public class IasBuilder {
 
 
     public static CieIas createCieIas(byte[] nis, byte[] iasPublicKeyDer,
-                                      PrivateKey dsKey, X509Certificate caCert) throws Exception {
-        CieIas cieIas = new CieIas();
-        cieIas.setNis(nis);
-        cieIas.setSod(buildIasSodWithDocumentSigner(nis, iasPublicKeyDer, caCert, dsKey));
-        cieIas.setPublicKey(iasPublicKeyDer);
-        return cieIas;
+                                      PrivateKey dsKey, X509Certificate caCert) throws CieCheckerException {
+        try{
+            CieIas cieIas = new CieIas();
+            cieIas.setNis(nis);
+            cieIas.setSod(buildIasSodWithDocumentSigner(nis, iasPublicKeyDer, caCert, dsKey));
+            cieIas.setPublicKey(iasPublicKeyDer);
+            return cieIas;
+        }catch (Exception e ){
+            log.error(Exception.class + LogsConstant.MESSAGE  + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
+        }
     }
 
     public static byte[] buildIasSodWithDocumentSigner(
             byte[] nis,
             byte[] iasPublicKeyDer,
             X509Certificate cscaCert, PrivateKey privateKey
-    ) throws Exception {
+    ) throws CieCheckerException {
 
-        Map<Integer, byte[]> dgHashMap = new LinkedHashMap<>();
-        MessageDigest sha256 = MessageDigest.getInstance("SHA-512");
-        dgHashMap.put(1, sha256.digest(nis));
-        dgHashMap.put(5, sha256.digest(iasPublicKeyDer));
-        return buildSignedSod(dgHashMap, privateKey, cscaCert);
+        try{
+            Map<Integer, byte[]> dgHashMap = new LinkedHashMap<>();
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-512");
+            dgHashMap.put(1, sha256.digest(nis));
+            dgHashMap.put(5, sha256.digest(iasPublicKeyDer));
+            return buildSignedSod(dgHashMap, privateKey, cscaCert);
+        }catch (Exception e ){
+            log.error(Exception.class + LogsConstant.MESSAGE  + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
+        }
     }
 
     public static byte[] buildSignedSod(Map<Integer, byte[]> dgHashMap,
-                                        PrivateKey dsKey, X509Certificate dsCert) throws Exception {
+                                        PrivateKey dsKey, X509Certificate dsCert) throws CieCheckerException {
 
-        // DataGroupHash sequence
-        ASN1EncodableVector dgHashVector = new ASN1EncodableVector();
-        for (Map.Entry<Integer, byte[]> entry : dgHashMap.entrySet()) {
-            ASN1EncodableVector dgEntry = new ASN1EncodableVector();
-            dgEntry.add(new ASN1Integer(entry.getKey()));
-            dgEntry.add(new DEROctetString(entry.getValue()));
-            dgHashVector.add(new DERSequence(dgEntry));
+        try {
+            // DataGroupHash sequence
+            ASN1EncodableVector dgHashVector = new ASN1EncodableVector();
+            for (Map.Entry<Integer, byte[]> entry : dgHashMap.entrySet()) {
+                ASN1EncodableVector dgEntry = new ASN1EncodableVector();
+                dgEntry.add(new ASN1Integer(entry.getKey()));
+                dgEntry.add(new DEROctetString(entry.getValue()));
+                dgHashVector.add(new DERSequence(dgEntry));
+            }
+
+            DataGroupHash[] dghArray = dgHashMap.entrySet().stream()
+                    .map(e -> new DataGroupHash(e.getKey(), new DEROctetString(e.getValue())))
+                    .toArray(DataGroupHash[]::new);
+            //LDSSecurityObject
+            LDSSecurityObject ldsSO = new LDSSecurityObject(
+                    new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256),
+                    dghArray
+            );
+
+            // Encode LDSSecurityObject
+            byte[] ldsSOBytes = ldsSO.getEncoded("DER");
+            CMSTypedData cmsData = new CMSProcessableByteArray(CMSObjectIdentifiers.data, ldsSOBytes);
+
+            // CMS Signature
+            ContentSigner contentSigner = new JcaContentSignerBuilder("SHA512withRSA")
+                    .setProvider(new BouncyCastleProvider()).build(dsKey);
+
+            CMSSignedDataGenerator generator = new CMSSignedDataGenerator();
+            generator.addSignerInfoGenerator(
+                    new JcaSignerInfoGeneratorBuilder(
+                            new JcaDigestCalculatorProviderBuilder().setProvider(new BouncyCastleProvider()).build()
+                    ).build(contentSigner, dsCert)
+            );
+
+            generator.addCertificates(new JcaCertStore(Collections.singletonList(dsCert)));
+
+            CMSSignedData signedData = generator.generate(cmsData, true);
+
+            byte[] sod = new byte[signedData.getEncoded().length + 4];
+            System.arraycopy(signedData.getEncoded(), 0, sod, 4, signedData.getEncoded().length);
+            return sod;
+        }catch (Exception e ){
+            log.error(Exception.class + LogsConstant.MESSAGE  + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
         }
-
-        DataGroupHash[] dghArray = dgHashMap.entrySet().stream()
-                .map(e -> new DataGroupHash(e.getKey(), new DEROctetString(e.getValue())))
-                .toArray(DataGroupHash[]::new);
-        //LDSSecurityObject
-        LDSSecurityObject ldsSO = new LDSSecurityObject(
-                new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256),
-                dghArray
-        );
-
-        // Encode LDSSecurityObject
-        byte[] ldsSOBytes = ldsSO.getEncoded("DER");
-        CMSTypedData cmsData = new CMSProcessableByteArray(CMSObjectIdentifiers.data, ldsSOBytes);
-
-        // CMS Signature
-        ContentSigner contentSigner = new JcaContentSignerBuilder("SHA512withRSA")
-                .setProvider(new BouncyCastleProvider()).build(dsKey);
-
-        CMSSignedDataGenerator generator = new CMSSignedDataGenerator();
-        generator.addSignerInfoGenerator(
-                new JcaSignerInfoGeneratorBuilder(
-                        new JcaDigestCalculatorProviderBuilder().setProvider(new BouncyCastleProvider()).build()
-                ).build(contentSigner, dsCert)
-        );
-
-        generator.addCertificates(new JcaCertStore(Collections.singletonList(dsCert)));
-
-        CMSSignedData signedData = generator.generate(cmsData, true);
-
-        byte[] sod = new byte[signedData.getEncoded().length + 4];
-        System.arraycopy(signedData.getEncoded(), 0, sod, 4, signedData.getEncoded().length);
-        return sod;
-
     }
 
 }

@@ -489,7 +489,7 @@ class CieCheckerTest {
         log.info("TEST verifyDscAgainstAnchorBytes_edgeCases - END ");
     }
 
-// TODO to uncomment when useful test data are available
+//// TODO to uncomment when useful test data are available
 //  @ParameterizedTest(name = "Verifica digital signature con sorgente: {0}")
 //  @MethodSource("cieSources")
 //  void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException, Exception {
@@ -542,9 +542,9 @@ class CieCheckerTest {
 //              
 //      );
 //  }
-
-// TODO to uncomment when useful test data are available
-// INIT TEST LETTURA FILE ZIP DELLA CATENA DI CERTIFICATI E VALIDAZIONE
+//
+//// TODO to uncomment when useful test data are available
+//// INIT TEST LETTURA FILE ZIP DELLA CATENA DI CERTIFICATI E VALIDAZIONE
 //      @Test
 //      void verifyDscAgainstAnchorBytes_derDsc_pemZIP_true() throws Exception {
 //          log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - INIT ");
@@ -566,8 +566,8 @@ class CieCheckerTest {
 //          log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - END ");
 //  
 //      }
-
-// TODO to uncomment when useful test data are available    
+//
+//// TODO to uncomment when useful test data are available    
 //  @Test
 //  void verifyDscAgainstAnchorBytes_pemDsc_pemBundle_true() throws Exception {
 //
@@ -583,8 +583,8 @@ class CieCheckerTest {
 //
 //      assertEquals(OK, resultCieChecker.getValue());
 //  }
-
-// TODO to uncomment when useful test data are available
+//
+//// TODO to uncomment when useful test data are available
 //  @Test
 //  void verifyDscAgainstAnchorBytes_false_when_all_parents_removed() throws Exception {
 //      var cf = CertificateFactory.getInstance(X_509);
@@ -629,8 +629,8 @@ class CieCheckerTest {
 //      assertThrows(CieCheckerException.class,
 //              () -> ValidateUtils.verifyDscAgainstTrustBundle(dscDer, wrongAnchorX509, null));
 //  }
-
-// TODO to uncomment when useful test data are available
+//
+//// TODO to uncomment when useful test data are available
 //  @Test
 //  void verifySodPassiveAuthCie() throws CMSException {
 //      log.info("TEST verifySodPassiveAuthCie - INIT ");

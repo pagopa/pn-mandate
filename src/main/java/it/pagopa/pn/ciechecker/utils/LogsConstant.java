@@ -9,7 +9,7 @@ public abstract class LogsConstant {
     public static final String CIECHECKER_INIT = "CieCheckerImpl.init()";
 
     // METODI
-    public static final String CIECHECKER_VALIDATE_DATA_INPUT = "CieCheckerImpl.validateDataInput()";
+    public static final String CIECHECKER_VALIDATE_DATA_INPUT = "ValidateUtils.validateDataInput()";
     public static final String CIECHECKER_VERIFY_DIGITAL_SIGNATURE = "CieCheckerImpl.verifyDigitalSignature()";
     public static final String CIECHECKER_VERIFY_TRUST_CHAIN = "CieCheckerImpl.verifyTrustChain()";
     public static final String CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE = "CieCheckerImpl.verifySodPassiveAuthCie()";
@@ -40,7 +40,7 @@ public abstract class LogsConstant {
     public static final String CIECHECKER_VERIFY_EXPIRATION_CIE = "CieCheckerImpl.verifyExpirationCie()";
     public static final String MASTERLISTMERGETOOL_ADDFILETOMASTERZIP = "MasterListMergeToolUtility.addFileToMasterListZip()";
     public static final String MASTERLISTMERGETOOL_MERGE = "MasterListMergeToolUtility.merge()";
-    public static final String CIEFILEGENERATOR_VALIDATE_DATA_INPUT = "CieFileGenerator.validateDataInput()";
+    public static final String CIEFILEGENERATOR_VALIDATE_DATA_INPUT = "ValidateUtils.validateCieDataInput()";
     public static final String CIEFILEGENERATOR_EXPORTFILES = "CieFileGenerator.exportCieArtifactsToFiles()";
 
     // ERROR
@@ -53,6 +53,9 @@ public abstract class LogsConstant {
 
     public static final String INVOKING_OPERATION_LABEL_WITH_ARGS = "Invoking operation '{}' with args: {}";
     public static final String INVOKING_OPERATION_LABEL = "Invoking operation '{}'";
+    public static final String MESSAGE = " - Message: ";
+    public static final String RESULTCHECKER = "ResultCieChecker: ";
+    public static final String RESULTCHECKER_WITH_ARG = "ResultCieChecker: {}";
 
     private LogsConstant() {
         throw new IllegalStateException("LogsCostant is a utility class");

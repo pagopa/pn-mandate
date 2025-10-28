@@ -19,6 +19,7 @@ import java.util.Objects;
 
 import static it.pagopa.pn.ciechecker.generator.constants.CieGeneratorConstants.CTX_DOCUMENT_SIGNER_INFO;
 import static it.pagopa.pn.ciechecker.generator.constants.CieGeneratorConstants.CTX_VALIDATION_DATA;
+import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
 
 
 @lombok.CustomLog
@@ -30,7 +31,7 @@ public class CieFilesExporter {
 
     public CieFilesExporter(CieValidationData validationData, CieCaAndKey cieCaAndKey, String baseDir) throws CieCheckerException{
 
-        if(!validateDataInput(validationData, cieCaAndKey, baseDir))
+        if(!validateCieDataInput(validationData, cieCaAndKey, baseDir))
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
 
         this.sourceObjects = new HashMap<>();
@@ -40,27 +41,6 @@ public class CieFilesExporter {
         this.outputBaseDir = baseDir;
     }
 
-    public boolean validateDataInput(CieValidationData data, CieCaAndKey cieCaAndkey, String baseDir) throws CieCheckerException {
-
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.CIEFILEGENERATOR_VALIDATE_DATA_INPUT);
-        if ( Objects.isNull(data) || Objects.isNull(data.getCieIas()) || Objects.isNull(data.getCieMrtd())) throw new CieCheckerException(ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
-        if ( Objects.isNull(data.getCieIas().getSod()) || data.getCieIas().getSod().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIESOD);
-        if ( Objects.isNull(data.getCieIas().getNis()) || data.getCieIas().getNis().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIENIS);
-        if ( Objects.isNull(data.getCieIas().getPublicKey()) || data.getCieIas().getPublicKey().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_PUBLICKEY);
-        if ( Objects.isNull(data.getSignedNonce()) || data.getSignedNonce().length == 0 ) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_SIGNEDNONCE);
-        if ( Objects.isNull(data.getNonce()) || data.getNonce().isEmpty() ) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_NONCE);
-        if ( Objects.isNull(data.getCieMrtd().getSod()) || data.getCieMrtd().getSod().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDSOD);
-        if ( Objects.isNull(data.getCieMrtd().getDg1()) || data.getCieMrtd().getDg1().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG1);
-        if ( Objects.isNull(data.getCieMrtd().getDg11()) || data.getCieMrtd().getDg11().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG11);
-        if ( Objects.isNull(data.getCodFiscDelegante()) || data.getCodFiscDelegante().isBlank()) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CODFISCDELEGANTE);
-
-        if ( Objects.isNull(cieCaAndkey.getCertPem()) || cieCaAndkey.getCertPem().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPEM);
-        if ( Objects.isNull(cieCaAndkey.getCertKey()) || cieCaAndkey.getCertKey().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTKEY);
-
-        if(Objects.isNull(baseDir) || baseDir.isBlank()) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_BASEDIR);
-        log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsConstant.CIEFILEGENERATOR_VALIDATE_DATA_INPUT);
-        return true;
-    }
 
     /**
      * Itera su tutti gli attributi definiti nell'Enum e genera un file con il percorso definito.
@@ -78,13 +58,11 @@ public class CieFilesExporter {
                 // Determina il percorso completo
                 String fullPath = outputBaseDir + File.separator + attr.getRelativeFilePath();
                 if (attr.getAttributePath().indexOf("cieCaAndKey") == 0 && Files.exists(Path.of(fullPath))) {
-                    //  System.out.println("SALTO");
                     continue;
                 }
                 //Cancello il file esistente prima di rigenerarlo
                 deleteIfExists(fullPath);
 
-                //System.out.println("NON SALTO ");
                 // Determina il byte[] tramite reflection
                 byte[] data = getBytesByPath(attr.getAttributePath());
 

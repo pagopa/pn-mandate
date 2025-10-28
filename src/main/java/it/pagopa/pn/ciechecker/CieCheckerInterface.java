@@ -12,7 +12,6 @@ import java.util.List;
 
 public interface CieCheckerInterface {
 
-    boolean validateDataInput(CieValidationData data) throws CieCheckerException;
     ResultCieChecker verifyChallengeFromSignature(CieValidationData data) throws CieCheckerException;
     boolean verifySodPassiveAuthCie(CMSSignedData cms, byte[] cieIasNis) throws CieCheckerException;
     ResultCieChecker verifyIntegrity(CieMrtd cieMrtd) throws CieCheckerException;

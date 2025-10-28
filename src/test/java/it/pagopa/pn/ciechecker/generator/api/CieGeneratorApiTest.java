@@ -83,15 +83,13 @@ public class CieGeneratorApiTest {
     }
 /*
     @Test
-    public void cieValidationDataMandateTest(){
+    void cieValidationDataMandateTest(){
 
         CieGeneratorApiImpl cieGeneratorApi = new CieGeneratorApiImpl();
 
         CieValidationData data = cieGeneratorApi.generateCieValidationData(outputDir.toAbsolutePath(),COD_FISCALE,EXPIRY_DATE,NONCE);
         Assertions.assertEquals(cieChecker.validateMandate(data), ResultCieChecker.OK);
     }
-
- */
-
+*/
 
 }

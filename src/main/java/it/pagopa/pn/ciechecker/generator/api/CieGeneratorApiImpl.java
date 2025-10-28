@@ -53,7 +53,7 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
                     CieGeneratorConstants.NATIONALITY,
                     CieGeneratorConstants.DATE_OF_BIRTH,
                     CieGeneratorConstants.SEX,
-                    CieGeneratorConstants.EXPIRY_DATE,
+                    expirationDate,
                     codiceFiscale,
                     CieGeneratorConstants.PLACE_OF_BIRTH,
                     caCertAndKey.keyPair().getPrivate(),

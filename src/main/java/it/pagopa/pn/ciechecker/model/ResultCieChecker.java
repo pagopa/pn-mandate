@@ -1,6 +1,6 @@
 package it.pagopa.pn.ciechecker.model;
 
-import it.pagopa.pn.ciechecker.CieCheckerConstants;
+import it.pagopa.pn.ciechecker.utils.CieCheckerConstants;
 import lombok.Getter;
 
 @Getter

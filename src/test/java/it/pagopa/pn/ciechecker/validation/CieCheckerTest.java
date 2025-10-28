@@ -1,4 +1,4 @@
-package it.pagopa.pn.mandate.validation;
+package it.pagopa.pn.ciechecker.validation;
 
 import it.pagopa.pn.ciechecker.*;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
@@ -6,6 +6,7 @@ import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.generator.challenge.ChallengeResponseBuilder;
 import it.pagopa.pn.ciechecker.model.*;
+import it.pagopa.pn.ciechecker.utils.MasterListMergeToolUtility;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,7 +48,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
+import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -71,8 +73,8 @@ class CieCheckerTest {
 
     private static final Path basePath= Path.of("src","test","resources");
     private static final Path sodFile = Paths.get("src/test/resources/SOD_IAS.HEX");
-    private static final Path dg1Files = Paths.get("src/test/resources/DG1.HEX");
-    private static final Path dg11Files = Paths.get("src/test/resources/DG11.HEX");
+    private static final Path dg1Files = Paths.get("src/test/resources/DG1.HEX");   //m
+    private static final Path dg11Files = Paths.get("src/test/resources/DG11.HEX"); //m
     private static final Path dg1FilesCorrupted = Paths.get("src/test/resources/DG1_CORROTTO.HEX");
     private static final Path dg11FilesCorroupted = Paths.get("src/test/resources/DG11_CORROTTO.HEX");
     private static final List<String> compatibleAlgorithms = List.of(SHA_256,SHA_384,SHA_512);
@@ -83,8 +85,8 @@ class CieCheckerTest {
     private static final String nisChallengeFileName="NIS_CHALLENGE.HEX";
     private static final String nisFileName = "NIS.HEX";
 
-    private static final String SOD_IAS_HEX = "SOD_IAS.HEX";
-    private static final String SOD_MRTD_HEX = "SOD_MRTD.HEX";
+    private static final String SOD_IAS_HEX = "SOD_IAS.HEX";  //m
+    private static final String SOD_MRTD_HEX = "SOD_MRTD.HEX";   //m
 
     private static final String originalMasterListZip = "IT_MasterListCSCA.zip";
 
@@ -122,9 +124,9 @@ class CieCheckerTest {
 
         cieChecker.init();
 
-        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));
-        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NONCE_SIGNATURE.HEX")));
-        byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));
+        byte[] nisPubKey = hexFile(cleanString(basePath.resolve("NIS_PUBKEY.HEX")));   //m
+        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NONCE_SIGNATURE.HEX"))); //m
+        byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));   //m
 		byte[] sodIasByteArray = hexFile(Files.readString(basePath.resolve(SOD_IAS_HEX)));
         truncatedSODIAS = Arrays.copyOfRange(sodIasByteArray, 4, sodIasByteArray.length);
 
@@ -141,8 +143,8 @@ class CieCheckerTest {
 
         validationData.setCieIas(cieIas);
         validationData.setSignedNonce(nisSignature);
-        validationData.setNonce(cleanString(basePath.resolve("NONCE.txt"))); 
-        validationData.setCodFiscDelegante(cleanString(basePath.resolve("CODFISC.txt")));  
+        validationData.setNonce(cleanString(basePath.resolve("NONCE.txt"))); //m
+        validationData.setCodFiscDelegante(cleanString(basePath.resolve("CODFISC.txt")));  //m
 
         CieMrtd cMrtd = new CieMrtd();
         cMrtd.setSod(sodMrtd);

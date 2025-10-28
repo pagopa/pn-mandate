@@ -1,4 +1,4 @@
-package it.pagopa.pn.ciechecker;
+package it.pagopa.pn.ciechecker.utils;
 
 public class CieCheckerConstants {
 

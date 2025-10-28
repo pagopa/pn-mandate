@@ -1,11 +1,9 @@
-package it.pagopa.pn.ciechecker;
+package it.pagopa.pn.ciechecker.utils;
 
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
-import it.pagopa.pn.ciechecker.utils.LogsConstant;
-import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.io.*;
@@ -16,8 +14,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.OK;
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.PROTOCOLLO_S3;
+import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.OK;
+import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.PROTOCOLLO_S3;
 
 @lombok.CustomLog
 public class MasterListMergeToolUtility {

@@ -1,6 +1,7 @@
 package it.pagopa.pn.ciechecker;
 
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
+import it.pagopa.pn.ciechecker.utils.CieCheckerConstants;
 import it.pagopa.pn.ciechecker.utils.LogsConstant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
@@ -23,7 +24,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
+import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.*;
 import it.pagopa.pn.ciechecker.model.*;
 
 import org.bouncycastle.asn1.*;

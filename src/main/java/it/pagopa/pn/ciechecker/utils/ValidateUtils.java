@@ -6,7 +6,6 @@ import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlv;
 import com.payneteasy.tlv.BerTlvParser;
 import com.payneteasy.tlv.BerTlvs;
-import it.pagopa.pn.ciechecker.CieCheckerConstants;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.generator.model.CieCaAndKey;
 import it.pagopa.pn.ciechecker.model.*;
@@ -29,7 +28,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
+import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.*;
 
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.Attribute;
@@ -100,23 +99,6 @@ public class ValidateUtils {
         log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.CIEFILEGENERATOR_VALIDATE_DATA_INPUT);
 
         validateDataInput(data);
-//        checkNull(data, () -> ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
-//        checkNull(data.getCieIas(), () -> ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
-//        checkNull(data.getCieMrtd(), () -> ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
-//
-//        final CieIas ias = data.getCieIas();
-//        checkInvalidByteArray(ias.getSod(),       () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIESOD);
-//        checkInvalidByteArray(ias.getNis(),       () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIENIS);
-//        checkInvalidByteArray(ias.getPublicKey(), () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_PUBLICKEY);
-//
-//        checkInvalidByteArray(data.getSignedNonce(), () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_SIGNEDNONCE);
-//        checkInvalidString(data.getNonce(),          () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_NONCE);
-//        checkInvalidString(data.getCodFiscDelegante(), () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_CODFISCDELEGANTE);
-//
-//        final CieMrtd mrtd = data.getCieMrtd();
-//        checkInvalidByteArray(mrtd.getSod(),  () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDSOD);
-//        checkInvalidByteArray(mrtd.getDg1(),  () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG1);
-//        checkInvalidByteArray(mrtd.getDg11(), () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG11);
 
         checkNull(cieCaAndkey, () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIECAANDKEY);
         checkInvalidByteArray(cieCaAndkey.getCertPem(), () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPEM);

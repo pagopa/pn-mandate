@@ -4,13 +4,9 @@ package it.pagopa.pn.ciechecker.generator.api;
 import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
-import it.pagopa.pn.ciechecker.model.CieValidationData;
-import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -29,7 +25,6 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.LocalDate;
 
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.CSCA_ANCHOR_PATH_FILENAME;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 

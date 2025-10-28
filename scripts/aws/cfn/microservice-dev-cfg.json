@@ -10,7 +10,7 @@
     "PendingDuration": "15m",
     "CiePendingDuration": "7m",
     "CieValidToDuration": "1d",
-    "RevokeCieMandateOnVerificationFailure": "false",
+    "RevokeCieMandateOnVerificationFailure": "true",
     "EnhancedWebSecurityEnabled": "true",
     "MountEfs": "false",
     "PnCronAnalyzer": "-",

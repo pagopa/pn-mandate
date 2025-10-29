@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDtoRequest;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDtoResponse;
 import it.pagopa.pn.mandate.mapper.ReverseMandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import it.pagopa.pn.mandate.utils.MandateUtils;
@@ -38,9 +39,8 @@ class ReverseMandateControllerTest {
     void createMandateSuccessfully() throws JsonProcessingException {
         MandateDtoRequest request = new MandateDtoRequest();
         String requestBody = new ObjectMapper().writeValueAsString(request);
-
         Mockito.when(mandateService.createReverseMandate(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
-                .thenReturn(Mono.just("Mandate Created"));
+                .thenReturn(Mono.just("mandate-id"));
 
         webTestClient.post()
                 .uri("/mandate/api/v1/reverse-mandate")
@@ -53,6 +53,6 @@ class ReverseMandateControllerTest {
                 .body(BodyInserters.fromValue(requestBody))
                 .exchange()
                 .expectStatus().isCreated()
-                .expectBody(String.class).isEqualTo("Mandate Created");
+                .expectBody(MandateDtoResponse.class);
     }
 }

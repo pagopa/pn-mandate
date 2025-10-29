@@ -11,9 +11,7 @@ import it.pagopa.pn.ciechecker.generator.sod.SodMrtdBuilder;
 import it.pagopa.pn.ciechecker.model.CieIas;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.model.CieValidationData;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
-import software.amazon.awssdk.services.s3.S3Client;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -27,7 +25,8 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
 
     @Override
     public CieValidationData generateCieValidationData(Path outputDir,
-                                                       String codiceFiscale,
+                                                       String codiceFiscaleDelegante,
+                                                       String codiceFiscaleCIE,
                                                        LocalDate expirationDate,
                                                        String nonce) {
 
@@ -40,7 +39,7 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
             NisBuilder iasBuilder = new NisBuilder();
             // creazione ias
             CieIas ias = iasBuilder.createCieIas(
-                    iasBuilder.generateNumeric(NisBuilder.DEFAULT_NIS_LEN).getBytes(),  //NIS
+                    iasBuilder.generateNumeric(NisBuilder.DEFAULT_NIS_LEN).getBytes(),    //NIS
                     caCertAndKey.keyPair().getPublic().getEncoded(),                      //PUBKEY
                     caCertAndKey.keyPair().getPrivate(),                                  //PRVKEY
                     caCertAndKey.certificate()                                            //CERT
@@ -54,7 +53,7 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
                     CieGeneratorConstants.DATE_OF_BIRTH,
                     CieGeneratorConstants.SEX,
                     expirationDate,
-                    codiceFiscale,
+                    codiceFiscaleCIE,
                     CieGeneratorConstants.PLACE_OF_BIRTH,
                     caCertAndKey.keyPair().getPrivate(),
                     caCertAndKey.certificate()
@@ -67,7 +66,7 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
             validationData.setCieMrtd(mrtd);
             validationData.setCieIas(ias);
             validationData.setNonce(nonce);
-            validationData.setCodFiscDelegante(codiceFiscale);
+            validationData.setCodFiscDelegante(codiceFiscaleDelegante);
 
             validationData.setSignedNonce(ChallengeResponseBuilder.generateSignedNonce(nonce,caCertAndKey.keyPair().getPrivate()));
 

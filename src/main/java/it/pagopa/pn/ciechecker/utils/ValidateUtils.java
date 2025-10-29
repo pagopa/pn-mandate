@@ -22,6 +22,8 @@ import org.bouncycastle.operator.DefaultSignatureNameFinder;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.*;
 import java.security.cert.*;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -728,29 +730,6 @@ public class ValidateUtils {
         }
     }
 
-/*
-//    public static List<X509Certificate> extractCscaAnchorFromZipPath(Path cscaAnchorZipFilePath) throws CieCheckerException {
-//
-//        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR);
-//        log.debug("PATH CSCA: {}", cscaAnchorZipFilePath);
-//
-//        try (InputStream fileInputStream = new FileInputStream(cscaAnchorZipFilePath.toFile())) {
-//            List<X509Certificate> x509CertList = ValidateUtils.getX509CertListFromZipFile(fileInputStream);
-//            if ( x509CertList.isEmpty()) {
-//                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED.getValue());
-//                throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
-//            }
-//            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR);
-//            return x509CertList;
-//        } catch (IOException ioe) {
-//            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, ioe.getMessage());
-//            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, ioe);
-//        }catch (Exception e ){
-//            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, e.getMessage());
-//            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e);
-//        }
-//    }
-*/
 
     /**
      * Estrae la lista di certificati da un archivio ZIP
@@ -1067,6 +1046,15 @@ public class ValidateUtils {
         if (Objects.isNull(string) || string.isBlank()) {
             throw new CieCheckerException(exceptionCodeSupplier.get());
         }
+    }
+
+
+    public static byte[] hexFile(String toHex) throws DecoderException {
+        return org.apache.commons.codec.binary.Hex.decodeHex(toHex);
+    }
+
+    public static String cleanString(Path file) throws IOException {
+        return Files.readString(file).replaceAll("\\s+", "");
     }
 
 }

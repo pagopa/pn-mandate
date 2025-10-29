@@ -39,6 +39,7 @@ public abstract class LogsConstant {
     public static final String VALIDATEUTILS_PARSER_TLV_TAGVALUE = "ValidateUtils.parserTLVTagValue()";
     public static final String CIECHECKER_VERIFY_EXPIRATION_CIE = "CieCheckerImpl.verifyExpirationCie()";
     public static final String MASTERLISTMERGETOOL_ADDFILETOMASTERZIP = "MasterListMergeToolUtility.addFileToMasterListZip()";
+    public static final String MASTERLISTMERGETOOL_UPLOADMASTERZIPTOS3 = "MasterListMergeToolUtility.writeNewMasterZip()";
     public static final String MASTERLISTMERGETOOL_MERGE = "MasterListMergeToolUtility.merge()";
     public static final String CIEFILEGENERATOR_VALIDATE_DATA_INPUT = "ValidateUtils.validateCieDataInput()";
     public static final String CIEFILEGENERATOR_EXPORTFILES = "CieFileGenerator.exportCieArtifactsToFiles()";

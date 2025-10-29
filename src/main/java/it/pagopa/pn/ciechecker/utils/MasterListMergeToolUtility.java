@@ -189,7 +189,7 @@ public class MasterListMergeToolUtility {
             log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, "New File Archive uploaded on S3Bucket");
             return ResultCieChecker.OK;
         }catch (Exception e ){
-            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP, e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.MASTERLISTMERGETOOL_UPLOADMASTERZIPTOS3, e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_UPLOAD_NEWFILEZIP_TO_S3, e);
         }
     }

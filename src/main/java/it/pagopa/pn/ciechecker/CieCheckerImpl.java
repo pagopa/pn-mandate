@@ -183,7 +183,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             return ResultCieChecker.OK;
         else {
             log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE, ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED.getValue());
-            throw new CieCheckerException(ResultCieChecker.KO);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED);
         }
     }
 

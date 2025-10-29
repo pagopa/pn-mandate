@@ -7,7 +7,8 @@ import java.time.LocalDate;
 
 public interface CieGeneratorApi {
     public CieValidationData generateCieValidationData(Path outputDir,
-                                                       String codiceFiscale,
+                                                       String codiceFiscaleDelegante,
+                                                       String codiceFiscaleCIE,
                                                        LocalDate expirationDate,
                                                        String nonce);
 }

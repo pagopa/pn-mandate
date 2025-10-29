@@ -12,9 +12,7 @@ import it.pagopa.pn.ciechecker.generator.sod.SodMrtdBuilder;
 import it.pagopa.pn.ciechecker.model.CieIas;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.model.CieValidationData;
-import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
-import software.amazon.awssdk.services.s3.S3Client;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -37,7 +35,7 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
             ).loadIssuerCertAndKeyFromS3();
 
 
-            NisBuilder iasBuilder = new NisBuilder();
+            IasBuilder iasBuilder = new IasBuilder();
             // creazione ias
             CieIas ias = iasBuilder.createCieIas(
                     iasBuilder.generateNisNumericString(IasBuilder.DEFAULT_NIS_LEN).getBytes(),     //NIS

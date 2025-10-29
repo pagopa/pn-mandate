@@ -1026,6 +1026,7 @@ public class ValidateUtils {
      */
     public static <T> void checkNull(T object, Supplier<ResultCieChecker> exceptionCodeSupplier) throws CieCheckerException {
         if (Objects.isNull(object)) {
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT , exceptionCodeSupplier.get().getValue());
             throw new CieCheckerException(exceptionCodeSupplier.get());
         }
     }
@@ -1035,6 +1036,7 @@ public class ValidateUtils {
      */
     public static void checkInvalidByteArray(byte[] array, Supplier<ResultCieChecker> exceptionCodeSupplier) throws CieCheckerException {
         if (Objects.isNull(array) || array.length == 0) {
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT , exceptionCodeSupplier.get().getValue());
             throw new CieCheckerException(exceptionCodeSupplier.get());
         }
     }
@@ -1044,6 +1046,7 @@ public class ValidateUtils {
      */
     public static void checkInvalidString(String string, Supplier<ResultCieChecker> exceptionCodeSupplier) throws CieCheckerException {
         if (Objects.isNull(string) || string.isBlank()) {
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT , exceptionCodeSupplier.get().getValue());
             throw new CieCheckerException(exceptionCodeSupplier.get());
         }
     }

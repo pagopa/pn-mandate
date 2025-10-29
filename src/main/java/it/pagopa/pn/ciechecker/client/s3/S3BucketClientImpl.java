@@ -3,7 +3,7 @@ package it.pagopa.pn.ciechecker.client.s3;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
-import it.pagopa.pn.ciechecker.utils.LogsCostant;
+import it.pagopa.pn.ciechecker.utils.LogsConstant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.Data;
@@ -36,18 +36,18 @@ public class S3BucketClientImpl  implements S3BucketClient {
             this.clientS3 = pnMandateConfig.s3Client();
         }
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, "Call s3 bucket for read content object with s3Uri: {}", s3Uri);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, "Call s3 bucket for read content object with s3Uri: {}", s3Uri);
         s3UriInfo = ValidateUtils.extractS3Components( s3Uri);
 
         if(Objects.isNull(s3UriInfo)) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS);
         }
         try {
             return clientS3.getObject(GetObjectRequest.builder().bucket(s3UriInfo[0]).key(s3UriInfo[1]).build());
 
         } catch (Exception e){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, e.getClass().getName()+" Message: " +e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, e.getClass().getName()+" Message: " +e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_CONNECT_S3,e);
         }
     }
@@ -59,10 +59,10 @@ public class S3BucketClientImpl  implements S3BucketClient {
             this.clientS3 = pnMandateConfig.s3Client();
         }
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.S3BUCKETCLIENTIMPL_PUT_OBJECT_CONTENT, "Call s3 bucket for read content object with s3Uri: {}", s3Uri);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.S3BUCKETCLIENTIMPL_PUT_OBJECT_CONTENT, "Call s3 bucket for read content object with s3Uri: {}", s3Uri);
         s3UriInfo = ValidateUtils.extractS3Components( s3Uri);
         if(Objects.isNull(s3UriInfo)) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.S3BUCKETCLIENTIMPL_GET_OBJECT_CONTENT, ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS);
         }
         try {
@@ -70,7 +70,7 @@ public class S3BucketClientImpl  implements S3BucketClient {
             clientS3.putObject(PutObjectRequest.builder().bucket(s3UriInfo[0]).key(s3UriInfo[3] + "new_" + s3UriInfo[2])
                     .contentMD5(checksum).build(), RequestBody.fromInputStream(file, size));
         }catch (Exception e ){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.S3BUCKETCLIENTIMPL_PUT_OBJECT_CONTENT, e.getClass().getName()+" Message: " +e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.S3BUCKETCLIENTIMPL_PUT_OBJECT_CONTENT, e.getClass().getName()+" Message: " +e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_CONNECT_S3,e);
         }
     }

@@ -1,7 +1,6 @@
 package it.pagopa.pn.ciechecker.generator.pki;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-import it.pagopa.pn.ciechecker.generator.model.CaAndKey;
 import it.pagopa.pn.ciechecker.generator.model.CertAndKey;
 import it.pagopa.pn.ciechecker.generator.model.Issuer;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -172,11 +171,11 @@ public class CiePki {
     }
 
 
-    public CaAndKey createDevTestCA(String dn, int keyBits, int validityDays){
+    public CertAndKey createDevTestCA(String dn, int keyBits, int validityDays){
         try {
             KeyPair caKeys = generateRsaKeyPair(keyBits);
             X509Certificate ca = selfSign(dn, caKeys, validityDays);
-            return new CaAndKey(ca, caKeys);
+            return new CertAndKey(ca, caKeys);
         } catch (NoSuchAlgorithmException e) {
             throw new CieCheckerException(e);
         }

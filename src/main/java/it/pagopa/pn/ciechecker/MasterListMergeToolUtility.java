@@ -4,7 +4,7 @@ import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
-import it.pagopa.pn.ciechecker.utils.LogsCostant;
+import it.pagopa.pn.ciechecker.utils.LogsConstant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -52,13 +52,13 @@ public class MasterListMergeToolUtility {
 
             MasterListMergeToolUtility master = new MasterListMergeToolUtility(s3BucketClient, args[0]);
             ResultCieChecker result = master.merge();
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_ON_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE, "ResultCieChecker" , result.getValue());
+            log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.MASTERLISTMERGETOOL_MERGE, "ResultCieChecker" , result.getValue());
             System.exit(0);
         }catch(CieCheckerException e){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
             System.exit(1);
         }catch(Exception e){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
             System.exit(1);
         }finally {
             if(Objects.nonNull(context))
@@ -68,7 +68,7 @@ public class MasterListMergeToolUtility {
 
     public ResultCieChecker merge() throws CieCheckerException{
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.MASTERLISTMERGETOOL_MERGE);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.MASTERLISTMERGETOOL_MERGE);
         s3UriInfoCscaZip = ValidateUtils.extractS3Components( this.cscaPath + "IT_MasterListCSCA.zip");
         s3UriInfoCertPem = ValidateUtils.extractS3Components( this.cscaPath + "catest.pem");
 
@@ -77,13 +77,13 @@ public class MasterListMergeToolUtility {
             inputStreamCscaAnchor = s3BucketClient.getObjectContent(this.cscaPath+ "IT_MasterListCSCA.zip");
             inputStreamCscaPem = s3BucketClient.getObjectContent(this.cscaPath + "catest.pem");
             if (Objects.isNull(inputStreamCscaAnchor) || Objects.isNull(inputStreamCscaPem) ) {
-                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, ResultCieChecker.KO_EXC_NOFOUND_FILEARGS.getValue());
+                log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.MASTERLISTMERGETOOL_MERGE, ResultCieChecker.KO_EXC_NOFOUND_FILEARGS.getValue());
                 return ResultCieChecker.KO_EXC_NOFOUND_FILEARGS;
             }
             log.debug("inputStreamCscaAnchor: {}", inputStreamCscaAnchor);
             log.debug("inputStreamCscaPem: {}", inputStreamCscaPem);
         } else {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE,ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.MASTERLISTMERGETOOL_MERGE,ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS);
         }
 
@@ -98,14 +98,14 @@ public class MasterListMergeToolUtility {
             }
             return ResultCieChecker.OK;
         } catch (Exception e) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.MASTERLISTMERGETOOL_MERGE, e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
 
     private ResultCieChecker addFileToMasterListZip() throws CieCheckerException, IOException {
 
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP);
         log.debug("s3UriInfoCscaZip[2]: {}" , s3UriInfoCscaZip[2]);
         log.debug("s3UriInfoCertPem[2]: {}" , s3UriInfoCertPem[2]);
 
@@ -156,12 +156,12 @@ public class MasterListMergeToolUtility {
         }
         // Assicurati che il file temporaneo venga gestito correttamente
         if (success) {
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, "File '" + s3UriInfoCertPem[1] + "' aggiunto con successo a '" + s3UriInfoCscaZip[3] +"new_"+s3UriInfoCscaZip[2]+ "'");
+            log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, "File '" + s3UriInfoCertPem[1] + "' aggiunto con successo a '" + s3UriInfoCscaZip[3] +"new_"+s3UriInfoCscaZip[2]+ "'");
             return ResultCieChecker.OK;
         } else {
             // Delete del file temporaneo in caso di eccezione
             Files.deleteIfExists(parentDir);
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP, ResultCieChecker.KO_EXC_CREATION_FILEZIPTEMP.getValue());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP, ResultCieChecker.KO_EXC_CREATION_FILEZIPTEMP.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_CREATION_FILEZIPTEMP);
         }
     }
@@ -193,10 +193,10 @@ public class MasterListMergeToolUtility {
             byte[] newZipFileBytes = newFileZipZos.readAllBytes();
             InputStream newZip = new ByteArrayInputStream(newZipFileBytes);
             s3BucketClient.uploadContent(cscaPath, newZip, newZipFileBytes.length, null);
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, "New File Archive uploaded on S3Bucket");
+            log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, "New File Archive uploaded on S3Bucket");
             return ResultCieChecker.OK;
         }catch (Exception e ){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP, e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.MASTERLISTMERGETOOL_ADDFILETOMASTERZIP, e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_UPLOAD_NEWFILEZIP_TO_S3, e);
         }
     }

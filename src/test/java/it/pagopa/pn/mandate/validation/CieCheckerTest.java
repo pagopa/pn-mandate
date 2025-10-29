@@ -6,23 +6,17 @@ import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.generator.challenge.ChallengeResponseBuilder;
 import it.pagopa.pn.ciechecker.model.*;
-import it.pagopa.pn.ciechecker.utils.LogsCostant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.apache.commons.io.IOUtils;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.encodings.PKCS1Encoding;
-import org.bouncycastle.crypto.engines.RSAEngine;
-import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -43,9 +37,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.*;
 import java.math.BigInteger;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -451,7 +442,7 @@ class CieCheckerTest {
         validationData.setNonce("02461");
         validationData.setCieIas(ias);
 
-        byte[] signedNonce = ChallengeResponseBuilder.generateSignedNonce(validationData.getNonce(), privateKey);
+        byte[] signedNonce = ChallengeResponseBuilder.signNonce(validationData.getNonce(), privateKey);
 
         validationData.setSignedNonce(signedNonce);
         String signedNonceBase64 = Base64.getEncoder().encodeToString(validationData.getSignedNonce());
@@ -504,7 +495,7 @@ class CieCheckerTest {
         log.info("TEST verifyDscAgainstAnchorBytes_edgeCases - END ");
     }
 
-// TODO to uncomment when useful test data are available
+//// TODO to uncomment when useful test data are available
 //  @ParameterizedTest(name = "Verifica digital signature con sorgente: {0}")
 //  @MethodSource("cieSources")
 //  void verifyDigitalSignature(String tipo, byte[] sodBytes) throws CMSException, Exception {
@@ -557,9 +548,9 @@ class CieCheckerTest {
 //              
 //      );
 //  }
-
-// TODO to uncomment when useful test data are available
-// INIT TEST LETTURA FILE ZIP DELLA CATENA DI CERTIFICATI E VALIDAZIONE
+//
+//// TODO to uncomment when useful test data are available
+//// INIT TEST LETTURA FILE ZIP DELLA CATENA DI CERTIFICATI E VALIDAZIONE
 //      @Test
 //      void verifyDscAgainstAnchorBytes_derDsc_pemZIP_true() throws Exception {
 //          log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - INIT ");
@@ -581,8 +572,8 @@ class CieCheckerTest {
 //          log.info("TEST verifyDscAgainstAnchorBytes_derDsc_pemZIP_true - END ");
 //  
 //      }
-
-// TODO to uncomment when useful test data are available    
+//
+//// TODO to uncomment when useful test data are available    
 //  @Test
 //  void verifyDscAgainstAnchorBytes_pemDsc_pemBundle_true() throws Exception {
 //
@@ -598,8 +589,8 @@ class CieCheckerTest {
 //
 //      assertEquals(OK, resultCieChecker.getValue());
 //  }
-
-// TODO to uncomment when useful test data are available
+//
+//// TODO to uncomment when useful test data are available
 //  @Test
 //  void verifyDscAgainstAnchorBytes_false_when_all_parents_removed() throws Exception {
 //      var cf = CertificateFactory.getInstance(X_509);
@@ -644,8 +635,8 @@ class CieCheckerTest {
 //      assertThrows(CieCheckerException.class,
 //              () -> ValidateUtils.verifyDscAgainstTrustBundle(dscDer, wrongAnchorX509, null));
 //  }
-
-// TODO to uncomment when useful test data are available
+//
+//// TODO to uncomment when useful test data are available
 //  @Test
 //  void verifySodPassiveAuthCie() throws CMSException {
 //      log.info("TEST verifySodPassiveAuthCie - INIT ");

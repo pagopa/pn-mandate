@@ -11,7 +11,7 @@ import java.security.*;
 
 public class ChallengeResponseBuilder {
 
-    public static byte[] generateSignedNonce(String nonce, PrivateKey privateKey) throws Exception {
+    public static byte[] signNonce(String nonce, PrivateKey privateKey) throws Exception {
         byte[] nonceBytes = nonce.getBytes(StandardCharsets.UTF_8);
 
         AsymmetricKeyParameter privParam = PrivateKeyFactory.createKey(privateKey.getEncoded());

@@ -70,7 +70,7 @@ public class ChallengeResponseBuilderTest {
         CieIas ias = new CieIas();
         ias.setPublicKey( rawRsaKeyBytes ); //publicKeyByte);
         CieValidationData validationData = new CieValidationData();
-        validationData.setNonce(cleanString(basePath.resolve("NONCE_MARIO.txt"))); //m
+        validationData.setNonce(cleanString(basePath.resolve("NONCE.txt"))); //m
         validationData.setCieIas(ias);
 
         assertNotNull(validationData.getCieIas().getPublicKey());

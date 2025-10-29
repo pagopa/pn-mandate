@@ -420,7 +420,7 @@ public class ValidateUtils {
      * @throws CieCheckerException e
      * @throws CMSException e
      */
-    public static Map<ASN1ObjectIdentifier, Attribute> extractAllSignedAttributes(CMSSignedData signedData) throws CieCheckerException, CMSException {
+    public static Hashtable<ASN1ObjectIdentifier, Attribute> extractAllSignedAttributes(CMSSignedData signedData) throws CieCheckerException, CMSException {
 
         log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR);
         SignerInformationStore signers = signedData.getSignerInfos();

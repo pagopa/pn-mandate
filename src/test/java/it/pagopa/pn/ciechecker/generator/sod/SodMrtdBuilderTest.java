@@ -3,6 +3,7 @@ package it.pagopa.pn.ciechecker.generator.sod;
 import it.pagopa.pn.ciechecker.CieChecker;
 import it.pagopa.pn.ciechecker.CieCheckerInterface;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
+import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.model.CieValidationData;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
@@ -13,6 +14,7 @@ import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.openssl.PEMParser;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,7 +112,7 @@ class SodMrtdBuilderTest {
 
         assertEquals(ResultCieChecker.OK, cieCheckerInterface.verifyCodFiscDelegante(data));
         data.setCodFiscDelegante("WRONG");
-        assertEquals(ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED, cieCheckerInterface.verifyCodFiscDelegante(data));
+        Assertions.assertThrows(CieCheckerException.class,()-> cieCheckerInterface.verifyCodFiscDelegante(data));
     }
 
     @Test

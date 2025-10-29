@@ -298,7 +298,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             // ** PASSO 1A: ESTRAZIONE DEGLI ATTRIBUTI FIRMATI (signedAttributes)
             // *******************************************************************/
             log.debug("Estrazione degli signedAttributes ...");
-            Hashtable<ASN1ObjectIdentifier, Attribute> signedAttributesTable = ValidateUtils.extractAllSignedAttributes(cms);
+            Map<ASN1ObjectIdentifier, Attribute> signedAttributesTable = ValidateUtils.extractAllSignedAttributes(cms);
             if(Objects.isNull(signedAttributesTable) || signedAttributesTable.isEmpty()) {
                 log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, ResultCieChecker.KO_EXC_NO_SIGNED_ATTRIBUTE.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_SIGNED_ATTRIBUTE);

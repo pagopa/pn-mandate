@@ -2,6 +2,7 @@ package it.pagopa.pn.ciechecker.generator.dg;
 
 import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlvBuilder;
+import it.pagopa.pn.ciechecker.generator.model.MrzData;
 import org.bouncycastle.asn1.*;
 
 import java.io.IOException;
@@ -28,7 +29,7 @@ public class CieDataGroupBuilder {
                            char sex,
                            LocalDate expiryDate) {
 
-        String mrz = buildMrz(
+        MrzData mrzData = new MrzData(
                 "I<",
                 nationality,            // (issuing state)
                 documentNumber,
@@ -41,64 +42,66 @@ public class CieDataGroupBuilder {
                 "",
                 ""
         );
+        String mrz = buildMrz(mrzData);
 
-        BerTag T_DG1 = new BerTag(0x61);
-        BerTag T_MRZ = new BerTag(0x5F, 0x1F);
+        BerTag tDG1 = new BerTag(0x61);
+        BerTag tMRZ = new BerTag(0x5F, 0x1F);
 
         BerTlvBuilder inner = new BerTlvBuilder();
-        inner.addBytes(T_MRZ, mrz.getBytes(StandardCharsets.US_ASCII));
+        inner.addBytes(tMRZ, mrz.getBytes(StandardCharsets.US_ASCII));
 
         BerTlvBuilder outer = new BerTlvBuilder();
-        outer.addBytes(T_DG1, inner.buildArray());
+        outer.addBytes(tDG1, inner.buildArray());
 
         return outer.buildArray();
     }
 
-    public String buildMrz(String docCode,
-                           String issuingState,
-                           String documentNumber,
-                           LocalDate birthDate,
-                           char sex,
-                           LocalDate expiryDate,
-                           String nationality,
-                           String surname,
-                           String givenNames,
-                           String optional1,
-                           String optional2) {
+    public String buildMrz(final MrzData data) {
 
-        String docCode2 = padRight(nz(docCode).toUpperCase().replace(' ', '<'), 2, '<').substring(0, 2);
-        String issuing3 = padRight(nz(issuingState).toUpperCase(), 3, '<').substring(0, 3);
-        String nation3 = padRight(nz(nationality).toUpperCase(), 3, '<').substring(0, 3);
+        final String cleanDocCode = nz(data.getDocCode()).toUpperCase().replace(' ', '<');
+        final String cleanIssuingState = nz(data.getIssuingState()).toUpperCase();
+        final String cleanNationality = nz(data.getNationality()).toUpperCase();
+        final String cleanDocNumber = nz(data.getDocumentNumber()).toUpperCase().replace(' ', '<');
+        final String cleanSurname = nz(data.getSurname()).toUpperCase().replace(' ', '<');
+        final String cleanGivenNames = nz(data.getGivenNames()).toUpperCase().replace(' ', '<');
 
-        String docNum9 = padRight(nz(documentNumber).toUpperCase().replace(' ', '<'), 9, '<').substring(0, 9);
-        String dobYYMMDD = birthDate.format(YYMMDD);
-        String expYYMMDD = expiryDate.format(YYMMDD);
-        char sexMrz = (sex == 'M' || sex == 'F') ? sex : '<';
+        final String dobYYMMDD = data.getBirthDate().format(YYMMDD);
+        final String expYYMMDD = data.getExpiryDate().format(YYMMDD);
+        final char sexMrz = (data.getSex() == 'M' || data.getSex() == 'F') ? data.getSex() : '<';
 
-        // LINE 1
-        char cdDoc = (char) ('0' + checkDigit(docNum9));
-        String line1 = docCode2 + issuing3 + docNum9 + cdDoc + padRight(sanitizeOpt(optional1), 15, '<');
+        //LINEA 1
+        final String blockDocCode2 = padRight(cleanDocCode, 2, '<').substring(0, 2);
+        final String blockIssuingState3 = padRight(cleanIssuingState, 3, '<').substring(0, 3);
+        final String blockNationality3 = padRight(cleanNationality, 3, '<').substring(0, 3);
+        final String blockDocNumber9 = padRight(cleanDocNumber, 9, '<').substring(0, 9);
+
+        final String blockOptional1_15 = padRight(sanitizeOpt(data.getOptional1()), 15, '<');
+        final String blockOptional2_11 = padRight(sanitizeOpt(data.getOptional2()), 11, '<');
+
+        final char cdDoc = (char) ('0' + checkDigit(blockDocNumber9));
+
+        String line1 = blockDocCode2 + blockIssuingState3 + blockDocNumber9 + cdDoc + blockOptional1_15;
         line1 = padRight(line1, 30, '<').substring(0, 30);
 
-        // LINE 2
-        char cdDob = (char) ('0' + checkDigit(dobYYMMDD));
-        char cdExp = (char) ('0' + checkDigit(expYYMMDD));
-        String opt2_11 = padRight(sanitizeOpt(optional2), 11, '<');
+        //LINEA 2
+        final char cdDob = (char) ('0' + checkDigit(dobYYMMDD));
+        final char cdExp = (char) ('0' + checkDigit(expYYMMDD));
 
-        String body2 = dobYYMMDD + cdDob + sexMrz + expYYMMDD + cdExp + nation3 + opt2_11;
-        String compositeInput = docNum9 + cdDoc + dobYYMMDD + cdDob + expYYMMDD + cdExp + opt2_11;
-        char cdComposite = (char) ('0' + checkDigit(compositeInput));
-        String line2 = body2.substring(0, 29) + cdComposite;
+        final String compositeInput = blockDocNumber9 + cdDoc + dobYYMMDD + cdDob + expYYMMDD + cdExp + blockOptional2_11;
+        final char cdComposite = (char) ('0' + checkDigit(compositeInput));
+
+        final String line2Body = dobYYMMDD + cdDob + sexMrz + expYYMMDD + cdExp + blockNationality3 + blockOptional2_11;
+
+        String line2 = line2Body.substring(0, 29) + cdComposite;
         line2 = padRight(line2, 30, '<').substring(0, 30);
 
-        // LINE 3
-        String nameField = nz(surname).toUpperCase().replace(' ', '<')
-                + "<<"
-                + nz(givenNames).toUpperCase().replace(' ', '<');
-        String line3 = padRight(nameField, 30, '<').substring(0, 30);
+        //LINEA 3
+        final String nameField = cleanSurname + "<<" + cleanGivenNames;
+        final String line3 = padRight(nameField, 30, '<').substring(0, 30);
 
         return line1 + line2 + line3;
     }
+
 
     private static String nz(String s) {
         return s == null ? "" : s;
@@ -130,46 +133,46 @@ public class CieDataGroupBuilder {
                             String telephone,
                             String profession) {
 
-        BerTag T_DG11 = new BerTag(0x6B);
-        BerTag T_TAGLIST = new BerTag(0x5C);
-        BerTag T_FULLNAME = new BerTag(0x5F, 0x0E);
-        BerTag T_PERSONAL_NUMBER = new BerTag(0x5F, 0x10);
-        BerTag T_DOB = new BerTag(0x5F, 0x2B);
-        BerTag T_POB = new BerTag(0x5F, 0x11);
-        BerTag T_ADDR = new BerTag(0x5F, 0x42);
-        BerTag T_TEL = new BerTag(0x5F, 0x12);
-        BerTag T_PROF = new BerTag(0x5F, 0x13);
+        BerTag tDG11 = new BerTag(0x6B);
+        BerTag tTAGLIST = new BerTag(0x5C);
+        BerTag tFULLNAME = new BerTag(0x5F, 0x0E);
+        BerTag tPERSONALNUMBER = new BerTag(0x5F, 0x10);
+        BerTag tDOB = new BerTag(0x5F, 0x2B);
+        BerTag tPOB = new BerTag(0x5F, 0x11);
+        BerTag tADDR = new BerTag(0x5F, 0x42);
+        BerTag tTEL = new BerTag(0x5F, 0x12);
+        BerTag tPROF = new BerTag(0x5F, 0x13);
 
         List<byte[]> presentTags = new ArrayList<>();
         BerTlvBuilder inner = new BerTlvBuilder();
 
         if (fullName != null) {
-            inner.addBytes(T_FULLNAME, fullName.getBytes(StandardCharsets.UTF_8));
+            inner.addBytes(tFULLNAME, fullName.getBytes(StandardCharsets.UTF_8));
             presentTags.add(new byte[]{(byte) 0x5F, (byte) 0x0E});
         }
         if (codiceFiscale != null) {
-            inner.addBytes(T_PERSONAL_NUMBER, codiceFiscale.getBytes(StandardCharsets.UTF_8));
+            inner.addBytes(tPERSONALNUMBER, codiceFiscale.getBytes(StandardCharsets.UTF_8));
             presentTags.add(new byte[]{(byte) 0x5F, (byte) 0x10});
         }
         if (birthDate != null) {
             String yyyymmdd = birthDate.format(DateTimeFormatter.BASIC_ISO_DATE);
-            inner.addBytes(T_DOB, yyyymmdd.getBytes(StandardCharsets.US_ASCII));
+            inner.addBytes(tDOB, yyyymmdd.getBytes(StandardCharsets.US_ASCII));
             presentTags.add(new byte[]{(byte) 0x5F, (byte) 0x2B});
         }
         if (placeOfBirth != null) {
-            inner.addBytes(T_POB, placeOfBirth.getBytes(StandardCharsets.UTF_8));
+            inner.addBytes(tPOB, placeOfBirth.getBytes(StandardCharsets.UTF_8));
             presentTags.add(new byte[]{(byte) 0x5F, (byte) 0x11});
         }
         if (address != null) {
-            inner.addBytes(T_ADDR, address.getBytes(StandardCharsets.UTF_8));
+            inner.addBytes(tADDR, address.getBytes(StandardCharsets.UTF_8));
             presentTags.add(new byte[]{(byte) 0x5F, (byte) 0x42});
         }
         if (telephone != null) {
-            inner.addBytes(T_TEL, telephone.getBytes(StandardCharsets.UTF_8));
+            inner.addBytes(tTEL, telephone.getBytes(StandardCharsets.UTF_8));
             presentTags.add(new byte[]{(byte) 0x5F, (byte) 0x12});
         }
         if (profession != null) {
-            inner.addBytes(T_PROF, profession.getBytes(StandardCharsets.UTF_8));
+            inner.addBytes(tPROF, profession.getBytes(StandardCharsets.UTF_8));
             presentTags.add(new byte[]{(byte) 0x5F, (byte) 0x13});
         }
 
@@ -182,10 +185,10 @@ public class CieDataGroupBuilder {
         }
 
         BerTlvBuilder innerWithList = new BerTlvBuilder();
-        innerWithList.addBytes(T_TAGLIST, tagListValue);
+        innerWithList.addBytes(tTAGLIST, tagListValue);
 
         BerTlvBuilder outer = new BerTlvBuilder();
-        outer.addBytes(T_DG11, concat(innerWithList.buildArray(), inner.buildArray()));
+        outer.addBytes(tDG11, concat(innerWithList.buildArray(), inner.buildArray()));
 
         return outer.buildArray();
     }

@@ -95,49 +95,53 @@ public class CieFilesExporter {
     /**
      * Utilizzo la Reflection per recuperare un byte[] basato su un percorso attributo (es. "cieIas.sod").
      */
-    private byte[] getBytesByPath(String path) throws Exception {
-        String[] parts = path.split("\\.", 3);
-        if (parts.length < 2) {
-            throw new IllegalArgumentException("Formato percorso attributo non valido. Serve almeno [oggetto].[campo] o [oggetto].[sotto-oggetto].[campo]: " + path);
-        }
-
-        String objectName = parts[0];
-        Object currentObject = sourceObjects.get(objectName);
-        if (currentObject == null) {
-            throw new IllegalArgumentException("Oggetto non trovato: " + objectName);
-        }
-        Field targetField;
-        String fieldPath = parts[1]; // Il percorso rimanente (es. "certPem" o "cieIas.sod")
-        if (parts.length == 2) {
-            // CASO 1: Campo di Primo Livello (es. cieCaAndKey.certPem o validationData.signedNonce)
-            // fieldPath = "certPem" o "signedNonce"
-            targetField = currentObject.getClass().getDeclaredField(fieldPath);
-        } else { // parts.length == 3
-            // CASO 2: Campo Annidato (es. validationData.cieIas.sod)
-            // parts[1] è l'oggetto intermedio (es. "cieIas"), parts[2] è il campo finale (es. "sod")
-
-            // Leggo il campo intermedio (es. cieIas)
-            Field intermediateField = currentObject.getClass().getDeclaredField(parts[1]);
-            intermediateField.setAccessible(true);
-            currentObject = intermediateField.get(currentObject);
-            if (currentObject == null) {
-                throw new NullPointerException("Oggetto nullo: " + objectName);
+    private byte[] getBytesByPath(String path) throws CieCheckerException {
+        try{
+            String[] parts = path.split("\\.", 3);
+            if (parts.length < 2) {
+                throw new IllegalArgumentException("Formato percorso attributo non valido. Serve almeno [oggetto].[campo] o [oggetto].[sotto-oggetto].[campo]: " + path);
             }
 
-            // Leggo il campo finale (es. sod)
-            targetField = currentObject.getClass().getDeclaredField(parts[2]);
-        }
-        if (targetField == null) {
-            throw new NoSuchFieldException("Impossibile trovare il campo finale per il percorso: " + path);
-        }
-        targetField.setAccessible(true);
-        // Verifico che sia un byte[] e recupero il valore
-        if (targetField.getType().isArray() && targetField.getType().getComponentType() == byte.class) {
-            return (byte[]) targetField.get(currentObject);
-        } else {
-            throw new IllegalStateException("Attributo non è di tipo byte[]: " + path);
-        }
+            String objectName = parts[0];
+            Object currentObject = sourceObjects.get(objectName);
+            if (currentObject == null) {
+                throw new IllegalArgumentException("Oggetto non trovato: " + objectName);
+            }
+            Field targetField;
+            String fieldPath = parts[1]; // Il percorso rimanente (es. "certPem" o "cieIas.sod")
+            if (parts.length == 2) {
+                // CASO 1: Campo di Primo Livello (es. cieCaAndKey.certPem o validationData.signedNonce)
+                // fieldPath = "certPem" o "signedNonce"
+                targetField = currentObject.getClass().getDeclaredField(fieldPath);
+            } else { // parts.length == 3
+                // CASO 2: Campo Annidato (es. validationData.cieIas.sod)
+                // parts[1] è l'oggetto intermedio (es. "cieIas"), parts[2] è il campo finale (es. "sod")
 
+                // Leggo il campo intermedio (es. cieIas)
+                Field intermediateField = currentObject.getClass().getDeclaredField(parts[1]);
+                intermediateField.setAccessible(true);
+                currentObject = intermediateField.get(currentObject);
+                if (currentObject == null) {
+                    throw new NullPointerException("Oggetto nullo: " + objectName);
+                }
+
+                // Leggo il campo finale (es. sod)
+                targetField = currentObject.getClass().getDeclaredField(parts[2]);
+            }
+            if (targetField == null) {
+                throw new NoSuchFieldException("Impossibile trovare il campo finale per il percorso: " + path);
+            }
+            targetField.setAccessible(true);
+            // Verifico che sia un byte[] e recupero il valore
+            if (targetField.getType().isArray() && targetField.getType().getComponentType() == byte.class) {
+                return (byte[]) targetField.get(currentObject);
+            } else {
+                throw new IllegalStateException("Attributo non è di tipo byte[]: " + path);
+            }
+        }catch (Exception e ){
+            log.error(Exception.class + LogsConstant.MESSAGE  + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
+        }
     }
 
     private static File exportBytesToFile(byte[] binaryData, String destinationPath) throws IOException {

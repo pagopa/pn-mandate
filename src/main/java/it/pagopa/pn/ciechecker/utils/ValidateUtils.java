@@ -67,9 +67,9 @@ public class ValidateUtils {
     private ValidateUtils() {}
 
 
-    public static boolean validateDataInput(CieValidationData data) throws CieCheckerException {
+    public static void validateDataInput(CieValidationData data) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT, data);
+        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT);
 
         checkNull(data, () -> ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
         checkNull(data.getCieIas(), () -> ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
@@ -89,8 +89,8 @@ public class ValidateUtils {
         checkInvalidByteArray(mrtd.getDg1(),  () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG1);
         checkInvalidByteArray(mrtd.getDg11(), () -> ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG11);
 
-        log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT, data, true);
-        return true;
+        log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT);
+
     }
 
 
@@ -414,11 +414,11 @@ public class ValidateUtils {
     /**
      * ESTRAZIONE DEGLI ATTRIBUTI FIRMATI (signedAttributes)
      * @param signedData  CMSSignedData
-     * @return Hashtable<ASN1ObjectIdentifier, Attribute>
+     * @return Map<ASN1ObjectIdentifier, Attribute>
      * @throws CieCheckerException e
      * @throws CMSException e
      */
-    public static Hashtable<ASN1ObjectIdentifier, Attribute> extractAllSignedAttributes(CMSSignedData signedData) throws CieCheckerException, CMSException {
+    public static Map<ASN1ObjectIdentifier, Attribute> extractAllSignedAttributes(CMSSignedData signedData) throws CieCheckerException, CMSException {
 
         log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR);
         SignerInformationStore signers = signedData.getSignerInfos();
@@ -516,7 +516,7 @@ public class ValidateUtils {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION, ioe);
         }
         log.debug("Founded DataGroup Hashes SIZE: {}", hashes.size());
-        log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, "List<String>", hashes);
+        log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP);
         return hashes;
     }
 
@@ -729,27 +729,27 @@ public class ValidateUtils {
     }
 
 /*
-    public static List<X509Certificate> extractCscaAnchorFromZipPath(Path cscaAnchorZipFilePath) throws CieCheckerException {
-
-        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR);
-        log.debug("PATH CSCA: {}", cscaAnchorZipFilePath);
-
-        try (InputStream fileInputStream = new FileInputStream(cscaAnchorZipFilePath.toFile())) {
-            List<X509Certificate> x509CertList = ValidateUtils.getX509CertListFromZipFile(fileInputStream);
-            if ( x509CertList.isEmpty()) {
-                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED.getValue());
-                throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
-            }
-            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR);
-            return x509CertList;
-        } catch (IOException ioe) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, ioe.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, ioe);
-        }catch (Exception e ){
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, e.getMessage());
-            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e);
-        }
-    }
+//    public static List<X509Certificate> extractCscaAnchorFromZipPath(Path cscaAnchorZipFilePath) throws CieCheckerException {
+//
+//        log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR);
+//        log.debug("PATH CSCA: {}", cscaAnchorZipFilePath);
+//
+//        try (InputStream fileInputStream = new FileInputStream(cscaAnchorZipFilePath.toFile())) {
+//            List<X509Certificate> x509CertList = ValidateUtils.getX509CertListFromZipFile(fileInputStream);
+//            if ( x509CertList.isEmpty()) {
+//                log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED.getValue());
+//                throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
+//            }
+//            log.info(LogsCostant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR);
+//            return x509CertList;
+//        } catch (IOException ioe) {
+//            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, ioe.getMessage());
+//            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, ioe);
+//        }catch (Exception e ){
+//            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CSCAANCHOR, e.getMessage());
+//            throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED, e);
+//        }
+//    }
 */
 
     /**
@@ -780,12 +780,12 @@ public class ValidateUtils {
                     p = input.readObject();
                     ASN1Sequence seq0Lev = ASN1Sequence.getInstance(p);
                     Enumeration<ASN1Primitive> enum0Lev = seq0Lev.getObjects();
-                    ASN1Integer int1Lev = (ASN1Integer) enum0Lev.nextElement();
+                    ASN1Integer int1Lev = (ASN1Integer) enum0Lev.nextElement(); //non cancellare
                     ASN1Set set1Lev = (ASN1Set) enum0Lev.nextElement();
                     Enumeration<ASN1Primitive> enum1Lev = set1Lev.getObjects();
 
                     while (enum1Lev.hasMoreElements()) {
-                        ASN1Object asn1Obj = (ASN1Object) enum1Lev.nextElement();
+                        ASN1Object asn1Obj = (ASN1Object) enum1Lev.nextElement(); //non cancellare
                         X509CertificateHolder holder = new X509CertificateHolder(asn1Obj.toASN1Primitive().getEncoded());
 
                         RDN rdns[] = holder.getSubject().getRDNs(ASN1ObjectIdentifier.tryFromID("2.5.4.6"));
@@ -833,27 +833,27 @@ public class ValidateUtils {
     }
 
 /*
-    public static String extractCodiceFiscaleByOid(byte[] dg11Bytes) throws CieCheckerException {
-
-        try {
-            //parser TLV
-            log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE);
-            BerTlvParser parser = new BerTlvParser();
-            BerTlvs tlvs = parser.parse(dg11Bytes, 0, dg11Bytes.length);
-            BerTag bTag = new BerTag(org.apache.commons.codec.binary.Hex.decodeHex(CieCheckerConstants.TAG_PERSONAL_NUMBER));
-            BerTlv bTlv = tlvs.find(bTag);
-            if (bTlv != null) {
-                //log.debug("CODICE_FISCALE DELEGANTE: " + bTlv.getTextValue());
-                return bTlv.getTextValue();
-            } else {
-                log.error("ResultCieChecker: {}", ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
-                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
-            }
-        } catch (DecoderException de) {
-            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE, de.getClass().getName() + LogsConstant.MESSAGE + de.getMessage());
-            throw new CieCheckerException( ResultCieChecker.KO_EXC_DECODER_ERROR, de);
-        }
-    }
+//    public static String extractCodiceFiscaleByOid(byte[] dg11Bytes) throws CieCheckerException {
+//
+//        try {
+//            //parser TLV
+//            log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE);
+//            BerTlvParser parser = new BerTlvParser();
+//            BerTlvs tlvs = parser.parse(dg11Bytes, 0, dg11Bytes.length);
+//            BerTag bTag = new BerTag(org.apache.commons.codec.binary.Hex.decodeHex(CieCheckerConstants.TAG_PERSONAL_NUMBER));
+//            BerTlv bTlv = tlvs.find(bTag);
+//            if (bTlv != null) {
+//                //log.debug("CODICE_FISCALE DELEGANTE: " + bTlv.getTextValue());
+//                return bTlv.getTextValue();
+//            } else {
+//                log.error("ResultCieChecker: {}", ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
+//                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
+//            }
+//        } catch (DecoderException de) {
+//            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE, de.getClass().getName() + LogsConstant.MESSAGE + de.getMessage());
+//            throw new CieCheckerException( ResultCieChecker.KO_EXC_DECODER_ERROR, de);
+//        }
+//    }
 */
     public static String parserTLVTagValue(byte[] fileBytes, String tag) throws CieCheckerException {
 

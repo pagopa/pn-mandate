@@ -4,6 +4,7 @@ import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.generator.model.CieCaAndkey;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.LogsCostant;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,7 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 
 
-@lombok.CustomLog
+@Slf4j
 public class CieFileGenerator {
 
     // Mappa per memorizzare tutti gli oggetti sorgente: { "nomeCampo", istanzaOggetto }
@@ -97,7 +98,7 @@ public class CieFileGenerator {
             }
             return exportResults;
         }catch (Exception e ){
-            log.logEndingProcess(LogsCostant.CIEFILEGENERATOR_GENERATEFILES, false, e.getMessage());
+            log.info(LogsCostant.CIEFILEGENERATOR_GENERATEFILES, false, e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }

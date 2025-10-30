@@ -33,24 +33,27 @@ public class CertAndKeyLoader {
                 .key(key)
                 .build();
 
-        X509Certificate certificate = null;
-        PrivateKey privateKey = null;
-
         try (InputStream s3Input = s3.getObject(request);
              ZipInputStream zis = new ZipInputStream(s3Input)) {
+            return extractCertificateFromZip(zis);
+        }
+    }
 
-            for (ZipEntry zipEntry = zis.getNextEntry(); zipEntry != null; zipEntry = zis.getNextEntry()) {
-                if (zipEntry.isDirectory()) continue;
+    public CertAndKey extractCertificateFromZip(ZipInputStream zis) throws IOException, GeneralSecurityException {
 
-                String name = zipEntry.getName();
-                byte[] entryBytes = readAll(zis);
-                zis.closeEntry();
+        X509Certificate certificate = null;
+        PrivateKey privateKey = null;
+        for (ZipEntry zipEntry = zis.getNextEntry(); zipEntry != null; zipEntry = zis.getNextEntry()) {
+            if (zipEntry.isDirectory()) continue;
 
-                if (name.endsWith(".pem")) {
-                    certificate = parseCertificate(entryBytes);
-                } else if (name.endsWith(".key")) {
-                    privateKey = parsePrivateKey(entryBytes);
-                }
+            String name = zipEntry.getName();
+            byte[] entryBytes = readAll(zis);
+            zis.closeEntry();
+
+            if (name.endsWith(".pem")) {
+                certificate = parseCertificate(entryBytes);
+            } else if (name.endsWith(".key")) {
+                privateKey = parsePrivateKey(entryBytes);
             }
         }
 
@@ -60,9 +63,8 @@ public class CertAndKeyLoader {
         if (privateKey == null) {
             throw new FileNotFoundException(".key non trovato nello zip");
         }
-
-
         return new CertAndKey(certificate, new KeyPair(certificate.getPublicKey(), privateKey));
+
     }
 
 

@@ -213,9 +213,8 @@ class CieCheckerTest {
     void verifyCodFiscDelegante_FalsoVeroTest () throws CieCheckerException {
 
         validationData.setCodFiscDelegante("RSSDNC42R01H501Y");
-        ResultCieChecker resultKO = cieCheckerInterface.verifyCodFiscDelegante(validationData);
-        log.info("Risultato atteso KO -> " + resultKO.getValue());
-        assertNotEquals(OK, resultKO.getValue());
+        assertThrows(CieCheckerException.class,
+                () -> cieCheckerInterface.verifyCodFiscDelegante(validationData));
 
         try {
             validationData.setCodFiscDelegante(cleanString(basePath.resolve("CODFISC.txt"))); //m

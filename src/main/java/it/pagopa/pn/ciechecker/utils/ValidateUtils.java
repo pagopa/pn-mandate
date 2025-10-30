@@ -767,7 +767,7 @@ public class ValidateUtils {
                         ASN1Object asn1Obj = (ASN1Object) enum1Lev.nextElement(); //non cancellare
                         X509CertificateHolder holder = new X509CertificateHolder(asn1Obj.toASN1Primitive().getEncoded());
 
-                        RDN rdns[] = holder.getSubject().getRDNs(ASN1ObjectIdentifier.tryFromID("2.5.4.6"));
+                        RDN[] rdns = holder.getSubject().getRDNs(ASN1ObjectIdentifier.tryFromID("2.5.4.6"));
                         if (rdns.length > 0) {
                             RDN rdn = rdns[0];
                             if (rdn != null
@@ -811,29 +811,6 @@ public class ValidateUtils {
         }
     }
 
-/*
-//    public static String extractCodiceFiscaleByOid(byte[] dg11Bytes) throws CieCheckerException {
-//
-//        try {
-//            //parser TLV
-//            log.info(LogsCostant.INVOKING_OPERATION_LABEL, LogsCostant.VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE);
-//            BerTlvParser parser = new BerTlvParser();
-//            BerTlvs tlvs = parser.parse(dg11Bytes, 0, dg11Bytes.length);
-//            BerTag bTag = new BerTag(org.apache.commons.codec.binary.Hex.decodeHex(CieCheckerConstants.TAG_PERSONAL_NUMBER));
-//            BerTlv bTlv = tlvs.find(bTag);
-//            if (bTlv != null) {
-//                //log.debug("CODICE_FISCALE DELEGANTE: " + bTlv.getTextValue());
-//                return bTlv.getTextValue();
-//            } else {
-//                log.error("ResultCieChecker: {}", ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
-//                throw new CieCheckerException(ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11);
-//            }
-//        } catch (DecoderException de) {
-//            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.VALIDATEUTILS_EXTRACT_CODICEFISCALE_DELEGANTE, de.getClass().getName() + LogsConstant.MESSAGE + de.getMessage());
-//            throw new CieCheckerException( ResultCieChecker.KO_EXC_DECODER_ERROR, de);
-//        }
-//    }
-*/
     public static String parserTLVTagValue(byte[] fileBytes, String tag) throws CieCheckerException {
 
         try {
@@ -903,9 +880,8 @@ public class ValidateUtils {
 
         CertificateFactory factory =
                 CertificateFactory.getInstance("X.509", new BouncyCastleProvider());
-        X509Certificate certificate = (X509Certificate) factory.generateCertificate(pemFileStream);
+        return (X509Certificate) factory.generateCertificate(pemFileStream);
 
-        return certificate;
     }
 
 

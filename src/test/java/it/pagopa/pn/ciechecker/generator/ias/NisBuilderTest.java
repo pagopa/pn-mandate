@@ -2,14 +2,8 @@ package it.pagopa.pn.ciechecker.generator.ias;
 
 
 import it.pagopa.pn.ciechecker.CieChecker;
-import it.pagopa.pn.ciechecker.CieCheckerConstants;
-import it.pagopa.pn.ciechecker.CieCheckerImpl;
 import it.pagopa.pn.ciechecker.CieCheckerInterface;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
-import it.pagopa.pn.ciechecker.generator.model.CaAndKey;
-import it.pagopa.pn.ciechecker.generator.model.CertAndKey;
-import it.pagopa.pn.ciechecker.generator.model.Issuer;
-import it.pagopa.pn.ciechecker.generator.pki.CiePki;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import org.bouncycastle.cms.CMSSignedData;
@@ -37,8 +31,8 @@ import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.List;
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.OK;
-import static it.pagopa.pn.ciechecker.generator.ias.NisBuilder.*;
+import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.OK;
+import static it.pagopa.pn.ciechecker.generator.ias.IasBuilder.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -47,7 +41,7 @@ import static org.mockito.Mockito.when;
 @ActiveProfiles("test")
 @EnableConfigurationProperties(PnMandateConfig.class)
 public class NisBuilderTest {
-    private static NisBuilder nisBuilder;
+    private static IasBuilder nisBuilder;
     private static final Path basePath = Paths.get("src/test/resources");
     private static byte[] caCertBytes;
     private static byte[] caKeyBytes;
@@ -88,20 +82,20 @@ public class NisBuilderTest {
 
     @Test
     public void generateRandom_defaultLen_valid() {
-        NisBuilder nb = new NisBuilder(new SecureRandom());
-        byte[] a = nb.generateNumeric(DEFAULT_NIS_LEN).getBytes();
-        byte[] b = nb.generateNumeric(DEFAULT_NIS_LEN).getBytes();
+        IasBuilder nb = new IasBuilder(new SecureRandom());
+        byte[] a = nb.generateNisNumericString(DEFAULT_NIS_LEN).getBytes();
+        byte[] b = nb.generateNisNumericString(DEFAULT_NIS_LEN).getBytes();
 
-        assertEquals(NisBuilder.DEFAULT_NIS_LEN, a.length);
-        assertEquals(NisBuilder.DEFAULT_NIS_LEN, b.length);
-        assertTrue(NisBuilder.isValid(a));
-        assertTrue(NisBuilder.isValid(b));
+        assertEquals(IasBuilder.DEFAULT_NIS_LEN, a.length);
+        assertEquals(IasBuilder.DEFAULT_NIS_LEN, b.length);
+        assertTrue(IasBuilder.isValid(a));
+        assertTrue(IasBuilder.isValid(b));
         assertFalse(Arrays.equals(a, b));
     }
 
     @Test
     public void generateFromSeed_isDeterministic() {
-        NisBuilder nb = new NisBuilder();
+        IasBuilder nb = new IasBuilder();
         byte[] s1 = nb.generateFromSeed("RSSMRA80A01H501U", "AA1234567");
         byte[] s2 = nb.generateFromSeed("rssmra80a01h501u", "  aa1234567  "); // normalizzazione
         assertArrayEquals(s1, s2);
@@ -109,17 +103,17 @@ public class NisBuilderTest {
 
     @Test
     public void customLength_bounds() {
-        NisBuilder nb = new NisBuilder();
-        assertThrows(IllegalArgumentException.class, () -> nb.generateRandom(0));
-        assertThrows(IllegalArgumentException.class, () -> nb.generateRandom(128));
-        assertDoesNotThrow(() -> nb.generateRandom(32));
+        IasBuilder nb = new IasBuilder();
+        assertThrows(IllegalArgumentException.class, () -> nb.generateNisRandomBytes(0));
+        assertThrows(IllegalArgumentException.class, () -> nb.generateNisRandomBytes(128));
+        assertDoesNotThrow(() -> nb.generateNisRandomBytes(32));
     }
 
     @Test
     public void asReadOnlyBuffer_works() {
-        NisBuilder nb = new NisBuilder();
-        byte[] nis = nb.generateNumeric(DEFAULT_NIS_LEN).getBytes();
-        ByteBuffer ro = NisBuilder.asReadOnlyBuffer(nis);
+        IasBuilder nb = new IasBuilder();
+        byte[] nis = nb.generateNisNumericString(DEFAULT_NIS_LEN).getBytes();
+        ByteBuffer ro = IasBuilder.asReadOnlyBuffer(nis);
         assertEquals(nis.length, ro.remaining());
         assertTrue(ro.isReadOnly());
     }
@@ -129,7 +123,7 @@ public class NisBuilderTest {
         PrivateKey caPrivateKey = loadPrivateKeyFromPem(caKeyBytes);
         X509Certificate caCert = loadCertificateFromPem(caCertBytes);
 
-        byte[] nis = new NisBuilder().generateNumeric(DEFAULT_NIS_LEN).getBytes();
+        byte[] nis = new IasBuilder().generateNisNumericString(DEFAULT_NIS_LEN).getBytes();
         CieIas cieIas = createCieIas(nis, caCert.getPublicKey().getEncoded(), caPrivateKey, caCert);
 
         assertNotNull(cieIas.getSod());
@@ -178,7 +172,7 @@ public class NisBuilderTest {
         X509Certificate caCert = loadCertificateFromPem(caCertBytes);
 
         // nis random
-        byte[] nis = new NisBuilder().generateNumeric(DEFAULT_NIS_LEN).getBytes();
+        byte[] nis = new IasBuilder().generateNisNumericString(DEFAULT_NIS_LEN).getBytes();
         CieIas cieIas = createCieIas(nis,caCert.getPublicKey().getEncoded(),caPrivateKey,caCert);
 
         // cms sod ias

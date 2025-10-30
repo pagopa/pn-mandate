@@ -4,6 +4,7 @@ import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlv;
 import com.payneteasy.tlv.BerTlvParser;
 import com.payneteasy.tlv.BerTlvs;
+import it.pagopa.pn.ciechecker.generator.model.MrzData;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.junit.Test;
 
@@ -45,19 +46,19 @@ public class CieDataGroupBuilderTest {
         );
 
         BerTlvParser parser = new BerTlvParser();
-        BerTag T_DG1 = new BerTag(0x61);        // constructed
-        BerTag T_MRZ = new BerTag(0x5F, 0x1F);  // primitive
+        BerTag tDG1 = new BerTag(0x61);        // constructed
+        BerTag tMRZ = new BerTag(0x5F, 0x1F);  // primitive
 
         // parse una sola volta l'intera struttura
         BerTlvs tlvs = parser.parse(dg1, 0, dg1.length);
 
         // 61 deve esistere ed essere constructed
-        BerTlv dg1Tlv = tlvs.find(T_DG1);
+        BerTlv dg1Tlv = tlvs.find(tDG1);
         assertNotNull(dg1Tlv, "DG1 outer TLV (tag 0x61) must exist");
         assertTrue(dg1Tlv.isConstructed(), "DG1 (61) must be constructed");
 
         // cerca direttamente 5F1F in profondità (non estrarre bytes dal 61)
-        BerTlv mrzTlv = tlvs.find(T_MRZ);
+        BerTlv mrzTlv = tlvs.find(tMRZ);
         assertNotNull(mrzTlv, "MRZ TLV (tag 5F1F) must exist");
         assertFalse(mrzTlv.isConstructed(), "MRZ (5F1F) must be primitive");
 
@@ -114,7 +115,8 @@ public class CieDataGroupBuilderTest {
 
 
     private byte[] buildMrz(){
-        return new CieDataGroupBuilder().buildMrz(
+
+        MrzData mrzData = new MrzData(
                 "I<",
                 NATIONALITY,
                 DOC_NUMBER,
@@ -125,8 +127,8 @@ public class CieDataGroupBuilderTest {
                 SURNAME,
                 NAME,
                 null,
-                null
-        ).getBytes();
+                null);
+        return new CieDataGroupBuilder().buildMrz(mrzData).getBytes();
 
     }
 

@@ -1,6 +1,5 @@
 package it.pagopa.pn.ciechecker.generator.pki;
 
-import it.pagopa.pn.ciechecker.generator.model.CaAndKey;
 import it.pagopa.pn.ciechecker.generator.model.CertAndKey;
 import it.pagopa.pn.ciechecker.generator.model.Issuer;
 import org.bouncycastle.cert.CertIOException;
@@ -31,28 +30,28 @@ class CiePkiTest {
 
     @Test
     void createChainAndVerityTest() throws Exception {
-        CaAndKey ca = pki.createDevTestCA("CN=Dev Test CA,O=PagoPA,L=RM,C=IT", 3072, 3650);
-        ca.certificate().checkValidity();
+        CertAndKey ca = pki.createDevTestCA("CN=Dev Test CA,O=PagoPA,L=RM,C=IT", 3072, 3650);
+        ca.getCertificate().checkValidity();
 
-        Issuer issuer = new Issuer(ca.certificate(), ca.keyPair().getPrivate());
+        Issuer issuer = new Issuer(ca.getCertificate(), ca.getPrivateKey());
         CertAndKey ds = pki.issueDocumentSigner("CN=DocumentSigner-DEV,O=PagoPA,L=RM,C=IT",
                 issuer, 2048, 1825);
-        ds.certificate().checkValidity();
+        ds.getCertificate().checkValidity();
 
         CertAndKey ias = pki.issueIasCertificate("CN=CIE-IAS,O=PagoPA,L=RM,C=IT",
-                ds.certificate(), ds.keyPair().getPrivate(), 1095);
-        ias.certificate().checkValidity();
+                ds.getCertificate(), ds.getPrivateKey(), 1095);
+        ias.getCertificate().checkValidity();
 
-        ds.certificate().verify(ca.certificate().getPublicKey());
-        ias.certificate().verify(ds.certificate().getPublicKey());
+        ds.getCertificate().verify(ca.getPublicKey());
+        ias.getCertificate().verify(ds.getPublicKey());
     }
 
     @Test
     void exportToDerTest() throws Exception {
-        CaAndKey ca = pki.createDevTestCA("CN=RoundTripCA,O=PagoPA,C=IT", 3072, 3650);
+        CertAndKey ca = pki.createDevTestCA("CN=RoundTripCA,O=PagoPA,C=IT", 3072, 3650);
 
-        byte[] der = pki.toDer(ca.certificate());
-        byte[] pem = pki.toPem(ca.certificate());
+        byte[] der = pki.toDer(ca.getCertificate());
+        byte[] pem = pki.toPem(ca.getCertificate());
 
         // DER → X509
         X509Certificate xDer = (X509Certificate) CertificateFactory.getInstance("X.509")
@@ -67,24 +66,24 @@ class CiePkiTest {
         X509Certificate xPem = (X509Certificate) CertificateFactory.getInstance("X.509")
                 .generateCertificate(new ByteArrayInputStream(derFromPem));
 
-        assertEquals(ca.certificate().getSubjectX500Principal(), xDer.getSubjectX500Principal());
-        assertEquals(ca.certificate().getSubjectX500Principal(), xPem.getSubjectX500Principal());
+        assertEquals(ca.getCertificate().getSubjectX500Principal(), xDer.getSubjectX500Principal());
+        assertEquals(ca.getCertificate().getSubjectX500Principal(), xPem.getSubjectX500Principal());
         assertArrayEquals(der, derFromPem, "DER originario e DER estratto dal PEM devono coincidere");
     }
 
     @Test
     void signNonceDecryptAndVerifyTest() throws Exception {
-        CaAndKey ca = pki.createDevTestCA("CN=Dev CA,O=PagoPA,C=IT", 3072, 3650);
-        Issuer issuer = new Issuer(ca.certificate(), ca.keyPair().getPrivate());
+        CertAndKey ca = pki.createDevTestCA("CN=Dev CA,O=PagoPA,C=IT", 3072, 3650);
+        Issuer issuer = new Issuer(ca.getCertificate(), ca.getPrivateKey());
         CertAndKey ds = pki.issueDocumentSigner("CN=DS,O=PagoPA,C=IT", issuer, 2048, 1825);
         CertAndKey ias = pki.issueIasCertificate("CN=IAS,O=PagoPA,C=IT",
-                ds.certificate(), ds.keyPair().getPrivate(), 1095);
+                ds.getCertificate(), ds.getPrivateKey(), 1095);
 
         byte[] nonce = "hello-nonce".getBytes();
-        byte[] signed = pki.signWithIasPrivate(nonce, ias.keyPair().getPrivate());
+        byte[] signed = pki.signWithIasPrivate(nonce, ias.getPrivateKey());
 
         Cipher c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        c.init(Cipher.DECRYPT_MODE, ias.certificate().getPublicKey());
+        c.init(Cipher.DECRYPT_MODE, ias.getPublicKey());
         byte[] plain = c.doFinal(signed);
 
         assertArrayEquals(nonce, plain);
@@ -92,27 +91,27 @@ class CiePkiTest {
 
     @Test
     void certificatesValidityTest() throws NoSuchAlgorithmException, CertificateException, OperatorCreationException, CertIOException {
-        CaAndKey ca = pki.createDevTestCA("CN=ValidityCA,O=PagoPA,C=IT", 3072, 3650);
-        Issuer issuer = new Issuer(ca.certificate(), ca.keyPair().getPrivate());
+        CertAndKey ca = pki.createDevTestCA("CN=ValidityCA,O=PagoPA,C=IT", 3072, 3650);
+        Issuer issuer = new Issuer(ca.getCertificate(), ca.getPrivateKey());
         CertAndKey ds = pki.issueDocumentSigner("CN=DS,O=PagoPA,C=IT", issuer, 2048, 1825);
         CertAndKey ias = pki.issueIasCertificate("CN=IAS,O=PagoPA,C=IT",
-                ds.certificate(), ds.keyPair().getPrivate(), 1095);
+                ds.getCertificate(), ds.getPrivateKey(), 1095);
 
         Instant now = Instant.now();
-        assertTrue(ca.certificate().getNotBefore().toInstant().isBefore(now.plusSeconds(3600)));
-        assertTrue(ds.certificate().getNotAfter().toInstant().isAfter(now.plusSeconds(24 * 3600)));
-        assertTrue(ias.certificate().getNotAfter().toInstant().isAfter(now.plusSeconds(24 * 3600)));
+        assertTrue(ca.getCertificate().getNotBefore().toInstant().isBefore(now.plusSeconds(3600)));
+        assertTrue(ds.getCertificate().getNotAfter().toInstant().isAfter(now.plusSeconds(24 * 3600)));
+        assertTrue(ias.getCertificate().getNotAfter().toInstant().isAfter(now.plusSeconds(24 * 3600)));
     }
 
     @Test
     void wrongIssuerDoesNotVerifyDs() throws CertificateException, NoSuchAlgorithmException, OperatorCreationException, CertIOException {
-        CaAndKey ca1 = pki.createDevTestCA("CN=CA1,O=PagoPA,C=IT", 3072, 3650);
-        assertTrue(ca1.certificate().getNotBefore().toInstant().isBefore(Instant.now()));
-        assertTrue(ca1.certificate().getNotAfter().toInstant().isAfter(Instant.now()));
-        Issuer issuer1 = new Issuer(ca1.certificate(), ca1.keyPair().getPrivate());
+        CertAndKey ca1 = pki.createDevTestCA("CN=CA1,O=PagoPA,C=IT", 3072, 3650);
+        assertTrue(ca1.getCertificate().getNotBefore().toInstant().isBefore(Instant.now()));
+        assertTrue(ca1.getCertificate().getNotAfter().toInstant().isAfter(Instant.now()));
+        Issuer issuer1 = new Issuer(ca1.getCertificate(), ca1.getPrivateKey());
         CertAndKey ds = pki.issueDocumentSigner("CN=DS,O=PagoPA,C=IT", issuer1, 2048, 1825);
 
-        CaAndKey ca2 = pki.createDevTestCA("CN=CA2,O=PagoPA,C=IT", 3072, 3650);
-        assertThrows(Exception.class, () -> ds.certificate().verify(ca2.certificate().getPublicKey()));
+        CertAndKey ca2 = pki.createDevTestCA("CN=CA2,O=PagoPA,C=IT", 3072, 3650);
+        assertThrows(Exception.class, () -> ds.getCertificate().verify(ca2.getPublicKey()));
     }
 }

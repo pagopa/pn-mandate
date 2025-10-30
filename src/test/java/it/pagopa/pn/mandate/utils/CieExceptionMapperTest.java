@@ -50,6 +50,7 @@ class CieExceptionMapperTest {
         verifyCode(ex, "CIE_NOT_RELATED_TO_DELEGATOR_ERROR");
     }
 
+
     @Test
     @DisplayName("Should throw PnInvalidCieDataException for CIE expired error result")
     void mapToExceptionWithCieExpiredShouldThrowInvalidCieDataException() {

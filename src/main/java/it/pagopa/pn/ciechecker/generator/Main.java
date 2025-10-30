@@ -1,9 +1,9 @@
 package it.pagopa.pn.ciechecker.generator;
 
-
+@lombok.CustomLog
 public class Main {
 
     public static void main(String[] args) {
-        System.out.println("Generator tool");
+        log.info("Generator tool");
     }
 }

@@ -50,6 +50,15 @@ class CieExceptionMapperTest {
         verifyCode(ex, "CIE_NOT_RELATED_TO_DELEGATOR_ERROR");
     }
 
+
+    @Test
+    @DisplayName("Should throw PnInvalidCieDataException for CIE expired error result")
+    void mapToExceptionWithCieExpiredShouldThrowInvalidCieDataException() {
+        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_EXPIRATIONDATE);
+        assertInstanceOf(PnInvalidCieDataException.class, ex);
+        verifyCode(ex, "CIE_EXPIRED_ERROR");
+    }
+
     @Test
     @DisplayName("Should throw PnInvalidVerificationCodeException for invalid nonce error result")
     void mapToExceptionWithNonceErrorShouldThrowInvalidVerificationCodeException() {

@@ -1,6 +1,7 @@
 package it.pagopa.pn.ciechecker;
 
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
+import it.pagopa.pn.ciechecker.utils.CieCheckerConstants;
 import it.pagopa.pn.ciechecker.utils.LogsConstant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
@@ -23,7 +24,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
+import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.*;
 import it.pagopa.pn.ciechecker.model.*;
 
 import org.bouncycastle.asn1.*;
@@ -89,7 +90,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             this.setCscaAnchor(cscaAnchor);
             log.debug("CSCA ANCHOR SIZE: {}", cscaAnchor.size());
         }catch (Exception e){
-            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_INIT, e.getClass().getName()+" Message: "+e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_INIT, e.getClass().getName()+ LogsConstant.MESSAGE +e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS, e);
         }
     }
@@ -101,7 +102,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
         CMSSignedData cms;
         try {
-            validateDataInput(data);
+            ValidateUtils.validateDataInput(data);
 
             cms = new CMSSignedData(truncSodBytes(data.getCieIas().getSod()));
             log.debug(LogsConstant.CIECHECKER_VALIDATE_MANDATE, "CMSSignedData={}", cms);
@@ -134,35 +135,17 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, result.getValue());
             return result;
         }catch(CMSException cmse){
-            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, cmse.getClass().getName() + " Message: " + ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA.getValue());
+            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, cmse.getClass().getName() + LogsConstant.MESSAGE  + ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA.getValue());
             return ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA;
         }catch (CieCheckerException cce ) {
-            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, cce.getClass().getName() + " Message: " + cce.getResult().getValue());
+            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, cce.getClass().getName() + LogsConstant.MESSAGE  + cce.getResult().getValue());
             return cce.getResult();
         }catch (Exception e ) {
-            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, e.getClass().getName() + " Message: " + e.getMessage());
-            //throw new CieCheckerException(ResultCieChecker.KO, e);
+            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, e.getClass().getName() + LogsConstant.MESSAGE  + e.getMessage());
             return ResultCieChecker.KO;
         }
     }
 
-    public boolean validateDataInput(CieValidationData data) throws CieCheckerException {
-
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL_WITH_ARGS, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT, data);
-        if ( Objects.isNull(data) || Objects.isNull(data.getCieIas()) || Objects.isNull(data.getCieMrtd())) throw new CieCheckerException(ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
-        if ( Objects.isNull(data.getCieIas().getSod()) || data.getCieIas().getSod().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIESOD);
-        if ( Objects.isNull(data.getCieIas().getNis()) || data.getCieIas().getNis().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CIENIS);
-        if ( Objects.isNull(data.getCieIas().getPublicKey()) || data.getCieIas().getPublicKey().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_PUBLICKEY);
-        if ( Objects.isNull(data.getSignedNonce()) || data.getSignedNonce().length == 0 ) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_SIGNEDNONCE);
-        if ( Objects.isNull(data.getNonce()) || data.getNonce().isEmpty() ) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_NONCE);
-        if ( Objects.isNull(data.getCieMrtd().getSod()) || data.getCieMrtd().getSod().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDSOD);
-        if ( Objects.isNull(data.getCieMrtd().getDg1()) || data.getCieMrtd().getDg1().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG1);
-        if ( Objects.isNull(data.getCieMrtd().getDg11()) || data.getCieMrtd().getDg11().length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_MRTDDG11);
-        if ( Objects.isNull(data.getCodFiscDelegante()) || data.getCodFiscDelegante().isBlank()) throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CODFISCDELEGANTE);
-
-        log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT, data, true);
-        return true;
-    }
 
     private static byte[] truncSodBytes(byte [] inSod) {
     	return Arrays.copyOfRange(inSod, 4, inSod.length);
@@ -178,7 +161,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
         log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_CODICEFISCALE_DELEGANTE);
         String codiceFiscaleDelegante = parserTLVTagValue(data.getCieMrtd().getDg11(), TAG_PERSONAL_NUMBER);
-        //log.debug("codiceFiscaleDelegante: {} - data.getCodFiscDelegante(): {}", codiceFiscaleDelegante, data.getCodFiscDelegante());
         if (data.getCodFiscDelegante().equals(codiceFiscaleDelegante))
             return ResultCieChecker.OK;
         else {
@@ -191,7 +173,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
         log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.CIECHECKER_VERIFY_EXPIRATION_CIE);
         String dataElement = parserTLVTagValue(dg1, TAG_EXPIRE_DATE);
-        //log.debug("dataElement: {} ", dataElement);
 
         String expirationDate = dataElement.substring(38, 38+6);
         log.debug("expirationDate: {} ", expirationDate);
@@ -209,7 +190,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 return ResultCieChecker.KO_EXC_EXPIRATIONDATE;
 
         } catch (DateTimeParseException dtpe) {
-            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_EXPIRATION_CIE, DateTimeParseException.class + " - Message: " + dtpe.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_EXPIRATION_CIE, DateTimeParseException.class + LogsConstant.MESSAGE  + dtpe.getMessage());
             throw new CieCheckerException( ResultCieChecker.KO_EXC_INVALID_EXPIRATIONDATE, dtpe );
         }
     }
@@ -237,19 +218,16 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE);
             }else {
-                log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, "ResultCieChecker", ResultCieChecker.OK.getValue());
+                log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, LogsConstant.RESULTCHECKER, ResultCieChecker.OK.getValue());
                 return ResultCieChecker.OK;
             }
         }catch (IllegalArgumentException ie){
-            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ie.getClass().getName() + " Message: " +  ie.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, ie.getClass().getName() + LogsConstant.MESSAGE  +  ie.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_PUBLICKEY, ie);
         }catch( CryptoException cre){
-            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, cre.getClass().getName() + " - Message: " + cre.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, cre.getClass().getName() + LogsConstant.MESSAGE  + cre.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_INVALID_CRYPTOGRAPHIC_OPERATION, cre);
-//        } catch (DecoderException de) {
-//            log.error(LogsCostant.EXCEPTION_IN_PROCESS, LogsCostant.CIECHECKER_VERIFY_CHALLENGE_FROM_SIGNATURE, de.getClass().getName() + " - Message: " + de.getMessage());
-//            throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_HEX_BYTE, de);
-       }
+        }
     }
 
 
@@ -345,10 +323,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
                 return true;
             }
         }catch(CMSException cmse){
-            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, cmse.getClass().getName() +" - Message: " + cmse.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, cmse.getClass().getName() +LogsConstant.MESSAGE  + cmse.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, cmse);
         } catch (Exception  e ){
-            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, e.getClass().getName() + " - Message: " + e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, e.getClass().getName() + LogsConstant.MESSAGE  + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO, e);
         }
     }
@@ -376,10 +354,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
 
             return verifyIntegrityCore(mrtd.getSod(), dg1, dg11);
         } catch (CieCheckerException ce) {
-            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_INTEGRITY, ce.getClass().getName() + " - Message: " + ce.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_INTEGRITY, ce.getClass().getName() + LogsConstant.MESSAGE  + ce.getMessage());
             throw new CieCheckerException(ce.getResult(), ce);
         } catch (Exception e) {
-            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_INTEGRITY, e.getClass().getName() + " - Message: " + e.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_INTEGRITY, e.getClass().getName() + LogsConstant.MESSAGE  + e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_DIGEST_NOT_VERIFIED, e);
         }
     }
@@ -460,7 +438,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.CIECHECKER_VERIFY_TRUST_CHAIN, "ResultCieChecker", result.getValue());
             return ValidateUtils.verifyDigitalSignature(cms);
         }catch(IOException ioe){
-            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_TRUST_CHAIN, ioe.getClass().getName() + " - Message: " + ioe.getMessage());
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_TRUST_CHAIN, ioe.getClass().getName() + LogsConstant.MESSAGE  + ioe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION, ioe);
         }
     }

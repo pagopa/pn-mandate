@@ -1,7 +1,10 @@
 package it.pagopa.pn.ciechecker.generator.sod;
 
+import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.generator.dg.CieDataGroupBuilder;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
+import it.pagopa.pn.ciechecker.model.ResultCieChecker;
+import it.pagopa.pn.ciechecker.utils.LogsConstant;
 import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.DERNull;
 import org.bouncycastle.asn1.DEROctetString;
@@ -26,6 +29,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@lombok.CustomLog
 public final class SodMrtdBuilder {
 
     public enum HashAlg {
@@ -35,11 +39,16 @@ public final class SodMrtdBuilder {
     }
 
     public byte[] buildMrtdSod(byte[] dg1, byte[] dg11,
-                               PrivateKey dsKey, X509Certificate dsCert) throws Exception {
-        Map<Integer, byte[]> map = new LinkedHashMap<>();
-        map.put(1,  digest(HashAlg.SHA256, dg1));   // DG1
-        map.put(11, digest(HashAlg.SHA256, dg11));  // DG11
-        return buildSignedSod(map, dsKey, dsCert);
+                               PrivateKey dsKey, X509Certificate dsCert) throws CieCheckerException {
+        try{
+            Map<Integer, byte[]> map = new LinkedHashMap<>();
+            map.put(1,  digest(HashAlg.SHA256, dg1));   // DG1
+            map.put(11, digest(HashAlg.SHA256, dg11));  // DG11
+            return buildSignedSod(map, dsKey, dsCert);
+        }catch (Exception e ){
+            log.error(Exception.class + LogsConstant.MESSAGE  + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
+        }
     }
 
     public CieMrtd buildCieMrtdAndSignSodWithDocumentSigner(
@@ -54,65 +63,74 @@ public final class SodMrtdBuilder {
             String placeOfBirth,
             PrivateKey dsPrivateKey,
             X509Certificate dsCertificate
-    ) throws Exception {
+    ) throws CieCheckerException {
+        try {
+            String fullName = givenName + " " + surname;
 
-        String fullName = givenName + " " + surname;
+            // DG1/DG11
+            CieDataGroupBuilder dgBuilder = new CieDataGroupBuilder();
 
-        // DG1/DG11
-        CieDataGroupBuilder dgBuilder = new CieDataGroupBuilder();
+            byte[] dg1 = dgBuilder.buildDG1(
+                    surname,
+                    givenName,
+                    documentNumber,
+                    nationality,
+                    dateOfBirth,
+                    sex,
+                    expiryDate
+            );
 
-        byte[] dg1 = dgBuilder.buildDG1(
-                surname,
-                givenName,
-                documentNumber,
-                nationality,
-                dateOfBirth,
-                sex,
-                expiryDate
-        );
+            byte[] dg11 = dgBuilder.buildDG11(
+                    fullName,
+                    codiceFiscale,
+                    dateOfBirth,
+                    placeOfBirth,
+                    null,
+                    null,
+                    null
+            );
 
-        byte[] dg11 = dgBuilder.buildDG11(
-                fullName,
-                codiceFiscale,
-                dateOfBirth,
-                placeOfBirth,
-                null,
-                null,
-                null
-        );
+            // SOD GENERATION
+            byte[] sod = buildMrtdSod(dg1, dg11, dsPrivateKey, dsCertificate);
+            byte[] sodPaddded = new byte[sod.length + 4];
+            System.arraycopy(sod, 0, sodPaddded, 4, sod.length);
 
-        // SOD GENERATION
-        byte[] sod = buildMrtdSod(dg1, dg11, dsPrivateKey, dsCertificate);
-        byte [] sodPaddded = new byte[sod.length+4];
-        System.arraycopy(sod, 0, sodPaddded, 4, sod.length);
+            // CieMrtd
+            CieMrtd mrtd = new CieMrtd();
+            mrtd.setDg1(dg1);
+            mrtd.setDg11(dg11);
+            mrtd.setSod(sodPaddded);
 
-        // CieMrtd
-        CieMrtd mrtd = new CieMrtd();
-        mrtd.setDg1(dg1);
-        mrtd.setDg11(dg11);
-        mrtd.setSod(sodPaddded);
-
-        return mrtd;
+            return mrtd;
+        }catch (Exception e ){
+            log.error(Exception.class + LogsConstant.MESSAGE  + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
+        }
     }
 
     /** Builds CMS SignedData with eContent = LDSSecurityObject (DER). */
     public byte[] buildSignedSod(Map<Integer, byte[]> dgHashMap,
-                                 PrivateKey dsKey, X509Certificate dsCert) throws Exception {
-        byte[] eContent = encodeLdsSecurityObject(dgHashMap);
+                                 PrivateKey dsKey, X509Certificate dsCert) throws CieCheckerException {
+        try {
+            byte[] eContent = encodeLdsSecurityObject(dgHashMap);
 
-        CMSTypedData msg = new CMSProcessableByteArray(
-                ICAOObjectIdentifiers.id_icao_ldsSecurityObject, eContent
-        );
+            CMSTypedData msg = new CMSProcessableByteArray(
+                    ICAOObjectIdentifiers.id_icao_ldsSecurityObject, eContent
+            );
 
-        CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
-        gen.addSignerInfoGenerator(
-                new JcaSimpleSignerInfoGeneratorBuilder()
-                        .build("SHA256withRSA", dsKey, dsCert)
-        );
-        gen.addCertificate(new JcaX509CertificateHolder(dsCert));
+            CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
+            gen.addSignerInfoGenerator(
+                    new JcaSimpleSignerInfoGeneratorBuilder()
+                            .build("SHA256withRSA", dsKey, dsCert)
+            );
+            gen.addCertificate(new JcaX509CertificateHolder(dsCert));
 
-        CMSSignedData sd = gen.generate(msg, true);
-        return sd.getEncoded();
+            CMSSignedData sd = gen.generate(msg, true);
+            return sd.getEncoded();
+        }catch (Exception e ){
+            log.error(Exception.class + LogsConstant.MESSAGE  + e.getMessage());
+            throw new CieCheckerException(ResultCieChecker.KO, e);
+        }
     }
 
     public byte[] encodeLdsSecurityObject(Map<Integer, byte[]> dgHashMap) throws IOException {

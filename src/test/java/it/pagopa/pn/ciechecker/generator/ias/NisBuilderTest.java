@@ -31,7 +31,7 @@ import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.List;
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.OK;
+import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.OK;
 import static it.pagopa.pn.ciechecker.generator.ias.IasBuilder.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;

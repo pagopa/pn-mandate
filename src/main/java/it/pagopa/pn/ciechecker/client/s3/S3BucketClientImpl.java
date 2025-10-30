@@ -27,7 +27,7 @@ public class S3BucketClientImpl  implements S3BucketClient {
     private PnMandateConfig pnMandateConfig;
     private S3Client clientS3;
 
-    private static String[] s3UriInfo;
+    private String[] s3UriInfo;
 
     @Override
     public InputStream getObjectContent(String s3Uri) throws CieCheckerException {

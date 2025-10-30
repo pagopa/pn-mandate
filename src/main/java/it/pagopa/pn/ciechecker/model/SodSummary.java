@@ -5,7 +5,7 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.security.cert.X509Certificate;
-import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * /**
@@ -23,14 +23,14 @@ import java.util.LinkedHashMap;
 public final class SodSummary {
     private final String contentTypeOid;
     private final AlgorithmIdentifier dgDigestAlgorithm;
-    private final LinkedHashMap<Integer, byte[]> dgExpectedHashes; // preserves order
+    private final Map<Integer, byte[]> dgExpectedHashes; // preserves order
     private final AlgorithmIdentifier signatureAlgorithm;
     private final byte[] cmsSignature;
     private final X509Certificate dscCertificate;
 
     public SodSummary(String contentTypeOid,
                       AlgorithmIdentifier dgDigestAlgorithm,
-                      LinkedHashMap<Integer, byte[]> dgExpectedHashes,
+                      Map<Integer, byte[]> dgExpectedHashes,
                       AlgorithmIdentifier signatureAlgorithm,
                       byte[] cmsSignature,
                       X509Certificate dscCertificate) {

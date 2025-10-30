@@ -30,7 +30,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.Objects;
 
-import static it.pagopa.pn.ciechecker.CieCheckerConstants.*;
+import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.*;
 
 public class CiePki {
 

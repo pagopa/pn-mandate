@@ -27,7 +27,8 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
 
     @Override
     public CieValidationData generateCieValidationData(Path outputDir,
-                                                       String codiceFiscale,
+                                                       String codiceFiscaleDelegante,
+                                                       String codiceFiscaleCIE,
                                                        LocalDate expirationDate,
                                                        String nonce) throws CieCheckerException {
 
@@ -53,8 +54,8 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
                     CieGeneratorConstants.DEFAULT_NATIONALITY,
                     CieGeneratorConstants.DEFAULT_DATE_OF_BIRTH,
                     CieGeneratorConstants.DEFAULT_SEX,
-                    CieGeneratorConstants.DEFAULT_EXPIRY_DATE,
-                    codiceFiscale,
+                    expirationDate,
+                    codiceFiscaleCIE,
                     CieGeneratorConstants.DEFAULT_PLACE_OF_BIRTH,
                     issuerCertAndKeyFromS3.getPrivateKey(),
                     issuerCertAndKeyFromS3.getCertificate()
@@ -67,7 +68,7 @@ public class CieGeneratorApiImpl implements CieGeneratorApi {
             validationData.setCieMrtd(mrtd);
             validationData.setCieIas(ias);
             validationData.setNonce(nonce);
-            validationData.setCodFiscDelegante(codiceFiscale);
+            validationData.setCodFiscDelegante(codiceFiscaleDelegante);
 
             validationData.setSignedNonce(ChallengeResponseBuilder.signNonce(nonce,issuerCertAndKeyFromS3.getPrivateKey()));
 

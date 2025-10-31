@@ -2,21 +2,32 @@ package it.pagopa.pn.ciechecker.exception;
 
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 
+import java.util.Objects;
+
 public class CieCheckerException extends RuntimeException{
 
-    private ResultCieChecker result;
+    private final ResultCieChecker result;
 
-    public CieCheckerException(){super();}
-    public CieCheckerException(String message){super(message);}
-    public CieCheckerException(Exception cause){super(cause);}
+    public CieCheckerException(){
+        super();
+        result = null;
+    }
+    public CieCheckerException(String message){
+        super(message);
+        result = null;
+    }
+    public CieCheckerException(Exception cause){
+        super(cause);
+        result = null;
+    }
 
     public CieCheckerException(ResultCieChecker result) {
-        super(result.getValue());
+        super(Objects.nonNull(result) ? result.getValue() : null);
         this.result = result;
     }
 
     public CieCheckerException(ResultCieChecker result, Exception cause) {
-        super(result.getValue(), cause);
+        super(Objects.nonNull(result) ? result.getValue() : null, cause);
         this.result = result;
     }
 

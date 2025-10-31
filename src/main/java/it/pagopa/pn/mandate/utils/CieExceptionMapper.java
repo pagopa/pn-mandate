@@ -73,7 +73,11 @@ public class CieExceptionMapper {
         KO_EXC_EXTRACTION_PUBLICKEY(ResultCieChecker.KO_EXC_EXTRACTION_PUBLICKEY, ResultCieClientErrorType.CIE_SIGNATURE_ERROR),
         KO_EXC_NOVALID_DIGITAL_SIGNATURE(ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE, ResultCieClientErrorType.CIE_SIGNATURE_ERROR),
         KO_EXC_NOFOUND_CODFISCALE_DG11(ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11, ResultCieClientErrorType.CIE_SIGNATURE_ERROR),
-        KO_EXC_CODFISCALE_NOT_VERIFIED(ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED, ResultCieClientErrorType.CIE_SIGNATURE_ERROR);
+
+        // CIE not related to delegator
+        KO_EXC_CODFISCALE_NOT_VERIFIED(ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED, ResultCieClientErrorType.CIE_NOT_RELATED_TO_DELEGATOR_ERROR),
+        // CIE Expired
+        KO_EXC_EXPIRATIONDATE(ResultCieChecker.KO_EXC_EXPIRATIONDATE, ResultCieClientErrorType.CIE_EXPIRED_ERROR);
 
 
         private final ResultCieClientErrorType type;
@@ -90,7 +94,9 @@ public class CieExceptionMapper {
     private enum ResultCieClientErrorType {
         CIE_INVALID_INPUT("Invalid input data provided"), // Missing or malformed input
         CIE_INTEGRITY_ERROR("Data integrity check failed"), // Data integrity issues
-        CIE_SIGNATURE_ERROR("Signature verification failed"); // Signature verification issues
+        CIE_SIGNATURE_ERROR("Signature verification failed"), // Signature verification issues
+        CIE_NOT_RELATED_TO_DELEGATOR_ERROR("CIE is valid, but not related to the delegator of given mandate"),
+        CIE_EXPIRED_ERROR("CIE has expired"); // CIE expired
 
         private final String message;
         private final String code;

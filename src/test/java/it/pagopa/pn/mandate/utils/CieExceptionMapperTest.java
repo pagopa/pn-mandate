@@ -43,6 +43,23 @@ class CieExceptionMapperTest {
     }
 
     @Test
+    @DisplayName("Should throw PnInvalidCieDataException for CIE not related to delegator error result")
+    void mapToExceptionWithCieNotRelatedToDelegatorShouldThrowInvalidCieDataException() {
+        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_CODFISCALE_NOT_VERIFIED);
+        assertInstanceOf(PnInvalidCieDataException.class, ex);
+        verifyCode(ex, "CIE_NOT_RELATED_TO_DELEGATOR_ERROR");
+    }
+
+
+    @Test
+    @DisplayName("Should throw PnInvalidCieDataException for CIE expired error result")
+    void mapToExceptionWithCieExpiredShouldThrowInvalidCieDataException() {
+        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_EXPIRATIONDATE);
+        assertInstanceOf(PnInvalidCieDataException.class, ex);
+        verifyCode(ex, "CIE_EXPIRED_ERROR");
+    }
+
+    @Test
     @DisplayName("Should throw PnInvalidVerificationCodeException for invalid nonce error result")
     void mapToExceptionWithNonceErrorShouldThrowInvalidVerificationCodeException() {
         PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE);

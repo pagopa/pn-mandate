@@ -1,4 +1,4 @@
-package it.pagopa.pn.ciechecker;
+package it.pagopa.pn.ciechecker.utils;
 
 public class CieCheckerConstants {
 
@@ -82,6 +82,7 @@ public class CieCheckerConstants {
     public static final String EXC_INVALID_PARAMETER_MRTDDG1 = "Input parameter DG1 MRTD is null";
     public static final String EXC_INVALID_PARAMETER_MRTDDG11 = "Input parameter DG11 MRTD is null";
     public static final String EXC_INVALID_PARAMETER_CODFISCDELEGANTE = "Input parameter CODICE FISCALE DELEGANTE is null";
+    public static final String EXC_INVALID_PARAMETER_CIECAANDKEY = "Input parameter CIECAANDKEY is null";
     public static final String EXC_INVALID_VERIFIER = "Signed Attributes are not valid or do not match the data";
     public static final String EXC_INVALID_SIGNATURE = "Signature object is not initialized properly";
     public static final String EXC_INVALID_ALGORITHM = "No Provider supports a Signature implementation for the specified algorithm";

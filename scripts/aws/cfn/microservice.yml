@@ -367,6 +367,10 @@ Parameters:
     Default: "3000ms"
     Description: Connection timeout for Lollipop Assertion endpoint in duration format
 
+  LollipopExpectedLcOriginalMethod:
+    Type: String
+    Description: "expected lollipop consumer original method (list separated by ;)"
+
   CieValidationCertS3Path:
     Type: String
     Description: "S3 path to the validation certificate (env-specific)."
@@ -433,6 +437,7 @@ Resources:
         ContainerEnvEntry22: !Sub "LOLLIPOP_ASSERTION_REST_CONFIG_CONNECTION_TIMEOUT=${LollipopAssertionRestConfigConnectionTimeout}"
         ContainerEnvEntry23: !Sub 'CSCA_MASTERLIST_S3_PATH=s3://pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/${CieValidationCertS3Path}'
         ContainerEnvEntry24: !Sub 'LOLLIPOP_WHITE_LIST=${LollipopWhiteList}'
+        ContainerEnvEntry25: !Sub "LOLLIPOP_EXPECTED_LC_ORIGINAL_METHOD=${LollipopExpectedLcOriginalMethod}"
         ApplicativeEnvFileChecksum: !Ref ApplicativeEnvFileChecksum
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName

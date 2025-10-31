@@ -3,6 +3,7 @@ package it.pagopa.pn.ciechecker.generator.challenge;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.utils.LogsConstant;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.crypto.encodings.PKCS1Encoding;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -11,7 +12,7 @@ import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 
-@lombok.CustomLog
+@Slf4j
 public class ChallengeResponseBuilder {
 
     private ChallengeResponseBuilder(){}

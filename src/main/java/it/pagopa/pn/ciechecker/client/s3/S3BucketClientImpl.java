@@ -7,6 +7,7 @@ import it.pagopa.pn.ciechecker.utils.LogsConstant;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -20,14 +21,14 @@ import java.util.Objects;
 
 @Service
 @AllArgsConstructor
-@lombok.CustomLog
+@Slf4j
 @Data
 public class S3BucketClientImpl  implements S3BucketClient {
 
     private PnMandateConfig pnMandateConfig;
     private S3Client clientS3;
 
-    private String[] s3UriInfo;
+    private static String[] s3UriInfo;
 
     @Override
     public InputStream getObjectContent(String s3Uri) throws CieCheckerException {

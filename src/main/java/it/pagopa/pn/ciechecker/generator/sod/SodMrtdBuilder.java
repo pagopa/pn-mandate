@@ -5,6 +5,7 @@ import it.pagopa.pn.ciechecker.generator.dg.CieDataGroupBuilder;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.utils.LogsConstant;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.DERNull;
 import org.bouncycastle.asn1.DEROctetString;
@@ -29,7 +30,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@lombok.CustomLog
+@Slf4j
 public final class SodMrtdBuilder {
 
     public enum HashAlg {

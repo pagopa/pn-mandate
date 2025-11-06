@@ -13,7 +13,11 @@ import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto.StatusEnu
 import it.pagopa.pn.mandate.mapper.StatusEnumMapper;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
+import it.pagopa.pn.mandate.model.InputSearchMandateDto;
+import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.RevocationCause;
+import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
@@ -59,6 +63,7 @@ public class MandateDao extends BaseDao {
 
     String table;
     Duration pendingExpire;
+    Duration ciePendingExpire;
 
     public MandateDao(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                       DynamoDbAsyncClient dynamoDbAsyncClient,
@@ -70,6 +75,7 @@ public class MandateDao extends BaseDao {
         this.dynamoDbAsyncClient = dynamoDbAsyncClient;
         this.dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient;
         this.pendingExpire = awsConfigs.getPendingDuration();
+        this.ciePendingExpire= awsConfigs.getCiePendingDuration();
     }
 
     //#region public methods
@@ -77,37 +83,58 @@ public class MandateDao extends BaseDao {
     /**
      * Ritorna la lista delle deleghe per delegato
      *
-     * @param delegateInternaluserid internaluserid del delegato
-     * @param status                 stato da usare nel filtro (OPZIONALE)
+     * @param searchMandateDto parametri di ricerca
+     * @param typeSegregatorFilter segregatore da utilizzare per filtrare i tipi di delega (OPZIONALE, se null non viene applicato alcun filtro)
      * @return lista delle deleghe
      */
-    public Flux<MandateEntity> listMandatesByDelegate(String delegateInternaluserid, Integer status, String mandateId, CxTypeAuthFleet xPagopaPnCxType, List<String> cxGroups) {
+    public Flux<MandateEntity> listMandatesByDelegate(InputSearchMandateDto searchMandateDto, TypeSegregatorFilter typeSegregatorFilter) {
         // devo sempre filtrare. Se lo stato è passato, vuol dire che voglio filtrare solo per quello stato.
         // altrimenti, è IMPLICITO il fatto di filtrare per le deleghe pendenti e attive (ovvero < 20)
         // NB: listMandatesByDelegate e listMandatesByDelegator si assomigliano, ma a livello di query fanno
         // affidamento ad indici diversi e query diverse
         // listMandatesByDelegate si affida all'indice GSI delegate-state, che filtra per utente delegato E stato.
-        log.info("listMandatesByDelegate uid={} status={}", delegateInternaluserid, status);
+        log.info("listMandatesByDelegate searchMandateDto={}", searchMandateDto);
 
-        QueryConditional queryConditional = QueryConditional.sortLessThanOrEqualTo(getKeyBuild(delegateInternaluserid, StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)));
-        if (status != null) {
-            queryConditional = QueryConditional.keyEqualTo(getKeyBuild(delegateInternaluserid, status));    // si noti keyEqualTo al posto di sortLessThanOrEqualTo
+        QueryConditional queryConditional = QueryConditional.sortLessThanOrEqualTo(getKeyBuild(searchMandateDto.getDelegateId(), StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)));
+        if (searchMandateDto.getStatus() != null) {
+            queryConditional = QueryConditional.keyEqualTo(getKeyBuild(searchMandateDto.getDelegateId(), searchMandateDto.getStatus()));    // si noti keyEqualTo al posto di sortLessThanOrEqualTo
         }
 
         // devo sempre mettere un filtro di salvaguardia per quanto riguarda la scadenza della delega.
         // infatti se una delega è scaduta, potrebbe rimanere a sistema per qualche ora/giorno prima di essere svecchiata
         // e quindi va sempre previsto un filtro sulla data di scadenza
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
+        expressionValues.put(":now", AttributeValue.builder().s(Instant.now().toString()).build());
         String expression = getValidToFilterExpression();
 
-        if (mandateId != null) {
-            expressionValues.put(":mandateId", AttributeValue.builder().s(mandateId).build());
+        if (searchMandateDto.getMandateId() != null) {
+            expressionValues.put(":mandateId", AttributeValue.builder().s(searchMandateDto.getMandateId()).build());
             expression += AND + getMandateFilterExpression();
         }
 
-        if (CxTypeAuthFleet.PG == xPagopaPnCxType && !CollectionUtils.isEmpty(cxGroups)) {
-            expression += AND + buildExpressionGroupFilter(cxGroups, expressionValues);
+        if (CxTypeAuthFleet.PG == searchMandateDto.getCxType() && !CollectionUtils.isEmpty(searchMandateDto.getGroups())) {
+            expression += AND + buildExpressionGroupFilter(searchMandateDto.getGroups(), expressionValues);
+        }
+
+        // Se indicato un segregatore, viene utilizzato per filtrare le deleghe in base al workflowType
+        // In teoria dovrebbero indicarlo solo le API v1.
+        if(typeSegregatorFilter != null) {
+            String typeSegregatorExp = typeSegregatorFilter.buildExpression(expressionValues);
+            if(!typeSegregatorExp.isEmpty()) {
+                expression += AND + typeSegregatorExp;
+            }
+        }
+
+        if(searchMandateDto.getIun() != null) {
+            expression += AND + getIunFilterExpression(searchMandateDto.getIun(), expressionValues);
+        }
+
+        if(searchMandateDto.getNotificationSentAt() != null) {
+            expression += AND + getNotificationSentAtFilterExpression(searchMandateDto.getNotificationSentAt(), expressionValues);
+        }
+
+        if(searchMandateDto.getRootSenderId() != null) {
+            expression += AND + getSenderIdFilterExpression(searchMandateDto.getRootSenderId(), expressionValues);
         }
 
         log.debug("expression: {}", expression);
@@ -177,6 +204,11 @@ public class MandateDao extends BaseDao {
             addNewFilterExpression(filterExpression);
             addFilterExpression(delegatorIds, MandateEntity.COL_PK, ":d", EQ, expressionBuilder, filterExpression);
         }
+
+        addNewFilterExpression(filterExpression);
+        List<String> workflowTypesToSegregate = TypeSegregatorFilter.STANDARD.getTypes().stream().map(Enum::name).toList();
+        addWorkflowTypeStandardOrNotExistsFilter(workflowTypesToSegregate, expressionBuilder, filterExpression);
+
         if (!filterExpression.isEmpty()) {
             expressionBuilder.expression(filterExpression.toString());
         }
@@ -227,6 +259,19 @@ public class MandateDao extends BaseDao {
         expression.append(field).append(EQ).append(prefix).append(idx);
     }
 
+    private void addWorkflowTypeStandardOrNotExistsFilter(List<String> values,
+                                                          Expression.Builder expressionBuilder, StringBuilder expression) {
+        expression.append("(attribute_not_exists(").append(MandateEntity.COL_S_WORKFLOW_TYPE).append(") OR (");
+        for (int i = 0; i < values.size(); i++) {
+            expression.append(MandateEntity.COL_S_WORKFLOW_TYPE).append(EQ).append(":type").append(i);
+            if (i < values.size() - 1) {
+                expression.append(" OR ");
+            }
+            expressionBuilder.putExpressionValue(":type" + i, AttributeValue.builder().s(values.get(i)).build());
+        }
+        expression.append("))");
+    }
+
     private void addNewFilterExpression(StringBuilder expression) {
         expression.append(!expression.isEmpty() ? AND : "");
     }
@@ -268,6 +313,12 @@ public class MandateDao extends BaseDao {
         if (delegateType != null) {
             filterexp += AND + getDelegateIsPersonExpression();
             expressionValues.put(":isPerson", AttributeValue.builder().bool(DelegateType.PF == delegateType).build());
+        }
+
+        TypeSegregatorFilter typeSegregatorFilter = TypeSegregatorFilter.STANDARD;
+        String workflowTypeExpression = typeSegregatorFilter.buildExpression(expressionValues);
+        if (!workflowTypeExpression.isEmpty()) {
+            filterexp += AND + workflowTypeExpression;
         }
 
         Expression exp = Expression.builder()
@@ -327,8 +378,11 @@ public class MandateDao extends BaseDao {
         logEvent.log();
         return retrieveMandateForDelegate(delegateInternaluserid, mandateId)
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
-                .doOnNext(mandate -> editMandateState(mandate, verificationCode, cxTypeAuthFleet, groups))
-                .flatMap(this::save)
+                .flatMap(mandate -> {
+                    checkMandateSegregation(mandate, TypeSegregatorFilter.STANDARD);
+                    editMandateState(mandate, verificationCode, cxTypeAuthFleet, groups);
+                    return save(mandate);
+                })
                 .doOnSuccess(mandate -> {
                     String messageAction = String.format(
                             "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
@@ -354,6 +408,7 @@ public class MandateDao extends BaseDao {
         return retrieveMandateForDelegate(delegateId, mandateId)
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
                 .flatMap(mandate -> {
+                    checkMandateSegregation(mandate, TypeSegregatorFilter.STANDARD);
                     if (StatusEnumMapper.fromValue(mandate.getState()) != StatusEnum.ACTIVE) {
                         log.warn("mandate is not ACTIVE, throw error");
                         return Mono.error(new PnInvalidMandateStatusException("update an inactive mandate is not permitted", "Invalid mandate status", 500, PnMandateExceptionCodes.ERROR_CODE_MANDATE_NOTUPDATABLE, "update an inactive mandate is not permitted"));
@@ -409,7 +464,7 @@ public class MandateDao extends BaseDao {
         }
     }
 
-    private Mono<MandateEntity> save(MandateEntity mandate) {
+    public Mono<MandateEntity> save(MandateEntity mandate) {
         // Se la delega prevede una scadenza impostata dall'utente, creo un record di supporto con TTL
         // e quando questo verrà cancellato, dynamoDB invocherà la nostra logica che andrà a spostare il record principale nello storico.
         // Questo perchè se mettevo il TTL nel record principale e per qualche anomalia non veniva gestito l'evento di cancellazione
@@ -427,7 +482,13 @@ public class MandateDao extends BaseDao {
                 .build();
         return Mono.fromFuture(dynamoDbEnhancedAsyncClient.transactWriteItems(transaction)).thenReturn(mandate);
     }
-
+    private Duration chooseExpiredConfig(WorkFlowType workFlowType)
+    {
+        if(workFlowType == null || workFlowType == WorkFlowType.STANDARD || workFlowType == WorkFlowType.REVERSE)
+            return pendingExpire;
+        else
+            return ciePendingExpire;
+    }
 
     private CompletableFuture<Void> savePendingWithExpireSupport(MandateEntity mandate) {
         // Prevedo un record di supporto con TTL con impostata la scadenza relativa all'accettazione della delega
@@ -436,7 +497,9 @@ public class MandateDao extends BaseDao {
         if (mandate.getCreated() == null) {
             mandate.setCreated(Instant.now());
         }
-        Instant pendingExpiredInstant = mandate.getCreated().plus(this.pendingExpire);
+        Instant created = mandate.getCreated() != null ? mandate.getCreated() : Instant.now();
+        Instant pendingExpiredInstant = created.plus(this.chooseExpiredConfig(mandate.getWorkflowType()));
+
         MandateSupportEntity support;
         if (mandate.getValidto() != null && pendingExpiredInstant.isBefore(mandate.getValidto())){
             support = new MandateSupportEntity(mandate, pendingExpiredInstant);
@@ -482,7 +545,7 @@ public class MandateDao extends BaseDao {
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
                 .flatMap(mandate -> {
                     log.info("rejectMandate mandate for delegate retrieved mandateobj={}", mandate);
-
+                    checkMandateSegregation(mandate, TypeSegregatorFilter.STANDARD);
                     if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                             || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {
                         // aggiorno lo stato, solo se era in pending o active, ignoro eventuali altri stati (che NON dovrebbero essere presenti)
@@ -516,10 +579,16 @@ public class MandateDao extends BaseDao {
      *
      * @param delegatorInternaluserid internaluserid del delegante
      * @param mandateId               id della delega
+     * @param allowedSegregator       segregatore (utilizzato per filtrare la tipologia di delega sulla quale è permessa l'operazione)
      * @return void
      */
-    public Mono<MandateEntity> revokeMandate(String delegatorInternaluserid, String mandateId) {
-        String logMessage = String.format("revokeMandate for delegate uid=%s mandateid=%s", delegatorInternaluserid, mandateId);
+    public Mono<MandateEntity> revokeMandate(
+            String delegatorInternaluserid,
+            String mandateId,
+            TypeSegregatorFilter allowedSegregator,
+            RevocationCause cause
+    ) {
+        String logMessage = String.format("revokeMandate %s for delegate uid=%s mandateid=%s", cause.getLogSuffix(), delegatorInternaluserid, mandateId);
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_REVOKE, logMessage)
                 .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
@@ -534,7 +603,7 @@ public class MandateDao extends BaseDao {
                                 logEvent.generateFailure(String.format("revokeMandate skipped, mandate not found mandateid=%s", mandateId)).log();
                                 return CompletableFuture.completedFuture(mandate);
                             }
-
+                            checkMandateSegregation(mandate, allowedSegregator);
                             log.info("revokeMandate mandate for delegate retrieved mandateobj={}", mandate);
                             if (mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.PENDING)
                                     || mandate.getState() == StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE)) {
@@ -622,9 +691,14 @@ public class MandateDao extends BaseDao {
      * @return oggetto delega creato
      */
     public Mono<MandateEntity> createMandate(MandateEntity mandate) {
+        return createMandate(mandate,TypeSegregatorFilter.STANDARD);
+    }
+
+    public Mono<MandateEntity> createMandate(MandateEntity mandate, TypeSegregatorFilter typeSegregatorFilter)
+    {
         String logMessage = String.format("create mandate mandate=%s", mandate);
 
-        return Mono.fromFuture(countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate())
+        return Mono.fromFuture(countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate(),typeSegregatorFilter,mandate.getIuns())
                         .thenCompose(total -> {
                             if (total == 0 || isSelfPgMandate(mandate)) {
                                 log.info("no current mandate for delegator-delegate pair, can proceed to create mandate");
@@ -696,7 +770,7 @@ public class MandateDao extends BaseDao {
      * @param mandateId              id della delega
      * @return publisher contenente un solo record di delega
      */
-    private Mono<MandateEntity> retrieveMandateForDelegate(String delegateInternaluserid, String mandateId) {
+    public Mono<MandateEntity> retrieveMandateForDelegate(String delegateInternaluserid, String mandateId) {
         // qui l'internaluserid è quello del DELEGATO, e quindi NON posso usare direttamente l'informazione per accedere al record.
         // devo passare quindi per l'indice sul delegato, recuperarmi la riga, aggiornare il contenuto e salvarla.
         // NB: si noti che ci può essere un problema legato alla concorrenza, ma dato che i dati sulle deleghe non cambiano così frequentemente, 
@@ -733,7 +807,7 @@ public class MandateDao extends BaseDao {
      * @param delegateInternaluserid  internaluserid del delegato
      * @return future contenente il conteggio delle deleghe
      */
-    private CompletableFuture<Integer> countMandateForDelegateAndDelegator(String delegatorInternaluserid, String delegateInternaluserid) {
+    private CompletableFuture<Integer> countMandateForDelegateAndDelegator(String delegatorInternaluserid, String delegateInternaluserid, TypeSegregatorFilter typeSegregatorFilter, Set<String> iuns) {
         // qui ho entrambi gli id, mi serve sapere se ho già una delega per la coppia delegante-delegato, in pending/attiva e non scaduta ovviamente.
 
         // uso l'expression filter per filtrare le deleghe valide per il delegato
@@ -745,11 +819,13 @@ public class MandateDao extends BaseDao {
         expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
         expressionValues.put(":status", AttributeValue.builder().n(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE) + "").build());
 
+        String workFlowTypeExpression = typeSegregatorFilter.buildExpression(expressionValues);
+
         QueryRequest qeRequest = QueryRequest
                 .builder()
                 .select(Select.COUNT)
                 .tableName(table)
-                .filterExpression(getValidToFilterExpression() + AND + getStatusFilterExpression(true) + " AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)")
+                .filterExpression(getValidToFilterExpression() + AND + getStatusFilterExpression(true) + " AND (" + MandateEntity.COL_S_DELEGATE + " = :delegate)" + AND + workFlowTypeExpression + getIunsFilterExpression(iuns,expressionValues))
                 .keyConditionExpression(MandateEntity.COL_PK + " = :delegator AND begins_with(" + MandateEntity.COL_SK + ", :mandateprefix)")
                 .expressionAttributeValues(expressionValues)
                 .build();
@@ -782,6 +858,28 @@ public class MandateDao extends BaseDao {
         return "(" + MandateEntity.COL_D_VALIDTO + " > :now OR attribute_not_exists(" + MandateEntity.COL_D_VALIDTO + ")) ";
     }
 
+    private String getIunsFilterExpression(Set<String> iuns, Map<String, AttributeValue> expressionValues) {
+        if (iuns != null && !iuns.isEmpty()) {
+            StringBuilder sb = new StringBuilder(AND + " (");
+            int idx = 0;
+            for (String iun : iuns) {
+                if (idx > 0) {
+                    sb.append(" OR ");
+                }
+                String placeholder = ":iun" + idx;
+                sb.append("contains(")
+                        .append(MandateEntity.COL_A_IUNS)
+                        .append(", ").append(placeholder).append(")");
+                expressionValues.put(placeholder, AttributeValue.builder().s(iun).build());
+                idx++;
+            }
+            sb.append(")");
+            return sb.toString();
+        }
+        return "";
+    }
+
+
     private String getStatusFilterExpression(boolean lessEqualThan) {
         return " (" + MandateEntity.COL_I_STATE + " " + (lessEqualThan ? "<=" : "=") + " :status) ";
     }
@@ -792,6 +890,28 @@ public class MandateDao extends BaseDao {
 
     private String getDelegateIsPersonExpression() {
         return "(" + MandateEntity.COL_B_DELEGATEISPERSON + " = :isPerson) ";
+    }
+
+    private String getIunFilterExpression(String iun, Map<String, AttributeValue> expressionValues) {
+        /*
+         Lo iun è indicato solo per le deleghe di tipo CIE, però non vogliamo escludere con questo filtro eventuali deleghe
+         standard, la cui validità per accedere alla risorsa (notifica, documento) dipende da altri filtri.
+         */
+        String expressionForStandardSegregator = TypeSegregatorFilter.STANDARD.buildExpression(expressionValues);
+        expressionValues.put(":cie", AttributeValue.builder().s(WorkFlowType.CIE.name()).build());
+        expressionValues.put(":iun", AttributeValue.builder().s(iun).build());
+        String expressionForCieWithIun = "(" + MandateEntity.COL_S_WORKFLOW_TYPE + " = :cie AND contains (" + MandateEntity.COL_A_IUNS + ", :iun))";
+        return "(" + expressionForStandardSegregator + " OR " + expressionForCieWithIun + ")";
+    }
+
+    private String getNotificationSentAtFilterExpression(Instant notificationSentAt, Map<String, AttributeValue> expressionValues) {
+        expressionValues.put(":notificationSentAt", AttributeValue.builder().s(notificationSentAt.toString()).build());
+        return "(" + MandateEntity.COL_D_VALIDFROM + " <= :notificationSentAt) ";
+    }
+
+    private String getSenderIdFilterExpression(String senderId, Map<String, AttributeValue> expressionValues) {
+        expressionValues.put(":senderId", AttributeValue.builder().s(senderId).build());
+        return "(attribute_not_exists("+ MandateEntity.COL_A_VISIBILITYIDS+ ") OR contains(" + MandateEntity.COL_A_VISIBILITYIDS + ", :senderId))";
     }
 
     private Flux<MandateEntity> batchGetMandate(List<MandateEntity> entities) {
@@ -835,4 +955,11 @@ public class MandateDao extends BaseDao {
                 .toList();
     }
     //#endregion
+
+    private void checkMandateSegregation(MandateEntity mandate, TypeSegregatorFilter allowedSegregator) {
+        if (!allowedSegregator.isIncluded(mandate.getWorkflowType())) {
+            log.warn("mandate with workflowType {} does not respect {} segregation, throw error", mandate.getWorkflowType(), allowedSegregator.name());
+            throw new PnMandateBadRequestException();
+        }
+    }
 }

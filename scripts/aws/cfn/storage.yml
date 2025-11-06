@@ -98,6 +98,10 @@ Resources:
         - AttributeName: "sk"
           KeyType: "RANGE"
       BillingMode: "PAY_PER_REQUEST"
+      KinesisStreamSpecification:
+        StreamArn: !Ref CdcKinesisSourceStreamArn
+      StreamSpecification: 
+        StreamViewType: NEW_AND_OLD_IMAGES      
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
       TimeToLiveSpecification:
@@ -153,6 +157,17 @@ Resources:
         LogGroupName: !Sub "${ProjectName}-mandate-expired-trigger-lambda"
         LogGroupRetention: !Ref LogRetention
         LogGroupPrefix: '/aws/lambda'
+  
+  CscaMasterlistSyncLogGroup:
+    Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TemplateURL: !Sub ${TemplateBucketBaseUrl}/fragments/log-group.yaml
+      Parameters:
+        LogGroupName: !Sub ${ProjectName}-CscaMasterlistSync
+        LogGroupRetention: !Ref LogRetention
+        LogGroupPrefix: /aws/lambda
 
 Outputs:
   MandatesDynamoTableName:
@@ -213,3 +228,5 @@ Outputs:
     Value: !GetAtt PnMandateLogGroup.Outputs.LogGroupName
   PnMandateExpiredTriggerLambdaName:
     Value: !Sub "${ProjectName}-mandate-expired-trigger-lambda"
+  CscaMasterlistSyncLambdaName:
+    Value: !Sub ${ProjectName}-CscaMasterlistSync

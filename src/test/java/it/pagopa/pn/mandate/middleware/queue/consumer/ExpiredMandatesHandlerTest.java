@@ -2,6 +2,7 @@ package it.pagopa.pn.mandate.middleware.queue.consumer;
 
 import it.pagopa.pn.mandate.LocalStackTestConfig;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
+import it.pagopa.pn.mandate.mapper.CieCheckerAdapterImpl;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.middleware.queue.consumer.event.PnMandateExpiredEvent;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
@@ -22,6 +23,7 @@ import java.util.function.Function;
 
 @FunctionalSpringBootTest
 @Import(LocalStackTestConfig.class)
+@MockBean(CieCheckerAdapterImpl.class)
 class ExpiredMandatesHandlerTest {
 
     @Autowired

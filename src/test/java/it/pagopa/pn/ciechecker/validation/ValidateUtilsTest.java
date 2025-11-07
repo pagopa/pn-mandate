@@ -5,6 +5,7 @@ import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -58,7 +59,7 @@ import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = it.pagopa.pn.ciechecker.CieCheckerImpl.class)
 @TestPropertySource("classpath:application.properties")
-@lombok.CustomLog
+@Slf4j
 @ActiveProfiles("test")
 @EnableConfigurationProperties(PnMandateConfig.class)
 class ValidateUtilsTest {

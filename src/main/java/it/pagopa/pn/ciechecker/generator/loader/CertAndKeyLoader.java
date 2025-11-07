@@ -17,17 +17,15 @@ import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
 public class CertAndKeyLoader {
 
     S3Client s3;
-    String bucket;
-    String key;
 
 
     public CertAndKeyLoader() {
         this.s3 = S3Client.builder().build();
-        this.bucket=System.getProperty("cie.generator.bucket");
-        this.key=System.getProperty("cie.generator.file-key");
     }
 
     public CertAndKey loadIssuerCertAndKeyFromS3() throws IOException, GeneralSecurityException {
+        String bucket = System.getProperty("cie.generator.bucket");
+        String key = System.getProperty("cie.generator.file-key");
         GetObjectRequest request = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)

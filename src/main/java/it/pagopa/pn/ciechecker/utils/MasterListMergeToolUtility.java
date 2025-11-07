@@ -4,6 +4,7 @@ import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.io.*;
@@ -17,7 +18,7 @@ import java.util.zip.ZipOutputStream;
 import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.OK;
 import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.PROTOCOLLO_S3;
 
-@lombok.CustomLog
+@Slf4j
 public class MasterListMergeToolUtility {
 
     private final String cscaPath;

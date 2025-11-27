@@ -5,6 +5,7 @@ import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.CieIas;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.utils.LogsConstant;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.*;
 import org.bouncycastle.asn1.icao.DataGroupHash;
@@ -30,11 +31,10 @@ import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.CMSSignedDataGenerator;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSTypedData;
-import org.bouncycastle.util.Store;
 
 import java.util.Map;
 
-@lombok.CustomLog
+@Slf4j
 public class IasBuilder {
 
     public static final int DEFAULT_NIS_LEN = 12;

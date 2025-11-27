@@ -3,6 +3,7 @@ package it.pagopa.pn.ciechecker.generator.dg;
 import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlvBuilder;
 import it.pagopa.pn.ciechecker.generator.model.MrzData;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.*;
 
 import java.io.IOException;
@@ -16,7 +17,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-@lombok.CustomLog
+@Slf4j
 public class CieDataGroupBuilder {
 
     private static final DateTimeFormatter YYMMDD = DateTimeFormatter.ofPattern("yyMMdd");

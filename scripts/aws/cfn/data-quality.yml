@@ -28,7 +28,7 @@ Parameters:
        Glue table name for pn-mandate, accept only lowercase values and underscores.
     Default: pn_mandate
 
-  MandateHistoryDynamoTableName:
+  MandatesDynamoTableHistoryName:
     Type: String
     Description: |
       DynamoDb table name for pn-mandate-history, valorized by the related output
@@ -89,7 +89,7 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/cdc-glue.yaml"
       Parameters:
-        DynamoTableName: !Ref MandateHistoryDynamoTableName
+        DynamoTableName: !Ref MandatesDynamoTableHistoryName
         GlueTableName: !Ref MandateHistoryGlueTableName
         GlueServiceRoleArn: !Ref GlueServiceRoleArn
         LogsBucketName: !Ref LogsBucketName

@@ -107,7 +107,7 @@ paths:
                 forbiddenError:
                   $ref: '#/components/examples/ForbiddenError'
         '409':
-          description: Conflict - Esiste già una delega in stato attiva o pending tra il delegante e delegato per lo stesso IUN.
+          description: Conflict - Esiste già una delega in stato attiva tra delegante e delegato per lo stesso IUN.
           content:
             application/json:
               schema:

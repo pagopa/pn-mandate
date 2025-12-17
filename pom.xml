@@ -354,9 +354,11 @@
                                 <modelPackage>${project.groupId}.mandate.appio.generated.openapi.server.v1.dto</modelPackage>
                                 <apiPackage>${project.groupId}.mandate.appio.reverse.generated.openapi.server.v1.api</apiPackage>
                                 <configPackage>${project.groupId}.mandate.appio.reverse.generated.openapi.server.v1.config</configPackage>
-                                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
 
                             </configOptions>
+                            <!--importMappings>
+                                <importMapping>ProblemError=it.pagopa.pn.mandate.generated.openapi.server.v1.dto.ProblemError</importMapping>
+                            </importMappings-->
                         </configuration>
                     </execution>
 					<execution>

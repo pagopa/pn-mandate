@@ -34,7 +34,7 @@ public class PnDeliveryClient {
                     }
                     try {
                         log.info("JSON grezzo in uscita: {}", new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL).writeValueAsString(new PnInternalException("Internal Server Error", ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR, e)));
-                    } catch(e){log.error("ERRORE");}
+                    } catch(Exception e){log.error("ERRORE");}
                     throw new PnInternalException("Internal Server Error",ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR,e);
                 });
     }

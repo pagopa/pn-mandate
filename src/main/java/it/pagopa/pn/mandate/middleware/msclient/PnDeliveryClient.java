@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
@@ -34,7 +35,9 @@ public class PnDeliveryClient {
                     }
                     try {
                         log.info("JSON grezzo in uscita: {}", new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL).writeValueAsString(new PnInternalException("Internal Server Error", ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR, e)));
-                    } catch(Exception e){log.error("ERRORE");}
+                    }  catch (JsonProcessingException ex) {
+                        log.error("ERRORE");
+                    }
                     throw new PnInternalException("Internal Server Error",ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR,e);
                 });
     }

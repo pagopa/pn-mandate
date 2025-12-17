@@ -1,5 +1,7 @@
 package it.pagopa.pn.mandate.middleware.msclient;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.mandate.exceptions.PnInvalidQrCodeException;
@@ -30,6 +32,9 @@ public class PnDeliveryClient {
                     if(e instanceof WebClientResponseException && ((WebClientResponseException) e).getStatusCode() == HttpStatus.NOT_FOUND){
                         throw new PnInvalidQrCodeException("Qr Token non trovato","Token non è stato trovato",ERROR_CODE_MANDATE_QR_TOKEN_NOT_FOUND);
                     }
+                    try {
+                        log.info("JSON grezzo in uscita: {}", new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL).writeValueAsString(new PnInternalException("Internal Server Error", ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR, e)));
+                    } catch(e){log.error("ERRORE");}
                     throw new PnInternalException("Internal Server Error",ERROR_CODE_MANDATE_INTERNAL_SERVER_ERROR,e);
                 });
     }

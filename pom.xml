@@ -323,6 +323,7 @@
 								<modelPackage>${project.groupId}.mandate.generated.openapi.server.v1.dto</modelPackage>
 								<apiPackage>${project.groupId}.mandate.generated.openapi.server.v1.api</apiPackage>
 								<configPackage>${project.groupId}.mandate.generated.openapi.server.v1.config</configPackage>
+                                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
 							</configOptions>
 						</configuration>
 					</execution>

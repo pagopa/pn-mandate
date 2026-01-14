@@ -664,7 +664,7 @@ Resources:
     Type: 'AWS::Lambda::Function'
     Properties:
       Handler: index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs24.x
       FunctionName: !Ref PnMandateExpiredTriggerLambdaName
       Description: 'It triggers expired mandates for moving them to history'
       MemorySize: 128

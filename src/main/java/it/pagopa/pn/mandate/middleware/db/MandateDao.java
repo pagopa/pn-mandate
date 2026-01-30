@@ -816,7 +816,11 @@ public class MandateDao extends BaseDao {
         expressionValues.put(":delegate", AttributeValue.builder().s(delegateInternaluserid).build());
         expressionValues.put(":delegator", AttributeValue.builder().s(delegatorInternaluserid).build());
         expressionValues.put(":mandateprefix", AttributeValue.builder().s(MandateEntity.MANDATE_PREFIX).build());
-        expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
+        if (typeSegregatorFilter == TypeSegregatorFilter.CIE)
+            expressionValues.put(":now", AttributeValue.builder().s(ZonedDateTime.now().toInstant().toString()).build());
+        else
+            expressionValues.put(":now", AttributeValue.builder().s(DateUtils.formatDate(ZonedDateTime.now().toInstant())).build());
+
         expressionValues.put(":status", AttributeValue.builder().n(StatusEnumMapper.intValfromStatus(StatusEnum.ACTIVE) + "").build());
 
         String workFlowTypeExpression = typeSegregatorFilter.buildExpression(expressionValues);

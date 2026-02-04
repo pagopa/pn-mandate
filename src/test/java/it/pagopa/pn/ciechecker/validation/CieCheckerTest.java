@@ -1,34 +1,32 @@
 package it.pagopa.pn.ciechecker.validation;
 
-import it.pagopa.pn.ciechecker.*;
+import it.pagopa.pn.ciechecker.CieChecker;
+import it.pagopa.pn.ciechecker.CieCheckerImpl;
+import it.pagopa.pn.ciechecker.CieCheckerInterface;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClient;
 import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
-import it.pagopa.pn.ciechecker.generator.challenge.ChallengeResponseBuilder;
-import it.pagopa.pn.ciechecker.model.*;
+import it.pagopa.pn.ciechecker.model.CieIas;
+import it.pagopa.pn.ciechecker.model.CieMrtd;
+import it.pagopa.pn.ciechecker.model.CieValidationData;
+import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.ciechecker.utils.LogsConstant;
 import it.pagopa.pn.ciechecker.utils.MasterListMergeToolUtility;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
-import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.AbortableInputStream;
@@ -43,23 +41,29 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.*;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.*;
-import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
+import static it.pagopa.pn.ciechecker.utils.ValidateUtils.cleanString;
+import static it.pagopa.pn.ciechecker.utils.ValidateUtils.hexFile;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 
 @SpringBootTest(classes = {CieCheckerImpl.class, S3BucketClientImpl.class})
@@ -72,9 +76,9 @@ class CieCheckerTest {
     private CieChecker cieChecker;
     @Autowired
     private CieCheckerInterface cieCheckerInterface;
-    @MockBean
+    @MockitoBean
     private S3BucketClient s3BucketClient;
-    @MockBean
+    @MockitoBean
     private S3Client clientS3;
 
 

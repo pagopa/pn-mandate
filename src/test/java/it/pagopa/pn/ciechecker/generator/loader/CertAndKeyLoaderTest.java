@@ -1,16 +1,13 @@
 package it.pagopa.pn.ciechecker.generator.loader;
 
-import it.pagopa.pn.ciechecker.generator.model.CertAndKey;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.http.AbortableInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -21,7 +18,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.security.GeneralSecurityException;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -31,9 +28,9 @@ import static org.mockito.Mockito.when;
 @EnableConfigurationProperties(PnMandateConfig.class)
 class CertAndKeyLoaderTest {
 
-    @SpyBean
+    @MockitoSpyBean
     private PnMandateConfig config;
-    @MockBean
+    @MockitoBean
     private S3Client s3;
 
     private static final String CERT_AND_KEY_ZIP_PATH=  "src/test/resources/ca_and_key.zip";

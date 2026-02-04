@@ -43,8 +43,6 @@ public class PnMandateConfig {
     private Duration ciePendingDuration;
     private Duration cieValidToDuration;
 
-    private Topics topics;
-
     private Boolean revokeCieMandateOnVerificationFailure;
 
     private String ciecheckerCscaAnchorPathFilename;
@@ -56,11 +54,6 @@ public class PnMandateConfig {
     private String generatorZipName;
 
     private static final DefaultCredentialsProvider DEFAULT_CREDENTIALS_PROVIDER_V2 = DefaultCredentialsProvider.create();
-
-    @Data
-    public static class Topics {
-        private String mandateInputs;
-    }
 
     @Bean
     public S3Client s3Client() {

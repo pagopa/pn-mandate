@@ -3,6 +3,7 @@ package it.pagopa.pn.mandate.middleware.db;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.mandate.AbstractTestConfiguration;
 import it.pagopa.pn.mandate.LocalStackTestConfig;
+import it.pagopa.pn.mandate.MockAWSObjectsTestConfig;
 import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnMandateAlreadyExistsException;
 import it.pagopa.pn.mandate.exceptions.PnMandateBadRequestException;
@@ -25,7 +26,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
@@ -40,7 +40,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Import(LocalStackTestConfig.class)
+@Import({LocalStackTestConfig.class, MockAWSObjectsTestConfig.class})
 public class MandateDaoIT extends AbstractTestConfiguration {
 
     private final Duration d = Duration.ofMillis(60000);

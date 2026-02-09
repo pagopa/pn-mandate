@@ -8,28 +8,26 @@ import it.pagopa.pn.mandate.middleware.queue.consumer.event.PnMandateExpiredEven
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.cloud.function.context.FunctionCatalog;
 import org.springframework.cloud.function.context.test.FunctionalSpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Mono;
-
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 @FunctionalSpringBootTest
 @Import(LocalStackTestConfig.class)
-@MockBean(CieCheckerAdapterImpl.class)
 class ExpiredMandatesHandlerTest {
 
-    @Autowired
-    private FunctionCatalog functionCatalog;
-    @MockBean
+    @InjectMocks
+    private ExpiredMandatesHandler consumer;
+    @Mock
     private MandateService mandateService;
+    @MockitoBean
+    private CieCheckerAdapterImpl cieCheckerAdapter;
 
 //    @Test
 //    void consumeMessageOK() {
@@ -70,7 +68,6 @@ class ExpiredMandatesHandlerTest {
 
     @Test
     void consumeMessageOK() {
-        Consumer<Message<PnMandateExpiredEvent.Payload>> consumer = functionCatalog.lookup(Function.class, "pnMandateExpiredMandatesConsumer");
         PnMandateExpiredEvent.Payload payload = PnMandateExpiredEvent.Payload.builder()
                 .mandateId("fb521b11-202d-452f-944e-88b1eb1c34bd")
                 .delegatorInternalUserid("PF-12345")
@@ -81,14 +78,13 @@ class ExpiredMandatesHandlerTest {
         Mockito.when(mandateService.expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345", "12345", "PF"))
                 .thenReturn(Mono.just(new MandateEntity()));
 
-        consumer.accept(message);
+        consumer.pnMandateExpiredMandatesConsumer(message);
         Mockito.verify(mandateService).expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345", "12345", "PF");
     }
 
 
     @Test
     void consumeMessageKO() {
-        Consumer<Message<PnMandateExpiredEvent.Payload>> consumer = functionCatalog.lookup(Function.class, "pnMandateExpiredMandatesConsumer");
         PnMandateExpiredEvent.Payload payload = PnMandateExpiredEvent.Payload.builder()
                 .mandateId("fb521b11-202d-452f-944e-88b1eb1c34bd")
                 .delegatorInternalUserid("PF-12345")
@@ -99,7 +95,7 @@ class ExpiredMandatesHandlerTest {
         Mockito.when(mandateService.expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345", "12345", "PF"))
                 .thenReturn(Mono.error(new PnMandateNotFoundException()));
 
-        Assertions.assertThrows(PnMandateNotFoundException.class, () ->  consumer.accept(message));
+        Assertions.assertThrows(PnMandateNotFoundException.class, () ->  consumer.pnMandateExpiredMandatesConsumer(message));
         Mockito.verify(mandateService).expireMandate("fb521b11-202d-452f-944e-88b1eb1c34bd", "PF-12345", "12345", "PF");
     }
 

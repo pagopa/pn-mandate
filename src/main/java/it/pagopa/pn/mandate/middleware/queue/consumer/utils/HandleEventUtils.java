@@ -1,4 +1,4 @@
-package it.pagopa.pn.mandate.middleware.queue.consumer;
+package it.pagopa.pn.mandate.middleware.queue.consumer.utils;
 
 import it.pagopa.pn.api.dto.events.StandardEventHeader;
 import it.pagopa.pn.commons.exceptions.PnInternalException;

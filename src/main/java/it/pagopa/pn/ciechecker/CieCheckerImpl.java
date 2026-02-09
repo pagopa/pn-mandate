@@ -105,7 +105,10 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             ValidateUtils.validateDataInput(data);
 
             cms = new CMSSignedData(truncSodBytes(data.getCieIas().getSod()));
+            data.getCieMrtd().setSod(truncSodBytes(data.getCieMrtd().getSod()));
             log.debug(LogsConstant.CIECHECKER_VALIDATE_MANDATE, "CMSSignedData={}", cms);
+            //dopo aver controllato eventuali null facciamo pulizia dei dati (da possili padding) come step preliminare alle validazioni
+            ValidateUtils.cleanAllCieFields(data);
 
             //16048-bis - NIS: nis_verify_sod.sh
             verifyDigitalSignature(cms);
@@ -116,7 +119,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             //16050 NIS: nis_verify_challenge.sh - verifica del nonce: verifica la firma di una challenge IAS
             verifyChallengeFromSignature(data);
 
-            data.getCieMrtd().setSod(truncSodBytes(data.getCieMrtd().getSod()));
             //16051 MRTD: verify_integrity.sh
             verifyIntegrity(data.getCieMrtd());
 

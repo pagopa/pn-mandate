@@ -43,6 +43,7 @@ public abstract class LogsConstant {
     public static final String MASTERLISTMERGETOOL_MERGE = "MasterListMergeToolUtility.merge()";
     public static final String CIEFILEGENERATOR_VALIDATE_DATA_INPUT = "ValidateUtils.validateCieDataInput()";
     public static final String CIEFILEGENERATOR_EXPORTFILES = "CieFileGenerator.exportCieArtifactsToFiles()";
+    public static final String VALIDATEUTILS_CLEANING_PADDING = "ValidateUtils.cleanAllCieFields()";
 
     // ERROR
     public static final String ENDING_PROCESS_WITH_ERROR = "Ending '{}' Process with error = '{}' - '{}'";

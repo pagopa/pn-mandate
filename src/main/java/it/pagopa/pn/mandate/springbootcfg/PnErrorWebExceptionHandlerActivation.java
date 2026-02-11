@@ -1,6 +1,5 @@
 package it.pagopa.pn.mandate.springbootcfg;
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
 import it.pagopa.pn.commons.exceptions.PnErrorWebExceptionHandler;

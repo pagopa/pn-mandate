@@ -32,6 +32,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.*;
+import static it.pagopa.pn.ciechecker.utils.CieCleanUtils.*;
+import static it.pagopa.pn.ciechecker.utils.LogsConstant.*;
 
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.Attribute;
@@ -66,13 +68,14 @@ import java.util.zip.ZipInputStream;
 
 @Slf4j
 public class ValidateUtils {
+    public static final int NIS_LENGTH = 12;
 
     private ValidateUtils() {}
 
 
     public static void validateDataInput(CieValidationData data) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.CIECHECKER_VALIDATE_DATA_INPUT);
 
         checkNull(data, () -> ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
         checkNull(data.getCieIas(), () -> ResultCieChecker.KO_EXC_INPUT_PARAMETER_NULL);
@@ -99,7 +102,7 @@ public class ValidateUtils {
 
     public static boolean validateCieDataInput(CieValidationData data, CieCaAndKey cieCaAndkey, String baseDir) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.CIEFILEGENERATOR_VALIDATE_DATA_INPUT);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.CIEFILEGENERATOR_VALIDATE_DATA_INPUT);
 
         validateDataInput(data);
 
@@ -116,11 +119,10 @@ public class ValidateUtils {
 
     public static ResultCieChecker verifyDscAgainstTrustBundle(byte[] dscDer, Collection<X509Certificate> cscaTrustAnchors, Date atTime) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_DSC_AGAINST_TRUST_BUNDLE);
         if (Objects.isNull(dscDer) || dscDer.length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_CERTIFICATION);
         if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
 
-        log.debug("Verifica se il certificato e' stato firmato da una delle autorita' di certificazione presenti nella catena di fiducia 'cscaAnchor'");
         try {
             CertificateFactory x509Cf = CertificateFactory.getInstance(X_509);
 
@@ -163,14 +165,12 @@ public class ValidateUtils {
 
     public static X509CertificateHolder extractDscCertDer(CMSSignedData cms) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DSC_CERT_DER);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DSC_CERT_DER);
         if(Objects.isNull(cms)) throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CMSSIGNEDDATA);
         try {
-            log.debug("Invoke extractDscCertDer() for cms signed content type OID={}", cms.getSignedContentTypeOID());
             Store<X509CertificateHolder> certStore = cms.getCertificates();
 
             Collection<X509CertificateHolder> matches = certStore.getMatches(null);
-            log.debug("matches sixe: {}", matches.size());
             if (!matches.isEmpty()) {
                 return matches.iterator().next();
             }
@@ -190,19 +190,16 @@ public class ValidateUtils {
      */
     public static PublicKey extractPublicKeyFromHolder(X509CertificateHolder certHolder) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER);
         if (  Objects.isNull(certHolder) ) {
             log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_PUBLICKEY_FROM_HOLDER, CieCheckerException.class.getName() + " Message: " + ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE);
         }
         try {
-            log.debug("X509CertificateHolder: {}", certHolder.getSubject().toString());
             // Per convertire X509CertificateHolder in un X509Certificate utilizzo la classe JcaX509CertificateConverter
             JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
             //converter.setProvider(BouncyCastleProvider.PROVIDER_NAME); java.security.cert.CertificateException: Errore durante la conversione del certificato per ottenere la chiave pubblica.
             X509Certificate certificate = converter.getCertificate(certHolder);
-            log.debug("SerialNumber: {}", certificate.getSerialNumber());
-
             // Estrae la chiave pubblica dall'oggetto X509Certificate
             return certificate.getPublicKey();
 
@@ -249,7 +246,7 @@ public class ValidateUtils {
      */
     public static boolean verifyMatchHashContent(CMSSignedData cms) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_MATCH_HASHCONTENT);
         try {
             // --- PARTE 1: ESTRAI E CALCOLA L'HASH DEI DATI FIRMATI ---
             byte[] hashSignedData = ValidateUtils.extractHashBlock(cms);
@@ -285,7 +282,7 @@ public class ValidateUtils {
      */
     public static boolean verifyOctetStrings(String firstOctetString, ASN1OctetString fiveOctetString) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS);
         if ( Objects.isNull(firstOctetString)  || firstOctetString.isEmpty()) {
             log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, CieCheckerException.class.getName() + LogsConstant.MESSAGE + ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA.getValue());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA);
@@ -296,9 +293,7 @@ public class ValidateUtils {
         }
 
         String fiveStr = getHexFromOctetString(fiveOctetString);
-        log.debug("calculateSha256 --> firstStr: {} - getHexFromOctetString --> fiveStr: {}", firstOctetString, fiveStr);
         if (firstOctetString.equalsIgnoreCase(fiveStr)) {
-            log.debug("VERIFICA RIUSCITA: Gli hash corrispondono.");
             log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, "boolean", true);
             return true;
         } else {
@@ -387,7 +382,7 @@ public class ValidateUtils {
      */
     public static ASN1OctetString extractHashSigned(CMSSignedData signedData) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_HASHSIGNED);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_HASHSIGNED);
         try {
             SignerInformationStore signers = signedData.getSignerInfos();
             if (Objects.isNull(signers) || signers.size() == 0) {
@@ -423,7 +418,7 @@ public class ValidateUtils {
      */
     public static Hashtable<ASN1ObjectIdentifier, Attribute> extractAllSignedAttributes(CMSSignedData signedData) throws CieCheckerException, CMSException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_ALLSIGNEDATTR);
         SignerInformationStore signers = signedData.getSignerInfos();
         if (signers.size() == 0) {
             throw new CMSException("SignerInformationStore is empty");
@@ -436,9 +431,6 @@ public class ValidateUtils {
             SignerInformation signer = it.next();
             // Estrai gli attributi firmati
             AttributeTable signedAttributes = signer.getSignedAttributes();
-            log.debug("signedAttributes.size: {}", signedAttributes.size());
-            log.debug("signedAttributes.size: {}", signedAttributes.toHashtable());
-            log.debug("signedAttributes : {}", signedAttributes.toASN1Structure().getAttributes());
             // Converti l'AttributeTable in una Hashtable
             if ( Objects.isNull(signer.getSignedAttributes()) ) {
                 log.error("Error in extractAllSignedAttributes: " + CieCheckerException.class.getName() + " Message: " + EXC_NO_SIGNED_ATTRIBUTE);
@@ -462,7 +454,7 @@ public class ValidateUtils {
      */
     public static List<String> extractDataGroupHashes(CMSSignedData cmsData) throws CieCheckerException {
         List<String> hashes = new ArrayList<>();
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP);
 
         // Ottieni il contenuto firmato: il primo OCTET STRING che contiene gli hash.
         CMSTypedData signedContent = cmsData.getSignedContent();
@@ -493,8 +485,6 @@ public class ValidateUtils {
                                 ASN1Integer dgNumber = ASN1Integer.getInstance(hashEntry.getObjectAt(0));
 
                                 ASN1OctetString dgHash = ASN1OctetString.getInstance(hashEntry.getObjectAt(1));
-                                log.debug("Founded hash for DataGroup ASN1Integer: {} - dgNumber.toString(): {} ", dgNumber.getValue(), dgNumber);
-                                log.debug("Founded hash DataGroup ASN1OctetString: {} ", Hex.toHexString(dgHash.getOctets()).toUpperCase());
                                 // Aggiungi l'hash alla lista in formato esadecimale.
                                 hashes.add(Hex.toHexString(dgHash.getOctets()).toUpperCase());
                             }else {
@@ -518,7 +508,6 @@ public class ValidateUtils {
             log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, ioe.getClass().getName() + LogsConstant.MESSAGE +ioe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION, ioe);
         }
-        log.debug("Founded DataGroup Hashes SIZE: {}", hashes.size());
         log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP);
         return hashes;
     }
@@ -563,14 +552,11 @@ public class ValidateUtils {
      */
     public static ResultCieChecker verifySodPassiveDigitalSignature(CMSSignedData cms, PublicKey publicKey) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_SOD_PASS_DIGITAL_SIGNATURE);
         try {
 
             // 1. Ottieni il primo SignerInformation (presumendo che ce ne sia uno solo)
             SignerInformation signerInfo = cms.getSignerInfos().getSigners().iterator().next();
-            log.debug("signerInfo.getEncryptionAlgOID(): {}", signerInfo.getEncryptionAlgOID());
-            log.debug("signerInfo.getDigestAlgOID(): {} ", signerInfo.getDigestAlgOID());
-
             Signature verifier = Signature.getInstance(decodeSignatureAlgo(signerInfo.getEncryptionAlgOID()));
             if( signerInfo.getEncryptionAlgOID().equals(PKCSObjectIdentifiers.id_RSASSA_PSS.getId()) ){
                 try {
@@ -628,8 +614,7 @@ public class ValidateUtils {
      */
     public static ResultCieChecker verifyDigitalSignature(CMSSignedData cms) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE);
-        log.debug("Cms signed content type OID={}", cms.getSignedContentTypeOID());
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE);
         try {
             SignerInformationStore signers = cms.getSignerInfos();
             Collection<SignerInformation> c = signers.getSigners();
@@ -692,7 +677,7 @@ public class ValidateUtils {
 
     //creazione oggetto rappresentante EF.SOD -> decode_sod_hr.sh
     public static SodSummary decodeSodHr(byte[] sodBytes) throws CieCheckerException {
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_DECEODESODHR);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_DECEODESODHR);
         try {
             CMSSignedData cms = new CMSSignedData(sodBytes);
 
@@ -741,14 +726,13 @@ public class ValidateUtils {
      */
     public static List<X509Certificate> getX509CertListFromZipFile(InputStream zipStream) throws CieCheckerException {
         List<X509Certificate> x509List;
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_GETX509CERTLIST_ZIPFILE);
         try {
             x509List = new ArrayList<>();
             ZipInputStream zis = new ZipInputStream(zipStream);
             ZipEntry entry;
 
             while( (entry = zis.getNextEntry()) != null) {
-                log.debug("ZIS: {}" , entry.getName());
                 if(entry.getName().endsWith(".pem")){
                     List<X509Certificate> pemList = ValidateUtils.loadCertificateFromPemFile(zis);
                     x509List.addAll(pemList);
@@ -816,7 +800,7 @@ public class ValidateUtils {
 
         try {
             //parser TLV
-            log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_PARSER_TLV_TAGVALUE);
+            log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_PARSER_TLV_TAGVALUE);
             BerTlvParser parser = new BerTlvParser();
             BerTlvs tlvs = parser.parse(fileBytes, 0, fileBytes.length);
             BerTag bTag = new BerTag(org.apache.commons.codec.binary.Hex.decodeHex(tag));
@@ -843,7 +827,7 @@ public class ValidateUtils {
 
     public static List<X509Certificate> extractCscaAnchorFromZip(InputStream fileInputStream) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_CSCAANCHOR_ZIP);
         try{
             List<X509Certificate> x509CertList = ValidateUtils.getX509CertListFromZipFile(fileInputStream);
             if ( x509CertList.isEmpty()) {
@@ -861,7 +845,7 @@ public class ValidateUtils {
 
     public static List<X509Certificate> loadCertificateFromPemFile(InputStream fileInputStream) throws CieCheckerException {
 
-        log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_LOAD_CSCAANCHOR_PEM);
+        log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_LOAD_CSCAANCHOR_PEM);
         try{
             List<X509Certificate> x509CertList = List.of(getCertificateFromPemFile(fileInputStream));
             if ( x509CertList.isEmpty()) {
@@ -904,8 +888,6 @@ public class ValidateUtils {
 
 
     public static String[] extractS3Components(String s3Uri) {
-
-        log.debug("- s3Uri: {}", s3Uri);
         if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
             log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
             return null;
@@ -931,13 +913,6 @@ public class ValidateUtils {
                     nameKey = objectKey;
                 }
             }
-
-            log.debug("URI di Input: " + s3Uri);
-            log.debug("-------------------------------------");
-            log.debug("Bucket estratto:  " + bucketName );
-            log.debug("Chiave estratta: " + objectKey );
-            log.debug("Nome estratta: " + nameKey );
-            log.debug("Path estratta: " + key );
 
             return new String[]{bucketName, objectKey, nameKey, key};
 
@@ -1035,6 +1010,42 @@ public class ValidateUtils {
 
     public static String cleanString(Path file) throws IOException {
         return Files.readString(file).replaceAll("\\s+", "");
+    }
+
+    /**
+     * Normalizza e ripulisce tutti i campi binari della CIE presenti in CieValidationData,
+     *che possono contenere byte extra finali (padding), zeri non
+     * significativi o sequenze errate dovute a encoding non standard o differenze tra sistemi.
+     * Se non rimossi, questi byte possono causare errori in fasi successive come:
+     *  - parsing ASN.1 / DER
+     *  - creazione di CMSSignedData
+     *  - verifica della firma digitale
+     * Questo metodo esegue quindi una "bonifica" preventiva dei campi più sensibili.
+     * Pulizia applicata per tipologia di campo:
+     * IAS
+     *  - PublicKey: decodifica Base64 URL -> rimozione padding ASN.1 -> reimpostazione bytes puliti
+     *  - SOD: rimozione eventuale padding ASN.1 finali
+     *  - NIS: normalizzazione alla lunghezza attesa (12 byte)
+     * MRTD
+     *  - SOD: rimozione eventuale padding ASN.1 finali
+     *  - DG1 e DG11: rimozione padding finale (i DG non hanno lunghezza fissa da specifica e potrebbero arrivare con padding extra)
+     * Il metodo è idempotente: se i dati sono già corretti non vengono modificati, ma viene comunque tracciato nei log che non è stata
+     * necessaria alcuna pulizia. In caso di errori di parsing o dati non validi viene sollevata una CieCheckerException.
+     */
+    public static void cleanAllCieFields(CieValidationData data) throws IOException {
+        log.info(INVOKING_OPERATION_LABEL, VALIDATEUTILS_CLEANING_PADDING);
+        try {
+            cleanIas(data.getCieIas());
+            cleanMrtd(data.getCieMrtd());
+
+        } catch (IllegalArgumentException | ArrayIndexOutOfBoundsException e) {
+            log.warn("Errore durante il cleanAllCieFields: {}", e.getMessage(), e);
+            throw new CieCheckerException(ResultCieChecker.KO_EXC_CLEANING, e);
+        } catch (Exception e) {
+            log.warn("Errore imprevisto durante il cleanAllCieFields: {}", e.getMessage(), e);
+            throw new CieCheckerException(ResultCieChecker.KO, e);
+        }
+
     }
 
 }

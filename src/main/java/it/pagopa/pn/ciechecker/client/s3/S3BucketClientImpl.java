@@ -67,7 +67,7 @@ public class S3BucketClientImpl  implements S3BucketClient {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS);
         }
         try {
-            log.info("Call s3 bucket for upload content object with bucket: {} key: {}", s3UriInfo[0], s3UriInfo[3] + "new_" + s3UriInfo[2]);
+            log.trace("Call s3 bucket for upload content object with bucket: {} key: {}", s3UriInfo[0], s3UriInfo[3] + "new_" + s3UriInfo[2]);
             clientS3.putObject(PutObjectRequest.builder().bucket(s3UriInfo[0]).key(s3UriInfo[3] + "new_" + s3UriInfo[2])
                     .contentMD5(checksum).build(), RequestBody.fromInputStream(file, size));
         }catch (Exception e ){

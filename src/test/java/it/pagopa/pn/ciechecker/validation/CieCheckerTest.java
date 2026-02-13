@@ -644,4 +644,39 @@ class CieCheckerTest {
 //      log.info("TEST verifySodPassiveAuthCie - END ");
 //  }
 
+    /**
+     * Caso OK: tutti i campi presenti e con padding su publicKey che va pulito
+     */
+    @Test
+    void testValidateMandatePubKeyPadding_ok() throws Exception {
+        CieValidationData data = new CieValidationData();
+        byte[] sodIasByteArray = hexFile(Files.readString(basePath.resolve(SOD_IAS_HEX)));
+        byte[] sodMrtd = hexFile(Files.readString(basePath.resolve(SOD_MRTD_HEX)));
+        byte[] dg1 = hexFile(Files.readString(dg1Files));
+        byte[] dg11 = hexFile(Files.readString(dg11Files));
+        byte[] nisSignature = hexFile(cleanString(basePath.resolve("NONCE_SIGNATURE.HEX")));
+        byte[] nisHexToCheck = hexFile(cleanString(basePath.resolve("NIS.HEX")));
+
+        CieIas ias = new CieIas();
+        ias.setSod(sodIasByteArray);
+        ias.setPublicKey(("MIIk-asQzd9oGjvUZjMMiUOmi2ZM4kcNF7DhnCBItir8q8vzZTtP35TAMQ_s4HwIDAQABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+                .getBytes());
+        ias.setNis(nisHexToCheck);
+        data.setCieIas(ias);
+
+        CieMrtd mrtd = new CieMrtd();
+        mrtd.setSod(sodMrtd);
+        mrtd.setDg1(dg1);
+        mrtd.setDg11(dg11);
+        data.setCieMrtd(mrtd);
+
+        data.setNonce(cleanString(basePath.resolve("NONCE.txt")));
+        data.setSignedNonce(nisSignature);
+        data.setCodFiscDelegante("RSSMRA80A01H501U");
+        try {
+            cieChecker.validateMandate(data);
+        } catch (CieCheckerException e) {
+            assertNotEquals(ResultCieChecker.KO_EXC_CLEANING, e.getResult());
+        }
+    }
 }

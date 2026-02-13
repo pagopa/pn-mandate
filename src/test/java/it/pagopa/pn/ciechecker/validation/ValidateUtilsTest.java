@@ -5,6 +5,7 @@ import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -67,6 +68,10 @@ class ValidateUtilsTest {
     private static final Path basePath = Path.of("src","test","resources");
     private static final Path CSCA_DIR = Path.of("src","test","resources","csca");
     private static final String SOD_IAS_HEX = "SOD_IAS.HEX";  //m
+    private static final String SOD_MRTD_PADDING_HEX = "SOD_MRTD_PADDING.HEX";  //m
+    private static final String SOD_MRTD_HEX = "SOD_MRTD.HEX";  //m
+    private static final String SOD_IAS_PADDING = "SOD_IAS_PADDING.HEX";
+    private static final String NIS_PADDING_FILE_NAME ="NIS_PADDING.HEX";
     private static final String EF_SOD_HEX = "EF_SOD.HEX";
     private static final String NIS_PUBKEY_FILENAME = "NIS_PUBKEY.HEX";
     private static final String NIS_HEX_TO_CHECK="393130373138343634363534";
@@ -625,6 +630,126 @@ class ValidateUtilsTest {
         });
         log.info("Eccezione catturata: {} - {}", exception.getClass().getSimpleName(), exception.getMessage());
         assertTrue(exception.getMessage().contains("unable") || !exception.getMessage().isEmpty());
+    }
+
+    @Test
+    @SneakyThrows
+    void cleanPublicKeyPadding() {
+        CieIas ias = new CieIas();
+        ias.setPublicKey(("MIIBCgKCAQEA0o6ic7-TUvAD9rbs4HwIDAQABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+                .getBytes());
+        CieValidationData data = new CieValidationData();
+        data.setCieIas(ias);
+        assertDoesNotThrow(() -> ValidateUtils.cleanAllCieFields(data));
+    }
+
+    @Test
+    @SneakyThrows
+    void cleanSodIasPadding() {
+        CieIas ias = new CieIas();
+        String fileString = Files.readString(basePath.resolve(SOD_IAS_PADDING)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
+        byte[] sodIasByteArray = hexFile(subString);
+        ias.setSod(sodIasByteArray);
+        CieValidationData data = new CieValidationData();
+        data.setCieIas(ias);
+        assertDoesNotThrow(() -> ValidateUtils.cleanAllCieFields(data));
+    }
+
+    @Test
+    @SneakyThrows
+    void cleanNisPadding(){
+        CieIas ias = new CieIas();
+        String hexNis = Files.readString(basePath.resolve(NIS_PADDING_FILE_NAME)).trim();
+        byte[] nis = hexFile(hexNis);
+        ias.setNis(nis);
+        CieValidationData data = new CieValidationData();
+        data.setCieIas(ias);
+        assertDoesNotThrow(() -> ValidateUtils.cleanAllCieFields(data));
+
+    }
+
+    @Test
+    @SneakyThrows
+    void cleanSodMrtdPadding() {
+        CieMrtd mrtd = new CieMrtd();
+        String fileString = Files.readString(basePath.resolve(SOD_MRTD_PADDING_HEX)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
+        byte[] sodMrtdByteArray = hexFile(subString);
+        mrtd.setSod(sodMrtdByteArray);
+        CieValidationData data = new CieValidationData();
+        data.setCieMrtd(mrtd);
+        assertDoesNotThrow(() -> ValidateUtils.cleanAllCieFields(data));
+    }
+
+    @Test
+    @SneakyThrows
+    void cleanDG1Padding() {
+        CieMrtd mrtd = new CieMrtd();
+        byte[] dg1 = Files.readAllBytes(dg1Files);
+        byte[] dg1Padded = Arrays.copyOf(dg1, dg1.length + 10);
+        log.info("DG1 senza padding: {}", HexFormat.of().formatHex(dg1));
+        log.info("DG1 con padding: {}", HexFormat.of().formatHex(dg1Padded));
+        mrtd.setDg1(dg1Padded);
+        CieValidationData data = new CieValidationData();
+        data.setCieMrtd(mrtd);
+        assertDoesNotThrow(() -> ValidateUtils.cleanAllCieFields(data));
+
+    }
+
+    @Test
+    @SneakyThrows
+    void cleanDG11Padding() {
+        CieMrtd mrtd = new CieMrtd();
+        byte[] dg11 = Files.readAllBytes(dg11Files);
+        byte[] dg11Padded = Arrays.copyOf(dg11, dg11.length + 10);
+        Arrays.fill(dg11Padded, dg11.length, dg11Padded.length, (byte) 0xAA);
+        log.info("DG11 senza padding: {}", HexFormat.of().formatHex(dg11));
+        log.info("DG11 con padding: {}", HexFormat.of().formatHex(dg11Padded));
+        mrtd.setDg11(dg11Padded);
+        CieValidationData data = new CieValidationData();
+        data.setCieMrtd(mrtd);
+        assertDoesNotThrow(() -> ValidateUtils.cleanAllCieFields(data));
+    }
+
+    @Test
+    @SneakyThrows
+    void cleanAllPadding() {
+        CieValidationData data = new CieValidationData();
+        CieIas ias = new CieIas();
+        String fileString = Files.readString(basePath.resolve(SOD_IAS_PADDING)).replaceAll("\\s+", "");
+        String subString = fileString.substring(8);
+        byte[] sodIasByteArray = hexFile(subString);
+        String hexNis = Files.readString(basePath.resolve(NIS_PADDING_FILE_NAME)).trim();
+        byte[] nis = hexFile(hexNis);
+
+        ias.setPublicKey(("MIIBCgKCAQEA0o6ic7-TUvAD9rbs4HwIDAQABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+                .getBytes());
+        ias.setSod(sodIasByteArray);
+        ias.setNis(nis);
+
+        CieMrtd mrtd = new CieMrtd();
+        String fileStringMrtd = Files.readString(basePath.resolve(SOD_MRTD_PADDING_HEX)).replaceAll("\\s+", "");
+        String subStringMrtd = fileStringMrtd.substring(8);
+        byte[] sodMrtdByteArray = hexFile(subStringMrtd);
+        byte[] dg1 = Files.readAllBytes(dg1Files);
+        byte[] dg1Padded = Arrays.copyOf(dg1, dg1.length + 10); //solo padding 000
+        log.info("DG1 senza padding: {}", HexFormat.of().formatHex(dg1));
+        log.info("DG1 con padding: {}", HexFormat.of().formatHex(dg1Padded));
+        byte[] dg11 = Files.readAllBytes(dg11Files);
+        byte[] dg11Padded = Arrays.copyOf(dg11, dg11.length + 10);
+        Arrays.fill(dg11Padded, dg11.length, dg11Padded.length, (byte) 0xAA); //padding "misto"
+        log.info("DG11 senza padding: {}", HexFormat.of().formatHex(dg11));
+        log.info("DG11 con padding: {}", HexFormat.of().formatHex(dg11Padded));
+
+        mrtd.setSod(sodMrtdByteArray);
+        mrtd.setDg1(dg1Padded);
+        mrtd.setDg11(dg11Padded);
+
+        data.setCieIas(ias);
+        data.setCieMrtd(mrtd);
+        assertDoesNotThrow(() -> ValidateUtils.cleanAllCieFields(data));
+
     }
 
 

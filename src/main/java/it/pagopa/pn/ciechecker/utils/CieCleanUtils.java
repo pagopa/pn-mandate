@@ -5,10 +5,8 @@ import it.pagopa.pn.ciechecker.model.CieIas;
 import it.pagopa.pn.ciechecker.model.CieMrtd;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Arrays;
-import java.util.Base64;
 
 @Slf4j
 public class CieCleanUtils {
@@ -17,63 +15,65 @@ public class CieCleanUtils {
     public static void cleanIas(CieIas ias) {
         log.info("Invoking operation cleanIas()");
         if (ias == null) {
-            log.info("cleanIas() - CieIas è null, skip della pulizia per IAS");
+            log.debug("cleanIas() - CieIas è null, skip della pulizia per IAS");
             return;
         }
-        cleanPublicKey(ias);
-        cleanSodField(ias.getSod(), "SOD IAS");
-        cleanNisField(ias);
+        try {
+            cleanPublicKey(ias);
+            cleanSodField(ias.getSod(), "SOD IAS");
+            cleanNisField(ias);
+            log.debug(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsConstant.CIECLEANUTILS_CLEANING_PADDING_IAS);
+        } catch (CieCheckerException e) {
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECLEANUTILS_CLEANING_PADDING_IAS, e.getResult().getValue());
+        }
     }
 
     public static void cleanMrtd(CieMrtd mrtd) {
         log.info("Invoking operation cleanMrtd()");
         if (mrtd == null) {
-            log.info("cleanMrtd() - CieMrtd è null, skip della pulizia per MRTD");
+            log.debug("cleanMrtd() - CieMrtd è null, skip della pulizia per MRTD");
             return;
         }
-        cleanSodField(mrtd.getSod(), "SOD MRTD");
-        mrtd.setDg1(cleanAsn1OrTlvField(mrtd.getDg1(), "DG1"));
-        mrtd.setDg11(cleanAsn1OrTlvField(mrtd.getDg11(), "DG11"));
+        try {
+            cleanSodField(mrtd.getSod(), "SOD MRTD");
+            mrtd.setDg1(cleanAsn1OrTlvField(mrtd.getDg1(), "DG1"));
+            mrtd.setDg11(cleanAsn1OrTlvField(mrtd.getDg11(), "DG11"));
+            log.debug(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsConstant.CIECLEANUTILS_CLEANING_PADDING_MRTD);
+        } catch (CieCheckerException e){
+            log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECLEANUTILS_CLEANING_PADDING_MRTD, e.getResult().getValue());
+        }
     }
 
 
     private static void cleanPublicKey(CieIas ias) {
-        log.info("Invoking operation cleanPublicKey()");
+        log.trace("Invoking operation cleanPublicKey()");
         if (ias.getPublicKey() == null) return;
 
         byte[] before = ias.getPublicKey();
-        log.info("cleanPublicKey() - IAS PublicKey prima della pulizia (length): {}", before.length);
-
         byte[] cleaned = cleanAsn1OrTlvField(before, "PublicKey");
         ias.setPublicKey(cleaned);
-
-        log.info("cleanPublicKey() - IAS PublicKey dopo la pulizia (length): {}", cleaned!=null ? cleaned.length : "null");
     }
 
     private static void cleanNisField(CieIas ias) {
-        log.info("Invoking operation cleanNisField()");
+        log.trace("Invoking operation cleanNisField()");
         if (ias.getNis() == null) return;
         byte[] before = ias.getNis();
-        log.info("cleanNisField() - NIS prima della pulizia: ({} byte)", before.length); // HexFormat.of().formatHex(before)
         byte[] after = cleanNis(before);
         ias.setNis(after);
-        log.info("cleanNisField() - NIS dopo la pulizia:({} byte)", after != null ? after.length : "null");
         if (Arrays.equals(before, after)) {
-            log.info("cleanNisField() - NIS già corretto, nessuna correzione sul padding");
+            log.trace("cleanNisField() - NIS già corretto, nessuna correzione sul padding");
         }
     }
 
     private static void cleanSodField(byte[] sod, String label) {
-        log.info("Invoking operation cleanSodField()");
+        log.trace("Invoking operation cleanSodField()");
         if (sod == null) {
-            log.warn("cleanSodField() - SOD è null, skip della pulizia per {}", label);
+            log.debug("cleanSodField() - SOD è null, skip della pulizia per {}", label);
             return;
         }
-        log.info("cleanSodField() - {} prima della pulizia (length={}):", label, sod.length);
         byte[] cleaned = cleanAsn1OrTlvField(sod, label);
-        log.info("cleanSodField() - {} dopo la pulizia (length={})", label, cleaned!=null ? cleaned.length : "null");
         if (Arrays.equals(sod, cleaned)) {
-            log.info("cleanSodField() - {} già corretto: nessuna pulizia del padding", label);
+            log.trace("cleanSodField() - {} già corretto: nessuna pulizia del padding", label);
         }
     }
     /**
@@ -88,14 +88,12 @@ public class CieCleanUtils {
      */
     public static byte[] cleanAsn1OrTlvField(byte[] fieldBytes, String label) {
         if (fieldBytes == null) {
-            log.warn("cleanAsn1OrTlvField() - {} nullo, skip della pulizia", label);
+            log.debug("cleanAsn1OrTlvField() - {} nullo, skip della pulizia", label);
             return null;
         }
-
-        log.info("cleanAsn1OrTlvField() - {} prima della pulizia ({} byte)", label, fieldBytes.length);
         //un TLV valido deve avere almeno 2 byte: 1 per il tag e 1 per la lunghezza
         if (fieldBytes.length < 2) {
-            log.warn("cleanAsn1OrTlvField() - {}: lunghezza troppo corta per TLV valido", label);
+            log.trace("cleanAsn1OrTlvField() - {}: lunghezza troppo corta per TLV valido", label);
             return fieldBytes;
         }
         //recupero del byte di lunghezza
@@ -125,31 +123,28 @@ public class CieCleanUtils {
         //troncamento di eventuali byte extra
         byte[] cleaned = Arrays.copyOf(fieldBytes, realLength);
 
-        log.info("cleanAsn1OrTlvField() - {} dopo la pulizia ({} byte)", label, cleaned.length);
-
         if (!Arrays.equals(fieldBytes, cleaned)) {
-            log.warn("cleanAsn1OrTlvField() - {}: padding rimosso: {} byte", label, fieldBytes.length - cleaned.length);
+            log.trace("cleanAsn1OrTlvField() - {}: padding rimosso: {} byte", label, fieldBytes.length - cleaned.length);
         } else {
-            log.info("cleanAsn1OrTlvField() - {} già corretto, nessuna pulizia di padding necessaria", label);
+            log.trace("cleanAsn1OrTlvField() - {} già corretto, nessuna pulizia di padding necessaria", label);
         }
 
         return cleaned;
     }
 
     public static byte[] cleanNis(byte[] nisBytes) {
-        log.info("Invoking operation cleanNis()");
+        log.trace("Invoking operation cleanNis()");
         if (nisBytes == null) {
-            log.warn("cleanNis() - NIS null, skip della pulizia");
+            log.debug("cleanNis() - NIS null, skip della pulizia");
             return null;
         }
 
         if (nisBytes.length == NIS_LENGTH) {
-            log.info("cleanNis() - NIS già corretto, lunghezza: {} byte", nisBytes.length);
+            log.trace("cleanNis() - NIS già corretto con byte {}", NIS_LENGTH);
             return nisBytes;
         }
 
         if (nisBytes.length > NIS_LENGTH) {
-            log.warn("cleanNis() - NIS troppo lungo, tagliamo a {} byte", NIS_LENGTH);
             return Arrays.copyOf(nisBytes, NIS_LENGTH);
         }
 

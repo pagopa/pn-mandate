@@ -66,7 +66,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         }
 
         String cscaPath = pnMandateConfig.getCiecheckerCscaAnchorPathFilename();
-        log.debug("CSCA ANCHOR PATH: {}", cscaPath );
+        log.trace("CSCA ANCHOR PATH: {}", cscaPath );
         try {
 
             if(Objects.isNull(cscaPath) || cscaPath.isBlank()) {
@@ -88,7 +88,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             }
 
             this.setCscaAnchor(cscaAnchor);
-            log.debug("CSCA ANCHOR SIZE: {}", cscaAnchor.size());
         }catch (Exception e){
             log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_INIT, e.getClass().getName()+ LogsConstant.MESSAGE +e.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOVALID_URI_CSCA_ANCHORS, e);
@@ -177,7 +176,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
         String dataElement = parserTLVTagValue(dg1, TAG_EXPIRE_DATE);
 
         String expirationDate = dataElement.substring(38, 38+6);
-        log.debug("expirationDate: {} ", expirationDate);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMdd");
 
         try {
@@ -270,17 +268,14 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             //*****************************************************
             // ** PASSO 1 - ANALISI E ESTRAZIONE DEI COMPONENTI
             // *****************************************************/
-            log.debug("Estrazione del certificato DSC ...");
             X509CertificateHolder certHolder = ValidateUtils.extractDscCertDer(cms);
 
-            log.debug("Estrazione della chiave pubblica dal Certificato X509 ...");
             PublicKey publicKey = ValidateUtils.extractPublicKeyFromHolder(certHolder);
             if ( Objects.isNull(publicKey) ) {
                 log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, ResultCieChecker.KO_EXC_EXTRACTION_PUBLICKEY.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_EXTRACTION_PUBLICKEY);
             }
 
-            log.debug("Estrazione delle firme dei firmatari dal SignedData ...");
             List<byte[]> signatures = ValidateUtils.extractSignaturesFromSignedData(cms);
             if ( signatures.isEmpty() ) {
                 log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, ResultCieChecker.KO_EXC_NO_SIGNATURES_SIGNED_DATA.getValue());
@@ -290,7 +285,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             //*****************************************************
             // ** PASSO 2 - VERIFICA ed ESTRAZIONE DEGLI HASH: CONTENT
             // *****************************************************/
-            log.debug("Estrazione e verifica degli HashContent con l'hash firmato...");
             if (!ValidateUtils.verifyMatchHashContent(cms)) {
                 log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, ResultCieChecker.KO_EXC_NO_HASH_CONTENT_MATCH.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_HASH_CONTENT_MATCH);
@@ -299,7 +293,6 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             //*******************************************************************
             // ** PASSO 1A: ESTRAZIONE DEGLI ATTRIBUTI FIRMATI (signedAttributes)
             // *******************************************************************/
-            log.debug("Estrazione degli signedAttributes ...");
             Hashtable<ASN1ObjectIdentifier, Attribute> signedAttributesTable = ValidateUtils.extractAllSignedAttributes(cms);
             if(Objects.isNull(signedAttributesTable) || signedAttributesTable.isEmpty()) {
                 log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, ResultCieChecker.KO_EXC_NO_SIGNED_ATTRIBUTE.getValue());
@@ -309,13 +302,11 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             //*******************************************************************
             // ** PASSO 1B: ANALISI DEGLI HASH DEI DATI (DataGroupHashes)
             // *********************************************************************/
-            log.debug("Estrazione e verifica della lista degli hash dei DataGroup ...");
             if (!ValidateUtils.verifyNisShaFromDataGroup(cms, cieIasNis)) {
                 log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP.getValue());
                 throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP);
             }
 
-            log.debug("Verifica finale della firma digitale ...");
             ResultCieChecker result = ValidateUtils.verifySodPassiveDigitalSignature(cms, publicKey);
             if(!(result.getValue().equals(OK))) {
                 log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_SOD_PASSIVE_AUTH_CIE, ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE.getValue());
@@ -377,11 +368,8 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
      */
     public ResultCieChecker verifyIntegrityCore(byte[] sodBytes, byte[] dg1, byte[] dg11) throws Exception {
         log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.CIECHECKER_VERIFY_INTEGRITY_CORE);
-
-        log.debug("Decodifica SOD...");
         SodSummary sodSummary = decodeSodHr(sodBytes);
 
-        log.debug("Identifica algoritmo di digest ...");
         String hashAlgorithmName = getDigestName(sodSummary.getDgDigestAlgorithm().getAlgorithm().getId());
         if (hashAlgorithmName == null || hashAlgorithmName.isBlank()) {
             log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_INTEGRITY_CORE, ResultCieChecker.KO_EXC_NO_HASH_ALGORITHM_SOD.getValue());
@@ -400,9 +388,7 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_EXPECTED_HASHES_SOD);
         }
 
-        log.info("Verifica DG1 ...");
         verifyDigestList(md, dg1, expectedHashes, 1);
-        log.info("Verifica DG11 ...");
         verifyDigestList(md, dg11, expectedHashes, 11);
 
         log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.CIECHECKER_VERIFY_INTEGRITY_CORE, "ResultCieChecker", ResultCieChecker.OK.getValue());
@@ -427,11 +413,9 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
     public ResultCieChecker verifyTrustChain(CMSSignedData cms) throws CieCheckerException {
         log.info(LogsConstant.INVOKING_OPERATION_LABEL, LogsConstant.CIECHECKER_VERIFY_TRUST_CHAIN);
         try {
-            log.debug("Verifica la validità della catena di fiducia del SOD");
             X509CertificateHolder holder = ValidateUtils.extractDscCertDer(cms);
             byte[] dscDer = holder.getEncoded();
 
-            log.debug("Verifica se il certificato e' stato firmato da una delle autorita' di certificazione presenti nella catena di fiducia 'cscaAnchor'");
             ResultCieChecker result = ValidateUtils.verifyDscAgainstTrustBundle(dscDer, cscaAnchor, new Date());
             if (!result.getValue().equals(OK)) {
                 log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.CIECHECKER_VERIFY_TRUST_CHAIN, ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED.getValue());

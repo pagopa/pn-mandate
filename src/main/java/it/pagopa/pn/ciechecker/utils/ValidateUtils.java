@@ -123,7 +123,6 @@ public class ValidateUtils {
         if (Objects.isNull(dscDer) || dscDer.length == 0) throw new CieCheckerException(ResultCieChecker.KO_EXC_PARSING_CERTIFICATION);
         if (Objects.isNull(cscaTrustAnchors) || cscaTrustAnchors.isEmpty()) throw new CieCheckerException(ResultCieChecker.KO_EXC_NO_CSCA_ANCHORS_PROVIDED);
 
-        log.debug("Verifica se il certificato e' stato firmato da una delle autorita' di certificazione presenti nella catena di fiducia 'cscaAnchor'");
         try {
             CertificateFactory x509Cf = CertificateFactory.getInstance(X_509);
 
@@ -169,11 +168,9 @@ public class ValidateUtils {
         log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DSC_CERT_DER);
         if(Objects.isNull(cms)) throw new CieCheckerException(ResultCieChecker.KO_EXC_NOTFOUND_CMSSIGNEDDATA);
         try {
-            log.debug("Invoke extractDscCertDer() for cms signed content type OID={}", cms.getSignedContentTypeOID());
             Store<X509CertificateHolder> certStore = cms.getCertificates();
 
             Collection<X509CertificateHolder> matches = certStore.getMatches(null);
-            log.debug("matches sixe: {}", matches.size());
             if (!matches.isEmpty()) {
                 return matches.iterator().next();
             }
@@ -199,13 +196,10 @@ public class ValidateUtils {
             throw new CieCheckerException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE);
         }
         try {
-            log.debug("X509CertificateHolder: {}", certHolder.getSubject().toString());
             // Per convertire X509CertificateHolder in un X509Certificate utilizzo la classe JcaX509CertificateConverter
             JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
             //converter.setProvider(BouncyCastleProvider.PROVIDER_NAME); java.security.cert.CertificateException: Errore durante la conversione del certificato per ottenere la chiave pubblica.
             X509Certificate certificate = converter.getCertificate(certHolder);
-            log.debug("SerialNumber: {}", certificate.getSerialNumber());
-
             // Estrae la chiave pubblica dall'oggetto X509Certificate
             return certificate.getPublicKey();
 
@@ -299,9 +293,7 @@ public class ValidateUtils {
         }
 
         String fiveStr = getHexFromOctetString(fiveOctetString);
-        log.debug("calculateSha256 --> firstStr: {} - getHexFromOctetString --> fiveStr: {}", firstOctetString, fiveStr);
         if (firstOctetString.equalsIgnoreCase(fiveStr)) {
-            log.debug("VERIFICA RIUSCITA: Gli hash corrispondono.");
             log.info(LogsConstant.SUCCESSFUL_OPERATION_ON_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_OCTECTSTRINGS, "boolean", true);
             return true;
         } else {
@@ -439,9 +431,6 @@ public class ValidateUtils {
             SignerInformation signer = it.next();
             // Estrai gli attributi firmati
             AttributeTable signedAttributes = signer.getSignedAttributes();
-            log.debug("signedAttributes.size: {}", signedAttributes.size());
-            log.debug("signedAttributes.size: {}", signedAttributes.toHashtable());
-            log.debug("signedAttributes : {}", signedAttributes.toASN1Structure().getAttributes());
             // Converti l'AttributeTable in una Hashtable
             if ( Objects.isNull(signer.getSignedAttributes()) ) {
                 log.error("Error in extractAllSignedAttributes: " + CieCheckerException.class.getName() + " Message: " + EXC_NO_SIGNED_ATTRIBUTE);
@@ -496,8 +485,6 @@ public class ValidateUtils {
                                 ASN1Integer dgNumber = ASN1Integer.getInstance(hashEntry.getObjectAt(0));
 
                                 ASN1OctetString dgHash = ASN1OctetString.getInstance(hashEntry.getObjectAt(1));
-                                log.debug("Founded hash for DataGroup ASN1Integer: {} - dgNumber.toString(): {} ", dgNumber.getValue(), dgNumber);
-                                log.debug("Founded hash DataGroup ASN1OctetString: {} ", Hex.toHexString(dgHash.getOctets()).toUpperCase());
                                 // Aggiungi l'hash alla lista in formato esadecimale.
                                 hashes.add(Hex.toHexString(dgHash.getOctets()).toUpperCase());
                             }else {
@@ -521,7 +508,6 @@ public class ValidateUtils {
             log.error(LogsConstant.EXCEPTION_IN_PROCESS, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP, ioe.getClass().getName() + LogsConstant.MESSAGE +ioe.getMessage());
             throw new CieCheckerException(ResultCieChecker.KO_EXC_IOEXCEPTION, ioe);
         }
-        log.debug("Founded DataGroup Hashes SIZE: {}", hashes.size());
         log.info(LogsConstant.SUCCESSFUL_OPERATION_NO_RESULT_LABEL, LogsConstant.VALIDATEUTILS_EXTRACT_DATAGROUP);
         return hashes;
     }
@@ -571,9 +557,6 @@ public class ValidateUtils {
 
             // 1. Ottieni il primo SignerInformation (presumendo che ce ne sia uno solo)
             SignerInformation signerInfo = cms.getSignerInfos().getSigners().iterator().next();
-            log.debug("signerInfo.getEncryptionAlgOID(): {}", signerInfo.getEncryptionAlgOID());
-            log.debug("signerInfo.getDigestAlgOID(): {} ", signerInfo.getDigestAlgOID());
-
             Signature verifier = Signature.getInstance(decodeSignatureAlgo(signerInfo.getEncryptionAlgOID()));
             if( signerInfo.getEncryptionAlgOID().equals(PKCSObjectIdentifiers.id_RSASSA_PSS.getId()) ){
                 try {
@@ -632,7 +615,6 @@ public class ValidateUtils {
     public static ResultCieChecker verifyDigitalSignature(CMSSignedData cms) throws CieCheckerException {
 
         log.info(INVOKING_OPERATION_LABEL, LogsConstant.VALIDATEUTILS_VERIFY_DIGITAL_SIGNATURE);
-        log.debug("Cms signed content type OID={}", cms.getSignedContentTypeOID());
         try {
             SignerInformationStore signers = cms.getSignerInfos();
             Collection<SignerInformation> c = signers.getSigners();
@@ -751,7 +733,6 @@ public class ValidateUtils {
             ZipEntry entry;
 
             while( (entry = zis.getNextEntry()) != null) {
-                log.debug("ZIS: {}" , entry.getName());
                 if(entry.getName().endsWith(".pem")){
                     List<X509Certificate> pemList = ValidateUtils.loadCertificateFromPemFile(zis);
                     x509List.addAll(pemList);
@@ -907,8 +888,6 @@ public class ValidateUtils {
 
 
     public static String[] extractS3Components(String s3Uri) {
-
-        log.debug("- s3Uri: {}", s3Uri);
         if (s3Uri == null || s3Uri.trim().isEmpty() || !s3Uri.startsWith(PROTOCOLLO_S3)) {
             log.error("Error: L'URI S3 is not valid o not begin with 's3://'");
             return null;
@@ -934,13 +913,6 @@ public class ValidateUtils {
                     nameKey = objectKey;
                 }
             }
-
-            log.debug("URI di Input: " + s3Uri);
-            log.debug("-------------------------------------");
-            log.debug("Bucket estratto:  " + bucketName );
-            log.debug("Chiave estratta: " + objectKey );
-            log.debug("Nome estratta: " + nameKey );
-            log.debug("Path estratta: " + key );
 
             return new String[]{bucketName, objectKey, nameKey, key};
 

@@ -44,6 +44,8 @@ public abstract class LogsConstant {
     public static final String CIEFILEGENERATOR_VALIDATE_DATA_INPUT = "ValidateUtils.validateCieDataInput()";
     public static final String CIEFILEGENERATOR_EXPORTFILES = "CieFileGenerator.exportCieArtifactsToFiles()";
     public static final String VALIDATEUTILS_CLEANING_PADDING = "ValidateUtils.cleanAllCieFields()";
+    public static final String CIECLEANUTILS_CLEANING_PADDING_IAS = "CieCleanUtils.cleanIas()";
+    public static final String CIECLEANUTILS_CLEANING_PADDING_MRTD = "CieCleanUtils.cleanMrtd()";
 
     // ERROR
     public static final String ENDING_PROCESS_WITH_ERROR = "Ending '{}' Process with error = '{}' - '{}'";

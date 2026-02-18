@@ -697,6 +697,10 @@ public class MandateDao extends BaseDao {
     public Mono<MandateEntity> createMandate(MandateEntity mandate, TypeSegregatorFilter typeSegregatorFilter)
     {
         String logMessage = String.format("create mandate mandate=%s", mandate);
+        String delegator = mandate.getDelegator();
+        String iuns = (mandate.getIuns() != null && !mandate.getIuns().isEmpty())
+                ? String.join(",", mandate.getIuns())
+                : "";
 
         return Mono.fromFuture(countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate(),typeSegregatorFilter,mandate.getIuns())
                         .thenCompose(total -> {
@@ -705,6 +709,8 @@ public class MandateDao extends BaseDao {
                                 PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                                         .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
                                         .mdcEntry(MDC_PN_MANDATEID_KEY, mandate.getMandateId())
+                                        .mdcEntry(MDC_PN_IUN_KEY, iuns)
+                                        .mdcEntry(MDC_PN_DELEGATOR_ID_KEY, delegator)
                                         .build();
 
                                 logEvent.log();

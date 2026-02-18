@@ -23,6 +23,8 @@
     "LollipopExpectedLcOriginalMethod": "GET;POST",
     "CieValidationCertS3Path": "pn-mandate/csca-masterlist/new_IT_MasterListCSCA.zip",
     "EnableAPIGatewayAppIO": "true",
-    "LollipopWhiteList": "CLMCST42R12D969Z:Cristoforo:Colombo;FRMTTR76M06B715E:Ettore:Fieramosca;GLLGLL64B15G702I:Galileo:Galilei"
+    "LollipopWhiteList": "CLMCST42R12D969Z:Cristoforo:Colombo;FRMTTR76M06B715E:Ettore:Fieramosca;GLLGLL64B15G702I:Galileo:Galilei",
+    "EMDDownstreamAlarmPeriodFilterPattern": "{ $.level = \"ERROR\" && $.logger_name = \"*ClientImpl\" && $.message = \"[DOWNSTREAM]*\" && $.message = \"*returned errors=*\"}",
+    "MandateAcceptanceFailureAlarmPeriodFilterPattern": "{ $.level = \"ERROR\" && $.aud_type = \"AUD_DL_ACCEPT\" && $.source_channel_details = \"QR_CODE\" && ($.error_category = \"FR01\" || $.error_category = \"FR02\" || $.error_category = \"FR04\" || $.error_category = \"TECH\")}"
   }
 }

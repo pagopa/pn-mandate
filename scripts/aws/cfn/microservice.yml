@@ -39,6 +39,10 @@ Parameters:
     Type: String
     Description: 'subnets ids comma separated list. Where to deploy the microservice'
 
+  VpcEgressSubnetsIds:
+    Type: String
+    Description: subnets where to install PN-CORE
+
   VpcId:
     Type: String
     Description: 'VpcId where the microservice is going to be deployed'
@@ -384,6 +388,56 @@ Parameters:
     Description: "Comma separated list of whitelisted CNs for Lollipop requests"
     Default: ""
 
+  # Alarms parameters
+  MetricNamespace:
+    Type: String
+    Description: "CloudWatch custom metric namespace"
+    Default: "Advanced"
+
+  MandateAcceptanceFailureAlarmPeriodFilterPattern:
+    Type: String
+    Default: '{ $.level = "ERROR" }'
+
+  MandateAcceptanceFailureAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  MandateAcceptanceFailureAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  MandateAcceptanceFailureAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureAlarmEnableOncall:
+    Type: String
+    Description: "Create onCall alarm"
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  OncallMandateAcceptanceFailureAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  OncallMandateAcceptanceFailureAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  OncallMandateAcceptanceFailureAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  OncallMandateAcceptanceFailureAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
 Conditions:
     ShouldEnableApiGatewayIO: !Equals [!Ref EnableAPIGatewayAppIO, "true"]
 
@@ -438,10 +492,12 @@ Resources:
         ContainerEnvEntry23: !Sub 'CSCA_MASTERLIST_S3_PATH=s3://pn-runtime-environment-variables-${AWS::Region}-${AWS::AccountId}/${CieValidationCertS3Path}'
         ContainerEnvEntry24: !Sub 'LOLLIPOP_WHITE_LIST=${LollipopWhiteList}'
         ContainerEnvEntry25: !Sub "LOLLIPOP_EXPECTED_LC_ORIGINAL_METHOD=${LollipopExpectedLcOriginalMethod}"
+        ContainerSecret1: !Sub "ASSERTION_REST_SUBSCRIPTION_KEY=arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:pn-Mandate-Secrets:AssertionRestSubscriptionKey:AWSCURRENT:"
+        MicroServiceSecretPrefix: pn-Mandate-Secrets
         ApplicativeEnvFileChecksum: !Ref ApplicativeEnvFileChecksum
         MappedPaths: '/mandate/*,/mandate-private/*'
         ECSClusterName: !Ref ECSClusterName
-        Subnets: !Ref SubnetsIds
+        Subnets: !Ref VpcEgressSubnetsIds
         VpcId: !Ref VpcId
         EcsDefaultSecurityGroup: !Ref EcsDefaultSecurityGroup
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
@@ -664,7 +720,7 @@ Resources:
     Type: 'AWS::Lambda::Function'
     Properties:
       Handler: index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs24.x
       FunctionName: !Ref PnMandateExpiredTriggerLambdaName
       Description: 'It triggers expired mandates for moving them to history'
       MemorySize: 128
@@ -855,3 +911,27 @@ Resources:
       Parameters:
         FunctionName: !Ref CscaMasterlistSync
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+
+  MandateAcceptanceFailureDetectionAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/custom-metric.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure"
+        MetricNamespace: !Ref MetricNamespace
+        LogGroupName: "/aws/ecs/pn-mandate"
+        FilterPattern: !Ref MandateAcceptanceFailureAlarmPeriodFilterPattern
+        Period: !Ref MandateAcceptanceFailureAlarmPeriod
+        Threshold: !Ref MandateAcceptanceFailureAlarmThreshold
+        EvaluationPeriods: !Ref MandateAcceptanceFailureAlarmEvaluationPeriods
+        DatapointsToAlarm: !Ref MandateAcceptanceFailureAlarmPeriodDatapointsToAlarm
+        Statistic: Sum
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        HasOncall: !Ref MandateAcceptanceFailureAlarmEnableOncall
+        OncallPeriod: !Ref OncallMandateAcceptanceFailureAlarmPeriod
+        OncallThreshold: !Ref OncallMandateAcceptanceFailureAlarmThreshold
+        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureAlarmEvaluationPeriods
+        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureAlarmPeriodDatapointsToAlarm
+        OncallComparisonOperator: GreaterThanOrEqualToThreshold
+        OncallStatistic: Sum

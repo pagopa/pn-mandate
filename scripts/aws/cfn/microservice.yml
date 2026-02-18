@@ -388,6 +388,56 @@ Parameters:
     Description: "Comma separated list of whitelisted CNs for Lollipop requests"
     Default: ""
 
+  # Alarms parameters
+  MetricNamespace:
+    Type: String
+    Description: "CloudWatch custom metric namespace"
+    Default: "Advanced"
+
+  MandateAcceptanceFailureAlarmPeriodFilterPattern:
+    Type: String
+    Default: '{ $.level = "ERROR" }'
+
+  MandateAcceptanceFailureAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  MandateAcceptanceFailureAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  MandateAcceptanceFailureAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureAlarmEnableOncall:
+    Type: String
+    Description: "Create onCall alarm"
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  OncallMandateAcceptanceFailureAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  OncallMandateAcceptanceFailureAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  OncallMandateAcceptanceFailureAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  OncallMandateAcceptanceFailureAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
 Conditions:
     ShouldEnableApiGatewayIO: !Equals [!Ref EnableAPIGatewayAppIO, "true"]
 
@@ -861,3 +911,27 @@ Resources:
       Parameters:
         FunctionName: !Ref CscaMasterlistSync
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+
+  MandateAcceptanceFailureDetectionAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/custom-metric.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure"
+        MetricNamespace: !Ref MetricNamespace
+        LogGroupName: "/aws/ecs/pn-mandate"
+        FilterPattern: !Ref MandateAcceptanceFailureAlarmPeriodFilterPattern
+        Period: !Ref MandateAcceptanceFailureAlarmPeriod
+        Threshold: !Ref MandateAcceptanceFailureAlarmThreshold
+        EvaluationPeriods: !Ref MandateAcceptanceFailureAlarmEvaluationPeriods
+        DatapointsToAlarm: !Ref MandateAcceptanceFailureAlarmPeriodDatapointsToAlarm
+        Statistic: Sum
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        HasOncall: !Ref MandateAcceptanceFailureAlarmEnableOncall
+        OncallPeriod: !Ref OncallMandateAcceptanceFailureAlarmPeriod
+        OncallThreshold: !Ref OncallMandateAcceptanceFailureAlarmThreshold
+        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureAlarmEvaluationPeriods
+        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureAlarmPeriodDatapointsToAlarm
+        OncallComparisonOperator: GreaterThanOrEqualToThreshold
+        OncallStatistic: Sum

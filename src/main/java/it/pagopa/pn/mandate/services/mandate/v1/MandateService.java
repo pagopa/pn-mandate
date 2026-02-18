@@ -48,7 +48,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM;
-import static it.pagopa.pn.commons.utils.MDCUtils.MDC_PN_MANDATEID_KEY;
+import static it.pagopa.pn.commons.utils.MDCUtils.*;
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.*;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyAdmin;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyGroupAdmin;
@@ -235,7 +235,7 @@ public class MandateService {
         return mandateDao.retrieveMandateForDelegate(xPagopaPnCxId,mandateId)
                 .doOnNext(mandate -> log.debug("Get mandate {} for delegate {}:",mandateId,xPagopaPnCxId))
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
-                .flatMap(mandateEntity -> validateCieData(ciEValidationData, mandateEntity))
+                .flatMap(mandateEntity -> validateCieData(ciEValidationData, mandateEntity, logEvent))
                 .map(mandateEntity -> {
                     checkAcceptanceCIE(mandateEntity);
                     log.debug("Start to update entity for acceptance with mandateId {}", mandateEntity.getMandateId());
@@ -250,9 +250,15 @@ public class MandateService {
                     String messageAction = String.format(
                             "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
                             mandate.getDelegator(), mandate.getDelegate(), mandate);
+                   String iuns = (mandate.getIuns() != null && !mandate.getIuns().isEmpty())
+                                ? String.join(",", mandate.getIuns())
+                                : "";
+                    logEvent.getMdc().put(MDC_PN_IUN_KEY,iuns);
+                    logEvent.getMdc().put(MDC_PN_DELEGATOR_ID_KEY,mandate.getDelegator());
                     logEvent.generateSuccess(messageAction).log();
                 })
                 .doOnError(ex -> {
+                        logEvent.getMdc().put(MDCMandateCostants.MDC_PN_ERROR_CATEGORY_KEY,ValidationErrorCategory.fromThrowable(ex).getValue());
                         if(ex instanceof PnRuntimeException pnEx) {
                             logEvent.generateFailure(pnEx.getProblem().getDetail()).log();
                         } else {
@@ -262,9 +268,12 @@ public class MandateService {
                 .then();
     }
 
-    private Mono<MandateEntity> validateCieData(Mono<CIEValidationData> cieValidationDataMono, MandateEntity mandate) {
+    private Mono<MandateEntity> validateCieData(Mono<CIEValidationData> cieValidationDataMono, MandateEntity mandate, PnAuditLogEvent logEvent) {
         log.info("Start to validate CIE Data for mandateId {}", mandate.getMandateId());
         return cieValidationDataMono
+                .doOnNext(cieValidationData -> {
+                    logEvent.getMdc().put(MDCMandateCostants.MDC_PN_NIS_KEY, cieValidationData.getNisData().getNis());
+                })
                 .doOnNext(base64Validator::validateCieValidationData)
                 .zipWith(retrieveTaxIdFromInternalId(mandate.getDelegator()))
                 .doOnNext(tuple -> {

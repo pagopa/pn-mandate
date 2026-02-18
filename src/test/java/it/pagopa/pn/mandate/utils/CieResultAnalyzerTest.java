@@ -36,7 +36,7 @@ class CieResultAnalyzerTest {
     @DisplayName("Should throw PnInvalidCieDataException for client error result")
     void analyzeResultShouldThrowExceptionFromMapper() {
         when(mapper.mapToException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA))
-                .thenReturn(new PnInvalidCieDataException("Invalid input", "CIE_INVALID_INPUT"));
+                .thenReturn(new PnInvalidCieDataException(ResultCieClientErrorType.CIE_INVALID_INPUT));
         PnInvalidCieDataException ex = assertThrows(PnInvalidCieDataException.class, () ->
                 analyzer.analyzeResult(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA));
         verifyCode(ex, "CIE_INVALID_INPUT");

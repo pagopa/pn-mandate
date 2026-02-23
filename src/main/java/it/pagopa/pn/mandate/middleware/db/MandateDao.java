@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.*;
-import static it.pagopa.pn.mandate.utils.MDCMandateCostants.MDC_PN_MANDATE_WORKFLOW_TYPE_KEY;
 import static it.pagopa.pn.mandate.utils.PgUtils.buildExpressionGroupFilter;
 
 @Repository

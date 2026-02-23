@@ -48,7 +48,6 @@ import java.util.*;
 import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM;
 import static it.pagopa.pn.commons.utils.MDCUtils.*;
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.*;
-import static it.pagopa.pn.mandate.utils.MDCMandateCostants.MDC_PN_MANDATE_WORKFLOW_TYPE_KEY;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyAdmin;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyGroupAdmin;
 
@@ -256,7 +255,7 @@ public class MandateService {
                     logEvent.generateSuccess(messageAction).log();
                 })
                 .doOnError(ex -> {
-                    logEvent.getMdc().put(MDCMandateCostants.MDC_PN_ERROR_CATEGORY_KEY, CieAcceptanceErrorCategory.fromThrowable(ex));
+                    logEvent.getMdc().put(MDC_PN_ERROR_CATEGORY_KEY, CieAcceptanceErrorCategory.fromThrowable(ex));
 
                     if(ex instanceof PnInvalidCieDataException) {
                         logEvent.generateFailure(ex.getMessage()).log();
@@ -266,13 +265,14 @@ public class MandateService {
                         logEvent.generateFailure(ex.getMessage()).log();
                     }
                 })
-                .then();
+                .then()
+                .doOnTerminate(() -> logEvent.getMdc().clear());
     }
 
     private Mono<MandateEntity> validateCieData(Mono<CIEValidationData> cieValidationDataMono, MandateEntity mandate, PnAuditLogEvent logEvent) {
         log.info("Start to validate CIE Data for mandateId {}", mandate.getMandateId());
         return cieValidationDataMono
-                .doOnNext(cieValidationData -> logEvent.getMdc().put(MDCMandateCostants.MDC_PN_NIS_KEY, cieValidationData.getNisData().getNis()))
+                .doOnNext(cieValidationData -> logEvent.getMdc().put(MDC_PN_MANDATE_CIE_NIS_KEY, cieValidationData.getNisData().getNis()))
                 .doOnNext(base64Validator::validateCieValidationData)
                 .zipWith(retrieveTaxIdFromInternalId(mandate.getDelegator()))
                 .doOnNext(tuple -> {

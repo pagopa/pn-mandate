@@ -306,6 +306,7 @@ public class MandateDaoIT extends AbstractTestConfiguration {
         m.setState(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING));
         m.setValidationcode("12345");
         m.setVisibilityIds(null);
+        m.setWorkflowType(WorkFlowType.STANDARD);
         return m;
     }
 
@@ -341,6 +342,7 @@ public class MandateDaoIT extends AbstractTestConfiguration {
         m.setValidationcode("12345");
         m.setVisibilityIds(null);
         m.setAccepted(Instant.now().minus(Duration.ofDays(5)));
+        m.setWorkflowType(WorkFlowType.STANDARD);
         return m;
     }
 

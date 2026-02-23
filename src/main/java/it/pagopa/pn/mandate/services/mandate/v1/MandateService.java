@@ -48,6 +48,7 @@ import java.util.*;
 import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM;
 import static it.pagopa.pn.commons.utils.MDCUtils.*;
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.*;
+import static it.pagopa.pn.mandate.utils.MDCMandateCostants.MDC_PN_MANDATE_WORKFLOW_TYPE_KEY;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyAdmin;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyGroupAdmin;
 
@@ -228,6 +229,7 @@ public class MandateService {
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
                 .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
+                .mdcEntry(MDC_PN_MANDATE_WORKFLOW_TYPE_KEY, WorkFlowType.CIE.name())
                 .build();
         logEvent.log();
         return mandateDao.retrieveMandateForDelegate(xPagopaPnCxId,mandateId)

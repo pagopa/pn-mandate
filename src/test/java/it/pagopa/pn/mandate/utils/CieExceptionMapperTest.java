@@ -3,13 +3,14 @@ package it.pagopa.pn.mandate.utils;
 import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.exceptions.PnRuntimeException;
+import it.pagopa.pn.mandate.exceptions.PnCieInvalidVerificationCodeException;
 import it.pagopa.pn.mandate.exceptions.PnInvalidCieDataException;
-import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.ERROR_CODE_INVALID_VERIFICATION_CODE;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class CieExceptionMapperTest {
     private final CieExceptionMapper mapper = new CieExceptionMapper();
@@ -19,17 +20,9 @@ class CieExceptionMapperTest {
     }
 
     @Test
-    @DisplayName("Should throw PnInvalidCieDataException for client error result")
-    void mapToExceptionWithClientErrorShouldThrowInvalidCieDataException() {
-        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA);
-        assertInstanceOf(PnInvalidCieDataException.class, ex);
-        verifyCode(ex, "CIE_INVALID_INPUT");
-    }
-
-    @Test
     @DisplayName("Should throw PnInvalidCieDataException for integrity error result")
     void mapToExceptionWithIntegrityErrorShouldThrowInvalidCieDataException() {
-        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST);
+        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_ERROR_SOD_DECODE);
         assertInstanceOf(PnInvalidCieDataException.class, ex);
         verifyCode(ex, "CIE_INTEGRITY_ERROR");
     }
@@ -40,6 +33,14 @@ class CieExceptionMapperTest {
         PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED);
         assertInstanceOf(PnInvalidCieDataException.class, ex);
         verifyCode(ex, "CIE_SIGNATURE_ERROR");
+    }
+
+    @Test
+    @DisplayName("Should throw PnInvalidCieDataException for invalid input error result")
+    void mapToExceptionWithInvalidInputShouldThrowInvalidCieDataException() {
+        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_INVALID_ALGORITHM);
+        assertInstanceOf(PnInvalidCieDataException.class, ex);
+        verifyCode(ex, "CIE_INVALID_INPUT");
     }
 
     @Test
@@ -60,17 +61,17 @@ class CieExceptionMapperTest {
     }
 
     @Test
-    @DisplayName("Should throw PnInvalidVerificationCodeException for invalid nonce error result")
+    @DisplayName("Should throw PnCieInvalidVerificationCodeException for invalid nonce error result")
     void mapToExceptionWithNonceErrorShouldThrowInvalidVerificationCodeException() {
         PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE);
-        assertInstanceOf(PnInvalidVerificationCodeException.class, ex);
+        assertInstanceOf(PnCieInvalidVerificationCodeException.class, ex);
         verifyCode(ex, ERROR_CODE_INVALID_VERIFICATION_CODE);
     }
 
     @Test
-    @DisplayName("Should throw PnInternalException for unmapped error result")
+    @DisplayName("Should throw PnInternalError unmapped error result")
     void mapToExceptionWithUnmappedErrorShouldThrowInternalException() {
-        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_INVALID_VERIFIER);
+        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_ATTRIBUTO_NULL);
         assertInstanceOf(PnInternalException.class, ex);
         verifyCode(ex, "CIE_CHECKER_SERVER_ERROR");
     }

@@ -7,6 +7,8 @@ import it.pagopa.pn.mandate.exceptions.PnInvalidCieDataException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -36,10 +38,10 @@ class CieResultAnalyzerTest {
     @DisplayName("Should throw PnInvalidCieDataException for client error result")
     void analyzeResultShouldThrowExceptionFromMapper() {
         when(mapper.mapToException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA))
-                .thenReturn(new PnInvalidCieDataException(ResultCieClientErrorType.CIE_INVALID_INPUT));
+                .thenReturn(new PnInvalidCieDataException(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA, List.of(CieErrorCategory.CIE_INTEGRITY_ERROR)));
         PnInvalidCieDataException ex = assertThrows(PnInvalidCieDataException.class, () ->
                 analyzer.analyzeResult(ResultCieChecker.KO_EXC_INVALID_CMSTYPEDDATA));
-        verifyCode(ex, "CIE_INVALID_INPUT");
+        verifyCode(ex, "CIE_INTEGRITY_ERROR");
     }
 
 }

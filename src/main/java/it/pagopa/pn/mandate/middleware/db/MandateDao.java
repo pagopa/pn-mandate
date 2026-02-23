@@ -16,6 +16,7 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.MandateUtils;
 import it.pagopa.pn.mandate.utils.RevocationCause;
 import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.springframework.context.annotation.Import;
@@ -698,9 +699,7 @@ public class MandateDao extends BaseDao {
     {
         String logMessage = String.format("create mandate mandate=%s", mandate);
         String delegator = mandate.getDelegator();
-        String iuns = (mandate.getIuns() != null && !mandate.getIuns().isEmpty())
-                ? String.join(",", mandate.getIuns())
-                : "";
+        String iuns = MandateUtils.joinCollectionToString(",", mandate.getIuns());
 
         return Mono.fromFuture(countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate(),typeSegregatorFilter,mandate.getIuns())
                         .thenCompose(total -> {

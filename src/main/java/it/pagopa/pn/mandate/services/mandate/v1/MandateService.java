@@ -10,10 +10,7 @@ import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CIEValidationD
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
-import it.pagopa.pn.mandate.exceptions.PnMandateBadRequestException;
-import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
-import it.pagopa.pn.mandate.exceptions.PnUnsupportedFilterException;
+import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateDtoDto;
@@ -35,6 +32,7 @@ import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -250,20 +248,21 @@ public class MandateService {
                     String messageAction = String.format(
                             "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
                             mandate.getDelegator(), mandate.getDelegate(), mandate);
-                   String iuns = (mandate.getIuns() != null && !mandate.getIuns().isEmpty())
-                                ? String.join(",", mandate.getIuns())
-                                : "";
-                    logEvent.getMdc().put(MDC_PN_IUN_KEY,iuns);
-                    logEvent.getMdc().put(MDC_PN_DELEGATOR_ID_KEY,mandate.getDelegator());
+                    String iuns = MandateUtils.joinCollectionToString(",", mandate.getIuns());
+                    logEvent.getMdc().put(MDC_PN_IUN_KEY, iuns);
+                    logEvent.getMdc().put(MDC_PN_DELEGATOR_ID_KEY, mandate.getDelegator());
                     logEvent.generateSuccess(messageAction).log();
                 })
                 .doOnError(ex -> {
-                        logEvent.getMdc().put(MDCMandateCostants.MDC_PN_ERROR_CATEGORY_KEY,ValidationErrorCategory.fromThrowable(ex).getValue());
-                        if(ex instanceof PnRuntimeException pnEx) {
-                            logEvent.generateFailure(pnEx.getProblem().getDetail()).log();
-                        } else {
-                            logEvent.generateFailure(ex.getMessage()).log();
-                        }
+                    logEvent.getMdc().put(MDCMandateCostants.MDC_PN_ERROR_CATEGORY_KEY, CieAcceptanceErrorCategory.fromThrowable(ex));
+
+                    if(ex instanceof PnInvalidCieDataException) {
+                        logEvent.generateFailure(ex.getMessage()).log();
+                    } else if(ex instanceof PnRuntimeException pnEx) {
+                        logEvent.generateFailure(pnEx.getProblem().getDetail()).log();
+                    } else {
+                        logEvent.generateFailure(ex.getMessage()).log();
+                    }
                 })
                 .then();
     }
@@ -271,9 +270,7 @@ public class MandateService {
     private Mono<MandateEntity> validateCieData(Mono<CIEValidationData> cieValidationDataMono, MandateEntity mandate, PnAuditLogEvent logEvent) {
         log.info("Start to validate CIE Data for mandateId {}", mandate.getMandateId());
         return cieValidationDataMono
-                .doOnNext(cieValidationData -> {
-                    logEvent.getMdc().put(MDCMandateCostants.MDC_PN_NIS_KEY, cieValidationData.getNisData().getNis());
-                })
+                .doOnNext(cieValidationData -> logEvent.getMdc().put(MDCMandateCostants.MDC_PN_NIS_KEY, cieValidationData.getNisData().getNis()))
                 .doOnNext(base64Validator::validateCieValidationData)
                 .zipWith(retrieveTaxIdFromInternalId(mandate.getDelegator()))
                 .doOnNext(tuple -> {
@@ -282,7 +279,7 @@ public class MandateService {
                     cieChecker.validateCie(cieValidationData, mandate.getValidationcode(), delegatorTaxId);
                 })
                 .thenReturn(mandate)
-                .onErrorResume(PnInvalidVerificationCodeException.class, ex -> {
+                .onErrorResume(PnCieInvalidVerificationCodeException.class, ex -> {
                     String mandateId = mandate.getMandateId();
                     log.warn("Invalid verification code for mandateId {}", mandateId);
                     if(Boolean.TRUE.equals(pnMandateConfig.getRevokeCieMandateOnVerificationFailure())) {
@@ -309,16 +306,16 @@ public class MandateService {
         log.debug("Start to check validity of the acceptance request for mandateId {}", mandateEntity.getMandateId());
         if (!mandateEntity.getWorkflowType().equals(WorkFlowType.CIE)) {
             log.error("Impossible to accept mandate with mandateId {} having workflowType {}, should have workflow type {}",mandateEntity.getMandateId(), mandateEntity.getWorkflowType(), WorkflowType.CIE.getValue());
-            throw new PnMandateBadRequestException("Mandate Bad Request","Mandate has a workflowType different from CIE", ERROR_CODE_MANDATE_BAD_REQUEST);
+            throw new PnInvalidMandateStatusException("Mandate Bad Request", "Mandate has a workflowType different from CIE", HttpStatus.BAD_REQUEST.value(), ERROR_CODE_MANDATE_BAD_REQUEST, null);
         }
         if (mandateEntity.getState() != StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING)) {
             log.error("Impossible to accept mandate with mandateId {} having status {}, should have status {}",mandateEntity.getMandateId(), StatusEnumMapper.fromValue(mandateEntity.getState()), MandateDto.StatusEnum.PENDING);
-            throw new PnMandateBadRequestException("Mandate Bad Request","Mandate has a status different from PENDING", ERROR_CODE_MANDATE_BAD_REQUEST);
+            throw new PnInvalidMandateStatusException("Mandate Bad Request", "Mandate has a status different from PENDING", HttpStatus.BAD_REQUEST.value(), ERROR_CODE_MANDATE_BAD_REQUEST, null);
         }
         Instant expiration = mandateEntity.getCreated().plus(pnMandateConfig.getCiePendingDuration());
         if (Instant.now().isAfter(expiration)) {
             log.error("Mandate with mandateId {} is expired", mandateEntity.getMandateId());
-            throw new PnMandateNotFoundException("Mandate is expired","Mandate not found because is expired", ERROR_CODE_MANDATE_NOT_FOUND);
+            throw new PnMandatePendingExpiredException("Mandate is expired", "Mandate not found because is expired", HttpStatus.NOT_FOUND.value());
         }
         log.debug("End to check validity of of the acceptance request for mandateId {}", mandateEntity.getMandateId());
     }

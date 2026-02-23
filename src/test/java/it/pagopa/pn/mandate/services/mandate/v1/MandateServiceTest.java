@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
 import it.pagopa.pn.api.dto.events.EventType;
+import it.pagopa.pn.ciechecker.model.ResultCieChecker;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.AbstractTestConfiguration;
@@ -62,7 +63,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -1984,7 +1984,8 @@ class MandateServiceTest extends AbstractTestConfiguration {
         when(mandateDao.save(any())).thenReturn(Mono.just(entity));
         doNothing().when(cieCheckerAdapter).validateCie(any(), any(), any());
 
-        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData))).verifyComplete();
+        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData)))
+                .verifyComplete();
     }
 
 
@@ -1995,7 +1996,9 @@ class MandateServiceTest extends AbstractTestConfiguration {
         NISData nisData = new NISData();
         nisData.setNis("testNIS");
         cieValidationData.setNisData(nisData);
-        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, "mandateId", Mono.just(cieValidationData))).expectError(PnMandateNotFoundException.class).verify();
+        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, "mandateId", Mono.just(cieValidationData)))
+                .expectError(PnMandateNotFoundException.class)
+                .verify();
     }
 
     @Test
@@ -2016,7 +2019,9 @@ class MandateServiceTest extends AbstractTestConfiguration {
         when(mandateDao.retrieveMandateForDelegate(anyString(), anyString())).thenReturn(Mono.just(entity));
         when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(5));
 
-        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData))).expectErrorSatisfies(throwable -> assertThat(throwable).isInstanceOf(PnMandateBadRequestException.class)).verify();
+        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData)))
+                .expectError(PnInvalidMandateStatusException.class)
+                .verify();
     }
 
     @Test
@@ -2041,7 +2046,9 @@ class MandateServiceTest extends AbstractTestConfiguration {
         when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(5));
         when(mandateDao.save(any(MandateEntity.class))).thenReturn(Mono.just(new MandateEntity()));
 
-        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData))).expectErrorSatisfies(throwable -> assertThat(throwable).isInstanceOf(PnMandateBadRequestException.class)).verify();
+        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData)))
+                .expectError(PnInvalidMandateStatusException.class)
+                .verify();
     }
 
 
@@ -2066,10 +2073,9 @@ class MandateServiceTest extends AbstractTestConfiguration {
         when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(30));
         when(mandateDao.save(any(MandateEntity.class))).thenReturn(Mono.just(new MandateEntity()));
 
-        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData))).expectErrorSatisfies(throwable -> {
-            // Il test ora fallirà con l'eccezione corretta
-            assertThat(throwable).isInstanceOf(PnMandateNotFoundException.class);
-        }).verify();
+        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData)))
+                .expectError(PnMandatePendingExpiredException.class)
+                .verify();
     }
 
     @Test
@@ -2089,7 +2095,9 @@ class MandateServiceTest extends AbstractTestConfiguration {
         when(pnMandateConfig.getCiePendingDuration()).thenReturn(Duration.ofMinutes(30));
         when(pnDatavaultClient.getRecipientDenominationByInternalId(anyList())).thenReturn(Flux.empty());
 
-        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData))).expectError(PnInternalException.class).verify();
+        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData)))
+                .expectError(PnInternalException.class)
+                .verify();
     }
 
     @Test
@@ -2112,7 +2120,9 @@ class MandateServiceTest extends AbstractTestConfiguration {
         when(pnDatavaultClient.getRecipientDenominationByInternalId(anyList())).thenReturn(Flux.just(recipient));
         doThrow(new RuntimeException("CIE error")).when(cieCheckerAdapter).validateCie(any(), any(), any());
 
-        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData))).expectError(RuntimeException.class).verify();
+        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData)))
+                .expectError(RuntimeException.class)
+                .verify();
     }
 
     @Test
@@ -2135,9 +2145,13 @@ class MandateServiceTest extends AbstractTestConfiguration {
         when(pnDatavaultClient.getRecipientDenominationByInternalId(anyList())).thenReturn(Flux.just(recipient));
         when(pnMandateConfig.getRevokeCieMandateOnVerificationFailure()).thenReturn(true);
         when(mandateDao.revokeMandate(anyString(), anyString(), any(), any())).thenReturn(Mono.just(entity));
-        doThrow(new PnInvalidVerificationCodeException()).when(cieCheckerAdapter).validateCie(any(), any(), any());
 
-        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData))).expectError(PnInvalidVerificationCodeException.class).verify();
+        doThrow(new PnCieInvalidVerificationCodeException(ResultCieChecker.KO_EXC_NO_MATCH_NONCE_SIGNATURE))
+                .when(cieCheckerAdapter).validateCie(any(), any(), any());
+
+        StepVerifier.create(mandateService.acceptMandateAppIo("cxId", null, mandateId, Mono.just(cieValidationData)))
+                .expectError(PnCieInvalidVerificationCodeException.class)
+                .verify();
     }
 
 }

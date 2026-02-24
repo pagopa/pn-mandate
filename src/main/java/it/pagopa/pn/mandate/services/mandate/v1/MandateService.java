@@ -232,7 +232,12 @@ public class MandateService {
                 .build();
         logEvent.log();
         return mandateDao.retrieveMandateForDelegate(xPagopaPnCxId,mandateId)
-                .doOnNext(mandate -> log.debug("Get mandate {} for delegate {}:",mandateId,xPagopaPnCxId))
+                .doOnNext(mandate -> {
+                    String iuns = MandateUtils.joinCollectionToString(",", mandate.getIuns());
+                    logEvent.getMdc().put(MDC_PN_IUN_KEY, iuns);
+                    logEvent.getMdc().put(MDC_PN_DELEGATOR_ID_KEY, mandate.getDelegator());
+                    log.debug("Get mandate {} for delegate {}:",mandateId,xPagopaPnCxId);
+                })
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
                 .flatMap(mandateEntity -> validateCieData(ciEValidationData, mandateEntity, logEvent))
                 .map(mandateEntity -> {
@@ -249,9 +254,6 @@ public class MandateService {
                     String messageAction = String.format(
                             "mandate accepted delegator uid=%s delegate uid=%s mandateobj=%S",
                             mandate.getDelegator(), mandate.getDelegate(), mandate);
-                    String iuns = MandateUtils.joinCollectionToString(",", mandate.getIuns());
-                    logEvent.getMdc().put(MDC_PN_IUN_KEY, iuns);
-                    logEvent.getMdc().put(MDC_PN_DELEGATOR_ID_KEY, mandate.getDelegator());
                     logEvent.generateSuccess(messageAction).log();
                 })
                 .doOnError(ex -> {
@@ -317,7 +319,7 @@ public class MandateService {
         Instant expiration = mandateEntity.getCreated().plus(pnMandateConfig.getCiePendingDuration());
         if (Instant.now().isAfter(expiration)) {
             log.error("Mandate with mandateId {} is expired", mandateEntity.getMandateId());
-            throw new PnMandatePendingExpiredException("Mandate is expired", "Mandate not found because is expired", HttpStatus.NOT_FOUND.value());
+            throw new PnMandatePendingExpiredException("Mandate is expired", "Mandate not found because is expired", HttpStatus.NOT_FOUND.value(), ERROR_CODE_MANDATE_NOT_FOUND);
         }
         log.debug("End to check validity of of the acceptance request for mandateId {}", mandateEntity.getMandateId());
     }

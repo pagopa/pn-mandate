@@ -388,33 +388,32 @@ Parameters:
     Description: "Comma separated list of whitelisted CNs for Lollipop requests"
     Default: ""
 
-  # Alarms parameters
+  # Custom metrics parameters
   MetricNamespace:
     Type: String
     Description: "CloudWatch custom metric namespace"
     Default: "Advanced"
 
-  MandateAcceptanceFailureAlarmPeriodFilterPattern:
+  MandateAcceptanceFailureF01AlarmPeriodFilterPattern:
     Type: String
-    Default: '{ $.level = "ERROR" }'
 
-  MandateAcceptanceFailureAlarmPeriod:
+  MandateAcceptanceFailureF01AlarmPeriod:
     Type: Number
     Default: 300
 
-  MandateAcceptanceFailureAlarmThreshold:
+  MandateAcceptanceFailureF01AlarmThreshold:
     Type: Number
     Default: 1
 
-  MandateAcceptanceFailureAlarmEvaluationPeriods:
+  MandateAcceptanceFailureF01AlarmEvaluationPeriods:
     Type: Number
     Default: 12
 
-  MandateAcceptanceFailureAlarmPeriodDatapointsToAlarm:
+  MandateAcceptanceFailureF01AlarmPeriodDatapointsToAlarm:
     Type: Number
     Default: 1
 
-  MandateAcceptanceFailureAlarmEnableOncall:
+  MandateAcceptanceFailureF01AlarmEnableOncall:
     Type: String
     Description: "Create onCall alarm"
     Default: false
@@ -422,19 +421,320 @@ Parameters:
       - true
       - false
 
-  OncallMandateAcceptanceFailureAlarmPeriod:
+  OncallMandateAcceptanceFailureF01AlarmPeriod:
     Type: Number
     Default: 300
 
-  OncallMandateAcceptanceFailureAlarmThreshold:
+  OncallMandateAcceptanceFailureF01AlarmThreshold:
     Type: Number
     Default: 1
 
-  OncallMandateAcceptanceFailureAlarmEvaluationPeriods:
+  OncallMandateAcceptanceFailureF01AlarmEvaluationPeriods:
     Type: Number
     Default: 12
 
-  OncallMandateAcceptanceFailureAlarmPeriodDatapointsToAlarm:
+  OncallMandateAcceptanceFailureF01AlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureF02AlarmPeriodFilterPattern:
+    Type: String
+
+  MandateAcceptanceFailureF02AlarmPeriod:
+    Type: Number
+    Default: 300
+
+  MandateAcceptanceFailureF02AlarmThreshold:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureF02AlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  MandateAcceptanceFailureF02AlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureF02AlarmEnableOncall:
+    Type: String
+    Description: "Create onCall alarm"
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  OncallMandateAcceptanceFailureF02AlarmPeriod:
+    Type: Number
+    Default: 300
+
+  OncallMandateAcceptanceFailureF02AlarmThreshold:
+    Type: Number
+    Default: 1
+
+  OncallMandateAcceptanceFailureF02AlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  OncallMandateAcceptanceFailureF02AlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureF03AlarmPeriodFilterPattern:
+    Type: String
+
+  MandateAcceptanceFailureF03AlarmPeriod:
+    Type: Number
+    Default: 300
+
+  MandateAcceptanceFailureF03AlarmThreshold:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureF03AlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  MandateAcceptanceFailureF03AlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureF03AlarmEnableOncall:
+    Type: String
+    Description: "Create onCall alarm"
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  OncallMandateAcceptanceFailureF03AlarmPeriod:
+    Type: Number
+    Default: 300
+
+  OncallMandateAcceptanceFailureF03AlarmThreshold:
+    Type: Number
+    Default: 1
+
+  OncallMandateAcceptanceFailureF03AlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  OncallMandateAcceptanceFailureF03AlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureF04AlarmPeriodFilterPattern:
+    Type: String
+
+  MandateAcceptanceFailureF04AlarmPeriod:
+    Type: Number
+    Default: 300
+
+  MandateAcceptanceFailureF04AlarmThreshold:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureF04AlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  MandateAcceptanceFailureF04AlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureF04AlarmEnableOncall:
+    Type: String
+    Description: "Create onCall alarm"
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  OncallMandateAcceptanceFailureF04AlarmPeriod:
+    Type: Number
+    Default: 300
+
+  OncallMandateAcceptanceFailureF04AlarmThreshold:
+    Type: Number
+    Default: 1
+
+  OncallMandateAcceptanceFailureF04AlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  OncallMandateAcceptanceFailureF04AlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+    
+  MandateAcceptanceFailureMandateExpiredAlarmPeriodFilterPattern:
+    Type: String
+
+  MandateAcceptanceFailureMandateExpiredAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  MandateAcceptanceFailureMandateExpiredAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureMandateExpiredAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  MandateAcceptanceFailureMandateExpiredAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureMandateExpiredAlarmEnableOncall:
+    Type: String
+    Description: "Create onCall alarm"
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  OncallMandateAcceptanceFailureMandateExpiredAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  OncallMandateAcceptanceFailureMandateExpiredAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  OncallMandateAcceptanceFailureMandateExpiredAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  OncallMandateAcceptanceFailureMandateExpiredAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+    
+  MandateAcceptanceFailureMandateNotFoundAlarmPeriodFilterPattern:
+    Type: String
+
+  MandateAcceptanceFailureMandateNotFoundAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  MandateAcceptanceFailureMandateNotFoundAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureMandateNotFoundAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  MandateAcceptanceFailureMandateNotFoundAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureMandateNotFoundAlarmEnableOncall:
+    Type: String
+    Description: "Create onCall alarm"
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  OncallMandateAcceptanceFailureMandateNotFoundAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  OncallMandateAcceptanceFailureMandateNotFoundAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  OncallMandateAcceptanceFailureMandateNotFoundAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  OncallMandateAcceptanceFailureMandateNotFoundAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+    
+  MandateAcceptanceFailureInvalidMandateAlarmPeriodFilterPattern:
+    Type: String
+
+  MandateAcceptanceFailureInvalidMandateAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  MandateAcceptanceFailureInvalidMandateAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureInvalidMandateAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  MandateAcceptanceFailureInvalidMandateAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureInvalidMandateAlarmEnableOncall:
+    Type: String
+    Description: "Create onCall alarm"
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  OncallMandateAcceptanceFailureInvalidMandateAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  OncallMandateAcceptanceFailureInvalidMandateAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  OncallMandateAcceptanceFailureInvalidMandateAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  OncallMandateAcceptanceFailureInvalidMandateAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+    
+  MandateAcceptanceFailureTechAlarmPeriodFilterPattern:
+    Type: String
+
+  MandateAcceptanceFailureTechAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  MandateAcceptanceFailureTechAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureTechAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  MandateAcceptanceFailureTechAlarmPeriodDatapointsToAlarm:
+    Type: Number
+    Default: 1
+
+  MandateAcceptanceFailureTechAlarmEnableOncall:
+    Type: String
+    Description: "Create onCall alarm"
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+  OncallMandateAcceptanceFailureTechAlarmPeriod:
+    Type: Number
+    Default: 300
+
+  OncallMandateAcceptanceFailureTechAlarmThreshold:
+    Type: Number
+    Default: 1
+
+  OncallMandateAcceptanceFailureTechAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+
+  OncallMandateAcceptanceFailureTechAlarmPeriodDatapointsToAlarm:
     Type: Number
     Default: 1
 
@@ -912,26 +1212,194 @@ Resources:
         FunctionName: !Ref CscaMasterlistSync
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
 
-  MandateAcceptanceFailureDetectionAlarm:
+  MandateAcceptanceFailureF01DetectionAlarm:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/custom-metric.yaml"
       Parameters:
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
-        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure"
+        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure-f01"
         MetricNamespace: !Ref MetricNamespace
         LogGroupName: "/aws/ecs/pn-mandate"
-        FilterPattern: !Ref MandateAcceptanceFailureAlarmPeriodFilterPattern
-        Period: !Ref MandateAcceptanceFailureAlarmPeriod
-        Threshold: !Ref MandateAcceptanceFailureAlarmThreshold
-        EvaluationPeriods: !Ref MandateAcceptanceFailureAlarmEvaluationPeriods
-        DatapointsToAlarm: !Ref MandateAcceptanceFailureAlarmPeriodDatapointsToAlarm
+        FilterPattern: !Ref MandateAcceptanceFailureF01AlarmPeriodFilterPattern
+        Period: !Ref MandateAcceptanceFailureF01AlarmPeriod
+        Threshold: !Ref MandateAcceptanceFailureF01AlarmThreshold
+        EvaluationPeriods: !Ref MandateAcceptanceFailureF01AlarmEvaluationPeriods
+        DatapointsToAlarm: !Ref MandateAcceptanceFailureF01AlarmPeriodDatapointsToAlarm
         Statistic: Sum
         ComparisonOperator: GreaterThanOrEqualToThreshold
-        HasOncall: !Ref MandateAcceptanceFailureAlarmEnableOncall
-        OncallPeriod: !Ref OncallMandateAcceptanceFailureAlarmPeriod
-        OncallThreshold: !Ref OncallMandateAcceptanceFailureAlarmThreshold
-        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureAlarmEvaluationPeriods
-        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureAlarmPeriodDatapointsToAlarm
+        HasOncall: !Ref MandateAcceptanceFailureF01AlarmEnableOncall
+        OncallPeriod: !Ref OncallMandateAcceptanceFailureF01AlarmPeriod
+        OncallThreshold: !Ref OncallMandateAcceptanceFailureF01AlarmThreshold
+        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureF01AlarmEvaluationPeriods
+        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureF01AlarmPeriodDatapointsToAlarm
+        OncallComparisonOperator: GreaterThanOrEqualToThreshold
+        OncallStatistic: Sum
+
+  MandateAcceptanceFailureF02DetectionAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/custom-metric.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure-f02"
+        MetricNamespace: !Ref MetricNamespace
+        LogGroupName: "/aws/ecs/pn-mandate"
+        FilterPattern: !Ref MandateAcceptanceFailureF02AlarmPeriodFilterPattern
+        Period: !Ref MandateAcceptanceFailureF02AlarmPeriod
+        Threshold: !Ref MandateAcceptanceFailureF02AlarmThreshold
+        EvaluationPeriods: !Ref MandateAcceptanceFailureF02AlarmEvaluationPeriods
+        DatapointsToAlarm: !Ref MandateAcceptanceFailureF02AlarmPeriodDatapointsToAlarm
+        Statistic: Sum
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        HasOncall: !Ref MandateAcceptanceFailureF02AlarmEnableOncall
+        OncallPeriod: !Ref OncallMandateAcceptanceFailureF02AlarmPeriod
+        OncallThreshold: !Ref OncallMandateAcceptanceFailureF02AlarmThreshold
+        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureF02AlarmEvaluationPeriods
+        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureF02AlarmPeriodDatapointsToAlarm
+        OncallComparisonOperator: GreaterThanOrEqualToThreshold
+        OncallStatistic: Sum
+
+  MandateAcceptanceFailureF03DetectionAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/custom-metric.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure-f03"
+        MetricNamespace: !Ref MetricNamespace
+        LogGroupName: "/aws/ecs/pn-mandate"
+        FilterPattern: !Ref MandateAcceptanceFailureF03AlarmPeriodFilterPattern
+        Period: !Ref MandateAcceptanceFailureF03AlarmPeriod
+        Threshold: !Ref MandateAcceptanceFailureF03AlarmThreshold
+        EvaluationPeriods: !Ref MandateAcceptanceFailureF03AlarmEvaluationPeriods
+        DatapointsToAlarm: !Ref MandateAcceptanceFailureF03AlarmPeriodDatapointsToAlarm
+        Statistic: Sum
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        HasOncall: !Ref MandateAcceptanceFailureF03AlarmEnableOncall
+        OncallPeriod: !Ref OncallMandateAcceptanceFailureF03AlarmPeriod
+        OncallThreshold: !Ref OncallMandateAcceptanceFailureF03AlarmThreshold
+        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureF03AlarmEvaluationPeriods
+        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureF03AlarmPeriodDatapointsToAlarm
+        OncallComparisonOperator: GreaterThanOrEqualToThreshold
+        OncallStatistic: Sum
+
+  MandateAcceptanceFailureF04DetectionAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/custom-metric.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure-f04"
+        MetricNamespace: !Ref MetricNamespace
+        LogGroupName: "/aws/ecs/pn-mandate"
+        FilterPattern: !Ref MandateAcceptanceFailureF04AlarmPeriodFilterPattern
+        Period: !Ref MandateAcceptanceFailureF04AlarmPeriod
+        Threshold: !Ref MandateAcceptanceFailureF04AlarmThreshold
+        EvaluationPeriods: !Ref MandateAcceptanceFailureF04AlarmEvaluationPeriods
+        DatapointsToAlarm: !Ref MandateAcceptanceFailureF04AlarmPeriodDatapointsToAlarm
+        Statistic: Sum
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        HasOncall: !Ref MandateAcceptanceFailureF04AlarmEnableOncall
+        OncallPeriod: !Ref OncallMandateAcceptanceFailureF04AlarmPeriod
+        OncallThreshold: !Ref OncallMandateAcceptanceFailureF04AlarmThreshold
+        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureF04AlarmEvaluationPeriods
+        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureF04AlarmPeriodDatapointsToAlarm
+        OncallComparisonOperator: GreaterThanOrEqualToThreshold
+        OncallStatistic: Sum
+
+  MandateAcceptanceFailureMandateExpiredDetectionAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/custom-metric.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure-mandate-expired"
+        MetricNamespace: !Ref MetricNamespace
+        LogGroupName: "/aws/ecs/pn-mandate"
+        FilterPattern: !Ref MandateAcceptanceFailureMandateExpiredAlarmPeriodFilterPattern
+        Period: !Ref MandateAcceptanceFailureMandateExpiredAlarmPeriod
+        Threshold: !Ref MandateAcceptanceFailureMandateExpiredAlarmThreshold
+        EvaluationPeriods: !Ref MandateAcceptanceFailureMandateExpiredAlarmEvaluationPeriods
+        DatapointsToAlarm: !Ref MandateAcceptanceFailureMandateExpiredAlarmPeriodDatapointsToAlarm
+        Statistic: Sum
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        HasOncall: !Ref MandateAcceptanceFailureMandateExpiredAlarmEnableOncall
+        OncallPeriod: !Ref OncallMandateAcceptanceFailureMandateExpiredAlarmPeriod
+        OncallThreshold: !Ref OncallMandateAcceptanceFailureMandateExpiredAlarmThreshold
+        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureMandateExpiredAlarmEvaluationPeriods
+        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureMandateExpiredAlarmPeriodDatapointsToAlarm
+        OncallComparisonOperator: GreaterThanOrEqualToThreshold
+        OncallStatistic: Sum
+
+  MandateAcceptanceFailureMandateNotFoundDetectionAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/custom-metric.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure-mandate-not-found"
+        MetricNamespace: !Ref MetricNamespace
+        LogGroupName: "/aws/ecs/pn-mandate"
+        FilterPattern: !Ref MandateAcceptanceFailureMandateNotFoundAlarmPeriodFilterPattern
+        Period: !Ref MandateAcceptanceFailureMandateNotFoundAlarmPeriod
+        Threshold: !Ref MandateAcceptanceFailureMandateNotFoundAlarmThreshold
+        EvaluationPeriods: !Ref MandateAcceptanceFailureMandateNotFoundAlarmEvaluationPeriods
+        DatapointsToAlarm: !Ref MandateAcceptanceFailureMandateNotFoundAlarmPeriodDatapointsToAlarm
+        Statistic: Sum
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        HasOncall: !Ref MandateAcceptanceFailureMandateNotFoundAlarmEnableOncall
+        OncallPeriod: !Ref OncallMandateAcceptanceFailureMandateNotFoundAlarmPeriod
+        OncallThreshold: !Ref OncallMandateAcceptanceFailureMandateNotFoundAlarmThreshold
+        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureMandateNotFoundAlarmEvaluationPeriods
+        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureMandateNotFoundAlarmPeriodDatapointsToAlarm
+        OncallComparisonOperator: GreaterThanOrEqualToThreshold
+        OncallStatistic: Sum
+
+  MandateAcceptanceFailureInvalidMandateDetectionAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/custom-metric.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure-invalid-mandate"
+        MetricNamespace: !Ref MetricNamespace
+        LogGroupName: "/aws/ecs/pn-mandate"
+        FilterPattern: !Ref MandateAcceptanceFailureInvalidMandateAlarmPeriodFilterPattern
+        Period: !Ref MandateAcceptanceFailureInvalidMandateAlarmPeriod
+        Threshold: !Ref MandateAcceptanceFailureInvalidMandateAlarmThreshold
+        EvaluationPeriods: !Ref MandateAcceptanceFailureInvalidMandateAlarmEvaluationPeriods
+        DatapointsToAlarm: !Ref MandateAcceptanceFailureInvalidMandateAlarmPeriodDatapointsToAlarm
+        Statistic: Sum
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        HasOncall: !Ref MandateAcceptanceFailureInvalidMandateAlarmEnableOncall
+        OncallPeriod: !Ref OncallMandateAcceptanceFailureInvalidMandateAlarmPeriod
+        OncallThreshold: !Ref OncallMandateAcceptanceFailureInvalidMandateAlarmThreshold
+        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureInvalidMandateAlarmEvaluationPeriods
+        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureInvalidMandateAlarmPeriodDatapointsToAlarm
+        OncallComparisonOperator: GreaterThanOrEqualToThreshold
+        OncallStatistic: Sum
+
+  MandateAcceptanceFailureTechDetectionAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/custom-metric.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        MetricName: !Sub "${ProjectName}-mandate-acceptance-failure-tech"
+        MetricNamespace: !Ref MetricNamespace
+        LogGroupName: "/aws/ecs/pn-mandate"
+        FilterPattern: !Ref MandateAcceptanceFailureTechAlarmPeriodFilterPattern
+        Period: !Ref MandateAcceptanceFailureTechAlarmPeriod
+        Threshold: !Ref MandateAcceptanceFailureTechAlarmThreshold
+        EvaluationPeriods: !Ref MandateAcceptanceFailureTechAlarmEvaluationPeriods
+        DatapointsToAlarm: !Ref MandateAcceptanceFailureTechAlarmPeriodDatapointsToAlarm
+        Statistic: Sum
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        HasOncall: !Ref MandateAcceptanceFailureTechAlarmEnableOncall
+        OncallPeriod: !Ref OncallMandateAcceptanceFailureTechAlarmPeriod
+        OncallThreshold: !Ref OncallMandateAcceptanceFailureTechAlarmThreshold
+        OncallEvaluationPeriods: !Ref OncallMandateAcceptanceFailureTechAlarmEvaluationPeriods
+        OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureTechAlarmPeriodDatapointsToAlarm
         OncallComparisonOperator: GreaterThanOrEqualToThreshold
         OncallStatistic: Sum

@@ -42,15 +42,15 @@ public class CieExceptionMapper {
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NOTFOUND_CMSSIGNEDDATA, CieErrorCategory.CIE_INTEGRITY_ERROR); // Dovrebbe essere categorizzata anche come TECH
         putInvalidCieDataException(ResultCieChecker.KO_EXC_CERTIFICATE_NOT_SIGNED, CieErrorCategory.CIE_SIGNATURE_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATION, CieErrorCategory.CIE_SIGNATURE_ERROR);
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_PARSING_CERTIFICATION, CieErrorCategory.CIE_SIGNATURE_ERROR);
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE, CieErrorCategory.CIE_SIGNATURE_ERROR);
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_PARSING_CERTIFICATION, CieErrorCategory.CIE_INTEGRITY_ERROR);
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_GENERATE_CERTIFICATE, CieErrorCategory.CIE_INTEGRITY_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA, CieErrorCategory.CIE_INTEGRITY_ERROR);  // Dovrebbe essere categorizzata anche come TECH
         putInvalidCieDataException(ResultCieChecker.KO_EXC_VALIDATE_CERTIFICATE, List.of(CieErrorCategory.CIE_SIGNATURE_ERROR, CieErrorCategory.CIE_INTEGRITY_ERROR));
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR, List.of(CieErrorCategory.CIE_SIGNATURE_ERROR, CieErrorCategory.CIE_INTEGRITY_ERROR));
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR, List.of(CieErrorCategory.CIE_SIGNATURE_ERROR, CieErrorCategory.CIE_INTEGRITY_ERROR));
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR, List.of(CieErrorCategory.CIE_INVALID_INPUT, CieErrorCategory.CIE_INTEGRITY_ERROR));
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_INVALID_PARAMETER_CERTPATHVALIDATOR, List.of(CieErrorCategory.CIE_INVALID_INPUT, CieErrorCategory.CIE_INTEGRITY_ERROR));
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_HASH_ALGORITHM_SOD, CieErrorCategory.CIE_INTEGRITY_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_HASH_SIGNED_DATA, CieErrorCategory.CIE_INTEGRITY_ERROR);  // Dovrebbe essere categorizzata anche come TECH
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_UNSUPPORTED_ALGORITHM_SOD, CieErrorCategory.CIE_SIGNATURE_ERROR);
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_UNSUPPORTED_ALGORITHM_SOD, CieErrorCategory.CIE_INVALID_INPUT);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NOTFOUND_EXPECTED_HASHES_SOD, CieErrorCategory.CIE_INTEGRITY_ERROR);  // Dovrebbe essere categorizzata anche come TECH
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NOTFOUND_DIGEST_SOD, CieErrorCategory.CIE_INTEGRITY_ERROR); // Dovrebbe essere categorizzata anche come TECH
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NOTFOUND_MRTD_SOD, CieErrorCategory.CIE_INTEGRITY_ERROR); // Dovrebbe essere categorizzata anche come TECH
@@ -58,8 +58,8 @@ public class CieExceptionMapper {
         putInvalidCieDataException(ResultCieChecker.KO_EXC_EXTRACTION_PUBLICKEY, CieErrorCategory.CIE_INTEGRITY_ERROR); // Dovrebbe essere categorizzata anche come TECH
         putInvalidCieDataException(ResultCieChecker.KO_EXC_INVALID_CRYPTOGRAPHIC_OPERATION, CieErrorCategory.CIE_SIGNATURE_ERROR); // Dovrebbe essere categorizzata anche come TECH
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_SIGNATURES_SIGNED_DATA, CieErrorCategory.CIE_INTEGRITY_ERROR); // Dovrebbe essere categorizzata anche come TECH
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATIONSTORE, List.of(CieErrorCategory.CIE_SIGNATURE_ERROR, CieErrorCategory.CIE_INTEGRITY_ERROR));
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_MESSAGEDIGESTSPI_SUPPORTED, CieErrorCategory.CIE_SIGNATURE_ERROR);
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_SIGNERINFORMATIONSTORE, List.of(CieErrorCategory.CIE_INVALID_INPUT, CieErrorCategory.CIE_INTEGRITY_ERROR));
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_MESSAGEDIGESTSPI_SUPPORTED, CieErrorCategory.CIE_INVALID_INPUT);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_HASH_CONTENT_MATCH, CieErrorCategory.CIE_INTEGRITY_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_SIGNED_ATTRIBUTE, CieErrorCategory.CIE_INTEGRITY_ERROR); // Dovrebbe essere categorizzata anche come TECH
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_MATCH_NIS_HASHES_DATAGROUP, CieErrorCategory.CIE_INTEGRITY_ERROR);
@@ -67,15 +67,14 @@ public class CieExceptionMapper {
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_CMSTYPEDDATA, CieErrorCategory.CIE_INTEGRITY_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NO_NIS_HASHES_DATAGROUP, CieErrorCategory.CIE_INTEGRITY_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_ERROR_CREATE_VERIFIER, CieErrorCategory.CIE_INTEGRITY_ERROR);
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE, CieErrorCategory.CIE_SIGNATURE_ERROR);
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST1, CieErrorCategory.CIE_SIGNATURE_ERROR);
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST11, CieErrorCategory.CIE_SIGNATURE_ERROR);
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_DIGEST_NOT_VERIFIED, CieErrorCategory.CIE_SIGNATURE_ERROR);
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_NOVALID_DIGITAL_SIGNATURE, CieErrorCategory.CIE_INVALID_INPUT);
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST1, CieErrorCategory.CIE_INTEGRITY_ERROR);
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_NOT_SAME_DIGEST11, CieErrorCategory.CIE_INTEGRITY_ERROR);
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_DIGEST_NOT_VERIFIED, CieErrorCategory.CIE_INTEGRITY_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_ERROR_SOD_DECODE, CieErrorCategory.CIE_INTEGRITY_ERROR);
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_INVALID_VERIFIER, CieErrorCategory.CIE_SIGNATURE_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_INVALID_SIGNATURE, CieErrorCategory.CIE_SIGNATURE_ERROR);
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_INVALID_ALGORITHM, CieErrorCategory.CIE_INVALID_INPUT);
-        putInvalidCieDataException(ResultCieChecker.KO_EXC_INVALID_PUBLICKEY, CieErrorCategory.CIE_INVALID_INPUT);
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_INVALID_ALGORITHM, CieErrorCategory.CIE_SIGNATURE_ERROR);
+        putInvalidCieDataException(ResultCieChecker.KO_EXC_INVALID_PUBLICKEY, CieErrorCategory.CIE_SIGNATURE_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_DECODER_ERROR, CieErrorCategory.CIE_INTEGRITY_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NOFOUND_CODFISCALE_DG11, CieErrorCategory.CIE_INTEGRITY_ERROR);
         putInvalidCieDataException(ResultCieChecker.KO_EXC_NOFOUND_EXPIRE_DATE_DG1, CieErrorCategory.CIE_INTEGRITY_ERROR);

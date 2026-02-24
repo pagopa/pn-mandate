@@ -38,7 +38,7 @@ class CieExceptionMapperTest {
     @Test
     @DisplayName("Should throw PnInvalidCieDataException for invalid input error result")
     void mapToExceptionWithInvalidInputShouldThrowInvalidCieDataException() {
-        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_INVALID_ALGORITHM);
+        PnRuntimeException ex = mapper.mapToException(ResultCieChecker.KO_EXC_NO_SUPPORTED_CERTIFICATEPATHVALIDATOR);
         assertInstanceOf(PnInvalidCieDataException.class, ex);
         verifyCode(ex, "CIE_INVALID_INPUT");
     }

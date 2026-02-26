@@ -1,6 +1,7 @@
 package it.pagopa.pn.mandate.config;
 
 import it.pagopa.pn.commons.conf.SharedAutoConfiguration;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

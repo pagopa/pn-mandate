@@ -3,11 +3,14 @@ package it.pagopa.pn.mandate.rest.mandate;
 import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.mandate.exceptions.PnForbiddenException;
 import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateCountsDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.SearchMandateResponseDto;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.mapper.UserEntityMandateCountsDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
 import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.services.mandate.v1.MandateService;
@@ -15,9 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,9 +28,7 @@ import reactor.core.publisher.Mono;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 
@@ -50,13 +51,13 @@ class MandateRestV1ControllerTest {
     @Autowired
     private MandateValidationUtils validationUtils;
 
-    @MockBean
+    @MockitoBean
     private MandateService mandateService;
 
-    @MockBean
+    @MockitoBean
     private ValidateUtils validateUtils;
 
-    @MockBean
+    @MockitoBean
     private PnExtRegPrvtClient pnExtRegPrvtClient;
 
     @Test
@@ -143,7 +144,7 @@ class MandateRestV1ControllerTest {
                 .header(PN_PAGOPA_CX_ID, "internaluserid1234")
                 .header(PN_PAGOPA_CX_TYPE, "PF")
                 .header(PN_PAGOPA_USER_ID, "userid")
-                .header(PN_PAGOPA_CX_SRC_CH, "APP")
+                .header(PN_PAGOPA_CX_SRC_CH, "IO")
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody();

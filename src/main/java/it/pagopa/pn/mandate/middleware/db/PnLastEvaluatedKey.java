@@ -6,10 +6,11 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import lombok.*;
-import org.springframework.util.Base64Utils;
+
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,7 +28,7 @@ public class PnLastEvaluatedKey {
     private Map<String, AttributeValue> internalLastEvaluatedKey;
 
     public static PnLastEvaluatedKey deserialize(String encoded) {
-        String json = new String(Base64Utils.decodeFromUrlSafeString(encoded), StandardCharsets.UTF_8);
+        String json = new String(Base64.getUrlDecoder().decode(encoded));
         try {
             KeyPair keyPair = reader.readValue(json);
             PnLastEvaluatedKey pnLastEvaluatedKey = new PnLastEvaluatedKey();
@@ -45,7 +46,7 @@ public class PnLastEvaluatedKey {
         KeyPair toSerialize = new KeyPair(externalLastEvaluatedKey, internalValues);
         try {
             String result = writer.writeValueAsString(toSerialize);
-            return Base64Utils.encodeToUrlSafeString(result.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().encodeToString(result.getBytes(StandardCharsets.UTF_8));
         } catch (JsonProcessingException e) {
             throw new PnInternalException("Unable to serialize LastEvaluatedKey", ERROR_CODE_MANDATE_UNSUPPORTED_LAST_EVALUTED_KEY, e);
         }

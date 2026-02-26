@@ -1,14 +1,16 @@
 package it.pagopa.pn.mandate.middleware.db;
 
 import it.pagopa.pn.mandate.AbstractTestConfiguration;
+import it.pagopa.pn.mandate.LocalStackTestConfig;
+import it.pagopa.pn.mandate.MockAWSObjectsTestConfig;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateByDelegatorRequestDto;
+import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.SdkPublisher;
@@ -28,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
+@Import({LocalStackTestConfig.class, MockAWSObjectsTestConfig.class})
 class MandateDaoTest extends AbstractTestConfiguration {
 
     @Mock

@@ -11,14 +11,15 @@ import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
@@ -83,5 +84,39 @@ class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
             assertEquals("name", result.get(0).getName());
         }
     }
+
+    @Test
+    void checkAooUoIds_integration() throws Exception {
+        // Given
+        List<String> input = Arrays.asList("id1", "id2", "id3");
+        List<String> filtered = Arrays.asList("id2", "id3");
+        ObjectMapper mapper = new ObjectMapper();
+        byte[] responseBodyBytes = mapper.writeValueAsBytes(filtered);
+
+        try (MockServerClient client = new MockServerClient("localhost", 9999)) {
+            client.when(request()
+                            .withMethod("GET")
+                            .withPath("/ext-registry-private/pa/v1/actions/filter-out-root-pa-ids")
+                            .withQueryStringParameter("id", "id1")
+                            .withQueryStringParameter("id", "id2")
+                            .withQueryStringParameter("id", "id3"))
+                    .respond(response()
+                            .withContentType(MediaType.APPLICATION_JSON)
+                            .withBody(responseBodyBytes)
+                            .withStatusCode(200));
+
+            // When
+            List<String> result = pnExtRegPrvtClient.checkAooUoIds(input)
+                    .collectList()
+                    .block(Duration.ofMillis(3000));
+
+            // Then
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertEquals("id2", result.get(0));
+            assertEquals("id3", result.get(1));
+        }
+    }
+
 
 }

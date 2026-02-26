@@ -4,6 +4,7 @@ import it.pagopa.pn.ciechecker.client.s3.S3BucketClientImpl;
 import it.pagopa.pn.ciechecker.exception.CieCheckerException;
 import it.pagopa.pn.ciechecker.model.*;
 import it.pagopa.pn.ciechecker.utils.ValidateUtils;
+import it.pagopa.pn.mandate.MockAWSObjectsTestConfig;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
@@ -11,19 +12,19 @@ import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.cms.Attribute;
-import org.bouncycastle.asn1.pkcs.RSAPublicKey;
-import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.SignerInformationStore;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.http.AbortableInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -36,23 +37,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.security.PublicKey;
 
-import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.*;
+import static it.pagopa.pn.ciechecker.utils.CieCheckerConstants.X_509;
 import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
-import static it.pagopa.pn.ciechecker.utils.ValidateUtils.cleanString;
-import static it.pagopa.pn.ciechecker.utils.ValidateUtils.hexFile;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -62,6 +57,7 @@ import static org.mockito.Mockito.when;
 @Slf4j
 @ActiveProfiles("test")
 @EnableConfigurationProperties(PnMandateConfig.class)
+@Import({MockAWSObjectsTestConfig.class})
 class ValidateUtilsTest {
 
     private static final Path basePath = Path.of("src","test","resources");
@@ -90,10 +86,10 @@ class ValidateUtilsTest {
             "2.5.4.6", "IT"
     );
 
-    @MockBean
+    @MockitoBean
     private S3BucketClientImpl s3BucketClient;
-    @MockBean
-    private static S3Client s3Client;
+    @MockitoBean
+    private S3Client s3Client;
 
     static CieValidationData validationData;
 

@@ -14,8 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.http.AbortableInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -49,7 +49,7 @@ public class NisBuilderTest {
     private CieChecker cieChecker;
     @Autowired
     private CieCheckerInterface cieCheckerInterface;
-    @MockBean
+    @MockitoBean
     private S3BucketClient s3BucketClient;
 
 

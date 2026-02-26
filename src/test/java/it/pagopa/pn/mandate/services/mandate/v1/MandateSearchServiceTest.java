@@ -1,12 +1,12 @@
 package it.pagopa.pn.mandate.services.mandate.v1;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.GroupDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.OrganizationIdDto;
+import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.UserDto;
 import it.pagopa.pn.mandate.mapper.MandateEntityMandateDtoMapper;
 import it.pagopa.pn.mandate.middleware.db.MandateDao;
 import it.pagopa.pn.mandate.middleware.db.MandateDaoIT;
@@ -16,6 +16,18 @@ import it.pagopa.pn.mandate.middleware.msclient.PnDataVaultClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.middleware.msclient.PnInfoPaClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
+import it.pagopa.pn.mandate.model.PageResultDto;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -23,22 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import it.pagopa.pn.mandate.model.PageResultDto;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.GroupDto;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.MandateDto;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.OrganizationIdDto;
-import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.UserDto;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import software.amazon.awssdk.enhanced.dynamodb.model.Page;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {MandateSearchService.class})
 @ExtendWith(SpringExtension.class)
@@ -46,15 +45,15 @@ class MandateSearchServiceTest {
 
     private static final Duration D = Duration.ofMillis(3000);
 
-    @MockBean
+    @MockitoBean
     private MandateDao mandateDao;
-    @MockBean
+    @MockitoBean
     private MandateEntityMandateDtoMapper mandateEntityMandateDtoMapper;
-    @MockBean
+    @MockitoBean
     private PnDataVaultClient pnDataVaultClient;
-    @MockBean
+    @MockitoBean
     private PnInfoPaClient pnInfoPaClient;
-    @MockBean
+    @MockitoBean
     private PnExtRegPrvtClient pnExtRegPrvtClient;
 
     @Autowired

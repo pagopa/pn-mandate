@@ -36,6 +36,7 @@ public class MandateEntityBuilderMapper {
         entity.setDelegatorisperson(true);
         entity.setWorkflowType(WorkFlowType.CIE);
         entity.setSrcChannel(SrcChannelType.IO.name());
+        entity.setDelegateisperson(true);
         entity.setIuns(Set.of(dto.getIun()));
         if (log.isInfoEnabled())
             log.info("creating mandate uuid: {} iuid: {} iutype_isPF: {} validfrom: {}",

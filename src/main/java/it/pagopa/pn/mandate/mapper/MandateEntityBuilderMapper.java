@@ -34,6 +34,7 @@ public class MandateEntityBuilderMapper {
         entity.setValidfrom(Instant.parse(String.valueOf(DateUtils.PN_EPOCH)));
         entity.setValidto(Instant.now().plus(pnMandateConfig.getCiePendingDuration()));
         entity.setDelegatorisperson(true);
+        entity.setDelegateisperson(true);
         entity.setWorkflowType(WorkFlowType.CIE);
         entity.setSrcChannel(SrcChannelType.IO.name());
         entity.setIuns(Set.of(dto.getIun()));

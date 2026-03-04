@@ -18,18 +18,6 @@ import static it.pagopa.pn.mandate.middleware.queue.consumer.utils.ConsumerUtils
 public class ExpiredMandatesHandler {
     private final MandateService mandateService;
 
-    //versione asincrona, bisogna aggiornare la versione di spring cloud stream per il supporto
-//    @Bean
-//    public Function<Flux<Message<PnMandateExpiredEvent.Payload>>, Mono<Void>> pnMandateExpiredMandatesConsumer() {
-//        return messageFlux -> messageFlux
-//                .doOnNext(message -> log.info("[enter] pnMandateExpiredMandatesConsumer, message {}", message))
-//                .map(Message::getPayload)
-//                .flatMap(payload -> mandateService.expireMandate(payload.getMandateId(), payload.getDelegatorInternalUserid()))
-//                .doOnNext(o -> log.info("[exit] pnMandateExpiredMandatesConsumer"))
-//                .onErrorResume(throwable -> HandleEventUtils.handleException(messageFlux, throwable))
-//                .then();
-//    }
-
     @SqsListener(value = "${pn.mandate.topics.mandate-inputs}")
     public void pnMandateExpiredMandatesConsumer(Message<PnMandateExpiredEvent.Payload> message) {
         setMdc(message);

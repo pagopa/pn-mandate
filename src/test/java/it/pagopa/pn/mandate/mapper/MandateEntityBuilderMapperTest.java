@@ -41,6 +41,7 @@ class MandateEntityBuilderMapperTest {
         assertEquals(Set.of("IUN123"), entity.getIuns());
         assertEquals("delegator", entity.getDelegatorUid());
         assertTrue(entity.getDelegatorisperson());
+        assertTrue(entity.getDelegateisperson());
         assertNotNull(entity.getValidationcode());
         assertNotNull(entity.getCreated());
         assertNotNull(entity.getValidfrom());

@@ -112,4 +112,5 @@ public class CieCheckerConstants {
     public static final String EXC_DELETEEXISTFILE = "Errore durante l'eliminazione del file esistente";
     public static final String EXC_ATTRIBUTO_NULL = "Attributo is null";
 
+    public static final String EXC_CLEANING_PADDING = "Impossible to clean, attribute is not valid for cleaning padding";
 }

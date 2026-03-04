@@ -80,7 +80,8 @@ public enum ResultCieChecker {
     KO_EXC_INVALID_PARAMETER_BASEDIR(CieCheckerConstants.EXC_INVALID_PARAMETER_BASEDIR),
     KO_EXC_DELETEEXISTFILE(CieCheckerConstants.EXC_DELETEEXISTFILE),
     KO_EXC_ATTRIBUTO_NULL(CieCheckerConstants.EXC_ATTRIBUTO_NULL),
-    KO_EXC_EXCEPTION(CieCheckerConstants.EXC_KO);
+    KO_EXC_EXCEPTION(CieCheckerConstants.EXC_KO),
+    KO_EXC_CLEANING(CieCheckerConstants.EXC_CLEANING_PADDING);
 
     private final String value;
 

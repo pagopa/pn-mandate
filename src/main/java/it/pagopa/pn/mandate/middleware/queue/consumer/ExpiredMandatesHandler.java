@@ -44,7 +44,7 @@ public class ExpiredMandatesHandler {
             log.logEndingProcess(process);
         } catch (Exception ex) {
             HandleEventUtils.handleException(message.getHeaders(), ex);
-            log.logEndingProcess(process, false, ex.getMessage());
+            log.logEndingProcess(process, false, ex.getMessage(), ex);
             throw ex;
         }
     }

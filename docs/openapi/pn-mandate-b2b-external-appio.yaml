@@ -290,6 +290,7 @@ components:
           $ref: '#/components/schemas/NISData'
         mrtdData:
           $ref: '#/components/schemas/MRTDData'
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
     
     NISData:
       type: object
@@ -307,6 +308,7 @@ components:
         sod:
           type: string
           nullable: false
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
     
     MRTDData:
       type: object
@@ -318,12 +320,15 @@ components:
         dg1:
           type: string
           nullable: false
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         dg11:
           type: string
           nullable: false
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         sod:
           type: string
           nullable: false
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
 
     ############################################################################################
     ###                     SCHEMA DI PROBLEMA AUTORIZZATIVO/AUTENTICATIVO                   ###

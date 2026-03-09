@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: >-
     ${stageVariables.ProjectName}-${stageVariables.MicroServiceUniqueName}-${stageVariables.IntendedUsage}
-  version: nbZFt0RO2vVVq6ojwzSmhEk8Q3rXW3RVr1gGgjjbxo0=
+  version: PBylanaWtVTHF9+FzaIKa5HLhxJpjWe/EvLhTsOlJN0=
 servers:
   - url: https://${stageVariables.DnsName}/{basePath}
     variables:
@@ -94,7 +94,7 @@ paths:
                 internalServerError:
                   $ref: '#/components/examples/InternalServerError'
       security:
-        - pn-auth-fleet_IoAuthorizer_openapi: []
+        - pn-auth-fleet_LollipopAuthorizer_openapi: []
         - api_key_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
@@ -110,6 +110,9 @@ paths:
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
           integration.request.header.x-pagopa-pn-src-ch: '''IO'''
+          integration.request.header.x-pagopa-pn-name: context.authorizer.name
+          integration.request.header.x-pagopa-pn-family-name: context.authorizer.familyName
+          integration.request.header.x-pagopa-pn-result-code: context.authorizer.resultCode
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
         timeoutInMillis: 29000
@@ -209,7 +212,7 @@ paths:
                 internalServerError:
                   $ref: '#/components/examples/InternalServerError'
       security:
-        - pn-auth-fleet_IoAuthorizer_openapi: []
+        - pn-auth-fleet_LollipopAuthorizer_openapi: []
         - api_key_openapi: []
       x-amazon-apigateway-integration:
         uri: >-
@@ -225,6 +228,9 @@ paths:
           integration.request.header.x-pagopa-pn-cx-groups: context.authorizer.cx_groups
           integration.request.header.x-pagopa-pn-src-ch-details: context.authorizer.sourceChannelDetails
           integration.request.header.x-pagopa-pn-src-ch: '''IO'''
+          integration.request.header.x-pagopa-pn-name: context.authorizer.name
+          integration.request.header.x-pagopa-pn-family-name: context.authorizer.familyName
+          integration.request.header.x-pagopa-pn-result-code: context.authorizer.resultCode
           integration.request.path.mandateId: method.request.path.mandateId
         passthroughBehavior: when_no_match
         connectionType: VPC_LINK
@@ -374,6 +380,7 @@ components:
           $ref: '#/components/schemas/NISData'
         mrtdData:
           $ref: '#/components/schemas/MRTDData'
+          x-field-extra-annotation: '@lombok.ToString.Exclude'
     NISData:
       type: object
       required:
@@ -390,6 +397,7 @@ components:
         sod:
           type: string
           nullable: false
+          x-field-extra-annotation: '@lombok.ToString.Exclude'
     MRTDData:
       type: object
       required:
@@ -400,12 +408,15 @@ components:
         dg1:
           type: string
           nullable: false
+          x-field-extra-annotation: '@lombok.ToString.Exclude'
         dg11:
           type: string
           nullable: false
+          x-field-extra-annotation: '@lombok.ToString.Exclude'
         sod:
           type: string
           nullable: false
+          x-field-extra-annotation: '@lombok.ToString.Exclude'
     AuthError:
       type: object
       properties:
@@ -484,17 +495,17 @@ components:
       type: apiKey
       name: x-api-key
       in: header
-    pn-auth-fleet_IoAuthorizer_openapi:
+    pn-auth-fleet_LollipopAuthorizer_openapi:
       type: apiKey
-      name: Unused
+      name: x-pagopa-lollipop-auth-jwt
       in: header
       x-amazon-apigateway-authtype: custom
       x-amazon-apigateway-authorizer:
         authorizerUri: >-
-          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:pn-ioAuthorizerLambda/invocations
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:pn-lollipopAuthorizerLambda/invocations
         authorizerResultTtlInSeconds: 300
         identitySource: >-
-          method.request.header.x-api-key,
+          method.request.header.x-pagopa-lollipop-auth-jwt,
           method.request.header.x-pagopa-cx-taxid
         type: request
 tags:

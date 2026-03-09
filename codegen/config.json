@@ -8,7 +8,7 @@
       "servicePath": "mandate"
     },
     {
-      "intendedUsage": "IO",
+      "intendedUsage": "IOL",
       "openapiFiles": [
         "pn-mandate-b2b-internal-appio.yaml"
       ],

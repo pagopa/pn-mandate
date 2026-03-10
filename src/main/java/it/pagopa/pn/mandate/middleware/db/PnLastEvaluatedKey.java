@@ -28,7 +28,7 @@ public class PnLastEvaluatedKey {
     private Map<String, AttributeValue> internalLastEvaluatedKey;
 
     public static PnLastEvaluatedKey deserialize(String encoded) {
-        String json = new String(Base64.getUrlDecoder().decode(encoded));
+        String json = new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
         try {
             KeyPair keyPair = reader.readValue(json);
             PnLastEvaluatedKey pnLastEvaluatedKey = new PnLastEvaluatedKey();
@@ -46,7 +46,7 @@ public class PnLastEvaluatedKey {
         KeyPair toSerialize = new KeyPair(externalLastEvaluatedKey, internalValues);
         try {
             String result = writer.writeValueAsString(toSerialize);
-            return Base64.getUrlEncoder().encodeToString(result.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(result.getBytes(StandardCharsets.UTF_8));
         } catch (JsonProcessingException e) {
             throw new PnInternalException("Unable to serialize LastEvaluatedKey", ERROR_CODE_MANDATE_UNSUPPORTED_LAST_EVALUTED_KEY, e);
         }

@@ -27,7 +27,7 @@ import static org.mockserver.model.HttpResponse.response;
 
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-    "pn.mandate.client_extreg_basepath=http://localhost:9999"
+    "pn.mandate.client_extreg_basepath=http://localhost:9998"
 })
 class PnInfoPaClientTest extends AbstractTestConfiguration {
 
@@ -38,7 +38,7 @@ class PnInfoPaClientTest extends AbstractTestConfiguration {
 
     @BeforeAll
     public static void startMockServer() {
-        mockServer = startClientAndServer(9999);
+        mockServer = startClientAndServer(9998);
     }
 
     @AfterAll
@@ -74,7 +74,7 @@ class PnInfoPaClientTest extends AbstractTestConfiguration {
             e.printStackTrace();
         }
 
-        try (MockServerClient client = new MockServerClient("localhost", 9999)) {
+        try (MockServerClient client = new MockServerClient("localhost", 9998)) {
             client.when(request()
                             .withMethod("GET")
                             .withQueryStringParameters(Map.of("id", List.of(id1, id2)))

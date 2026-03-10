@@ -131,18 +131,18 @@ public class CieCheckerImpl implements CieChecker, CieCheckerInterface {
             //16669 - verifica scadenza CIE
             ResultCieChecker result = verifyExpirationCie(data.getCieMrtd().getDg1());
             if(OK.equals(result.getValue()) )
-                log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, true, ResultCieChecker.OK.getValue());
+                log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, true, ResultCieChecker.OK.getValue(), null);
             else
-                log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, result.getValue());
+                log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, result.getValue(), null);
             return result;
         }catch(CMSException cmse){
-            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, cmse.getClass().getName() + LogsConstant.MESSAGE  + ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA.getValue());
+            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, cmse.getClass().getName() + LogsConstant.MESSAGE  + ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA.getValue(), cmse);
             return ResultCieChecker.KO_EXC_GENERATE_CMSSIGNEDDATA;
         }catch (CieCheckerException cce ) {
-            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, cce.getClass().getName() + LogsConstant.MESSAGE  + cce.getResult().getValue());
+            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, cce.getClass().getName() + LogsConstant.MESSAGE  + cce.getResult().getValue(), cce);
             return cce.getResult();
         }catch (Exception e ) {
-            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, e.getClass().getName() + LogsConstant.MESSAGE  + e.getMessage());
+            log.logEndingProcess(LogsConstant.CIECHECKER_VALIDATE_MANDATE, false, e.getClass().getName() + LogsConstant.MESSAGE  + e.getMessage(), e);
             return ResultCieChecker.KO;
         }
     }

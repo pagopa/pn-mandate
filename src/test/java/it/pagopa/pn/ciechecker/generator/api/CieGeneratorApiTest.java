@@ -16,30 +16,23 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.http.AbortableInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
 import java.time.LocalDate;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import static it.pagopa.pn.ciechecker.utils.ValidateUtils.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -49,13 +42,13 @@ import static org.mockito.Mockito.when;
 @EnableConfigurationProperties(PnMandateConfig.class)
 public class CieGeneratorApiTest {
 
-    @SpyBean
+    @MockitoSpyBean
     private PnMandateConfig config;
 
-    @MockBean
+    @MockitoBean
     private S3Client s3Client;
 
-    @MockBean
+    @MockitoBean
     private S3BucketClient s3BucketClient;
 
     @Autowired

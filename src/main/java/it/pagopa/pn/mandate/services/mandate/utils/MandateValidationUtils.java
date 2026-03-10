@@ -8,15 +8,14 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.d
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.mandate.middleware.msclient.PnExtRegPrvtClient;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
-
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;

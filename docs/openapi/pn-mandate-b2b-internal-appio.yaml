@@ -304,7 +304,7 @@ components:
           $ref: '#/components/schemas/NISData'
         mrtdData:
           $ref: '#/components/schemas/MRTDData'
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
     
     NISData:
       type: object
@@ -322,7 +322,7 @@ components:
         sod:
           type: string
           nullable: false
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
     
     MRTDData:
       type: object
@@ -334,15 +334,15 @@ components:
         dg1:
           type: string
           nullable: false
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
         dg11:
           type: string
           nullable: false
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
         sod:
           type: string
           nullable: false
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
 
     ############################################################################################
     ###                     SCHEMA DI PROBLEMA AUTORIZZATIVO/AUTENTICATIVO                   ###

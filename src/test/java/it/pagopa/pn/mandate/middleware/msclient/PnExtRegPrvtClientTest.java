@@ -20,12 +20,13 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "pn.mandate.client_extreg_basepath=http://localhost:9996"
+    "pn.mandate.client_extreg_basepath=http://localhost:9996"
 })
 class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
 
@@ -36,7 +37,7 @@ class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
 
     @BeforeAll
     public static void startMockServer() {
-        mockServer = ClientAndServer.startClientAndServer(9996);
+        mockServer = startClientAndServer(9996);
     }
 
     @AfterAll
@@ -61,16 +62,16 @@ class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
             e.printStackTrace();
         }
 
-        try (MockServerClient client = new MockServerClient("localhost", 9996)) {
-            client.when(request()
-                            .withMethod("GET")
-                            .withPath("/ext-registry-private/pg/v1/groups-all")
-                            .withHeader("x-pagopa-pn-cx-id", "cx-id"))
-                    .respond(response()
-                            .withContentType(MediaType.APPLICATION_JSON)
-                            .withBody(responseBodyBytes)
-                            .withContentType(MediaType.APPLICATION_JSON)
-                            .withStatusCode(200));
+        new MockServerClient("localhost", 9996)
+                .when(request()
+                        .withMethod("GET")
+                        .withPath("/ext-registry-private/pg/v1/groups-all")
+                        .withHeader("x-pagopa-pn-cx-id", "cx-id"))
+                .respond(response()
+                        .withContentType(MediaType.APPLICATION_JSON)
+                        .withBody(responseBodyBytes)
+                        .withContentType(MediaType.APPLICATION_JSON)
+                        .withStatusCode(200));
 
             // When
             List<PgGroupDto> result = pnExtRegPrvtClient.getGroups("cx-id", false)
@@ -82,7 +83,6 @@ class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
             assertEquals(1, result.size());
             assertEquals("id", result.get(0).getId());
             assertEquals("name", result.get(0).getName());
-        }
     }
 
     @Test
@@ -93,29 +93,28 @@ class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
         ObjectMapper mapper = new ObjectMapper();
         byte[] responseBodyBytes = mapper.writeValueAsBytes(filtered);
 
-        try (MockServerClient client = new MockServerClient("localhost", 9996)) {
-            client.when(request()
-                            .withMethod("GET")
-                            .withPath("/ext-registry-private/pa/v1/actions/filter-out-root-pa-ids")
-                            .withQueryStringParameter("id", "id1")
-                            .withQueryStringParameter("id", "id2")
-                            .withQueryStringParameter("id", "id3"))
-                    .respond(response()
-                            .withContentType(MediaType.APPLICATION_JSON)
-                            .withBody(responseBodyBytes)
-                            .withStatusCode(200));
+        new MockServerClient("localhost", 9996)
+                .when(request()
+                        .withMethod("GET")
+                        .withPath("/ext-registry-private/pa/v1/actions/filter-out-root-pa-ids")
+                        .withQueryStringParameter("id", "id1")
+                        .withQueryStringParameter("id", "id2")
+                        .withQueryStringParameter("id", "id3"))
+                .respond(response()
+                        .withContentType(MediaType.APPLICATION_JSON)
+                        .withBody(responseBodyBytes)
+                        .withStatusCode(200));
 
-            // When
-            List<String> result = pnExtRegPrvtClient.checkAooUoIds(input)
-                    .collectList()
-                    .block(Duration.ofMillis(3000));
+        // When
+        List<String> result = pnExtRegPrvtClient.checkAooUoIds(input)
+                .collectList()
+                .block(Duration.ofMillis(3000));
 
-            // Then
-            assertNotNull(result);
-            assertEquals(2, result.size());
-            assertEquals("id2", result.get(0));
-            assertEquals("id3", result.get(1));
-        }
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("id2", result.get(0));
+        assertEquals("id3", result.get(1));
     }
 
 

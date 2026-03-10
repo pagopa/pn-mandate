@@ -16,6 +16,7 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateSupportEntity;
 import it.pagopa.pn.mandate.model.InputSearchMandateDto;
 import it.pagopa.pn.mandate.model.WorkFlowType;
 import it.pagopa.pn.mandate.utils.DateUtils;
+import it.pagopa.pn.mandate.utils.MandateUtils;
 import it.pagopa.pn.mandate.utils.RevocationCause;
 import it.pagopa.pn.mandate.utils.TypeSegregatorFilter;
 import org.springframework.context.annotation.Import;
@@ -697,6 +698,8 @@ public class MandateDao extends BaseDao {
     public Mono<MandateEntity> createMandate(MandateEntity mandate, TypeSegregatorFilter typeSegregatorFilter)
     {
         String logMessage = String.format("create mandate mandate=%s", mandate);
+        String delegator = mandate.getDelegator();
+        String iuns = MandateUtils.joinCollectionToString(",", mandate.getIuns());
 
         return Mono.fromFuture(countMandateForDelegateAndDelegator(mandate.getDelegator(), mandate.getDelegate(),typeSegregatorFilter,mandate.getIuns())
                         .thenCompose(total -> {
@@ -705,6 +708,9 @@ public class MandateDao extends BaseDao {
                                 PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                                         .before(PnAuditLogEventType.AUD_DL_CREATE, logMessage)
                                         .mdcEntry(MDC_PN_MANDATEID_KEY, mandate.getMandateId())
+                                        .mdcEntry(MDC_PN_IUN_KEY, iuns)
+                                        .mdcEntry(MDC_PN_DELEGATOR_ID_KEY, delegator)
+                                        .mdcEntry(MDC_PN_MANDATE_WORKFLOW_TYPE_KEY, mandate.getWorkflowType().name())
                                         .build();
 
                                 logEvent.log();

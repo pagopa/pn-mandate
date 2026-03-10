@@ -10,10 +10,7 @@ import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.CIEValidationD
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationRequest;
 import it.pagopa.pn.mandate.appio.generated.openapi.server.v1.dto.MandateCreationResponse;
 import it.pagopa.pn.mandate.config.PnMandateConfig;
-import it.pagopa.pn.mandate.exceptions.PnInvalidVerificationCodeException;
-import it.pagopa.pn.mandate.exceptions.PnMandateBadRequestException;
-import it.pagopa.pn.mandate.exceptions.PnMandateNotFoundException;
-import it.pagopa.pn.mandate.exceptions.PnUnsupportedFilterException;
+import it.pagopa.pn.mandate.exceptions.*;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.BaseRecipientDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.DenominationDtoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateDtoDto;
@@ -35,6 +32,7 @@ import it.pagopa.pn.mandate.services.mandate.utils.MandateValidationUtils;
 import it.pagopa.pn.mandate.utils.*;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -48,7 +46,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 import static it.pagopa.pn.commons.exceptions.PnExceptionsCodes.ERROR_CODE_PN_GENERIC_INVALIDPARAMETER_ASSERTENUM;
-import static it.pagopa.pn.commons.utils.MDCUtils.MDC_PN_MANDATEID_KEY;
+import static it.pagopa.pn.commons.utils.MDCUtils.*;
 import static it.pagopa.pn.mandate.exceptions.PnMandateExceptionCodes.*;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyAdmin;
 import static it.pagopa.pn.mandate.utils.PgUtils.validaAccessoOnlyGroupAdmin;
@@ -230,12 +228,18 @@ public class MandateService {
         PnAuditLogEvent logEvent = new PnAuditLogBuilder()
                 .before(PnAuditLogEventType.AUD_DL_ACCEPT, logMessage)
                 .mdcEntry(MDC_PN_MANDATEID_KEY, mandateId)
+                .mdcEntry(MDC_PN_MANDATE_WORKFLOW_TYPE_KEY, WorkFlowType.CIE.name())
                 .build();
         logEvent.log();
         return mandateDao.retrieveMandateForDelegate(xPagopaPnCxId,mandateId)
-                .doOnNext(mandate -> log.debug("Get mandate {} for delegate {}:",mandateId,xPagopaPnCxId))
+                .doOnNext(mandate -> {
+                    String iuns = MandateUtils.joinCollectionToString(",", mandate.getIuns());
+                    logEvent.getMdc().put(MDC_PN_IUN_KEY, iuns);
+                    logEvent.getMdc().put(MDC_PN_DELEGATOR_ID_KEY, mandate.getDelegator());
+                    log.debug("Get mandate {} for delegate {}:",mandateId,xPagopaPnCxId);
+                })
                 .switchIfEmpty(Mono.error(new PnMandateNotFoundException()))
-                .flatMap(mandateEntity -> validateCieData(ciEValidationData, mandateEntity))
+                .flatMap(mandateEntity -> validateCieData(ciEValidationData, mandateEntity, logEvent))
                 .map(mandateEntity -> {
                     checkAcceptanceCIE(mandateEntity);
                     log.debug("Start to update entity for acceptance with mandateId {}", mandateEntity.getMandateId());
@@ -253,18 +257,23 @@ public class MandateService {
                     logEvent.generateSuccess(messageAction).log();
                 })
                 .doOnError(ex -> {
-                        if(ex instanceof PnRuntimeException pnEx) {
-                            logEvent.generateFailure(pnEx.getProblem().getDetail()).log();
-                        } else {
-                            logEvent.generateFailure(ex.getMessage()).log();
-                        }
+                    logEvent.getMdc().put(MDC_PN_ERROR_CATEGORY_KEY, CieAcceptanceErrorCategory.fromThrowable(ex));
+
+                    if(ex instanceof PnInvalidCieDataException) {
+                        logEvent.generateFailure(ex.getMessage()).log();
+                    } else if(ex instanceof PnRuntimeException pnEx) {
+                        logEvent.generateFailure(pnEx.getProblem().getDetail()).log();
+                    } else {
+                        logEvent.generateFailure(ex.getMessage()).log();
+                    }
                 })
                 .then();
     }
 
-    private Mono<MandateEntity> validateCieData(Mono<CIEValidationData> cieValidationDataMono, MandateEntity mandate) {
+    private Mono<MandateEntity> validateCieData(Mono<CIEValidationData> cieValidationDataMono, MandateEntity mandate, PnAuditLogEvent logEvent) {
         log.info("Start to validate CIE Data for mandateId {}", mandate.getMandateId());
         return cieValidationDataMono
+                .doOnNext(cieValidationData -> logEvent.getMdc().put(MDC_PN_MANDATE_CIE_NIS_KEY, cieValidationData.getNisData().getNis()))
                 .doOnNext(base64Validator::validateCieValidationData)
                 .zipWith(retrieveTaxIdFromInternalId(mandate.getDelegator()))
                 .doOnNext(tuple -> {
@@ -273,7 +282,7 @@ public class MandateService {
                     cieChecker.validateCie(cieValidationData, mandate.getValidationcode(), delegatorTaxId);
                 })
                 .thenReturn(mandate)
-                .onErrorResume(PnInvalidVerificationCodeException.class, ex -> {
+                .onErrorResume(PnCieInvalidVerificationCodeException.class, ex -> {
                     String mandateId = mandate.getMandateId();
                     log.warn("Invalid verification code for mandateId {}", mandateId);
                     if(Boolean.TRUE.equals(pnMandateConfig.getRevokeCieMandateOnVerificationFailure())) {
@@ -300,16 +309,16 @@ public class MandateService {
         log.debug("Start to check validity of the acceptance request for mandateId {}", mandateEntity.getMandateId());
         if (!mandateEntity.getWorkflowType().equals(WorkFlowType.CIE)) {
             log.error("Impossible to accept mandate with mandateId {} having workflowType {}, should have workflow type {}",mandateEntity.getMandateId(), mandateEntity.getWorkflowType(), WorkflowType.CIE.getValue());
-            throw new PnMandateBadRequestException("Mandate Bad Request","Mandate has a workflowType different from CIE", ERROR_CODE_MANDATE_BAD_REQUEST);
+            throw new PnInvalidMandateStatusException("Mandate Bad Request", "Mandate has a workflowType different from CIE", HttpStatus.BAD_REQUEST.value(), ERROR_CODE_MANDATE_BAD_REQUEST, null);
         }
         if (mandateEntity.getState() != StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.PENDING)) {
             log.error("Impossible to accept mandate with mandateId {} having status {}, should have status {}",mandateEntity.getMandateId(), StatusEnumMapper.fromValue(mandateEntity.getState()), MandateDto.StatusEnum.PENDING);
-            throw new PnMandateBadRequestException("Mandate Bad Request","Mandate has a status different from PENDING", ERROR_CODE_MANDATE_BAD_REQUEST);
+            throw new PnInvalidMandateStatusException("Mandate Bad Request", "Mandate has a status different from PENDING", HttpStatus.BAD_REQUEST.value(), ERROR_CODE_MANDATE_BAD_REQUEST, null);
         }
         Instant expiration = mandateEntity.getCreated().plus(pnMandateConfig.getCiePendingDuration());
         if (Instant.now().isAfter(expiration)) {
             log.error("Mandate with mandateId {} is expired", mandateEntity.getMandateId());
-            throw new PnMandateNotFoundException("Mandate is expired","Mandate not found because is expired", ERROR_CODE_MANDATE_NOT_FOUND);
+            throw new PnMandatePendingExpiredException("Mandate is expired", "Mandate not found because is expired", HttpStatus.NOT_FOUND.value(), ERROR_CODE_MANDATE_NOT_FOUND);
         }
         log.debug("End to check validity of of the acceptance request for mandateId {}", mandateEntity.getMandateId());
     }

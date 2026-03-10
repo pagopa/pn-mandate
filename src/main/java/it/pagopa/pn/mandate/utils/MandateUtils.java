@@ -13,4 +13,16 @@ public class MandateUtils {
         int randomNumber = random.nextInt(100000);
         return String.format("%05d", randomNumber);
     }
+
+    public static String joinCollectionToString(String delimiter, Iterable<? extends CharSequence> collection) {
+        if(collection == null) {
+            return "";
+        }
+
+        if(delimiter == null) {
+            delimiter = ",";
+        }
+
+        return String.join(delimiter, collection);
+    }
 }

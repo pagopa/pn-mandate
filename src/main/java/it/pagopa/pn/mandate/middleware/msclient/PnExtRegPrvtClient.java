@@ -31,7 +31,7 @@ public class PnExtRegPrvtClient {
 
     public Flux<String> checkAooUoIds(List<String> senderIdList){
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_EXTERNAL_REGISTRIES, "Check aoo uo in senderId list ");
-       return this.aooUoIdsApi.getFilteredAooUoIdPrivate(senderIdList);
+       return this.aooUoIdsApi.getFilteredAooUoIdPrivate(senderIdList).flatMapMany(Flux::fromIterable);
     }
 
 }

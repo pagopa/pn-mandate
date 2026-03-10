@@ -25,7 +25,7 @@ import static org.mockserver.model.HttpResponse.response;
 
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "pn.mandate.client_extreg_basepath=http://localhost:9999"
+        "pn.mandate.client_extreg_basepath=http://localhost:9996"
 })
 class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
 
@@ -36,7 +36,7 @@ class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
 
     @BeforeAll
     public static void startMockServer() {
-        mockServer = ClientAndServer.startClientAndServer(9999);
+        mockServer = ClientAndServer.startClientAndServer(9996);
     }
 
     @AfterAll
@@ -61,7 +61,7 @@ class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
             e.printStackTrace();
         }
 
-        try (MockServerClient client = new MockServerClient("localhost", 9999)) {
+        try (MockServerClient client = new MockServerClient("localhost", 9996)) {
             client.when(request()
                             .withMethod("GET")
                             .withPath("/ext-registry-private/pg/v1/groups-all")
@@ -93,7 +93,7 @@ class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
         ObjectMapper mapper = new ObjectMapper();
         byte[] responseBodyBytes = mapper.writeValueAsBytes(filtered);
 
-        try (MockServerClient client = new MockServerClient("localhost", 9999)) {
+        try (MockServerClient client = new MockServerClient("localhost", 9996)) {
             client.when(request()
                             .withMethod("GET")
                             .withPath("/ext-registry-private/pa/v1/actions/filter-out-root-pa-ids")

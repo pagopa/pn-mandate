@@ -33,17 +33,16 @@ public class MandatePrivateRestV2Controller implements MandatePrivateServiceV2Ap
                                                                                    CxTypeAuthFleet xPagopaPnCxType,
                                                                                    String mandateId,
                                                                                    List<String> xPagopaPnCxGroups,
-                                                                                   Date notificationSentAt,
+                                                                                   Instant notificationSentAt,
                                                                                    String iun,
                                                                                    String rootSenderId,
                                                                                    final ServerWebExchange exchange) {
-        Instant instantNotificationSentAt = notificationSentAt != null ? notificationSentAt.toInstant() : null;
         InputSearchMandateDto inputSearchMandateDto = InputSearchMandateDto.builder()
                 .delegateId(internaluserId)
                 .mandateId(mandateId)
                 .iun(iun)
                 .rootSenderId(rootSenderId)
-                .notificationSentAt(instantNotificationSentAt)
+                .notificationSentAt(notificationSentAt)
                 .groups(xPagopaPnCxGroups)
                 .cxType(xPagopaPnCxType)
                 .status(StatusEnumMapper.intValfromStatus(MandateDto.StatusEnum.ACTIVE)) // nelle invocazioni tra servizi mi interessano SEMPRE solo le deleghe ATTIVE

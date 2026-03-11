@@ -292,6 +292,13 @@
 						<phase>generate-resources</phase>
 						<configuration>
 							<inputSpec>${project.basedir}/docs/openapi/pn-mandate-internal.yaml</inputSpec>
+							<typeMappings>
+								<typeMapping>Date=Instant</typeMapping>
+							</typeMappings>
+							<importMappings>
+								<importMapping>java.util.Date=java.time.Instant</importMapping>
+								<importMapping>Date=java.time.Instant</importMapping>
+							</importMappings>
 							<generatorName>spring</generatorName>
 							<library>spring-boot</library>
 							<generateApiDocumentation>false</generateApiDocumentation>

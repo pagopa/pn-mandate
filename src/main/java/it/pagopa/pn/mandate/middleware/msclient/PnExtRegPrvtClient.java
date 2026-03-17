@@ -5,6 +5,7 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.api.Aoo
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.api.InternalOnlyApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupStatusDto;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -31,7 +32,10 @@ public class PnExtRegPrvtClient {
 
     public Flux<String> checkAooUoIds(List<String> senderIdList){
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_EXTERNAL_REGISTRIES, "Check aoo uo in senderId list ");
-       return this.aooUoIdsApi.getFilteredAooUoIdPrivate(senderIdList).flatMapMany(Flux::fromIterable);
+        ParameterizedTypeReference<String> localVarReturnType = new ParameterizedTypeReference<>() {};
+        return this.aooUoIdsApi.getFilteredAooUoIdPrivateWithResponseSpec(senderIdList)
+                .bodyToFlux(localVarReturnType)
+                .doOnNext(id -> log.debug("checkAooUoIds - id={}", id));
     }
 
 }

@@ -1235,6 +1235,7 @@ Resources:
         OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureF01AlarmPeriodDatapointsToAlarm
         OncallComparisonOperator: GreaterThanOrEqualToThreshold
         OncallStatistic: Sum
+        HasAlarm: false
 
   MandateAcceptanceFailureF02DetectionAlarm:
     Type: AWS::CloudFormation::Stack
@@ -1259,6 +1260,7 @@ Resources:
         OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureF02AlarmPeriodDatapointsToAlarm
         OncallComparisonOperator: GreaterThanOrEqualToThreshold
         OncallStatistic: Sum
+        HasAlarm: false
 
   MandateAcceptanceFailureF03DetectionAlarm:
     Type: AWS::CloudFormation::Stack
@@ -1283,6 +1285,7 @@ Resources:
         OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureF03AlarmPeriodDatapointsToAlarm
         OncallComparisonOperator: GreaterThanOrEqualToThreshold
         OncallStatistic: Sum
+        HasAlarm: false
 
   MandateAcceptanceFailureF04DetectionAlarm:
     Type: AWS::CloudFormation::Stack
@@ -1307,6 +1310,7 @@ Resources:
         OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureF04AlarmPeriodDatapointsToAlarm
         OncallComparisonOperator: GreaterThanOrEqualToThreshold
         OncallStatistic: Sum
+        HasAlarm: false
 
   MandateAcceptanceFailureMandateExpiredDetectionAlarm:
     Type: AWS::CloudFormation::Stack
@@ -1331,6 +1335,7 @@ Resources:
         OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureMandateExpiredAlarmPeriodDatapointsToAlarm
         OncallComparisonOperator: GreaterThanOrEqualToThreshold
         OncallStatistic: Sum
+        HasAlarm: false
 
   MandateAcceptanceFailureMandateNotFoundDetectionAlarm:
     Type: AWS::CloudFormation::Stack
@@ -1355,6 +1360,7 @@ Resources:
         OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureMandateNotFoundAlarmPeriodDatapointsToAlarm
         OncallComparisonOperator: GreaterThanOrEqualToThreshold
         OncallStatistic: Sum
+        HasAlarm: false
 
   MandateAcceptanceFailureInvalidMandateDetectionAlarm:
     Type: AWS::CloudFormation::Stack
@@ -1379,6 +1385,7 @@ Resources:
         OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureInvalidMandateAlarmPeriodDatapointsToAlarm
         OncallComparisonOperator: GreaterThanOrEqualToThreshold
         OncallStatistic: Sum
+        HasAlarm: false
 
   MandateAcceptanceFailureTechDetectionAlarm:
     Type: AWS::CloudFormation::Stack
@@ -1403,3 +1410,4 @@ Resources:
         OncallDatapointsToAlarm: !Ref OncallMandateAcceptanceFailureTechAlarmPeriodDatapointsToAlarm
         OncallComparisonOperator: GreaterThanOrEqualToThreshold
         OncallStatistic: Sum
+        HasAlarm: false

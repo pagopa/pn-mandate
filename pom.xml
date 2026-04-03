@@ -88,11 +88,6 @@
 			<artifactId>s3</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-s3</artifactId>
-			<version>1.12.406</version>
-		</dependency>
-		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<scope>provided</scope>

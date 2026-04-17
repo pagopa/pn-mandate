@@ -886,6 +886,7 @@ Resources:
         APIGatewayARNs: !GetAtt MandateMicroserviceB2BPGApi.Outputs.APIGatewayARN
         Limit: !Ref B2bPgLimit
         ExcludedRule0: CrossSiteScripting_BODY,SizeRestrictions_BODY
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
   
   # Expose PN-MANDATE microservice public API with API-GW for IO Backend usage
   MandateMicroservicePublicIoAPI:
@@ -917,6 +918,7 @@ Resources:
         APIGatewayARNs: !GetAtt MandateMicroservicePublicIoAPI.Outputs.APIGatewayARN
         Limit: 0 # disable IP limit based rule
         AllowedCidrs: !Ref IOBackendCidrs
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
 
   MandateMicroserviceCloudWatchDashboard:
     Type: AWS::CloudFormation::Stack

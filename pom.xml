@@ -35,7 +35,7 @@
 			<dependency>
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcpkix-jdk18on</artifactId>
-				<version>1.81</version>
+				<version>1.84</version>
 			</dependency>
 			<dependency>
 				<!-- NEW: pin bcutil to the same version to avoid operator/asn1 mismatches -->
@@ -110,7 +110,7 @@
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpkix-jdk18on</artifactId>
-			<version>1.81</version>
+			<version>1.84</version>
 		</dependency>
 
 		<!-- Decodifica HEX (equivalente di tr + xxd) -->

@@ -1006,7 +1006,7 @@ class MandateServiceTest extends AbstractTestConfiguration {
 
         List<String> ids = List.of("id1","id2");
         FilteredPaIdsResponseDto filteredPaIdsResponseDto= new FilteredPaIdsResponseDto();
-        filteredPaIdsResponseDto.addIdsItem(String.valueOf(ids));
+        ids.forEach(filteredPaIdsResponseDto::addIdsItem);
         when(pnExtRegPrvtClient.checkAooUoV2Ids(Mockito.anyList())).thenReturn(Mono.just(filteredPaIdsResponseDto));
 
 

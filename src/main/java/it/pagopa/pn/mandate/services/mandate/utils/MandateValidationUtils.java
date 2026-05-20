@@ -105,10 +105,9 @@ public class MandateValidationUtils {
         }
 
 
-        return pnExtRegPrvtClient.checkAooUoIds(mandateDto.getVisibilityIds().stream().map(OrganizationIdDto::getUniqueIdentifier).collect(Collectors.toList()))
-                .hasElements()
-                .flatMap(hasElement ->{
-                    if(hasElement){
+        return pnExtRegPrvtClient.checkAooUoV2Ids(mandateDto.getVisibilityIds().stream().map(OrganizationIdDto::getUniqueIdentifier).collect(Collectors.toList()))
+                .flatMap(response -> {
+                    if (response.getIds() != null && !response.getIds().isEmpty()) {
                         log.logCheckingOutcome(process, false, "invalid visibilityId");
                         return Mono.error(new PnInvalidVisibilityIdException());
                     }else{

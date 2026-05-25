@@ -5,7 +5,6 @@ import it.pagopa.pn.mandate.middleware.db.entities.MandateEntity;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.CxTypeAuthFleet;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;

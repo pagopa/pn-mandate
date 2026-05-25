@@ -17,6 +17,7 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.MandateD
 import it.pagopa.pn.mandate.generated.openapi.msclient.datavault.v1.dto.RecipientTypeDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.delivery.v1.dto.UserInfoDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.delivery.v1.dto.UserInfoQrCodeDto;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.FilteredPaIdsResponseDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.PaSummaryDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
 import it.pagopa.pn.mandate.generated.openapi.server.v1.dto.*;
@@ -934,7 +935,7 @@ class MandateServiceTest extends AbstractTestConfiguration {
         when(mapper.toEntity(Mockito.any())).thenReturn(entity);
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
         when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean(), Mockito.eq(false))).thenReturn(true);
-        when(pnExtRegPrvtClient.checkAooUoIds(Mockito.anyList())).thenReturn(Flux.empty());
+        when(pnExtRegPrvtClient.checkAooUoV2Ids(Mockito.anyList())).thenReturn(Mono.just(new FilteredPaIdsResponseDto()));
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB", null, null).block(D);
@@ -1003,7 +1004,10 @@ class MandateServiceTest extends AbstractTestConfiguration {
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
         when(validateUtils.validate(Mockito.anyString(), Mockito.anyBoolean(), Mockito.eq(false))).thenReturn(true);
 
-        when(pnExtRegPrvtClient.checkAooUoIds(Mockito.anyList())).thenReturn(Flux.just("abcd"));
+        List<String> ids = List.of("id1","id2");
+        FilteredPaIdsResponseDto filteredPaIdsResponseDto= new FilteredPaIdsResponseDto();
+        ids.forEach(filteredPaIdsResponseDto::addIdsItem);
+        when(pnExtRegPrvtClient.checkAooUoV2Ids(Mockito.anyList())).thenReturn(Mono.just(filteredPaIdsResponseDto));
 
 
         //When
@@ -1075,7 +1079,7 @@ class MandateServiceTest extends AbstractTestConfiguration {
         when(mapper.toEntity(Mockito.any())).thenReturn(entity);
         when(mapper.toDto(Mockito.any())).thenReturn(mandateDtoRes);
         when(validateUtils.validate(Mockito.anyString(), Mockito.eq(true), Mockito.eq(false))).thenReturn(true);
-        when(pnExtRegPrvtClient.checkAooUoIds(Mockito.anyList())).thenReturn(Flux.empty());
+        when(pnExtRegPrvtClient.checkAooUoV2Ids(Mockito.anyList())).thenReturn(Mono.just(new FilteredPaIdsResponseDto()));
 
         //When
         MandateDto result = mandateService.createMandate(Mono.just(mandateDto), entity.getDelegator(), entity.getDelegatorUid(), CxTypeAuthFleet.PF, "WEB", null, null).block(D);

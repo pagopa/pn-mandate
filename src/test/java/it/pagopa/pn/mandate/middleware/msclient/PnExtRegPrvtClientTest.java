@@ -3,6 +3,7 @@ package it.pagopa.pn.mandate.middleware.msclient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.mandate.AbstractTestConfiguration;
+import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.FilteredPaIdsResponseDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -114,6 +115,42 @@ class PnExtRegPrvtClientTest extends AbstractTestConfiguration {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals("[\"id2\",\"id3\"]", result.getFirst());
+    }
+
+    @Test
+    void checkAooUoV2Ids_integration() throws Exception {
+        // Given
+        List<String> input = Arrays.asList("id1", "id2", "id3");
+        List<String> filtered = Arrays.asList("id2", "id3");
+        ObjectMapper mapper = new ObjectMapper();
+
+        FilteredPaIdsResponseDto responseDto = new FilteredPaIdsResponseDto();
+        responseDto.setIds(filtered);
+
+        byte[] responseBodyBytes = mapper.writeValueAsBytes(responseDto);
+
+        new MockServerClient("localhost", 9996)
+                .when(request()
+                        .withMethod("GET")
+                        .withPath("/ext-registry-private/pa/v2/actions/filter-out-root-pa-ids")
+                        .withQueryStringParameter("id", "id1")
+                        .withQueryStringParameter("id", "id2")
+                        .withQueryStringParameter("id", "id3"))
+                .respond(response()
+                        .withContentType(MediaType.APPLICATION_JSON)
+                        .withBody(responseBodyBytes)
+                        .withStatusCode(200));
+
+        // When
+        FilteredPaIdsResponseDto result = pnExtRegPrvtClient.checkAooUoV2Ids(input)
+                .block(Duration.ofMillis(3000));
+
+        // Then
+        assertNotNull(result);
+        assertNotNull(result.getIds());
+        assertEquals(2, result.getIds().size());
+        assertEquals("id2", result.getIds().get(0));
+        assertEquals("id3", result.getIds().get(1));
     }
 
 

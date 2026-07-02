@@ -6,7 +6,6 @@ import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcare.v1.dto.Fil
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.api.InternalOnlyApi;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupDto;
 import it.pagopa.pn.mandate.generated.openapi.msclient.extregselfcaregroups.v1.dto.PgGroupStatusDto;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -26,18 +25,9 @@ public class PnExtRegPrvtClient {
         this.aooUoIdsApi = aooUoIdsApi;
     }
 
-
     public Flux<PgGroupDto> getGroups(String id, boolean onlyActive) {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_EXTERNAL_REGISTRIES, "Retrieving PG groups");
         return internalApi.getAllPgGroupsPrivate(id, onlyActive? PgGroupStatusDto.ACTIVE:null);
-    }
-
-    public Flux<String> checkAooUoIds(List<String> senderIdList){
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_EXTERNAL_REGISTRIES, "Check aoo uo in senderId list ");
-        ParameterizedTypeReference<String> localVarReturnType = new ParameterizedTypeReference<>() {};
-        return this.aooUoIdsApi.getFilteredAooUoIdPrivateWithResponseSpec(senderIdList)
-                .bodyToFlux(localVarReturnType)
-                .doOnNext(id -> log.debug("checkAooUoIds - id={}", id));
     }
 
     public Mono<FilteredPaIdsResponseDto> checkAooUoV2Ids(List<String> senderIdList) {

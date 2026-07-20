@@ -315,6 +315,21 @@ Parameters:
     Default: 'rate(10 minutes)'
     Description: 'Schedule expression for the CSCA masterlist sync lambda (e.g., rate(1 hour) or cron expression)'
 
+  CscaMasterlistSyncAlarmPeriod:
+    Type: Number
+    Default: 600
+    Description: 'Period in seconds for the CSCA masterlist sync Lambda alarm metrics'
+
+  CscaMasterlistSyncAlarmEvaluationPeriods:
+    Type: Number
+    Default: 12
+    Description: 'Number of periods evaluated by the CSCA masterlist sync Lambda alarm'
+
+  CscaMasterlistSyncAlarmDatapointsToAlarm:
+    Type: Number
+    Default: 10
+    Description: 'Number of breaching periods required for the CSCA masterlist sync Lambda alarm'
+
   CscaSha256SsmParameterName:
     Type: String
     Default: '/pn-mandate/csca-masterlist/latest-sha256'
@@ -1213,6 +1228,9 @@ Resources:
       Parameters:
         FunctionName: !Ref CscaMasterlistSync
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        Period: !Ref CscaMasterlistSyncAlarmPeriod
+        EvaluationPeriods: !Ref CscaMasterlistSyncAlarmEvaluationPeriods
+        DataPointsToAlarm: !Ref CscaMasterlistSyncAlarmDatapointsToAlarm
 
   MandateAcceptanceFailureF01DetectionAlarm:
     Type: AWS::CloudFormation::Stack

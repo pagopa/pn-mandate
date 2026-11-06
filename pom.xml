@@ -22,6 +22,7 @@
 		<ant.windows_bash_exe>c:\Program Files\Git\bin\bash.exe</ant.windows_bash_exe>
 
 		<pagopa.codegen.version>v01.16.01</pagopa.codegen.version>
+		<bouncycastle.version>1.85</bouncycastle.version>
 	</properties>
 
 	<!-- Ensure BC modules are aligned at one version for the whole reactor -->
@@ -30,18 +31,18 @@
 			<dependency>
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcprov-jdk18on</artifactId>
-				<version>1.85</version>
+				<version>${bouncycastle.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcpkix-jdk18on</artifactId>
-				<version>1.81</version>
+				<version>${bouncycastle.version}</version>
 			</dependency>
 			<dependency>
 				<!-- NEW: pin bcutil to the same version to avoid operator/asn1 mismatches -->
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcutil-jdk18on</artifactId>
-				<version>1.81</version>
+				<version>${bouncycastle.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -101,7 +102,7 @@
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk18on</artifactId>
-			<version>1.85</version>
+			<version>${bouncycastle.version}</version>
 		</dependency>
 
 		<!-- CHANGE: rimosso bc-fips per evitare mix FIPS/non-FIPS che causa NoSuchFieldError -->
@@ -110,7 +111,7 @@
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpkix-jdk18on</artifactId>
-			<version>1.81</version>
+			<version>${bouncycastle.version}</version>
 		</dependency>
 
 		<!-- Decodifica HEX (equivalente di tr + xxd) -->

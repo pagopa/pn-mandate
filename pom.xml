@@ -22,7 +22,7 @@
 		<ant.windows_bash_exe>c:\Program Files\Git\bin\bash.exe</ant.windows_bash_exe>
 
 		<pagopa.codegen.version>v01.16.01</pagopa.codegen.version>
-		<bouncycastle.version>1.86</bouncycastle.version>
+		<bouncycastle.version>1.85</bouncycastle.version>
 	</properties>
 
 	<!-- Ensure BC modules are aligned at one version for the whole reactor -->

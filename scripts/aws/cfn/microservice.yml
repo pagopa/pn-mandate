@@ -753,6 +753,16 @@ Parameters:
     Type: Number
     Default: 1
 
+  CpuArchitecture:
+    Type: String
+    Default: 'ARM'
+    Description: CPU architecture for the Fargate tasks
+
+  JavaToolOptions:
+    Type: String
+    Default: ''
+    Description: Java tool options for the Fargate tasks
+
 Conditions:
     ShouldEnableApiGatewayIO: !Equals [!Ref EnableAPIGatewayAppIO, "true"]
 
@@ -821,6 +831,8 @@ Resources:
         TaskRoleManagedPolicyArn: !Ref MandateMicroserviceTaskManagedPolicy
         EcsLogGroup: !Ref EcsLogGroup
         LogAlarmStrategyV1: !Ref LogAlarmStrategy
+        CpuArchitecture: !Ref CpuArchitecture
+        JavaToolOptions: !Ref JavaToolOptions
 
 
   # Grant operational rights to PN-Mandate microservice
